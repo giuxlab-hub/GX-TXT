@@ -6,7 +6,7 @@ namespace eval ::GX::ReferenceLibraryAPIv1 { variable apiVersion 1 }
 
 proc ::GX::ReferenceLibraryAPIv1::apiInfo {} {
     variable apiVersion
-    return [dict create api_name SCIENTIFIC_REFERENCE_LIBRARY_API_v1 api_version $apiVersion format GXSRL_SQLITE_v1 spectrum_api SCIENTIFIC_SPECTRUM_API_v1]
+    return [dict create api_name SCIENTIFIC_REFERENCE_LIBRARY_API_v1 api_version $apiVersion format GXSRL_SQLITE_v1 spectrum_api SCIENTIFIC_SPECTRUM_API_v1 managed_read_api_version 1 managed_operations {managedLibraryInfo managedValidateLibrary managedListSpectra managedReadSpectrum managedEntityInfo managedBulkRank}]
 }
 
 proc ::GX::ReferenceLibraryAPIv1::root {} {
@@ -213,11 +213,33 @@ proc ::GX::ReferenceLibraryAPIv1::removeLibrary {libraryId} {
     return [_run remove-library [root] [_safeId $libraryId]]
 }
 
+# Additive managed consultation. The Manager owns actual registered location,
+# provider admission, read policy, integrity and update/remove serialization.
+# Old flat-root methods above retain their original compatibility behavior.
+proc ::GX::ReferenceLibraryAPIv1::_managedRead {operation libraryId args} {
+    _safeId $libraryId
+    return [::GX::ScientificLibraryManagerAPIv1::_run reference_read $operation $libraryId {*}$args]
+}
+proc ::GX::ReferenceLibraryAPIv1::managedLibraryInfo {libraryId} {return [_parseWire [_managedRead info $libraryId]]}
+proc ::GX::ReferenceLibraryAPIv1::managedValidateLibrary {libraryId} {return [_parseWire [_managedRead validate $libraryId]]}
+proc ::GX::ReferenceLibraryAPIv1::managedListSpectra {libraryId {entityId {}}} {
+    if {$entityId eq {}} {return [_ids [_managedRead spectra $libraryId]]}
+    return [_ids [_managedRead spectra $libraryId [_safeId $entityId]]]
+}
+proc ::GX::ReferenceLibraryAPIv1::managedEntityInfo {libraryId entityId} {return [_parseWire [_managedRead entity $libraryId [_safeId $entityId]]]}
+proc ::GX::ReferenceLibraryAPIv1::managedReadSpectrum {libraryId spectrumId} {
+    set spectrum [_parseWire [_managedRead spectrum $libraryId [_safeId $spectrumId]]]
+    ::GX::SpectrumAPIv1::validate $spectrum
+    return $spectrum
+}
+proc ::GX::ReferenceLibraryAPIv1::managedBulkRank {libraryId experimental options} {tailcall _bulkRank $libraryId $experimental $options 1}
+proc ::GX::ReferenceLibraryAPIv1::bulkRank {libraryId experimental options} {tailcall _bulkRank $libraryId $experimental $options 0}
+
 # Rank an entire validated library in one read-only CORE process. This API
 # implements the IR module's simple preprocessing path (no baseline,
 # smoothing or derivative). The caller later performs exact public-api
 # calculation and provenance lookup on the shortlisted references.
-proc ::GX::ReferenceLibraryAPIv1::bulkRank {libraryId experimental options} {
+proc ::GX::ReferenceLibraryAPIv1::_bulkRank {libraryId experimental options managed} {
     _safeId $libraryId
     if {[catch {dict size $experimental}] || ![dict exists $experimental x] || ![dict exists $experimental y]} {
         error "Scientific Reference Library API v1: bulkRank requires processed X/Y"
@@ -244,7 +266,9 @@ proc ::GX::ReferenceLibraryAPIv1::bulkRank {libraryId experimental options} {
             --fingerprint-max [dict get $options fingerprint_max] \
             --fingerprint-weight [dict get $options fingerprint_weight] \
             --limit [dict get $options limit]]
-        if {[catch {set raw [exec {*}$command 2>@1]} failure]} {
+        if {[catch {
+            if {$managed} {set raw [_managedRead bulk-rank $libraryId $request $options]} else {set raw [exec {*}$command 2>@1]}
+        } failure]} {
             error "Scientific Reference Library API v1 bulkRank: $failure"
         }
         set summarySeen 0

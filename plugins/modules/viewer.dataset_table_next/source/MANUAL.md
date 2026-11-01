@@ -22,6 +22,6 @@ Dataset selection and source revision remain under CORE authority. A Session cha
 
 Use **Help** or **F1** for this guide through the Documentation Browser. This package composes existing CORE Dataset Access, Preview paging, Table Stream, Variable Schema, Unit Registry and GUI Host services. It contains no table engine or scientific data store.
 
-Public references: [Dataset Preview](../../../../docs/api/DATASET_PREVIEW_API_v1.md), [Table Stream v3](../../../../docs/api/TABLE_STREAM_API_v3.md), [Variable Schema v3](../../../../docs/api/DATASET_VARIABLE_SCHEMA_API_v3.md), [Viewer GUI Host](../../../../docs/api/VIEWER_GUI_HOST_API_v1.md).
+Public references: [Dataset Preview](../../../docs/api/DATASET_PREVIEW_API_v1.md), [Table Stream v3](../../../docs/api/TABLE_STREAM_API_v3.md), [Variable Schema v3](../../../docs/api/DATASET_VARIABLE_SCHEMA_API_v3.md), [Viewer GUI Host](../../../docs/api/VIEWER_GUI_HOST_API_v1.md).
 
 Development status: v1.0.2 adds the public optional selector to the preserved restricted-author project. Its installed native acceptance is recorded separately; this manual is not a release-acceptance claim.

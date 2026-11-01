@@ -1,3 +1,283 @@
+## 2.0.26 — Curve list column headings (2026-10-31)
+
+- Restore every Curve Treeview heading when enabling or disabling the secondary Y axis; no scientific model, publication or CORE changes.
+
+## 2.0.25 — F5 shared physical uncertainty for Y1/Y2 (development)
+
+- A single four-corner geometric calibration supplies shared covariance
+  sensitivities for scientific X, Y1 and optional Y2, without re-digitizing
+  or altering the pixel-to-scientific transformation.
+- The independent per-point 2x2 Jacobians and shared 2N x 14 parameter
+  Jacobian retain eight corner coordinates, X min/max, Y1 min/max and
+  Y2 min/max, including mixed linear/logarithmic scales. Monoaxis outputs
+  retain the exact former 12-input form.
+- Pixel/calibration declarations require 14 nonnegative standard
+  uncertainties in dual-axis mode, versus 12 legacy. Physical override
+  requires explicit independent X/Y1/Y2 standard uncertainties in dual-axis
+  mode, versus the existing physical X/Y pair.
+- Dataset publication uses the original ordered pixels and per-row y_axis_id.
+  The analytic preflight and CORE Numeric API v1/Statistics semantics must
+  agree on all physical sigma, XY covariance, and every retained local/shared
+  factor before canonical publication is accepted.
+- Compact uncertainty factors v2 retain all 14 shared parameters with a
+  SHA256-verified, bounded compressed binary record. Reader v1 keeps the
+  historical 12-input factor records, and F5 supports both.
+- No uncertainty is inferred from image width, quality metrics, pixel
+  dimensions or unreviewed uncertainty models. Multiple independent
+  calibration realizations may be published separately, but uncertain
+  combined multi-realization outputs remain explicitly disallowed.
+- Dataset Group formation is unchanged. Correlation across Dataset
+  boundaries is described through common calibration identities, NOT
+  misrepresented as an already materialized cross-Dataset covariance.
+- Source image, curve/pixel identities and scientific review fingerprint
+  stay mandatory. Mixed scientific Y units cannot be hidden under one
+  canonical Variable Schema Y column.
+- GNU Octave 9.4.0 Numeric implementation validated against analytic
+  Python results for both shared calibration and physical override models,
+  including log-X/log-Y2; local Tcl Numeric transport validates 12/14 and
+  the retained factor integrity gate without CORE modifications.
+- F5 remains an independent development increment: final real-Session
+  integration and old-Workspace compatibility admission await owner testing.
+
+## 2.0.24 — Public Y1/Y2 metadata API and Dataset Group opt-in
+
+- The existing Curve Dataset Schema public API v1 interprets curve schemas
+  0, 1 and 2. New methods: axes, curves, describe and datasetGroup.
+- External readers obtain normalized scientific metadata from this adapter,
+  rather than decoding version-specific JSON or assuming fixed CSV columns.
+- Publish adds an optional checkbox, OFF by default, to Group the canonical
+  Datasets produced by axis- or calibration-separated publication.
+- The actual registered Viewer retains its CORE-issued producer capability
+  from the Viewer Provider context; its backend invokes P030 Group producer
+  Review/Create. No private CORE issuer or host/admin fallback is used.
+- Group errors are distinct from Dataset publication failures; single
+  output publication creates no unnecessary Group wrapper.
+- Historical Y1-only publication receipt identity/contract now fail closed
+  instead of silently accepting a mismatched backend receipt.
+- Companion Preview 0.1.6 uses public Y-axis row bindings and native Plot v4
+  left/right axes with valid scientific logarithmic scales.
+- CORE, existing Sessions/Datasets and installed modules are untouched.
+  Real Session end-to-end Group acceptance remains a separate requirement.
+
+## 2.0.23 — Inline calibration verification layout (development)
+
+- Convert Projective calibration and verification from side-by-side columns to
+  two full-width stacked sections in the scrollable Calibration tab.
+- The upper section retains the four shared projective corners, Clear corners,
+  calibration status and active measurement identity.
+- The lower verification section initially occupies only its compact heading
+  and Verify calibration button. It expands vertically in place when active,
+  without creating a Toplevel window; the source raster remains clickable.
+- Compact per-axis cards report physical reference, calculated result,
+  physical residual and scale-aware percent or logarithmic-decades comparison.
+  Scientific calculations and accepted input forms are unchanged from 2.0.22.
+- Remove long usage explanations from the GUI; the authoritative instructions
+  and log-axis examples are maintained in MANUAL.md. The verification stays
+  temporary and does not update calibration or published scientific data.
+- Add focused real-Tk geometry, screenshot and legacy regression tests.
+  No CORE, dataset-contract or Preview changes; F4 public metadata API
+  and optional Dataset Group work remains a separate future increment.
+
+## 2.0.22 — Scientific calibration verification (development)
+
+- Replace small inline Expected X/Y controls with a modeless verification
+  window, keeping the original graph clickable and the marker temporary.
+- Independent expected references for X, Y1 and optional Y2 in the declared
+  physical units; blank references are explicitly not assessed.
+- Parse scientific notation, decimal comma and explicit 10^n notation.
+  For logarithmic axes enter positive physical values, not their logarithms.
+- Show each axis scale/unit, expected value, calculated reading, physical
+  residual and either relative error in percent (linear) or logarithmic error
+  in decades and measurement ratio (logarithmic).
+- Keep one shared four-corner calibration, preserve legacy verification summary
+  identifiers for existing tests/scripts; no change to published Dataset formats.
+- Verification is diagnostic only: never publish it as accuracy or uncertainty.
+- This is an independent pre-release user-interface correction; the remaining
+  F4 public read adapter, Preview/Plot and Dataset Group work is unchanged.
+
+## 2.0.21 — Optional Y2 axes / F3 scientific publication (development)
+
+- Implement optional logical Y1/Y2 with one shared four-corner homography.
+  Viewer settings enables Y2, Calibration edits its own unit/limits/linear or
+  logarithmic scale, and Curves binds each curve explicitly to Y1 or Y2.
+- Versioned \`curve_schema_version=2\` scientific publications retain the
+  canonical \`table.generic\` and \`curve_family.table\` contracts and preserve
+  a rank-one X/Y scientific pair. When Y1/Y2 have the same physical unit, one
+  Dataset includes all curves with per-row \`y_axis_id\`. When units differ,
+  separate Y1 and Y2 Datasets are emitted; each Y Variable has one true unit.
+- Calibration Separate/Combined layouts remain available. Each publication
+  records stable curve IDs, original pixel and point IDs, calibration IDs,
+  physical axis transforms and source provenance in versioned Dataset metadata.
+- Preserve the previously published monoaxis v1 schema without extra columns.
+  Existing old readers are expected to refuse schema v2 until the public
+  Curve Digitalizer adapter and Preview are updated in F4.
+- Shared correlated physical uncertainty for Y2 remains intentionally disabled
+  pending numeric F5 review; Y2 quality is marked not assessed rather than
+  claiming a scientific accuracy estimate. Optional Dataset Group creation
+  remains the following F4 increment, using existing P030 public APIs.
+- Intermediate development worktree only: validate with mock-host scientific
+  publication and Tcl public-writer stubs before distributing any Viewer ZIP.
+
+## 2.0.20 — Publication calibration class consistency
+
+- Fix publication preflight on full-frame corner calibration with explicitly
+  declared physical axes. Full-frame image geometry is NOT sufficient to
+  classify scientific X/Y as pixel coordinates. The old caller sent
+  `full_image_pixels` when x=s and y=V, while the scientific calibration
+  manifest correctly classified the mapping as `affine`.
+- Pass the exact, already-built calibration manifest classification
+  (pixel, scale_bar, affine or projective) to the public GX-TXT publisher
+  rather than deriving a second inconsistent hint from source geometry.
+- Preserve Tcl legacy transport aliases but validate new canonical classes
+  and reject an unknown classification. Do NOT weaken source SHA,
+  accepted-calibration, grouping, axes, measurement ID, provenance or
+  Session revision protections.
+- No CORE changes and no access to actual user Session data.
+- Add classification contract tests and a fully isolated GUI publication
+  fixture for 3 curves x 100 points x 3 accepted calibrations.
+
+## 2.0.19 — Per-curve exclusion list refresh
+
+- Keep exclusion paths in the existing persisted Session configuration field
+  `tracing_constraints.paths_by_curve`, keyed by stable Curve ID and
+  bound to the source raster SHA-256.
+- Fix the Curves Treeview selection callback to refresh Exclusion Paths
+  immediately after switching the active curve. Previously the visible
+  list could retain entries from another curve even though the paths
+  were correctly saved and reloaded.
+- Do not delete, migrate or duplicate any saved exclusion paths.
+  The persistent/disabled path state, node geometry and scientific
+  proposals stay untouched. The active table and canvas update together.
+- Add a Tk configuration round-trip and curve-selection regression using
+  an isolated fake document RPC. CORE and installed framework untouched.
+
+## 2.0.18 — Extended assisted tracing Step to 20 source pixels
+
+- Raise the maximum step from 10 to 20 original-image pixels in the Curves
+  Spinbox, numeric guide sampling and the C1 reference path, using one
+  shared min/max contract (0.5..20.0 source px).
+- Validate manually entered values **before** dispatching a GX-TXT Numeric
+  request. Prevent an invalid requested Step from starting an asynchronous job.
+- Display the applied Step in the generated proposal status; keep existing
+  2.0 default, source-image geometry, accepted scientific coordinates and
+  publication contract unchanged.
+- Do not conflate Step with **Output points (Accept)**: at Step 20 the
+  known 1000-pixel span yields 53 candidate positions, while output 100
+  resamples the candidate shape without adding new raster evidence.
+- Validation compares Step 2, 5, 10, 15, 20 on curves c5/c15 against the
+  known analytical generator with exact guides, and checks resampled 100-point
+  output and correction/rebuild behavior. Step 20 is not a guarantee of
+  improvement on any specific real or scanned image.
+- No framework CORE modifications, no Session changes, no worktree changes.
+
+## 2.0.17 — Assisted trace foreground targeting and C1 guide interpolation
+
+- Correct a systematic failure on thin colored lines: 3x3 **median** samples
+  around a single-pixel guide selected the white background as its expected
+  grayscale/RGB target. This encouraged the DP path to track empty background
+  parallel to the intended curve. Estimate the ink colour from an operator
+  guide, preferring its own pixel when it is an actual foreground candidate;
+  otherwise use a nearby foreground candidate without moving the guide.
+- Replace piecewise-linear reference chords with chord-length, shape-preserving
+  **C1 Hermite/PCHIP references** through the original guide coordinates.
+  Reuse the guide-aware reference in Propose, local Repair, Insert correction
+  and Remove guide. Existing fixed endpoints, limits and acceptance semantics
+  remain unchanged.
+- This is an optimization reference, not a filter or a replacement for the
+  original image: all candidate costs still come from the original raster,
+  and accepting scientific points remains an explicit user action.
+- Retain independent Off/Gentle/Strong second-order search penalties,
+  exclusion bands, assisted Numeric CORE advisory requests, per-Session
+  Workspace configuration support, original GUI and public CORE APIs.
+- New exact analytical family regression: c5 and c15, three guides and all
+  smoothness modes, guide ±2px, optional corrections, and **83 guide points**
+  were tested against the known source geometry. No CORE files, original
+  source raster, Session or installed framework were changed.
+- A previous test requiring visible displacement for every smoothness setting
+  was corrected: equal paths for a uniquely recognized original curve are
+  scientifically valid. A preexisting Tk mock was brought in line with the
+  existing native Workspace generation/revision receipt contract.
+- Limitation: tests on the known synthetic raster do not prove equal quality
+  on low-contrast photographs, saturated overprinted curves or real scanned
+  datasheets. Operators must still inspect traces and avoid claiming
+  additional independent measurements from denser interpolation.
+
+## 2.0.16 — Configuration save/duplicate/rename/FocusOut fixes
+
+- Ignore view-only raster zoom/pan in Workspace review dirty comparisons.
+  Explicit normal saves still retain the viewport.
+- Distinguish Save, Do not save and Cancel; Duplicate after Do not save
+  reads the last successful saved configuration, never unsaved GUI edits.
+- Rename the canonical native Workspace name through the existing public
+  Session Workspace API and return its new generation/revision receipt.
+  Then save the matching configuration JSON, with an attempted native-name
+  rollback and explicit error reporting if the second stage fails.
+- Restore automatic FocusOut commits on leaving the application, without
+  firing while an internal dialog or Workspace review is active.
+- Preserve public scientific APIs, Source SHA, assisted tracing, the full
+  2.0.15 proposal fixes, the installed DEV111 native Workspace integration
+  and existing Session data. No GX-TXT CORE edits.
+
+## 2.0.15 — Source-raster proposal interaction and correction guards
+
+- Remove the zoom-dependent 60-screen-pixel proximity test for Edit proposal.
+- Use 6 ORIGINAL SOURCE PIXELS for nearest guide/generated vertex selection,
+  both in Move/Edit and context menus. ImageCanvas already translates Tk
+  pointer positions into raster pixels, unaffected by zoom or panning.
+- A distant click no longer captures a random path vertex; Add correction
+  point is the explicit tool for corrections far away from the current trace.
+- Do not allow local corrections, guide repairs or proposal deletion while
+  the candidate is invalidated by changed smoothing/exclusion constraints;
+  first regenerate one coherent candidate through Propose.
+- Validate inserted correction geometry and unchanged non-target segments
+  before committing reversible proposal edits.
+- Preserve accepted scientific points, original raster and source hash.
+- Preserve 2.0.14 mode refresh, 2.0.13 early guide moves, 2.0.12 Calibration
+  scroll and local Workspace provider integration. No CORE changes.
+
+## 2.0.14 — Observable Off/Gentle/Strong proposal selection
+
+- Selecting a different smoothness prior automatically regenerates a
+  fully unaccepted candidate, using the existing public Numeric guide transport
+  and the current raster/exclusion constraints. Acceptance stays explicit.
+- Do not silently reset accepted-segment identities or previously accepted
+  scientific points when a user changes the mode after partial acceptance.
+- Show the applied Off/Gentle/Strong mode, image sample counts and numerical
+  displacement versus the previous preview where point correspondence permits.
+  A pre-existing smooth source curve may legitimately yield little or no
+  geometric difference; do not fabricate a change in scientific coordinates.
+- Preserve original three dynamic-programming objective functions and their
+  distinct coefficients. Verified with independent synthetic images and the
+  exact deterministic registered calibrated_curve_family raster.
+- Preserve all 2.0.13 guide edits, 2.0.12 Calibration scrolling and local
+  DEV111-r3 Workspace changes without modifying CORE or installed sources.
+
+## 2.0.13 — Guided-tracing editing and proposal invalidation
+
+- Fix Move/Delete of guide points before a generated proposal exists.
+- Preserve reversible guide edits and monotonic coordinate ordering.
+- Preserve validated edits on unaccepted proposals without touching saved points.
+- Display explicit instructions when exclusion paths invalidate a proposal; prevent
+  accepting a stale proposal or an earlier candidate during an asynchronous refresh.
+- Preserve all 2.0.12 Calibration scrolling, local DEV111 2.0.11 Workspace bridges,
+  and public APIs. No CORE changes.
+
+## 2.0.12 — Scrollable Calibration and version consistency
+
+- Scroll the complete Calibration page when the window is too short; all scientific
+  axes, scale bar, verification, calibration measurements and stroke controls remain.
+- Maintain independent calibration-measurement-list scrolling and raster canvas zoom;
+  show the outer scrollbar only when the page exceeds the available height.
+- Synchronize About, module/package descriptors, Tcl API producer versions and
+  Python application log to 2.0.12. No scientific calculation or CORE change.
+- Preserve the exact installed 2.0.11 Workspace bridge and patch modifications.
+
+## 2.0.11 — Public API manual declarations
+
+- Declare the installed provider-local Image Processing, Quality, Uncertainty and Stroke Width API manuals explicitly so both the API Catalog and normal Documentation Browser resolve the actual files.
+- Describe the current Uncertainty API without historical product-version headings; retain its scientific equations, assumptions, limits and public contract identities.
+- Update distribution metadata and package checksums. Scientific implementation is unchanged.
+
 ## 2.0.2 — zero localization and public Numeric execution
 
 - Allow explicitly declared zero pixel-localization uncertainty, independently of nonnegative declared calibration uncertainty; never replace zero by an artificial epsilon or infer uncertainty from resolution.

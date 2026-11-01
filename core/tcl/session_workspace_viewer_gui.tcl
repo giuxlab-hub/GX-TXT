@@ -16,7 +16,7 @@ proc ::GX::sessionWorkspaceViewerTitlesRefresh {} {
         set name {None}
         if {![catch {interactiveDocumentSessionToken} token] && $token eq [dict get $adapter token]} {
             if {![catch {uplevel #0 [dict get $adapter current]} id]} {
-                if {$id ne {} && ![catch {sessionWorkspaceGet $id} workspace]} {
+                if {$id ne {} && ![catch {sessionWorkspaceMetadata $id} workspace]} {
                     set name [dict get $workspace name]
                 } elseif {$id eq {}} {
                     set name {New (unsaved)}

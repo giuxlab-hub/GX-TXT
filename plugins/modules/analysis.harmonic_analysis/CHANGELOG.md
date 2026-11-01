@@ -2,26 +2,26 @@
 
 - Delegate the retained estimator to public Numeric and interpret once through CORE.
 - Preserve scientific Dataset/Variable identities, add captured metadata and validated reports.
--
+- Targeted module acceptance is recorded separately; packaging follows frozen acceptance.
 
 # Changelog
 
-## 1.1.0
+## 1.1.0 — 2026-09-25
 
 - Migrated all scientific result graphics from the module-private Octave renderer/render cache/rerender path to persistent `plot.dataset` / `PLOT_DATASET_API_v2` bar variants.
 - Added separate persistent dBc, percent-of-fundamental and linear-amplitude variants; dBc uses shared `bar_baseline` so the zero-dBc fundamental remains visible without a private marker overlay.
 - Added explicit `math.numeric` dependency and migrated generic grid analysis, descriptive reductions and THD sum-of-squares reduction to public `NUMERIC_API_v1`.
 - Removed `render_cache.mat` and the three private render/rerender runtime files.
 
-## 1.0.2
+## 1.0.2 — 2026-09-24
 
 - Add the public CORE Octave I/O path to cache-only rerender, so direct rerenders resolve `gxtxt_ini_read` without relying on the standard-runner environment.
 
-## 1.0.1
+## 1.0.1 — 2026-09-24
 
 - Make the zero-dBc fundamental visibly marked in the default harmonic-level graph; the original zero-height bar falsely appeared absent under headless rendering.
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Added Dataset-native harmonic analysis for canonical `spectrum.table` inputs.
 - Added automatic and explicit fundamental detection.

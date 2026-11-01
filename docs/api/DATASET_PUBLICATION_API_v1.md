@@ -228,4 +228,4 @@ including fresh registry state, producer/namespace/immutable checks and rollback
 Other writers' successful records are preserved. The original producer-written
 module output contract remains; the framework cannot undo file writes a producer
 performed before submitting its v1 registration request. New structured producers
-should use Publication v2 staging. See [Dataset Publication v2](DATASET_PUBLICATION_API_v2.md).
+should use Publication v2 staging. See [Dataset transactions](DATASET_TRANSACTIONS_dev093.md).

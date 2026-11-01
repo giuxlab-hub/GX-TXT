@@ -1,5 +1,13 @@
 # Python Script Client v1
 
+The public runtime-safe `gxtxt_parameter_declare(name, type, *, required=False,
+default='', description='', values=None, min=None, max=None, alpha=None,
+allow_inherit=None)` declares literal typed parameters. Save-time static discovery
+never runs imports or source. Read effective values through
+`gxtxt_context()['parameters']`; `parameter_schema` exposes their origins.
+[Declaration syntax and conflict rules](SCRIPT_PARAMETER_DECLARATIONS_v1.md)
+apply to all admitted [Project sources](SCRIPT_PROJECTS_v1.md).
+
 SPDX-License-Identifier: GPL-3.0-or-later
 
 `analysis.python_script` runs registered Session `.py` scripts with the
@@ -134,13 +142,13 @@ arbitrary host command execution. The configured runtime supplies optional
 scientific packages; a missing import produces the normal Python traceback.
 
 The acceptance example is
-[the published Python Script Bridge example](../../examples/scripts/combined_stabilization.py).
+[`dataset_numpy_plot_file.py`](../../validation/gxtxt_python_script/dataset_numpy_plot_file.py).
 
 ## dev093 local bulk transport
 
 The public v1 client calls and complete default results are retained. Large arrays
 use scoped binary buffers and a per-job Octave context through existing provider
-bindings. The dev093 history describes
+bindings. The [dev093 history](SCIENTIFIC_BINARY_TRANSPORT_dev093.md) describes
 that implementation's resource limits, optional Signal uniform grids/result
 projection and output bindings. The current additive dtype contract is
 [scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).

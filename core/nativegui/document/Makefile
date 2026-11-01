@@ -2,12 +2,12 @@
 CPPFLAGS += $(shell pkg-config --cflags tcl libxml-2.0)
 CFLAGS += -O2 -g -fPIC -Wall -Wextra -Werror
 CXXFLAGS += -O2 -g -std=c++17 -fPIC -Wall -Wextra -Werror
-LDLIBS += $(shell pkg-config --libs tcl libxml-2.0)
+LDLIBS += $(shell pkg-config --libs tcl libxml-2.0 libcrypto)
 all: libgxtxt_document.so
 libgxtxt_document.so: render.o model.o source_capture.o
 	$(CXX) -shared -o $@ $^ $(LDLIBS)
 model.o: source_capture.h
-source_capture.o: source_capture.h
+source_capture.o: source_capture.h source_snapshot_cache_v1.inc
 clean:
 	rm -f render.o model.o source_capture.o libgxtxt_document.so
 .PHONY: all clean

@@ -208,7 +208,7 @@ proc ::GX::Workbench3D::organizationSelectable {id} {
     foreach layer [dict values [::GX::datasetPublicationV2DictDefault $model layers {}]] {if {$id in [dict get $layer members]&&![dict get $layer selectable]} {return 0}};return 1
 }
 rename ::GX::Workbench3D::hostSelection ::GX::Workbench3D::hostSelection_organization_base
-proc ::GX::Workbench3D::hostSelection {pick} {if {![organizationSelectable [dict get $pick layer_id]]} {set ::GX::Workbench3D::status "Object is not selectable in its Layer";return};tailcall hostSelection_organization_base $pick}
+proc ::GX::Workbench3D::hostSelection {pick} {if {[sketchPicked $pick]} return;if {![organizationSelectable [dict get $pick layer_id]]} {set ::GX::Workbench3D::status "Object is not selectable in its Layer";return};tailcall hostSelection_organization_base $pick}
 rename ::GX::Workbench3D::selectTree ::GX::Workbench3D::selectTree_organization_base
 proc ::GX::Workbench3D::selectTree {} {
     variable panel

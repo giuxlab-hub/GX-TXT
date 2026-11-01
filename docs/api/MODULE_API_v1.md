@@ -1,5 +1,21 @@
 # Standard Module API v1 — native profile used by GX-TXT Pipeline v0.6.1
 
+## P031 Preview activation scope correction
+
+For `kind=preview`, `moduleIsEnabled` and the public operational-info projection
+read framework Configuration `preview.module_enabled`. `moduleSetEnabled`
+changes its unsaved live choice under existing host/user authority; explicit
+Configuration Save persists it. Safe initial default is OFF. Dataset matching,
+dependency readiness, package/version admission and loaded state are separate.
+
+`selectedModuleIds` and Manifest serialization contain Session-scoped modules
+only. Legacy Preview IDs in Session/experiment selections are non-authoritative
+and are ignored without rewriting files on read. Non-Preview enabled/run flags,
+Acquisition ALWAYS policy, ordinary dependency validation and protected package
+ownership are preserved. A Session cannot enable a globally OFF Preview through
+a consumer dependency. Child Preview execution receives the existing validated,
+ephemeral framework snapshot; it is not a saved Session activation mechanism.
+
 ## Central and local Configuration contributions (dev094)
 
 Every installed descriptor participates in CORE Configuration discovery, including
@@ -361,7 +377,7 @@ CORE registers GRAPH_NOTES_API_v1, GRAPH_METADATA_API_v1, PORTABLE_RESOURCE_API_
 A module may add `[experiment_duplication] api_version=1` and exact provider/schema
 preparation declarations, independently of Module API v1 installation and execution.
 See [Experiment Duplication Policy API v1](EXPERIMENT_DUPLICATION_POLICY_API_v1.md)
-and the [Experiment Duplication Policy API](EXPERIMENT_DUPLICATION_POLICY_API_v1.md).
+and the [module author guide](../developer/EXPERIMENT_DUPLICATION_POLICY.md).
 Capability discovery is available headlessly and through Python/Octave. Missing or
 invalid declarations never make a module defective: Duplicate Experiment uses disabled
 selectable-module defaults, cleared Run/input bindings, and documented optional-state
@@ -383,7 +399,7 @@ The minimal policy authorizes no custom configuration copies. Only explicitly cl
 
 Do not implement private filesystem copying or ask CORE to recognize a module by name. Use capability/version discovery and the public `EXPERIMENT_DUPLICATION_POLICY_API_v1` validation contract. Generic scientific field types and declared bindings are excluded even when named `input`. Unlisted configuration resets; selectors and paths start empty. Module execution is explicitly reconfigured on fresh data.
 
-See [Experiment Duplication Policy API](EXPERIMENT_DUPLICATION_POLICY_API_v1.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.
+See [the policy author guide](../developer/EXPERIMENT_DUPLICATION_POLICY.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.
 
 ## dev089 Acquisition activation policy
 

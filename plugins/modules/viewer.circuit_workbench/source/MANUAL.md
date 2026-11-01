@@ -109,7 +109,7 @@ Press on the selected component and drag. The component, its label and attached 
 
 The following genuine native capture shows the synthetic R1 component DURING a drag, before release, with its connected wire following. It is an editing fixture, not a simulated or measured circuit result.
 
-![Synthetic schematic during a real native drag before release; selected resistor follows the pointer with a dashed selection frame](../images/live-drag-preview.png)
+![Synthetic schematic during a real native drag before release; selected resistor follows the pointer with a dashed selection frame](images/live-drag-preview.png)
 
 ## Connecting actual terminals
 
@@ -117,13 +117,13 @@ Choose Wire or press W while the schematic has focus. Small circles expose actua
 
 The pending orange route is temporary. Backspace removes a pending bend; Escape or changing tool cancels the route without adding a wire. A completed connection is retained through the existing canonical diagram and History owners. Select and Properties continue to edit an existing wire's actual endpoints and ordered route.
 
-![Actual electrical pin circles and a target crosshair at R1.p while an orange route is pending from C2.n](../images/wire-target-feedback.png)
+![Actual electrical pin circles and a target crosshair at R1.p while an orange route is pending from C2.n](images/wire-target-feedback.png)
 
 ## Navigation and smaller windows
 
 Use the mouse wheel over the schematic to change zoom. Choose Pan or press P and drag to change the view. F fits retained geometry. Escape returns to Select and cancels pending editing. These view operations preserve scientific component values and electrical topology. At smaller window sizes the inspector retains its existing scrolling; use it to reach explanatory text and lower controls. The icon palette, selection frame, pin circles and target crosshair remain available at the demonstrated 820 by 600 client size.
 
-![Synthetic schematic in an actual narrow native window after wheel zoom, with selected resistor, actual terminal markers and target crosshair](../images/narrow-selection-and-pins.png)
+![Synthetic schematic in an actual narrow native window after wheel zoom, with selected resistor, actual terminal markers and target crosshair](images/narrow-selection-and-pins.png)
 
 ## Source, History and saved Workspaces
 
@@ -576,29 +576,29 @@ These are genuine approved native captures from source-identical Circuit Workben
 
 1. Build the canonical electrical circuit with actual palette, source properties and routed endpoints. The retained example uses R1=1000 Ohm, C3=1e-6 F and a0-to-1 V pulse; names are shown as actually assigned, not rewritten for presentation.
 
-![Actual 1.4.0 native RC circuit, routed connections and original tools](../images/circuit-native.png)
+![Actual 1.4.0 native RC circuit, routed connections and original tools](images/circuit-native.png)
 
 2. Choose local explicitly, Prepare, Submit, wait for COMPLETED and Publish Dataset. Discover actual waveform variables and select the capacitor voltage using its real prepared netlist mapping. The native probe returns the exact canonical row and units.
 
-![Actual 1.4.0 local transient Dataset and native waveform probe](../images/local-waveform.png)
+![Actual 1.4.0 local transient Dataset and native waveform probe](images/local-waveform.png)
 
 3. Repeat through the genuinely authenticated dev108-loopback destination. It is a dedicated HTTPS agent on the same physical machine, not a second-host claim.
 
-![Actual 1.4.0 authenticated remote transient waveform and source-row probe](../images/remote-waveform.png)
+![Actual 1.4.0 authenticated remote transient waveform and source-row probe](images/remote-waveform.png)
 
 4. In Numeric, discover rows, bind t/X/observed explicitly and review the count. Evaluate the typed reference and Compare; both the absolute and unfavorable near-zero relative metrics remain visible.
 
-![Actual 1.4.0 public Numeric local 526-row residual comparison](../images/numeric-local-comparison.png)
+![Actual 1.4.0 public Numeric local 526-row residual comparison](images/numeric-local-comparison.png)
 
-![Actual 1.4.0 public Numeric remote 526-row residual comparison](../images/numeric-remote-comparison.png)
+![Actual 1.4.0 public Numeric remote 526-row residual comparison](images/numeric-remote-comparison.png)
 
 5. Statistics uses the actual public operation and its validated fields, units and availability reasons. It is distinct from a pointwise expression result and persists in its own immutable Statistical Document.
 
-![Actual 1.4.0 remote-source public statistics report](../images/numeric-remote-statistics.png)
+![Actual 1.4.0 remote-source public statistics report](images/numeric-remote-statistics.png)
 
 6. Explicitly Publish reference Dataset, choose x/value in Waveforms and bind the existing canonical Plot. Probe its real source rows; this is a separate reference trace, not an unimplemented automatic overlay.
 
-![Actual 1.4.0 canonical reference Dataset Plot and exact source-row probe](../images/reference-canonical-plot.png)
+![Actual 1.4.0 canonical reference Dataset Plot and exact source-row probe](images/reference-canonical-plot.png)
 
 ## Recovery checklist
 

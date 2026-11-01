@@ -1,0 +1,49 @@
+{
+  "schema": "gxtxt.viewer_generation.v1",
+  "generated_changes": [
+    {
+      "path": "generated/handler_defaults.tcl",
+      "before": null,
+      "after": "f87f4ec2cd7b503948284cdab81c29e1bdb96ced462834ecc1ae7d2330e18c9d"
+    },
+    {
+      "path": "gui/design.tcldict",
+      "before": null,
+      "after": "2e6ef2659ee48d5ab19bd0f0c6597aa97f7ef6d859b0d41d9c8eaad9b2a381b8"
+    },
+    {
+      "path": "api/viewer.tcl",
+      "before": null,
+      "after": "e43c23b2f921f22d2b1004c4917dd2c3a3d3c29b92d11be25bab79cf766c7adb"
+    },
+    {
+      "path": "module.ini",
+      "before": null,
+      "after": "12b55d772ce06bf7557e76e7053aadc0f7eddf4ba1a1d25b4a86d145cac7a0ae"
+    },
+    {
+      "path": "plugin-package.ini",
+      "before": null,
+      "after": "66b5b340404196bfef22eb6158defa610754afaf256737f3144f4302803584c6"
+    },
+    {
+      "path": "API_CONTRACTS.json",
+      "before": null,
+      "after": "9d32a136a787e98fdcf937a3373442f13eca2fc533026969b37e42e39e4dabb9"
+    },
+    {
+      "path": "MANUAL.md",
+      "before": null,
+      "after": "3a2267763fa5fdab9ff089e79bc523763c364dd4a964a563027babac31b08392"
+    },
+    {
+      "path": "LICENSE",
+      "before": null,
+      "after": "ca109201af291166c6ea4d0e97b2ef035ed7d4e16f8b05c0e2c514cd56b28052"
+    }
+  ],
+  "handwritten_handlers_sha256": "52d1dc13eb33c20cfb4b7f1df5dabf18616e09353f8ea7a05c5738ca2bea8914",
+  "handwritten_handlers_overwritten": false,
+  "gui_owner": "VIEWER_GUI_HOST_API_v1",
+  "source_directory": "/srv/gxtxt/agents/scratch/DEV111-P025-MAIN2/framework/examples/api_catalog_navigation/generated"
+}

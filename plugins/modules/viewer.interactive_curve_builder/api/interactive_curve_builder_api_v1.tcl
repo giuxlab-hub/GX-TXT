@@ -595,8 +595,8 @@ proc ::GX::InteractiveCurveBuilder::_uiClosePreview {w} {
     if {[info exists ui($w,preview_image)] && $ui($w,preview_image) ne ""} {catch {image delete $ui($w,preview_image)}; set ui($w,preview_image) ""}
     if {[info exists ui($w,preview_dir)] && $ui($w,preview_dir) ne ""} {catch {file delete -force -- $ui($w,preview_dir)}; set ui($w,preview_dir) ""}
 }
-proc ::GX::InteractiveCurveBuilder::_uiClose {w} {
-    _uiDispose $w
+proc ::GX::InteractiveCurveBuilder::_uiClose {w {saveChanges 1}} {
+    _uiDispose $w $saveChanges
     _uiClosePreview $w
     if {[winfo exists $w]} {destroy $w}
 }
@@ -675,7 +675,10 @@ proc ::GX::InteractiveCurveBuilder::open {{context {}}} {
     set session [_session]
     set w .interactive_curve_builder
     set requested [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
-    if {[winfo exists $w] && $requested ne {} && $requested ne $ui($w,document)} {_uiClose $w}
+    if {[winfo exists $w] && $requested ne {} && $requested ne $ui($w,document)} {
+        if {![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $w] opening]} {return $w}
+        _uiClose $w 0
+    }
     if {[winfo exists $w]} {raise $w; focus $w; return $w}
     toplevel $w
     wm title $w "Interactive Curve Builder"
@@ -693,7 +696,7 @@ proc ::GX::InteractiveCurveBuilder::open {{context {}}} {
     set ui($w,selected) [dict create]
     set ui($w,preview_dir) ""
     set ui($w,preview_image) ""
-    wm protocol $w WM_DELETE_WINDOW [list ::GX::InteractiveCurveBuilder::_uiClose $w]
+    wm protocol $w WM_DELETE_WINDOW [list ::GX::InteractiveCurveBuilder::_uiWorkspaceClose $w]
     if {[dict exists $context dataset_id]} {set ui($w,dataset) [dict get $context dataset_id]}
     if {[dict exists $context source_dataset_id]} {set ui($w,dataset) [dict get $context source_dataset_id]}
     ttk::frame $w.source -padding 8

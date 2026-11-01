@@ -1,5 +1,5 @@
 {
-  "framework_version": "0.9.8.10-dev-109",
+  "framework_version": "0.9.8.10-dev-111",
   "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1",
   "callback_contract": {
     "api_id": "SCRIPT_CALLBACK_API_v1",
@@ -44,6 +44,43 @@
         "reason": "Handler registration, probe process and import dispatch are host-owned."
       },
       "public_operations": {}
+    },
+    {
+      "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "documentation_ref": "docs/api/ACQUISITION_HANDLER_PLUGIN_API_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "No Script Bridge registration. Actual C++ Acquisition producers use the separately admitted profile-scoped SDK; Python/Tcl subordinate helpers have no source/output/publication grants."
+      },
+      "restricted_native_route": {
+        "target": "acquisition_v1",
+        "header": "core/development/sdk/gxtxt_acquisition_sdk_v1.hpp",
+        "methods": [
+          "source_info",
+          "source_read",
+          "progress",
+          "cancelled",
+          "prepare_output",
+          "output_write",
+          "output_finish",
+          "helper_call"
+        ],
+        "generic_invoke": false,
+        "admission": "actual producer/profile/request/phase capabilities, source SHA and live lifecycle"
+      },
+      "project_test": {
+        "operation": "VIEWER_DEVELOPMENT_API_v1.test",
+        "request_schema": "gxtxt.acquisition_project_test.v1",
+        "session_created": false,
+        "module_installed": false,
+        "publication": false
+      }
     },
     {
       "api_id": "ANALYSIS_SOURCE_MAP_API_v1",
@@ -308,7 +345,7 @@
       "documentation_ref": "docs/api/CANONICAL_DATASET_API_v2.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -316,6 +353,29 @@
         "sha256": "62e341aa89654c86f742407af5cf05a0235182c2478f79c82e10dc353c128a57"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "COMPARISON_PLOT_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "script_registered": false,
+      "operations": [],
+      "native_client_operations": [
+        "comparison_command"
+      ],
+      "documented_public_commands": [
+        "comparisonPlotSourceDataset",
+        "comparisonPlotSourceLibrary",
+        "comparisonPlotValidate",
+        "comparisonPlotPrepare",
+        "comparisonPlotSpec"
+      ],
+      "documentation": "docs/api/COMPARISON_PLOT_API_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "Finite native source/form capabilities and trusted host operations; no Script Bridge registration or arbitrary Tcl/filesystem access is implied."
+      }
     },
     {
       "api_id": "CONFIGURATION_API_v1",
@@ -386,6 +446,7 @@
       ],
       "operations": [
         "choices",
+        "describe",
         "field",
         "known",
         "list",
@@ -394,6 +455,10 @@
       ],
       "operation_languages": {
         "choices": [
+          "Octave",
+          "Python"
+        ],
+        "describe": [
           "Octave",
           "Python"
         ],
@@ -470,6 +535,10 @@
         "satisfies_any": {
           "status": "script_callable",
           "script_operation": "satisfies_any"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
         }
       },
       "public_operations": {
@@ -529,14 +598,84 @@
       "documentation_ref": "docs/api/CONTRACT_REGISTRY_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "CONTRACT_VISUALIZER_API_v1",
+      "api_version": 1,
+      "provider": "contract_visualizer",
+      "status": "newly_bridged",
+      "operations": [
+        "candidates",
+        "preference_get",
+        "preference_set",
+        "providers",
+        "resolve"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "candidates": [
+          "Octave",
+          "Python"
+        ],
+        "preference_get": [
+          "Octave",
+          "Python"
+        ],
+        "preference_set": [
+          "Octave",
+          "Python"
+        ],
+        "providers": [
+          "Octave",
+          "Python"
+        ],
+        "resolve": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/CONTRACT_VISUALIZER_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "candidates": {
+          "status": "script_callable",
+          "script_operation": "candidates"
+        },
+        "preference_get": {
+          "status": "script_callable",
+          "script_operation": "preference_get"
+        },
+        "preference_set": {
+          "status": "script_callable",
+          "script_operation": "preference_set"
+        },
+        "providers": {
+          "status": "script_callable",
+          "script_operation": "providers"
+        },
+        "resolve": {
+          "status": "script_callable",
+          "script_operation": "resolve"
+        }
+      },
+      "registration_source": {
+        "path": "core/script_bindings/public_core_services.py",
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
+      }
     },
     {
       "api_id": "CORE_PARAMETER_SERVICE_v1",
@@ -574,7 +713,7 @@
       "documentation_ref": "docs/api/CORE_PARAMETER_SERVICE_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "session_list": {
@@ -731,17 +870,17 @@
       "operations": [],
       "script_languages": [],
       "operation_languages": {},
-      "registration_source": {
-        "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
-        "sha256": "589d4053884942b35909b8b68af5af560da87eb859bf8eba208258cdc2cb9f87"
-      },
-      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "verification": "Historical unavailable registration identity only; not a current source pin, admission or functional acceptance.",
       "api_policy": {
         "status": "unavailable_historical_registration",
         "reason": "Historical ledger entry is not registered by the delivered independent Digitalizer package. Current uncertainty functionality is explicitly declared under CURVE_DIGITIZER_UNCERTAINTY_API_v1; no alias or automatic rebinding is provided."
       },
       "operation_coverage": {},
-      "public_operations": {}
+      "public_operations": {},
+      "historical_registration_source": {
+        "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
+        "sha256": "589d4053884942b35909b8b68af5af560da87eb859bf8eba208258cdc2cb9f87"
+      }
     },
     {
       "api_id": "CURVE_DIGITIZER_DATASET_SCHEMA_API_v1",
@@ -800,7 +939,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "has_manifest": {
@@ -876,7 +1015,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "diagnostics": {
@@ -964,7 +1103,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "uncertainty_available": {
@@ -1114,7 +1253,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "api_info": {
@@ -1273,7 +1412,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "cancel": {
@@ -1496,7 +1635,7 @@
       },
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "api_info": {
@@ -1674,7 +1813,7 @@
       "documentation_ref": "docs/api/DATASET_CURVE_FIT_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "fitPrimitive": {
@@ -2487,7 +2626,7 @@
       "documentation_ref": "docs/api/DATASET_FILE_PUBLICATION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -2495,6 +2634,125 @@
         "sha256": "b0e40cfd3908377f7b451f0495a535b32d0421f528a769d19dc90de9dcf76cee"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "DATASET_GROUP_API_v1",
+      "api_version": 1,
+      "provider": "dataset_group",
+      "status": "newly_bridged",
+      "operations": [
+        "create",
+        "get",
+        "list",
+        "review"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "create": [
+          "Octave",
+          "Python"
+        ],
+        "get": [
+          "Octave",
+          "Python"
+        ],
+        "list": [
+          "Octave",
+          "Python"
+        ],
+        "review": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/DATASET_GROUP_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "create": {
+          "status": "script_callable",
+          "script_operation": "create"
+        },
+        "get": {
+          "status": "script_callable",
+          "script_operation": "get"
+        },
+        "list": {
+          "status": "script_callable",
+          "script_operation": "list"
+        },
+        "review": {
+          "status": "script_callable",
+          "script_operation": "review"
+        },
+        "datasetGroupProducerReviewV1": {
+          "status": "script_callable",
+          "script_operation": "review"
+        },
+        "datasetGroupProducerCreateV1": {
+          "status": "script_callable",
+          "script_operation": "create"
+        },
+        "datasetGroupGet": {
+          "status": "script_callable",
+          "script_operation": "get"
+        },
+        "datasetGroupList": {
+          "status": "script_callable",
+          "script_operation": "list"
+        },
+        "datasetGroupCreate": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupMove": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupDetach": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupUngroup": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupHostReviewV1": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupHostCreateV1": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit host/admin lifecycle or reviewed cross-producer authority is not granted by the producer facade."
+        },
+        "datasetGroupForDataset": {
+          "status": "not_yet_bridged",
+          "reason": "No direct Script operation; enumeration/get are available without claiming command equivalence."
+        }
+      },
+      "documented_public_commands": [
+        "datasetGroupCreate",
+        "datasetGroupDetach",
+        "datasetGroupForDataset",
+        "datasetGroupGet",
+        "datasetGroupHostCreateV1",
+        "datasetGroupHostReviewV1",
+        "datasetGroupList",
+        "datasetGroupMove",
+        "datasetGroupProducerCreateV1",
+        "datasetGroupProducerReviewV1",
+        "datasetGroupUngroup"
+      ],
+      "scope_policy": "CORE-bound producer, current Session lifetime, actual owner/Namespace, exact full revisions and payload fingerprints; owned creation is opt-in.",
+      "registration_source": {
+        "path": "core/script_bindings/dataset_group.py",
+        "sha256": "13e5eff5270fcdb2998f59c9704912db3f350afaaff97a02827faba0fa6222fa"
+      }
     },
     {
       "api_id": "DATASET_METADATA_API_v1",
@@ -2846,7 +3104,7 @@
       "documentation_ref": "docs/api/DATASET_METADATA_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -2891,7 +3149,7 @@
       "documentation_ref": "docs/api/DATASET_NAMESPACE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "current_get": {
@@ -3070,7 +3328,7 @@
       },
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "page": {
@@ -3110,6 +3368,7 @@
         "declare_variable",
         "diagnostics",
         "finalize",
+        "publish_batch",
         "publish_managed_columns",
         "publish_managed_variables",
         "publish_series",
@@ -3147,6 +3406,10 @@
           "Python"
         ],
         "finalize": [
+          "Octave",
+          "Python"
+        ],
+        "publish_batch": [
           "Octave",
           "Python"
         ],
@@ -3288,9 +3551,19 @@
         "writer_capabilities": {
           "status": "script_callable",
           "script_operation": "writer_capabilities"
+        },
+        "publish_batch": {
+          "status": "script_callable",
+          "script_operation": "publish_batch"
+        },
+        "datasetProducerPublishBatchV1": {
+          "status": "script_callable",
+          "script_operation": "publish_batch",
+          "scope": "Existing create-only Publication v2 engine; optional Group must contain exactly all new outputs; one authority rollback."
         }
       },
       "documented_public_commands": [
+        "datasetProducerPublishBatchV1",
         "datasetPublicationV2Abort",
         "datasetPublicationV2Append",
         "datasetPublicationV2BatchPreflight",
@@ -3425,12 +3698,12 @@
       "documentation_ref": "docs/api/DATASET_PUBLICATION_API_v2.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/dataset_publication.py",
-        "sha256": "c7a141722cbb99973bb8a585d403eeb8583eba20cd34bf85331d8999b348519e"
+        "sha256": "4f0a85bd7f943c48baf5cf49dc7eb5747727aee30308af27e504aa7b0824c6bd"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -3483,7 +3756,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "describe": {
@@ -3628,7 +3901,7 @@
       "documentation_ref": "docs/api/DATASET_SELECTION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -3745,7 +4018,7 @@
       },
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "close_view": {
@@ -3884,7 +4157,7 @@
       "documentation_ref": "docs/api/DATASET_VARIABLE_SCHEMA_API_v3.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -3920,7 +4193,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "describe": {
@@ -4012,12 +4285,12 @@
       "documentation_ref": "docs/api/DOCUMENTATION_BROWSER_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4035,6 +4308,90 @@
         "status": "not_yet_bridged",
         "reason": "No current Script registration; public host API inspection is required"
       }
+    },
+    {
+      "api_id": "DOCUMENT_SOURCE_API_v1",
+      "api_version": 1,
+      "provider": "document_source",
+      "status": "newly_bridged",
+      "operations": [
+        "describe",
+        "read",
+        "write"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "describe": [
+          "Octave",
+          "Python"
+        ],
+        "read": [
+          "Octave",
+          "Python"
+        ],
+        "write": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/DOCUMENT_SOURCE_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "read": {
+          "status": "script_callable",
+          "script_operation": "read"
+        },
+        "write": {
+          "status": "script_callable",
+          "script_operation": "write"
+        },
+        "documentEditorMount": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        },
+        "documentEditorCommand": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        },
+        "markupRenderStringToWidget": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        },
+        "markdownNavigationContext": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        },
+        "markupNavigationInspect": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        },
+        "markupNavigationFollow": {
+          "status": "intentionally_host_only",
+          "reason": "Shared CORE widget/navigation owner; existing Script describe/read/write grants remain unchanged."
+        }
+      },
+      "registration_source": {
+        "path": "core/script_bindings/public_core_services.py",
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
+      },
+      "documented_public_commands": [
+        "documentEditorCommand",
+        "documentEditorMount",
+        "markdownNavigationContext",
+        "markupNavigationFollow",
+        "markupNavigationInspect",
+        "markupRenderStringToWidget"
+      ]
     },
     {
       "api_id": "ELECTROMAGNETICS_STUDIO_API_v1",
@@ -4138,7 +4495,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "api_info": {
@@ -4281,12 +4638,12 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "info": {
@@ -4458,7 +4815,7 @@
       "documentation_ref": "docs/api/GRAPH_METADATA_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "info": {
@@ -4505,7 +4862,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4592,7 +4949,7 @@
       "documentation_ref": "docs/api/GRAPH_NOTES_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "clear": {
@@ -4639,7 +4996,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4843,12 +5200,12 @@
       "documentation_ref": "docs/api/GRAPH_SERIES_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4993,12 +5350,12 @@
       "documentation_ref": "docs/api/GRAPH_WORKFLOW_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -5049,12 +5406,12 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "current": {
@@ -5235,12 +5592,12 @@
       "documentation_ref": "docs/api/INTERACTIVE_DOCUMENT_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -5310,7 +5667,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "references": {
@@ -5410,12 +5767,12 @@
       "documentation_ref": "docs/api/LEVEL_SCALE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -6180,7 +6537,7 @@
       "documentation_ref": "plugins/modules/math.magnetics/MAGNETICS_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
@@ -6235,7 +6592,7 @@
       "documentation_ref": "docs/api/MANAGED_RESOURCE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "info": {
@@ -6423,14 +6780,49 @@
       "documentation_ref": "docs/api/MODULE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "MODULE_TARGETED_ANALYSIS_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "script_registered": false,
+      "operations": [],
+      "script_languages": [],
+      "native_client_operations": [
+        "analysis_command"
+      ],
+      "documented_public_commands": [
+        "moduleAnalysisCapabilities",
+        "moduleAnalysisSubmit",
+        "moduleAnalysisStatus",
+        "moduleAnalysisCancel",
+        "viewerGuiDesignAnalysisCommand"
+      ],
+      "documentation_ref": "docs/api/MODULE_TARGETED_ANALYSIS_API_v1.md",
+      "restricted_native_route": {
+        "methods": [
+          "Host.analysis_command",
+          "Host.analysis_result"
+        ],
+        "abi_operations": [
+          49
+        ],
+        "generic_invoke": false,
+        "admission": "Exact declared form/action/effect, current source/result pins and separate module/Library grants"
+      },
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "Existing targeted host queue and finite explicitly granted native form; no direct Script Bridge or arbitrary Tcl/queue access"
+      }
     },
     {
       "api_id": "NATIVE2D_EXPORT_API_v1",
@@ -8350,7 +8742,7 @@
       "scope_policy": "Execution-owned opaque scene and geometry handles; CORE document generation/revision and Session lifetime validation.",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "affine": {
@@ -10861,7 +11253,7 @@
       "scope_policy": "Execution-owned opaque scene and geometry handles; CORE document generation/revision and Session lifetime validation.",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "align_three_points": {
@@ -11373,7 +11765,7 @@
       "documentation_ref": "plugins/modules/viewer.native_3d/NATIVE_3D_VIEWER_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
@@ -11398,6 +11790,193 @@
           "status": "intentionally_host_only",
           "reason": "Named renderer controls require a live GUI host; script binding exposes source identity."
         }
+      }
+    },
+    {
+      "api_id": "NATIVE_WORKSPACE_API_v1",
+      "api_version": 1,
+      "provider": "native_workspace",
+      "status": "newly_bridged",
+      "operations": [
+        "create",
+        "delete",
+        "flush",
+        "get",
+        "history_delete",
+        "history_get",
+        "history_list",
+        "history_rename",
+        "history_save",
+        "metadata",
+        "notes",
+        "properties",
+        "query",
+        "rename",
+        "resource_copy_tree",
+        "save",
+        "save_as",
+        "status"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "create": [
+          "Octave",
+          "Python"
+        ],
+        "delete": [
+          "Octave",
+          "Python"
+        ],
+        "flush": [
+          "Octave",
+          "Python"
+        ],
+        "get": [
+          "Octave",
+          "Python"
+        ],
+        "history_delete": [
+          "Octave",
+          "Python"
+        ],
+        "history_get": [
+          "Octave",
+          "Python"
+        ],
+        "history_list": [
+          "Octave",
+          "Python"
+        ],
+        "history_rename": [
+          "Octave",
+          "Python"
+        ],
+        "history_save": [
+          "Octave",
+          "Python"
+        ],
+        "metadata": [
+          "Octave",
+          "Python"
+        ],
+        "notes": [
+          "Octave",
+          "Python"
+        ],
+        "properties": [
+          "Octave",
+          "Python"
+        ],
+        "query": [
+          "Octave",
+          "Python"
+        ],
+        "rename": [
+          "Octave",
+          "Python"
+        ],
+        "resource_copy_tree": [
+          "Octave",
+          "Python"
+        ],
+        "save": [
+          "Octave",
+          "Python"
+        ],
+        "save_as": [
+          "Octave",
+          "Python"
+        ],
+        "status": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/NATIVE_WORKSPACE_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "create": {
+          "status": "script_callable",
+          "script_operation": "create"
+        },
+        "delete": {
+          "status": "script_callable",
+          "script_operation": "delete"
+        },
+        "flush": {
+          "status": "script_callable",
+          "script_operation": "flush"
+        },
+        "get": {
+          "status": "script_callable",
+          "script_operation": "get"
+        },
+        "history_delete": {
+          "status": "script_callable",
+          "script_operation": "history_delete"
+        },
+        "history_get": {
+          "status": "script_callable",
+          "script_operation": "history_get"
+        },
+        "history_list": {
+          "status": "script_callable",
+          "script_operation": "history_list"
+        },
+        "history_rename": {
+          "status": "script_callable",
+          "script_operation": "history_rename"
+        },
+        "history_save": {
+          "status": "script_callable",
+          "script_operation": "history_save"
+        },
+        "metadata": {
+          "status": "script_callable",
+          "script_operation": "metadata"
+        },
+        "notes": {
+          "status": "script_callable",
+          "script_operation": "notes"
+        },
+        "properties": {
+          "status": "script_callable",
+          "script_operation": "properties"
+        },
+        "query": {
+          "status": "script_callable",
+          "script_operation": "query"
+        },
+        "rename": {
+          "status": "script_callable",
+          "script_operation": "rename"
+        },
+        "resource_copy_tree": {
+          "status": "script_callable",
+          "script_operation": "resource_copy_tree"
+        },
+        "save": {
+          "status": "script_callable",
+          "script_operation": "save"
+        },
+        "save_as": {
+          "status": "script_callable",
+          "script_operation": "save_as"
+        },
+        "status": {
+          "status": "script_callable",
+          "script_operation": "status"
+        }
+      },
+      "registration_source": {
+        "path": "core/script_bindings/native_workspace.py",
+        "sha256": "418345e7828750f777aa45e487f3edbb745c5fe3a22b816e471ac7983d28a53b"
       }
     },
     {
@@ -11441,7 +12020,7 @@
       "documentation_ref": "docs/api/NOTE_DOCUMENT_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "read": {
@@ -13235,7 +13814,7 @@
       "documentation_ref": "plugins/modules/math.numeric/NUMERIC_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
@@ -13286,12 +13865,12 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "dataset": {
@@ -13455,12 +14034,12 @@
       "documentation_ref": "docs/api/PARALLEL_EXECUTION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -13650,7 +14229,7 @@
       "documentation_ref": "docs/api/PLOT_ANNOTATION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "add": {
@@ -13729,7 +14308,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -13774,6 +14353,9 @@
         "read_plot",
         "render",
         "rerender",
+        "set_panel_axis",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "validate_spec"
       ],
       "script_languages": [
@@ -13798,6 +14380,18 @@
           "Python"
         ],
         "rerender": [
+          "Octave",
+          "Python"
+        ],
+        "set_panel_axis": [
+          "Octave",
+          "Python"
+        ],
+        "shared_x_axis_get": [
+          "Octave",
+          "Python"
+        ],
+        "shared_x_axis_set": [
           "Octave",
           "Python"
         ],
@@ -13872,12 +14466,28 @@
           "script_operation": "validate_spec"
         },
         "sharedXAxisGet": {
-          "status": "intentionally_host_only",
-          "reason": "Shared-X PlotSpec editing is exposed through the module and framework GUI; no new Script Bridge operation is registered."
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
         },
         "sharedXAxisSet": {
-          "status": "intentionally_host_only",
-          "reason": "Shared-X PlotSpec editing is exposed through the module and framework GUI; no new Script Bridge operation is registered."
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
+        },
+        "set_panel_axis": {
+          "status": "script_callable",
+          "script_operation": "set_panel_axis"
+        },
+        "shared_x_axis_get": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
+        },
+        "shared_x_axis_set": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
+        },
+        "setPanelAxis": {
+          "status": "script_callable",
+          "script_operation": "set_panel_axis"
         }
       },
       "documented_public_commands": [
@@ -13890,7 +14500,10 @@
         "PlotDatasetAPIv2::requireCapability",
         "PlotDatasetAPIv2::rerender",
         "PlotDatasetAPIv2::supports",
-        "PlotDatasetAPIv2::validateSpec"
+        "PlotDatasetAPIv2::validateSpec",
+        "setPanelAxis",
+        "sharedXAxisGet",
+        "sharedXAxisSet"
       ],
       "public_operations": {
         "api_info": {
@@ -13969,12 +14582,12 @@
       "documentation_ref": "docs/api/PLOT_DATASET_API_v2.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
         "path": "plugins/modules/plot.dataset/api/script_bridge_binding.py",
-        "sha256": "fa05a05587e5d50be89d0fdc923cf609604d3cf3b3b29880563cd9e68c823c63"
+        "sha256": "8faeb1e3d3590d13ecaca23cc922f6c5edf97283c322d6cacecc20cbd080765c"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14014,6 +14627,8 @@
         "set_plot_enabled",
         "set_series_panel",
         "set_series_presentation",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "source_fingerprint",
         "sync_interactive",
         "upsert_plot",
@@ -14141,6 +14756,14 @@
           "Python"
         ],
         "set_series_presentation": [
+          "Octave",
+          "Python"
+        ],
+        "shared_x_axis_get": [
+          "Octave",
+          "Python"
+        ],
+        "shared_x_axis_set": [
           "Octave",
           "Python"
         ],
@@ -14415,12 +15038,12 @@
           "reason": "Destination-policy validation is required before scripts may invoke this filesystem-writing operation (deferred SB-014)."
         },
         "sharedXAxisGet": {
-          "status": "intentionally_host_only",
-          "reason": "Shared-X PlotSpec editing is exposed through the module and framework GUI; no new Script Bridge operation is registered."
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
         },
         "sharedXAxisSet": {
-          "status": "intentionally_host_only",
-          "reason": "Shared-X PlotSpec editing is exposed through the module and framework GUI; no new Script Bridge operation is registered."
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
         },
         "add_panel": {
           "status": "script_callable",
@@ -14549,6 +15172,14 @@
         "renderTransientIndependentCurves2D": {
           "status": "intentionally_not_script_safe",
           "reason": "Caller-owned destination and preview lifetime require host filesystem policy."
+        },
+        "shared_x_axis_get": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
+        },
+        "shared_x_axis_set": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
         }
       },
       "public_operations": {
@@ -14944,14 +15575,19 @@
       "documentation_ref": "docs/api/PLOT_DATASET_API_v3.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
         "path": "plugins/modules/plot.dataset/api/script_bridge_binding.py",
-        "sha256": "fa05a05587e5d50be89d0fdc923cf609604d3cf3b3b29880563cd9e68c823c63"
+        "sha256": "8faeb1e3d3590d13ecaca23cc922f6c5edf97283c322d6cacecc20cbd080765c"
       },
-      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "documented_public_commands": [
+        "setPanelAxis",
+        "sharedXAxisGet",
+        "sharedXAxisSet"
+      ]
     },
     {
       "api_id": "PLOT_DATASET_API_v4",
@@ -14992,6 +15628,8 @@
         "set_plot_enabled",
         "set_series_panel",
         "set_series_presentation",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "source_fingerprint",
         "sync_interactive",
         "upsert_plot",
@@ -15126,6 +15764,14 @@
           "Octave",
           "Python"
         ],
+        "shared_x_axis_get": [
+          "Octave",
+          "Python"
+        ],
+        "shared_x_axis_set": [
+          "Octave",
+          "Python"
+        ],
         "source_fingerprint": [
           "Octave",
           "Python"
@@ -15150,7 +15796,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "add_panel": {
@@ -15292,6 +15938,26 @@
         "cell_field_spec": {
           "status": "script_callable",
           "script_operation": "cell_field_spec"
+        },
+        "shared_x_axis_get": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
+        },
+        "shared_x_axis_set": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
+        },
+        "sharedXAxisGet": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_get"
+        },
+        "sharedXAxisSet": {
+          "status": "script_callable",
+          "script_operation": "shared_x_axis_set"
+        },
+        "setPanelAxis": {
+          "status": "script_callable",
+          "script_operation": "set_panel_axis"
         }
       },
       "public_operations": {
@@ -15435,7 +16101,12 @@
           "status": "script_callable",
           "script_operation": "cell_field_spec"
         }
-      }
+      },
+      "documented_public_commands": [
+        "setPanelAxis",
+        "sharedXAxisGet",
+        "sharedXAxisSet"
+      ]
     },
     {
       "api_id": "PLOT_MODULE_API_v1",
@@ -15621,12 +16292,12 @@
       "documentation_ref": "docs/api/PLOT_MODULE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15702,6 +16373,31 @@
       }
     },
     {
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "documentation_ref": "docs/api/SCIENTIFIC_PREVIEW_NATIVE_CLIENT_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "Trusted composition and finite explicitly admitted restricted native client; no generic Script or Tcl evaluation grant."
+      },
+      "documented_public_commands": [],
+      "operation_coverage": {},
+      "restricted_native_route": {
+        "methods": [
+          "Host.scientific_preview_command",
+          "Host.scientific_frame_bind",
+          "Host.scientific_preview_result"
+        ],
+        "features": [],
+        "generic_invoke": false
+      }
+    },
+    {
       "api_id": "PROGRESS_API_v1",
       "api_version": 1,
       "provider": "progress",
@@ -15745,12 +16441,12 @@
       "documentation_ref": "docs/api/PROGRESS_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15816,12 +16512,12 @@
       "documentation_ref": "docs/api/PROJECT_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -16317,7 +17013,7 @@
       "documentation_ref": "plugins/modules/math.rf_network/RF_NETWORK_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
@@ -16458,7 +17154,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "cancel": {
@@ -16708,7 +17404,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "browse": {
@@ -16764,6 +17460,220 @@
       }
     },
     {
+      "api_id": "SCIENTIFIC_LIBRARY_MANAGER_API_v1",
+      "api_version": 1,
+      "provider": "scientific_library_manager",
+      "status": "newly_bridged",
+      "operations": [
+        "add_entry",
+        "api_info",
+        "catalog_page",
+        "compatible_libraries",
+        "credential_lock",
+        "credential_status",
+        "credential_unlock",
+        "effective_root",
+        "entries_page",
+        "entry_info",
+        "export_entry",
+        "legacy_entries",
+        "library_capabilities",
+        "library_info",
+        "list_installed_libraries",
+        "list_libraries",
+        "list_types",
+        "provider_capabilities",
+        "read_entry",
+        "remove_entry",
+        "search_entries"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "add_entry": [
+          "Octave",
+          "Python"
+        ],
+        "api_info": [
+          "Octave",
+          "Python"
+        ],
+        "catalog_page": [
+          "Octave",
+          "Python"
+        ],
+        "compatible_libraries": [
+          "Octave",
+          "Python"
+        ],
+        "credential_lock": [
+          "Octave",
+          "Python"
+        ],
+        "credential_status": [
+          "Octave",
+          "Python"
+        ],
+        "credential_unlock": [
+          "Octave",
+          "Python"
+        ],
+        "effective_root": [
+          "Octave",
+          "Python"
+        ],
+        "entries_page": [
+          "Octave",
+          "Python"
+        ],
+        "entry_info": [
+          "Octave",
+          "Python"
+        ],
+        "export_entry": [
+          "Octave",
+          "Python"
+        ],
+        "legacy_entries": [
+          "Octave",
+          "Python"
+        ],
+        "library_capabilities": [
+          "Octave",
+          "Python"
+        ],
+        "library_info": [
+          "Octave",
+          "Python"
+        ],
+        "list_installed_libraries": [
+          "Octave",
+          "Python"
+        ],
+        "list_libraries": [
+          "Octave",
+          "Python"
+        ],
+        "list_types": [
+          "Octave",
+          "Python"
+        ],
+        "provider_capabilities": [
+          "Octave",
+          "Python"
+        ],
+        "read_entry": [
+          "Octave",
+          "Python"
+        ],
+        "remove_entry": [
+          "Octave",
+          "Python"
+        ],
+        "search_entries": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/SCIENTIFIC_LIBRARY_MANAGER_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "add_entry": {
+          "status": "script_callable",
+          "script_operation": "add_entry"
+        },
+        "api_info": {
+          "status": "script_callable",
+          "script_operation": "api_info"
+        },
+        "catalog_page": {
+          "status": "script_callable",
+          "script_operation": "catalog_page"
+        },
+        "compatible_libraries": {
+          "status": "script_callable",
+          "script_operation": "compatible_libraries"
+        },
+        "credential_lock": {
+          "status": "script_callable",
+          "script_operation": "credential_lock"
+        },
+        "credential_status": {
+          "status": "script_callable",
+          "script_operation": "credential_status"
+        },
+        "credential_unlock": {
+          "status": "script_callable",
+          "script_operation": "credential_unlock"
+        },
+        "effective_root": {
+          "status": "script_callable",
+          "script_operation": "effective_root"
+        },
+        "entries_page": {
+          "status": "script_callable",
+          "script_operation": "entries_page"
+        },
+        "entry_info": {
+          "status": "script_callable",
+          "script_operation": "entry_info"
+        },
+        "export_entry": {
+          "status": "script_callable",
+          "script_operation": "export_entry"
+        },
+        "legacy_entries": {
+          "status": "script_callable",
+          "script_operation": "legacy_entries"
+        },
+        "library_capabilities": {
+          "status": "script_callable",
+          "script_operation": "library_capabilities"
+        },
+        "library_info": {
+          "status": "script_callable",
+          "script_operation": "library_info"
+        },
+        "list_installed_libraries": {
+          "status": "script_callable",
+          "script_operation": "list_installed_libraries"
+        },
+        "list_libraries": {
+          "status": "script_callable",
+          "script_operation": "list_libraries"
+        },
+        "list_types": {
+          "status": "script_callable",
+          "script_operation": "list_types"
+        },
+        "provider_capabilities": {
+          "status": "script_callable",
+          "script_operation": "provider_capabilities"
+        },
+        "read_entry": {
+          "status": "script_callable",
+          "script_operation": "read_entry"
+        },
+        "remove_entry": {
+          "status": "script_callable",
+          "script_operation": "remove_entry"
+        },
+        "search_entries": {
+          "status": "script_callable",
+          "script_operation": "search_entries"
+        }
+      },
+      "registration_source": {
+        "path": "core/script_bindings/scientific_library_manager.py",
+        "sha256": "1cf64689bbbe1c9646b1bf471fc7df735d5166ef871ee059d11dc1e51fc64526"
+      }
+    },
+    {
       "api_id": "SCIENTIFIC_RECIPE_API_v1",
       "api_version": 1,
       "provider": "scientific_recipe",
@@ -16799,7 +17709,7 @@
       "documentation_ref": "docs/api/SCIENTIFIC_RECIPE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "inspect": {
@@ -17096,7 +18006,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -17194,6 +18104,30 @@
         "spectrum_info": {
           "status": "script_callable",
           "script_operation": "spectrum_info"
+        },
+        "managedLibraryInfo": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
+        },
+        "managedValidateLibrary": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
+        },
+        "managedListSpectra": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
+        },
+        "managedReadSpectrum": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
+        },
+        "managedEntityInfo": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
+        },
+        "managedBulkRank": {
+          "status": "intentionally_host_only",
+          "reason": "Additive managed source resolution/read contract; old registered flat-root Script operations retain their existing admission."
         }
       },
       "public_operations": {
@@ -17237,14 +18171,28 @@
       "documentation_ref": "docs/api/SCIENTIFIC_REFERENCE_LIBRARY_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/scientific_reference_library.py",
         "sha256": "f8b203014a15f64e389d38a507909d15e2a7dafea4ffa78c148b84226cd211f7"
       },
-      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "managed_host_operations": {
+        "api_version": 1,
+        "commands": [
+          "::GX::ReferenceLibraryAPIv1::managedLibraryInfo",
+          "::GX::ReferenceLibraryAPIv1::managedValidateLibrary",
+          "::GX::ReferenceLibraryAPIv1::managedListSpectra",
+          "::GX::ReferenceLibraryAPIv1::managedReadSpectrum",
+          "::GX::ReferenceLibraryAPIv1::managedEntityInfo",
+          "::GX::ReferenceLibraryAPIv1::managedBulkRank"
+        ],
+        "owner": "Scientific Library Manager + existing Reference owner",
+        "script_registered": false,
+        "native_grant_added": false
+      }
     },
     {
       "api_id": "SCIENTIFIC_WORKSHEET_API_v1",
@@ -17629,7 +18577,7 @@
       },
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "documentation_ref": "plugins/modules/viewer.scientific_worksheet/docs/MODEL_API.md",
@@ -17774,12 +18722,72 @@
       },
       "registration_source": {
         "path": "core/script_bindings/script_execution.py",
-        "sha256": "4e12e88fb6d30b4af263789d2f5bf770fe0ba128a658bf5ac346b9a6c30cfd94"
+        "sha256": "937241e5a23e30b4bbb4b04ea78a9fd794f778dfd0e21755b30f4392d2b4ea5c"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "host_facilities": {
+        "provided_inventory": {
+          "command": "scriptRegistryProvidedApiInventory",
+          "host_only": true,
+          "source_execution": false,
+          "documentation_ref": "docs/api/SCRIPT_PROVIDED_API_INVENTORY_v1.md"
+        },
+        "provided_runtime": {
+          "command": "scriptModuleProvidedApiInvokeJson",
+          "host_only": true,
+          "managed_owner": "SCRIPT_JOB_API_v1",
+          "documentation_ref": "docs/api/SCRIPT_PROVIDED_API_RUNTIME_v1.md",
+          "consumer_route": "Normal generated module registration and actual declared operation, not a direct arbitrary-source Script command"
+        }
+      }
+    },
+    {
+      "api_id": "SCRIPT_LIBRARY_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "documentation_ref": "docs/api/SCRIPT_LIBRARY_API_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "Trusted composition and finite explicitly admitted restricted native client; no generic Script or Tcl evaluation grant."
+      },
+      "documented_public_commands": [
+        "scriptLibraryApiInfo",
+        "scriptLibraryOpen",
+        "viewerGuiScriptLibraryCommand",
+        "viewerGuiScriptLibrarySnapshot"
+      ],
+      "operation_coverage": {
+        "scriptLibraryApiInfo": {
+          "status": "intentionally_host_only"
+        },
+        "scriptLibraryOpen": {
+          "status": "intentionally_host_only"
+        },
+        "viewerGuiScriptLibraryCommand": {
+          "status": "intentionally_host_only"
+        },
+        "viewerGuiScriptLibrarySnapshot": {
+          "status": "intentionally_host_only"
+        }
+      },
+      "restricted_native_route": {
+        "methods": [
+          "Host.script_library_command",
+          "Host.script_library_result"
+        ],
+        "features": [
+          "project_source_read_admission_v1",
+          "restored_owner_review_v1"
+        ],
+        "generic_invoke": false
       }
     },
     {
@@ -17899,12 +18907,12 @@
       "documentation_ref": "docs/api/SEMANTIC_REGISTRY_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -17930,12 +18938,12 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "preparation": {
@@ -18168,12 +19176,12 @@
       "documentation_ref": "docs/api/SESSION_INSPECTION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -18221,12 +19229,12 @@
       "documentation_ref": "docs/api/SESSION_PERSISTENCE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -18247,7 +19255,6 @@
         "note_write",
         "preview_set",
         "rename",
-        "resource_copy_tree",
         "update",
         "validate"
       ],
@@ -18300,10 +19307,6 @@
           "Octave",
           "Python"
         ],
-        "resource_copy_tree": [
-          "Octave",
-          "Python"
-        ],
         "update": [
           "Octave",
           "Python"
@@ -18316,7 +19319,7 @@
       "documentation_ref": "docs/api/SESSION_WORKSPACE_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "create": {
@@ -18485,7 +19488,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/session_workspace.py",
-        "sha256": "be089e6c4e54fd820a963a455a4de856fd636c431d30fa7f13139e939d31d19d"
+        "sha256": "b07c9e21b5b8eeb21c4d49c566afbd5d3ab9e6c21be85673ef74ad6f17946ac8"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -19655,7 +20658,7 @@
       "documentation_ref": "plugins/modules/math.signal/SIGNAL_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "module",
       "registration_source": {
@@ -19701,7 +20704,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "publish": {
@@ -19730,6 +20733,49 @@
           "status": "script_callable",
           "script_operation": "validate"
         }
+      }
+    },
+    {
+      "api_id": "SOURCE_NOTE_API_v1",
+      "api_version": 1,
+      "provider": "source_note",
+      "status": "newly_bridged",
+      "operations": [
+        "association",
+        "source"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "association": [
+          "Octave",
+          "Python"
+        ],
+        "source": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "documentation_ref": "docs/api/SOURCE_NOTE_API_v1.md",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
+      },
+      "operation_coverage": {
+        "association": {
+          "status": "script_callable",
+          "script_operation": "association"
+        },
+        "source": {
+          "status": "script_callable",
+          "script_operation": "source"
+        }
+      },
+      "registration_source": {
+        "path": "core/script_bindings/public_core_services.py",
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       }
     },
     {
@@ -19769,7 +20815,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "info": {
@@ -19783,6 +20829,10 @@
         "scan": {
           "status": "script_callable",
           "script_operation": "scan"
+        },
+        "sourceSurfaceStatusInspect": {
+          "status": "intentionally_host_only",
+          "reason": "Existing shared Source widget status snapshot; no Script widget or filesystem authority."
         }
       },
       "public_operations": {
@@ -19798,7 +20848,10 @@
           "status": "script_callable",
           "script_operation": "scan"
         }
-      }
+      },
+      "documented_public_commands": [
+        "sourceSurfaceStatusInspect"
+      ]
     },
     {
       "api_id": "SPECTRAL_LIBRARY_VIEWER_API_v1",
@@ -20207,7 +21260,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "api_info": {
@@ -20938,7 +21991,7 @@
       "documentation_ref": "docs/api/TABLE_STREAM_API_v3.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -21143,12 +22196,12 @@
       "documentation_ref": "docs/api/TEMPORAL_SET_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -21213,7 +22266,7 @@
       },
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "public_operations": {
         "api_info": {
@@ -21251,6 +22304,115 @@
         "sha256": "95d298e8ae34c6b20251e903080219c8c8e7b78cba4fddb93480bae3b319dab8"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "UML_DOCUMENT_API_v1",
+      "api_version": 1,
+      "provider": "CORE",
+      "status": "intentionally_host_only",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "documentation_ref": "docs/api/UML_DOCUMENT_API_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "No Script Bridge registration; trusted host signatures and explicitly admitted native Document intents are distinct authorities."
+      },
+      "documented_public_commands": [
+        "umlDocumentDetect",
+        "umlDocumentParse",
+        "umlDocumentEdit",
+        "umlDocumentLayout",
+        "umlDocumentInspectElement",
+        "umlDocumentDescribe",
+        "umlDocumentRead",
+        "umlDocumentWrite",
+        "umlDocumentExport",
+        "umlDocumentExportRelease",
+        "umlDiagramMount",
+        "umlDiagramCommand",
+        "umlEditorMount",
+        "umlEditorCommand"
+      ],
+      "operation_coverage": {
+        "umlDocumentDetect": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentParse": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentEdit": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentLayout": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentInspectElement": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentDescribe": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentRead": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentWrite": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentExport": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDocumentExportRelease": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDiagramMount": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlDiagramCommand": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlEditorMount": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        },
+        "umlEditorCommand": {
+          "status": "intentionally_host_only",
+          "reason": "Public host declaration; no direct Python/Octave registration."
+        }
+      },
+      "restricted_native_route": {
+        "methods": [
+          "Host.document_bind",
+          "Host.document_command"
+        ],
+        "abi_operations": [
+          26,
+          41
+        ],
+        "required_minimum": [
+          "umlDocumentRead",
+          "umlDocumentParse",
+          "umlDocumentLayout"
+        ],
+        "optional_explicit_grants": [
+          "umlDocumentEdit",
+          "umlDocumentWrite",
+          "umlDocumentExport"
+        ],
+        "generic_invoke": false
+      }
     },
     {
       "api_id": "UNIT_REGISTRY_API_v1",
@@ -21470,7 +22632,7 @@
       "documentation_ref": "docs/api/UNIT_REGISTRY_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
@@ -21774,12 +22936,12 @@
       "documentation_ref": "docs/api/VIEWER_PROVIDER_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
+        "sha256": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -21824,7 +22986,7 @@
       "documentation_ref": "docs/api/WORKBENCH_EXTENSION_API_v1.md",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "return_result": {
@@ -22059,7 +23221,7 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
         "status": "script_callable",
-        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+        "reason": "Only registered operations are callable; existing explicit host/admin/controller exceptions remain separate."
       },
       "operation_coverage": {
         "add_text": {
@@ -22207,7 +23369,7 @@
     "not_yet_bridged"
   ],
   "coverage_schema": "Exact current registered Script operations and retained reviewed host policies; module declarations without direct registration are explicit and do not imply missing scientific functionality.",
-  "development_cycle": "Current actual provider and operation reconciliation",
+  "development_cycle": "DEV111-P035 genuine IR Viewer, optional managed Preview Cache Bridge022, teaching generators",
   "native2d_aspect_policy": {
     "default": "xy_equal",
     "override": "host/module-only",
@@ -22215,22 +23377,22 @@
     "view_state_override": "non-default aspect rejected; equal-aspect round trips retained",
     "validation": "dev097 actual Python/Octave Jobs verify default/query/grid, host-only override rejection and equal-aspect round trip; native/module auto-aspect verified by actual Preview consumer evidence183/186."
   },
-  "verification_scope": "Registration and source/manifest inventory; this is not a claim that every operation was invoked",
-  "api_registration_count": 71,
-  "registered_operation_count": 1142,
+  "verification_scope": "Current registration/descriptor/hash inventory only; per-feature independent functional acceptance is recorded separately. No registered provider operation is invoked.",
+  "api_registration_count": 77,
+  "registered_operation_count": 1203,
   "provider_manifests": [
     {
       "module_id": "analysis.octave_script",
       "api_id": "OCTAVE_SCRIPT_EDITOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/analysis.octave_script/module.ini",
-      "manifest_sha256": "377c6294866879b3b952c797d7debb81d5939bcf109d447f822a829a86fb3281",
+      "manifest_sha256": "7934d95797b465647c63811e0845a8510d25f487b4bb3e45299dcb569267d34a",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
-      "entrypoint_sha256": "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c",
+      "entrypoint_sha256": "d1e5d209f5a34442a13c79029eb8d567693efdd1600f83a5e4fbe934fc20bb79",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
@@ -22245,13 +23407,13 @@
       "api_id": "PYTHON_SCRIPT_EDITOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/analysis.python_script/module.ini",
-      "manifest_sha256": "ee759f8470a988c6bfdad4d08b6297034bec4e2e5888a06309b8ac29612dd0c6",
+      "manifest_sha256": "80c0b7a526139b6e4ef9805cbac2f1e9bcc08b61b520e238ab79b6f7720ecd58",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/analysis.python_script/api/python_script_editor_api_v1.tcl",
-      "entrypoint_sha256": "216a040eadb695bcdf44fab328676c00660941434ad2bc21ffbbbf831c37647a",
+      "entrypoint_sha256": "13c82069cc83d4067f7f8d81bcada90b0099a5aedd4b03852af55a402c6d8d59",
       "capabilities": [
         "viewer_backend",
         "script_workspace",
@@ -22269,7 +23431,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/curve.replicate_analysis/api/curve_replicate_graphics_api_v1.tcl",
       "entrypoint_sha256": "70da82be13e9b154c3514596685cbaef678542103290c576d1bb2bc46b080fde",
       "capabilities": [
@@ -22296,7 +23458,19 @@
         "result",
         "status",
         "submit"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "headless",
+        "managed_jobs",
+        "canonical_sources",
+        "yx",
+        "ordered_xy",
+        "periodic_consensus"
+      ],
+      "namespace": "::GX::Replicate",
+      "entrypoint": "plugins/modules/curve.replicate_analysis/api/curve_replicate_scientific_api_v1.tcl",
+      "entrypoint_sha256": "8bdb5d27016b5a51de9a86c5201ab25c75276cbb3c8c6e9c71f2855c074c77fa"
     },
     {
       "module_id": "curvefit.family_global",
@@ -22316,7 +23490,19 @@
         "results",
         "run",
         "submit"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "family_recipes",
+        "supervised_family_jobs",
+        "global_family_fit",
+        "shared_local_fixed_parameters",
+        "frozen_family_evaluation",
+        "durable_family_results"
+      ],
+      "namespace": "::GX::CurveFamilyV1",
+      "entrypoint": "plugins/modules/curvefit.family_global/api/curve_family_api_v1.tcl",
+      "entrypoint_sha256": "199bd606493aea0a1ce11e8e4c86decc84d35e26d8c8a10089e3362d04bb1a8b"
     },
     {
       "module_id": "export.curve_dataset",
@@ -22327,7 +23513,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/export.curve_dataset/api/curve_dataset_export_api_v1.tcl",
       "entrypoint_sha256": "6d8064319895fc304692fc4684945521bd9934dc13e232bbd0b02c85b698546c",
       "capabilities": [
@@ -22348,7 +23534,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/export.native2d_presentation/api/native2d_export_api_v1.tcl",
       "entrypoint_sha256": "f34820985816161d21aaffbb4bf52b27ab53105bcf9d6927b22fce9c52d881b7",
       "capabilities": [
@@ -22367,8 +23553,8 @@
       "manifest_sha256": "ae11cf29eeed21c0ec3e7708a3fa85b75bbee195fa32fee4ea36bc02853617cd",
       "script_registered": false,
       "operations": [],
-      "coverage_status": "intentionally_host_only",
-      "reason": "Normal exporter/publication actions require an owner-issued Workbench snapshot and reviewed destination; scripts use scoped Native3D export_resource and public Dataset publication APIs.",
+      "coverage_status": "not_yet_bridged",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/export.native3d_geometry/api/native3d_geometry_export_api_v1.tcl",
       "entrypoint_sha256": "38cf8442595fa5f30d96c7982e864c8f21137cf3e692c8e028640c105e80fa85",
       "capabilities": [
@@ -22393,7 +23579,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/export.session_html/api/session_html_export_api_v1.tcl",
       "entrypoint_sha256": "f3b2726fc69eedf979096ca03aa54aa2a3a712afdeb21082406d702aef88eba9",
       "capabilities": [
@@ -22408,11 +23594,11 @@
       "api_id": "IR_LIBRARY_TYPE_PROVIDER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/library.spectroscopy.ir.reference/module.ini",
-      "manifest_sha256": "7295500234f66ea73af31130dd15a4fa6ef6ff267c0ed77716d6d12f8b8fabe7",
+      "manifest_sha256": "e1a10d38ccac1497a563a0ebf6f0b24ab4b0fc3318afa298a1d514c90fbfdec0",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/library.spectroscopy.ir.reference/api/ir_library_provider_api_v1.tcl",
       "entrypoint_sha256": "37e123b219c10d9c9117dcd7a44f0947def3dc773020119b672d61b06c62320f",
       "capabilities": [
@@ -22428,7 +23614,7 @@
       "api_id": "ELECTROMAGNETIC_SIMULATION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.electromagnetic_simulation/module.ini",
-      "manifest_sha256": "dc0e52dc0b2a9768f086f9c8fcd17dc952720f97bf410f9deefca05b1288f6b9",
+      "manifest_sha256": "af6554a4c8ad7c7b03a2c8f76a28097a1bd74217050cc385893f67fb96cdb1a9",
       "script_registered": true,
       "operations": [
         "api_info",
@@ -22444,7 +23630,22 @@
         "run_async",
         "save_model",
         "validate_model"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "model_validation",
+        "planar_2d",
+        "magnetostatic",
+        "electrostatic",
+        "gmsh_getdp",
+        "async_solver",
+        "canonical_dataset_publication",
+        "provenance",
+        "exact_mesh_topology"
+      ],
+      "namespace": "::GX::ElectromagneticSimulation",
+      "entrypoint": "plugins/modules/math.electromagnetic_simulation/api/em_simulation_api_v1.tcl",
+      "entrypoint_sha256": "dbd84ded10d4eb344916181a168bef664850eb85f406522d8eede6f1c288938b"
     },
     {
       "module_id": "math.magnetics",
@@ -22511,14 +23712,33 @@
         "integral.volume",
         "loss.arbitrary_waveform",
         "loss.steinmetz"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "coordinates",
+        "field",
+        "integral",
+        "constitutive",
+        "circuit",
+        "energy",
+        "bh",
+        "loss",
+        "anisotropic_permeability",
+        "nonlinear_bh",
+        "electric_energy",
+        "joule_loss",
+        "integrated_power"
+      ],
+      "namespace": "::GX::MagneticsAPIv1",
+      "entrypoint": "plugins/modules/math.magnetics/api/math_magnetics_api_v1.tcl",
+      "entrypoint_sha256": "0ddf3296223ba5935de5ad8a174205582f4f733ced953a6582cc954cfed199ce"
     },
     {
       "module_id": "math.numeric",
       "api_id": "NUMERIC_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.numeric/module.ini",
-      "manifest_sha256": "2448ba610ae32f215408fc53ed983c2b43238504b308cacd00f3c72f2714b592",
+      "manifest_sha256": "e280bd44d80f99cf74110ea76f76d5db07f013802022299f015c7843f2310175",
       "script_registered": true,
       "operations": [
         "array_binary",
@@ -22654,7 +23874,152 @@
         "weighted_statistics",
         "welch_aggregate",
         "window_metrics"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "safe_mathematical_expressions",
+        "profile_likelihood",
+        "digitization_uncertainty",
+        "digitization_covariance",
+        "akima",
+        "custom_knot_bspline",
+        "rational_models",
+        "rational_domain_guard",
+        "fit_initialization",
+        "fit_formula_declaration",
+        "residual_sequence",
+        "nested_f_tests",
+        "bootstrap_refits",
+        "logarithmic_response",
+        "independent_model_export",
+        "fit_region_composition",
+        "fit_model_composition",
+        "orthogonal_xy_fit",
+        "paired_dataset_sigma",
+        "captured_statistical_columns",
+        "signal_spectral",
+        "window_metrics",
+        "signal_correlation",
+        "event_period",
+        "pulse_timing",
+        "signal_quality",
+        "signal_summary",
+        "replicate_summary",
+        "replicate_xy_summary",
+        "local_cloud_fit",
+        "welch_aggregate",
+        "power_level",
+        "spectral_features",
+        "native_residual_reductions",
+        "parameter_uncertainty",
+        "hypothesis_tests",
+        "anova",
+        "resampling_inference",
+        "ceres_nonlinear_fit",
+        "curve_models",
+        "curve_projection",
+        "vector_primitives",
+        "vector_normalization",
+        "vector_similarity",
+        "elementwise_unary",
+        "elementwise_binary",
+        "elementwise_comparison",
+        "logical_masks",
+        "array_selection",
+        "array_reduction",
+        "complex_unary",
+        "complex_binary",
+        "phase_unwrap",
+        "dataset_elementwise",
+        "octave_binding",
+        "octave_callback_functions",
+        "script_callback_functions",
+        "fft",
+        "ifft",
+        "analytic_signal",
+        "frequency_grid",
+        "one_sided_transform",
+        "detrending",
+        "window_generation",
+        "fft_backend_threads",
+        "linear_reductions",
+        "matrix_statistics",
+        "complex_linear_algebra",
+        "mathematical_foundation",
+        "residual_metrics",
+        "interpolation",
+        "nearest_interpolation",
+        "linear_interpolation",
+        "cubic_interpolation",
+        "splines",
+        "cubic_spline",
+        "pchip",
+        "resampling",
+        "uniform_grid",
+        "grid_analysis",
+        "common_range",
+        "integration",
+        "cumulative_integration",
+        "differentiation",
+        "descriptive_statistics",
+        "ranking",
+        "covariance",
+        "correlation",
+        "robust_mad",
+        "histogram",
+        "ecdf",
+        "probability_distributions",
+        "matrix_svd",
+        "random_resampling",
+        "quantiles",
+        "weighted_quantiles",
+        "weighted_statistics",
+        "cumulative_sum",
+        "linear_least_squares",
+        "weighted_linear_least_squares",
+        "linear_regression",
+        "polynomial_fit",
+        "weighted_polynomial_fit",
+        "nonlinear_least_squares",
+        "bounded_fminsearch",
+        "smoothing",
+        "moving_average",
+        "moving_median",
+        "savitzky_golay",
+        "local_polynomial_smoothing",
+        "lowess",
+        "loess",
+        "digital_filter",
+        "peak_detection",
+        "baseline_estimation",
+        "root_finding",
+        "optimization",
+        "uncertainty_propagation",
+        "dataset_variables",
+        "dataset_selection",
+        "table_stream_v3",
+        "stable_variable_identity",
+        "dataset_interpolation",
+        "dataset_resampling",
+        "dataset_calculus",
+        "dataset_statistics",
+        "dataset_linear_reductions",
+        "dataset_fitting",
+        "dataset_smoothing",
+        "dataset_peaks",
+        "dataset_baseline",
+        "sparse",
+        "equations",
+        "variational",
+        "geometry",
+        "advanced_statistics",
+        "stiff_ode",
+        "special_functions",
+        "fit_model_selection"
+      ],
+      "namespace": "::GX::NumericAPIv1",
+      "entrypoint": "plugins/modules/math.numeric/api/numeric_api_v1.tcl",
+      "entrypoint_sha256": "7c9828794e917778d47e8cff2df233ad312f73310054d649fd7a885e1eaf7e13"
     },
     {
       "module_id": "math.rf_network",
@@ -22696,7 +24061,22 @@
         "sweep.group_delay",
         "sweep.mixed_mode",
         "sweep.renormalize"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "convert",
+        "compose",
+        "metric",
+        "quality",
+        "sweep",
+        "calibration",
+        "causality",
+        "complex_reference",
+        "touchstone_contract"
+      ],
+      "namespace": "::GX::RFNetworkAPIv1",
+      "entrypoint": "plugins/modules/math.rf_network/api/math_rf_network_api_v1.tcl",
+      "entrypoint_sha256": "473053a185ded5a7659f98e40cbeed6a7ab294e79ae5d6f99580a9370e886720"
     },
     {
       "module_id": "math.signal",
@@ -22793,18 +24173,48 @@
         "wavelet.dwt",
         "wavelet.inverse_dwt",
         "wavelet.scalogram"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "operation_schema",
+        "typed_validation",
+        "guided_form",
+        "durable_script_job_execution",
+        "captured_statistical_columns",
+        "statistical_contract",
+        "core_statistical_interpretation",
+        "analytic",
+        "frequency_metric",
+        "time_metric",
+        "convolution",
+        "correlation",
+        "filter",
+        "design",
+        "multirate",
+        "lti",
+        "response",
+        "spectral",
+        "stft",
+        "quality",
+        "events",
+        "cepstrum",
+        "wavelet",
+        "deterministic_generation"
+      ],
+      "namespace": "::GX::SignalAPIv1",
+      "entrypoint": "plugins/modules/math.signal/api/math_signal_api_v1.tcl",
+      "entrypoint_sha256": "70fa37e50d14af528f9aa52228e04bd3f62b5172ffb7ef398066b607119d3d2e"
     },
     {
       "module_id": "plot.dataset",
       "api_id": "PLOT_DATASET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
+      "manifest_sha256": "2e4d497b39ad8c7417c600c8e57f9f8dd72ae2bc2e48b20438bf775a730de2db",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_api_v1.tcl",
       "entrypoint_sha256": "acdaabbf3a1d68c8ee99435ad7ee28b69e2eb695b83bc8f0cbc7d7f0220f78d7",
       "capabilities": [
@@ -22830,7 +24240,7 @@
       "api_id": "PLOT_DATASET_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
+      "manifest_sha256": "2e4d497b39ad8c7417c600c8e57f9f8dd72ae2bc2e48b20438bf775a730de2db",
       "script_registered": true,
       "operations": [
         "api_info",
@@ -22838,15 +24248,74 @@
         "read_plot",
         "render",
         "rerender",
+        "set_panel_axis",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "validate_spec"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "plotspec",
+        "cartesian_2d",
+        "cartesian_3d",
+        "gridded_3d_streaming",
+        "panels_schema",
+        "multi_panel",
+        "shared_x_panels",
+        "panel_assignment",
+        "panel_order",
+        "graph_series",
+        "base_graph",
+        "variants",
+        "multi_dataset",
+        "dual_y",
+        "series_style",
+        "series_kind_line",
+        "series_kind_scatter",
+        "series_kind_line_marker",
+        "series_family_grouping",
+        "series_kind_step",
+        "series_kind_errorbar",
+        "series_kind_band",
+        "series_kind_bar",
+        "bar_x_bounds",
+        "series_kind_histogram",
+        "series_kind_box_whisker",
+        "histogram_normalization",
+        "box_whisker_outliers",
+        "errorbar_x",
+        "errorbar_y",
+        "errorbar_asymmetric",
+        "uncertainty_band",
+        "axes_config",
+        "axis_direction",
+        "axis_custom_ticks",
+        "annotations_reference_line",
+        "annotations_reference_region",
+        "annotations_text",
+        "vector_export",
+        "render",
+        "rerender",
+        "artifacts",
+        "stable_variable_identity",
+        "standalone_v2_editor",
+        "series_editor_extension",
+        "graph_config_extension",
+        "axis_config_extension",
+        "multi_panel_toggle",
+        "panel_titles",
+        "artifact_panel_discovery"
+      ],
+      "namespace": "::GX::PlotDatasetAPIv2",
+      "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_api_v2.tcl",
+      "entrypoint_sha256": "ceb53b974185b93d6e0e4d9180bb52a65a69bc61a7ac3c5c71b440368caf7df9"
     },
     {
       "module_id": "plot.dataset",
       "api_id": "PLOT_DATASET_API_v3",
       "api_version": 3,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
+      "manifest_sha256": "2e4d497b39ad8c7417c600c8e57f9f8dd72ae2bc2e48b20438bf775a730de2db",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -22879,24 +24348,96 @@
         "set_plot_enabled",
         "set_series_panel",
         "set_series_presentation",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "source_fingerprint",
         "sync_interactive",
         "upsert_plot",
         "validate_spec"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "plotspec",
+        "cartesian_2d",
+        "cartesian_3d",
+        "gridded_3d_streaming",
+        "panels_schema",
+        "multi_panel",
+        "shared_x_panels",
+        "panel_assignment",
+        "panel_order",
+        "graph_series",
+        "base_graph",
+        "variants",
+        "multi_dataset",
+        "dual_y",
+        "series_style",
+        "series_kind_line",
+        "series_kind_scatter",
+        "series_kind_line_marker",
+        "series_family_grouping",
+        "series_kind_step",
+        "series_kind_errorbar",
+        "series_kind_band",
+        "series_kind_bar",
+        "bar_x_bounds",
+        "series_kind_histogram",
+        "series_kind_box_whisker",
+        "histogram_normalization",
+        "box_whisker_outliers",
+        "errorbar_x",
+        "errorbar_y",
+        "errorbar_asymmetric",
+        "uncertainty_band",
+        "axes_config",
+        "axis_direction",
+        "axis_custom_ticks",
+        "annotations_reference_line",
+        "annotations_reference_region",
+        "annotations_text",
+        "vector_export",
+        "render",
+        "rerender",
+        "artifacts",
+        "stable_variable_identity",
+        "standalone_v2_editor",
+        "series_editor_extension",
+        "graph_config_extension",
+        "axis_config_extension",
+        "multi_panel_toggle",
+        "panel_titles",
+        "artifact_panel_discovery",
+        "detached_scientific_capture",
+        "detached_scientific_render",
+        "source_row_point_index",
+        "build_scene",
+        "open_interactive",
+        "refresh_interactive",
+        "persistent_graph_source",
+        "manual_interactive_sync",
+        "interactive_sync_status",
+        "independent_representation",
+        "interactive_sources",
+        "idempotent_plot_publication",
+        "transient_2d_curves",
+        "readonly_native3d_preview_export"
+      ],
+      "namespace": "::GX::PlotDatasetAPIv3",
+      "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_api_v3.tcl",
+      "entrypoint_sha256": "b1173b962e2080f328dbd6b6f1b4fc26621c5b41009aeb12418ddd9b1837e7f0"
     },
     {
       "module_id": "plot.dataset",
       "api_id": "PLOT_DATASET_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
+      "manifest_sha256": "2e4d497b39ad8c7417c600c8e57f9f8dd72ae2bc2e48b20438bf775a730de2db",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_3d_api_v1.tcl",
-      "entrypoint_sha256": "31d264274ae5a42e0df61fd68e885d4e631b3d26ea702fa3b7a0eaa20adf695c",
+      "entrypoint_sha256": "b8c4676820a5d4fd6d7041046e55b377842ed62b4f9834095ac1ae5e9860316f",
       "capabilities": [
         "build_scene",
         "open_interactive",
@@ -22917,7 +24458,7 @@
       "api_id": "PLOT_DATASET_API_v4",
       "api_version": 4,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
+      "manifest_sha256": "2e4d497b39ad8c7417c600c8e57f9f8dd72ae2bc2e48b20438bf775a730de2db",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -22951,24 +24492,246 @@
         "set_plot_enabled",
         "set_series_panel",
         "set_series_presentation",
+        "shared_x_axis_get",
+        "shared_x_axis_set",
         "source_fingerprint",
         "sync_interactive",
         "upsert_plot",
         "validate_spec"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "plotspec",
+        "cartesian_2d",
+        "cartesian_3d",
+        "gridded_3d_streaming",
+        "panels_schema",
+        "multi_panel",
+        "shared_x_panels",
+        "panel_assignment",
+        "panel_order",
+        "graph_series",
+        "base_graph",
+        "variants",
+        "multi_dataset",
+        "dual_y",
+        "series_style",
+        "series_kind_line",
+        "series_kind_scatter",
+        "series_kind_line_marker",
+        "series_family_grouping",
+        "series_kind_step",
+        "series_kind_errorbar",
+        "series_kind_band",
+        "series_kind_bar",
+        "bar_x_bounds",
+        "series_kind_histogram",
+        "series_kind_box_whisker",
+        "histogram_normalization",
+        "box_whisker_outliers",
+        "errorbar_x",
+        "errorbar_y",
+        "errorbar_asymmetric",
+        "uncertainty_band",
+        "axes_config",
+        "axis_direction",
+        "axis_custom_ticks",
+        "annotations_reference_line",
+        "annotations_reference_region",
+        "annotations_text",
+        "vector_export",
+        "render",
+        "rerender",
+        "artifacts",
+        "stable_variable_identity",
+        "standalone_v2_editor",
+        "series_editor_extension",
+        "graph_config_extension",
+        "axis_config_extension",
+        "multi_panel_toggle",
+        "panel_titles",
+        "artifact_panel_discovery",
+        "detached_scientific_capture",
+        "detached_scientific_render",
+        "source_row_point_index",
+        "build_scene",
+        "open_interactive",
+        "refresh_interactive",
+        "persistent_graph_source",
+        "manual_interactive_sync",
+        "interactive_sync_status",
+        "independent_representation",
+        "interactive_sources",
+        "idempotent_plot_publication",
+        "transient_2d_curves",
+        "readonly_native3d_preview_export",
+        "transient_independent_2d_curves",
+        "series_enable",
+        "series_order",
+        "plot_config",
+        "read_config",
+        "native_2d_cpp",
+        "native_3d_cpp",
+        "native_widget",
+        "exact_source_bounds",
+        "exact_cell_field",
+        "cell_field_binding",
+        "scientific_consultation",
+        "equal_numeric_aspect",
+        "retained_preparation",
+        "scientific_3d_consultation",
+        "canonical_xyz_consultation",
+        "derived_comparison_display"
+      ],
+      "namespace": "::GX::PlotDatasetAPIv4",
+      "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl",
+      "entrypoint_sha256": "b9cb95bb49589858fa4ee4c8749d9bdc8a81ac0ea87123962952619c1b438b55"
+    },
+    {
+      "module_id": "preview.curve_digitizer",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.curve_digitizer/module.ini",
+      "manifest_sha256": "53306dc714550116a17437a37d3463dea0613efe6aa985f5470bd0eefe652973",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview_tabs",
+        "preview_gui",
+        "logical_y2_axes",
+        "native_plot_v4_right_axis"
+      ],
+      "namespace": "::GX::DigitizerFamilyPreview",
+      "entrypoint": "plugins/modules/preview.curve_digitizer/api/preview.tcl",
+      "entrypoint_sha256": "0d3a10d61f79846629a77449d14fe727f1a1d1aeafd6a391e10b1367a459e767",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.markdown_document",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.markdown_document/module.ini",
+      "manifest_sha256": "cf363740e5acf2716fcfbfb529ab94ea1db0b5a483fbb4c0ed03553417dd6b0c",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview",
+        "guiMount",
+        "guiDispose"
+      ],
+      "namespace": "::GX::Restricted_preview_markdown_document",
+      "entrypoint": "plugins/modules/preview.markdown_document/api/viewer.tcl",
+      "entrypoint_sha256": "36fa99ffc9db3a297ca69eb39561c1165c3f6546f32bb5e54cc9d6b2beb08b38",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.oscilloscope_waveform",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.oscilloscope_waveform/module.ini",
+      "manifest_sha256": "c3aa0922f7f40087fbaf938a6be3baa1bde46f448d24ce3deab13fb153075a71",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview_tabs",
+        "preview_gui"
+      ],
+      "namespace": "::GX::Generated_preview_oscilloscope_waveform",
+      "entrypoint": "plugins/modules/preview.oscilloscope_waveform/api/preview.tcl",
+      "entrypoint_sha256": "413f551f696317d941e11c044e06083edd9d538e8633d0d9a5bb8a9f91f534d0",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.scientific_frame",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.scientific_frame/module.ini",
+      "manifest_sha256": "c6219048b637a2ddd20854a104c6916da067a9db6d9949e49eb24b5fcdde9775",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview",
+        "guiMount",
+        "guiDispose"
+      ],
+      "namespace": "::GX::Restricted_preview_scientific_frame",
+      "entrypoint": "plugins/modules/preview.scientific_frame/api/viewer.tcl",
+      "entrypoint_sha256": "9217e33d40cdb41acecb8f11e6ff243bbbce0b66d8678cf5a07d82721e4a37cf",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.scientific_spectrum",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.scientific_spectrum/module.ini",
+      "manifest_sha256": "4fb9e2f2fd55d78034198617f7f0b8f1144db224570549d1bced9a0cf58a235d",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview",
+        "guiMount",
+        "guiDispose"
+      ],
+      "namespace": "::GX::Restricted_preview_scientific_spectrum",
+      "entrypoint": "plugins/modules/preview.scientific_spectrum/api/viewer.tcl",
+      "entrypoint_sha256": "f1306fb4e723634f49c687062eb104379c2aa3b4875809d82ace74b8bd4d9d73",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.scientific_trace",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.scientific_trace/module.ini",
+      "manifest_sha256": "3ed6e0891aa5c9af5b570a717d8b339796cee563ea05a4f7cdbc68480c0a3091",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview",
+        "guiMount",
+        "guiDispose"
+      ],
+      "namespace": "::GX::Restricted_preview_scientific_trace",
+      "entrypoint": "plugins/modules/preview.scientific_trace/api/viewer.tcl",
+      "entrypoint_sha256": "f0b825e0d9e700ab282dfff62c4090d7826b8e7af53bdab3341b9722ce61b13e",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "preview.uml_document",
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/preview.uml_document/module.ini",
+      "manifest_sha256": "7aef70509f9c4e165e9dc94d5b3fde265b0c1626b197f1001c1e64df05941467",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "preview",
+        "guiMount",
+        "guiDispose"
+      ],
+      "namespace": "::GX::Restricted_preview_uml_document",
+      "entrypoint": "plugins/modules/preview.uml_document/api/viewer.tcl",
+      "entrypoint_sha256": "f09b8109e95abf42f53a41f7d741216e2a56420e7bd984c88598b10db4f1a639",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
     },
     {
       "module_id": "viewer.3d_workbench",
       "api_id": "WORKBENCH_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.3d_workbench/module.ini",
-      "manifest_sha256": "5a99427e2f519bd2f0ebe0884727d7f85bb160d1abafe29da7bd62c317bbb0f2",
+      "manifest_sha256": "d8d67c6440dc91e08068170b2a3dff16f0cd1ab184b6f9fd4dc9e6c9c923143a",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
-      "entrypoint_sha256": "3bcb95be65a09c542ccdbb15547db1cfa6b1a8f1d4575bf524d446d6b3d7da1f",
+      "entrypoint_sha256": "4dd6a7e29341a9307faae9002af20881383cc7c6bd91b0d162127b21255a8f5b",
       "capabilities": [
         "viewer_backend",
         "native3d",
@@ -22983,11 +24746,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.circuit_workbench/module.ini",
-      "manifest_sha256": "23ff9ef9b9f3aeb07a0346da975274a3d747a4174dbefa21a4148d84aa32521a",
+      "manifest_sha256": "892986ea4a6e22d89b6c35d7755dd5c0e2cf8443922659c8416dfbd6dad7c9d2",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.circuit_workbench/api/viewer.tcl",
       "entrypoint_sha256": "0ffd833b8a6be2cc2093f05c21a064a3ebfa7bf7c590f9aeb7187830ba3150d2",
       "capabilities": [
@@ -23006,7 +24769,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.code_dataset/api/viewer.tcl",
       "entrypoint_sha256": "5900bc8646477d28f759c8c634aa9e771575044ab2eaf052e74a93a1e05e38eb",
       "capabilities": [
@@ -23017,17 +24780,35 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.comparison_example",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.comparison_example/module.ini",
+      "manifest_sha256": "61cc33fa855f8cf565f1d8a366446bfd42f4346154b59d0fd96ab06806a8e720",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_comparison_example",
+      "entrypoint": "plugins/modules/viewer.comparison_example/api/viewer.tcl",
+      "entrypoint_sha256": "8ac6233574f77659c2f7670b47d610da06799ab19944e2a82cfa72efb2e59238",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.curve_digitizer",
       "api_id": "CURVE_DIGITIZER_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_viewer_api_v1.tcl",
-      "entrypoint_sha256": "1c12e9dbd66ce1787149fbd98187cc4980386238e74dacd5a187a336a70fa592",
+      "entrypoint_sha256": "6bd87e5f66b5fcf83da19356c4d58f043f333bca6aeedd8db1992a67c3e59915",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
@@ -23046,13 +24827,13 @@
       "api_id": "CURVE_DIGITIZER_COMPANION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": false,
       "operations": [],
-      "coverage_status": "unavailable_historical_registration",
-      "reason": "Historical ledger entry is not registered by the delivered independent Digitalizer package. Current uncertainty functionality is explicitly declared under CURVE_DIGITIZER_UNCERTAINTY_API_v1; no alias or automatic rebinding is provided.",
+      "coverage_status": "not_yet_bridged",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_companion_api_v1.tcl",
-      "entrypoint_sha256": "1a7d65c93d885e7c30040b7ce8af00e44ff38905cee962e8a5b6b59dc24149c2",
+      "entrypoint_sha256": "197a5acadf725807b2b52ce3e0acb21d50cf6785b47bfd982910059bbad291bd",
       "capabilities": [
         "configuration_discovery",
         "curve_context",
@@ -23068,11 +24849,11 @@
       "api_id": "CURVE_DIGITIZER_CALIBRATION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_calibration_api_v1.tcl",
       "entrypoint_sha256": "f3edc41f9d66ce52eca70d7d4374781075d3532269814d90383be4268c066e10",
       "capabilities": [
@@ -23097,13 +24878,13 @@
       "api_id": "CURVE_DIGITIZER_DATASET_SCHEMA_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_dataset_schema_api_v1.tcl",
-      "entrypoint_sha256": "105f14a1b6e9a728985e5edd1b8aa55b622102a66ba785caa7e8ec6ab38a2e46",
+      "entrypoint_sha256": "9c6d7c2d5928dfcd86bc56cd32ea9d87f2888efe63cfd821109ca7a0184c2960",
       "capabilities": [
         "published_dataset_roles",
         "curve_grouping",
@@ -23111,7 +24892,10 @@
         "numerical_curve_families",
         "raster_point_columns",
         "read_raster_points",
-        "legacy_read"
+        "legacy_read",
+        "multi_y_axis_binding",
+        "producer_version_adapter",
+        "dataset_group_read"
       ],
       "namespace": "::GX::CurveDigitizerDataset",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
@@ -23121,34 +24905,59 @@
       "api_id": "CURVE_DIGITIZER_IMAGE_PROCESSING_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": true,
       "operations": [
         "has_manifest",
         "lineage",
         "operations",
         "read"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "processed_image_manifest",
+        "ordered_image_processing",
+        "geometry_preserved",
+        "verified_source_lineage",
+        "script_bridge_python",
+        "script_bridge_octave"
+      ],
+      "namespace": "::GX::CurveDigitizerImage",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_image_processing_api_v1.tcl",
+      "entrypoint_sha256": "17006dee1ae2de8ba1433ad694200db26924175bbe54c215079e1ae77f0f71d0"
     },
     {
       "module_id": "viewer.curve_digitizer",
       "api_id": "CURVE_DIGITIZER_QUALITY_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": true,
       "operations": [
         "diagnostics",
         "has_quality",
         "issue_report"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "published_quality_report_v2",
+        "source_integrity",
+        "per_curve_diagnostics",
+        "per_segment_raster_geometry",
+        "local_image_evidence",
+        "multi_calibration_population",
+        "script_bridge"
+      ],
+      "namespace": "::GX::CurveDigitizerQuality",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_quality_api_v2.tcl",
+      "entrypoint_sha256": "ca10aef5a54bd5f22e9a66cbf98e6e404d862f9b7d1a10be6ad049c2443731a1"
     },
     {
       "module_id": "viewer.curve_digitizer",
       "api_id": "CURVE_DIGITIZER_UNCERTAINTY_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
       "script_registered": true,
       "operations": [
         "uncertainty_available",
@@ -23158,20 +24967,60 @@
         "uncertainty_publish_covariance",
         "uncertainty_read",
         "uncertainty_report"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "published_physical_uncertainty",
+        "pixel_and_calibration_error_model",
+        "physical_override",
+        "low_rank_covariance_factors",
+        "core_numeric_propagation",
+        "core_statistical_semantics",
+        "managed_covariance_hdf5",
+        "fitter_gls_binding",
+        "script_bridge",
+        "shared_y1_y2_calibration_14",
+        "logical_y_axis_uncertainty"
+      ],
+      "namespace": "::GX::CurveDigitizerUncertainty",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_uncertainty_api_v1.tcl",
+      "entrypoint_sha256": "806ab18f2401300aa70493116a97216a8405ee59f303055d9b6796474c97d55c"
+    },
+    {
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_STROKE_WIDTH_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "928d0c288e681e5387d7aa520c34e442960285d0d9266876cc9ba6e065b1ec90",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "per_curve_stroke_width",
+        "automatic_width_diagnostics",
+        "manual_boundary_splines",
+        "configuration_read",
+        "published_metadata_read",
+        "source_integrity",
+        "no_implicit_uncertainty"
+      ],
+      "namespace": "::GX::CurveDigitizerStrokeWidth",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_stroke_width_api_v1.tcl",
+      "entrypoint_sha256": "880fe21257cf652f5c20ec7a96203beacd8d8f04d583d204ca3808eb62818dd2",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
     },
     {
       "module_id": "viewer.curve_viewer",
       "api_id": "CURVE_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_viewer/module.ini",
-      "manifest_sha256": "f1231a8a7173c499482a26113c163e47985ba4acb6ee0337073d47d0e04558bc",
+      "manifest_sha256": "ba516fdc678efc5ec40ca9890134e5c8a112ff17250d8dfe17f56be09ffebaff",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_viewer/api/curve_viewer_api_v1.tcl",
-      "entrypoint_sha256": "68efd9c12967f81679128821337b3600d8442ae40a198f46c79aac6b5bea586d",
+      "entrypoint_sha256": "219bca8c13e9f859dbc8d620176ba64d8eb6ae1c27937885a3ed507ca740e87e",
       "capabilities": [
         "read_only",
         "curve_source",
@@ -23186,13 +25035,13 @@
       "api_id": "CURVE_WORKBENCH_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_workbench/module.ini",
-      "manifest_sha256": "f9437565cc3237b20aab1121309ac721cb33d8edfd0cf01d671c0868a9cd0510",
+      "manifest_sha256": "b4fc9d0dd7385378416ec52de4a57b2630f58a630d075ba507500ade8d6cdf39",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
-      "entrypoint_sha256": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
+      "entrypoint_sha256": "999acbccf5a74d3573e67e88d2987a429c3802bf15f9e1440bad5f0b388f38bb",
       "capabilities": [
         "explicit_scientific_axis_declaration",
         "viewer_backend",
@@ -23211,7 +25060,7 @@
       "api_id": "DATASET_CURVE_FIT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.dataset_curve_fit/module.ini",
-      "manifest_sha256": "4c9b7640cdae7aaf3ca121547daad491bb8845382cf05bdaf01064066419fa9f",
+      "manifest_sha256": "20b6bf0fa8bc6f9ecf391336ef7c30371bf30aafd84882097cd0e4436ffef1f4",
       "script_registered": true,
       "operations": [
         "dataset_suggestions",
@@ -23274,7 +25123,52 @@
         "template_create",
         "template_inspect",
         "template_list"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "retained_profile_likelihood",
+        "guarded_rational_fitting",
+        "physical_surface_fitting",
+        "retained_surface_queries",
+        "sampled_surface_publication",
+        "public_native3d_render",
+        "joint_complex_responses",
+        "implicit_equation_recipes",
+        "manual_parameter_view",
+        "safe_formula_recipes",
+        "residual_sequence",
+        "smoothed_source_preprocessing",
+        "registered_solver_settings",
+        "registered_fixed_parameters",
+        "global_family_workflow",
+        "independent_family_fits",
+        "nested_f_tests",
+        "accepted_parameter_datasets",
+        "linked_retained_residuals",
+        "named_fit_acceptance",
+        "retained_parameter_bootstrap",
+        "retained_linear_influence",
+        "independent_model_export",
+        "named_fit_templates",
+        "fit_recipe_replay",
+        "durable_fit_results",
+        "baseline_correction",
+        "model_comparison",
+        "fit_model_composition",
+        "orthogonal_xy_fit",
+        "paired_dataset_sigma",
+        "viewer_backend",
+        "dataset_filters",
+        "native2d",
+        "numeric_models",
+        "parameter_uncertainty",
+        "parameter_correlation",
+        "csv_export",
+        "dataset_publication"
+      ],
+      "namespace": "::GX::DatasetCurveFit",
+      "entrypoint": "plugins/modules/viewer.dataset_curve_fit/api/dataset_curve_fit_api_v1.tcl",
+      "entrypoint_sha256": "74504af92c1650aa8d357b5121a51fdf066e05bf69aef2040249fb85047accc8"
     },
     {
       "module_id": "viewer.dataset_table_next",
@@ -23285,7 +25179,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.dataset_table_next/api/viewer.tcl",
       "entrypoint_sha256": "af49815fa2385ab06bd8c4c3a2008a0b5df0f980215d92f4bfe7ea4551fd2b46",
       "capabilities": [
@@ -23304,7 +25198,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.dev107_native3d_embedded/api/viewer.tcl",
       "entrypoint_sha256": "725a47d29d14b937cf7554c82eb54eb92095587764ed2fc8524b4da4e12aa5f4",
       "capabilities": [
@@ -23323,7 +25217,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.dev107_restricted_native3d/api/viewer.tcl",
       "entrypoint_sha256": "bbfc04e402bbd17223294688850560130f5fb38237b9b562dbfe6a673c4b34ae",
       "capabilities": [
@@ -23338,11 +25232,11 @@
       "api_id": "GENERATED_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.dev107_scientific_xy/module.ini",
-      "manifest_sha256": "4c5ce493323bf88a61eedfdfb32125c84b7946ca56bc235d65813744aee4f130",
+      "manifest_sha256": "de4d176f4950286cb6df4fcd4daa5535832a68d3ae3a5a1bd4669dc0e69bb9fb",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.dev107_scientific_xy/api/viewer.tcl",
       "entrypoint_sha256": "01a952ded023be614d13265d58bceace018904044a2a61a12936401f50ce844c",
       "capabilities": [
@@ -23357,13 +25251,13 @@
       "api_id": "VIEWER_DEVELOPMENT_WORKSPACE_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.development_workspace/module.ini",
-      "manifest_sha256": "934849ca93dbd41ce26ee2d9d1e6111f5d9b2b671e0346fec9fa3209bb4b3db3",
+      "manifest_sha256": "8ba77b8e615a798f11bd921e145b861628fc1a94a7324fa13d8e377cd6071197",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.development_workspace/api/workspace.tcl",
-      "entrypoint_sha256": "4d9885f8b44b4749a75ce611eb5b62bbef850dae6e40ffcf6984598b19510037",
+      "entrypoint_sha256": "90c5eac55c4698d29de77c9125fd761374ef6b8865a50a18ec7a65689a9395e3",
       "capabilities": [
         "viewer_backend",
         "restricted_cpp_authoring",
@@ -23384,7 +25278,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.document_extractors/api/document_extractors_viewer_api_v1.tcl",
       "entrypoint_sha256": "4d0c28e7499db99deeca515af6c252df4872a7403e67fe495894504cdf65d113",
       "capabilities": [
@@ -23406,7 +25300,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.electromagnetics/api/electromagnetics_studio_api_v1.tcl",
       "entrypoint_sha256": "6f3c86e60a0f51ef577c1130f0aed50ebf59d1601eaa0aa560f15af91b2ea4b6",
       "capabilities": [
@@ -23423,11 +25317,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.electromagnetics_studio/module.ini",
-      "manifest_sha256": "d062b2fdf9aa5a8f8ef69a8f343229ab9a5d02ab9b250a3ddd62f6b964736927",
+      "manifest_sha256": "6fed860b0b1359dea584df1a1c498d99707ccdfc12813ae7c9a83e310c294e73",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.electromagnetics_studio/api/viewer.tcl",
       "entrypoint_sha256": "300fbe30f4d8038c7f22f7effc917e677de0a312f68101602e2c37a8baf5364c",
       "capabilities": [
@@ -23442,11 +25336,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.html/module.ini",
-      "manifest_sha256": "1664661ccdbf0c9e3b26b7bb9b0faf49981680b2dcb4997e3d72464f6f047a80",
+      "manifest_sha256": "e4c458673ac34e89b7151cf0ff8550a65c40c6df1ea9894c8c82a171ebca5810",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.html/api/viewer.tcl",
       "entrypoint_sha256": "db223ca972c84bde0deb69d2e7f7e34e1e55b7e5bd579deea7f2724d91d8344f",
       "capabilities": [
@@ -23461,11 +25355,11 @@
       "api_id": "HTML_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.html/module.ini",
-      "manifest_sha256": "1664661ccdbf0c9e3b26b7bb9b0faf49981680b2dcb4997e3d72464f6f047a80",
+      "manifest_sha256": "e4c458673ac34e89b7151cf0ff8550a65c40c6df1ea9894c8c82a171ebca5810",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.html/api/html.tcl",
       "entrypoint_sha256": "6798535a28944be55b0aa1c13836f7107b8d1d70b7c325b58dd52d9b0d7c60a4",
       "capabilities": [
@@ -23477,17 +25371,35 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.ic_chromatograms",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.ic_chromatograms/module.ini",
+      "manifest_sha256": "cad1d29401a98f17409aaa0d0c096b65ad67c4379cdb22a495e985e5cf8770af",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_ic_chromatograms",
+      "entrypoint": "plugins/modules/viewer.ic_chromatograms/api/viewer.tcl",
+      "entrypoint_sha256": "5328f7f93093115094ae953249ee3d2c75c1ad09997fe75a9b7e8a9f4e2fd215",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.interactive_curve_builder",
       "api_id": "INTERACTIVE_CURVE_BUILDER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.interactive_curve_builder/module.ini",
-      "manifest_sha256": "df5c73de5e7d6345f32639cae0fecefcfe85847ddd6f12fab2a93ff109cbe2c2",
+      "manifest_sha256": "a5ff7861829f40a2b6ced42473845600c6a23c935f12c4cb47609909e2740f43",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.interactive_curve_builder/api/interactive_curve_builder_api_v1.tcl",
-      "entrypoint_sha256": "edc9d7219692e46320752d21f0db83f5d51eb49c12cb21eb6fd98f0b0d026aed",
+      "entrypoint_sha256": "9e9bb0a121ca6f58fa1c62901c737d3d8ca91ae8603206b91e823eda382e78ac",
       "capabilities": [
         "viewer_backend",
         "canonical_source_rows",
@@ -23502,13 +25414,13 @@
       "api_id": "VIEWER_INTERFACE_BUILDER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.interface_builder/module.ini",
-      "manifest_sha256": "973d0694335ef30c606f560f4be02e04c6ad5a4e46dd238b951ef6018433f760",
+      "manifest_sha256": "3037ffb90f3133ec16b378703bba124f020b916a2af2bcf826eaab5a03124614",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.interface_builder/api/builder.tcl",
-      "entrypoint_sha256": "9e7c7591e81aa9f012d8e64afbe7c2a885be86efea71878053e5d10c1c5b51f7",
+      "entrypoint_sha256": "411deb9c379009802efcce57460f67fc18af2064cd57de1fcb8419d091171d27",
       "capabilities": [
         "viewer_backend",
         "viewer_gui_manifest",
@@ -23522,15 +25434,51 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.ir_spectroscopy",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.ir_spectroscopy/module.ini",
+      "manifest_sha256": "e93c1410c459aa673e2df4f82f2138fb0e0b46cea1188c1be989ed71aabf0929",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_ir_spectroscopy",
+      "entrypoint": "plugins/modules/viewer.ir_spectroscopy/api/viewer.tcl",
+      "entrypoint_sha256": "37c2eb5eddbb0254ca6e2238f0b610a0fafdfe01e75f8bceba3c6b4ba3e03160",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "viewer.markdown_documents",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.markdown_documents/module.ini",
+      "manifest_sha256": "77508d8a518daf68c9702c782e33799892ac3f654b12dc8f17fe72bb17ccd7d4",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_markdown_documents",
+      "entrypoint": "plugins/modules/viewer.markdown_documents/api/viewer.tcl",
+      "entrypoint_sha256": "d491cb81f586fe18770600913007a059ecc603c57bb217ef3952cf7263e8219a",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.mathematics_explorer",
       "api_id": "MATHEMATICS_EXPLORER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.mathematics_explorer/module.ini",
-      "manifest_sha256": "bec1f86483de799f31734b3562f17ae2b928c98fc41651c7aea537dadc6eaeb5",
+      "manifest_sha256": "771ae1b30f49166b06712b61e383f61562fda1f42eab6ff1e5acfe9e691b60e1",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.mathematics_explorer/api/mathematics_explorer_api_v1.tcl",
       "entrypoint_sha256": "ef21918977ef1698f64696b652b5f2bd6c0d1f20305b8a89a5261a232b4361a1",
       "capabilities": [
@@ -23549,11 +25497,32 @@
       "api_id": "NATIVE_3D_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.native_3d/module.ini",
-      "manifest_sha256": "0ed81bd171134897155fc26501c06268d4ec46dfd3d1bec9c816f79e7b4fb12a",
+      "manifest_sha256": "1ccbdef1e2b23c85cb0aa4c2998c1d6530ececb7494cc1d75578b03dcddc5f01",
       "script_registered": true,
       "operations": [
         "source_identity"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "viewer_backend",
+        "native_process",
+        "session_state",
+        "mesh_import",
+        "step_tessellation",
+        "vtu_scientific_layer",
+        "dataset_points_layer",
+        "scientific_scene",
+        "vtp_polydata",
+        "vti_isosurface",
+        "mesh_repeat_instancing",
+        "display_patterns",
+        "named_renderer_controls",
+        "plot_dataset_graph_source",
+        "manual_graph_sync"
+      ],
+      "namespace": "::GX::Native3D",
+      "entrypoint": "plugins/modules/viewer.native_3d/api/native_3d_viewer_api_v1.tcl",
+      "entrypoint_sha256": "80e56a16d515c657347f72953a7d2d15a5e00ba0eebdb7270639c40a42f863b9"
     },
     {
       "module_id": "viewer.nmr_spectrum",
@@ -23564,7 +25533,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.nmr_spectrum/api/nmr_spectrum_viewer_api_v1.tcl",
       "entrypoint_sha256": "2ef63e5f030f3821ef0163e7dc6b796fae6687a193fde14bb788935000027958",
       "capabilities": [
@@ -23580,17 +25549,35 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.pcb_source_snapshot_inspector",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.pcb_source_snapshot_inspector/module.ini",
+      "manifest_sha256": "eade0e35c61034ad19e77a50b7724eda2c6e9ea664b3a4f302e5ba507c4845f5",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_pcb_source_snapshot_inspector",
+      "entrypoint": "plugins/modules/viewer.pcb_source_snapshot_inspector/api/viewer.tcl",
+      "entrypoint_sha256": "9d954f42f67b6ca95082cad661201585919ad86a76480ddd4f5a1a8f0ad1b6f0",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.pdf_ocr",
       "api_id": "PDF_OCR_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.pdf_ocr/module.ini",
-      "manifest_sha256": "746e757d3d0c8a62068931b887016d1c58b9dd9529502215291004f3309e0dba",
+      "manifest_sha256": "c2f269b62d517b64ee90c8aa4dd0ed8961ce14b85fd0c3dda6091f993f256985",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.pdf_ocr/api/pdf_ocr_viewer_api_v1.tcl",
-      "entrypoint_sha256": "0aceb62dcdd9b9d8988ad386a12429bef3c43702c735f8a3f633452938437961",
+      "entrypoint_sha256": "f31a37fa263857b7066e41a5b50e402f281834aff63937a2147ea5973ee3215c",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
@@ -23610,7 +25597,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.pdf_reader/api/viewer.tcl",
       "entrypoint_sha256": "6407437ddb28d1c3b9e37e71173eb5fc80c2162c240cbaf0b984509d0bb85af3",
       "capabilities": [
@@ -23625,13 +25612,13 @@
       "api_id": "REPLICATE_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.replicate_curve_analysis/module.ini",
-      "manifest_sha256": "7f5b86ee251350103940ff0c8b7fe870fe5d1e6ab6f0713a5af6599ae6bf9e6a",
+      "manifest_sha256": "3c6daf0a318f6ae3681162b468813948558ac5e37b0b10860f30e47a1447ce93",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.replicate_curve_analysis/api/replicate_viewer.tcl",
-      "entrypoint_sha256": "0166e7a91dce71a5c2926a29729b5c3874b2db0790bd76fd24823127a521f860",
+      "entrypoint_sha256": "8acf528102912b29fa6bba9da7001fb2d90260639f6e16edcd0d6518ed1d89e4",
       "capabilities": [
         "viewer_backend",
         "viewer_gui_manifest",
@@ -23646,11 +25633,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_3d_workbench/module.ini",
-      "manifest_sha256": "66f63b2456e18337c3467e800d01b8718ae209ef4d6e95c42cf250d31e4cdc36",
+      "manifest_sha256": "8ad05567206c3c8ba0b03d9e99952bb54b0add6d666ccde450abd1ca9a310f10",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.scientific_3d_workbench/api/viewer.tcl",
       "entrypoint_sha256": "8536194559aba0aba6539c81a2ce076d6f71cb7a7b6d1b22fd5f443182c4fbe5",
       "capabilities": [
@@ -23665,11 +25652,11 @@
       "api_id": "SCIENTIFIC_IMAGE_INSPECTOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_image_inspector/module.ini",
-      "manifest_sha256": "0efbe16cc3ba35f5b6fd319d7afde75133b28d7df0c193c450704282a2606411",
+      "manifest_sha256": "19bf8aca076fdf779d3ae27a4f22ffc1293a7f8beccd60d1863223c34c765c01",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.scientific_image_inspector/api/scientific_image_inspector_api_v1.tcl",
       "entrypoint_sha256": "fe0eba42281ac55b1d1eba89e202cca128639f918bf49a71356880cf566c30ae",
       "capabilities": [
@@ -23689,11 +25676,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_latex/module.ini",
-      "manifest_sha256": "b6e21314f93cf624688728649bea3f602e6729b45164ef12ec5212cdf5e8ba4c",
+      "manifest_sha256": "e4a8170f9c37de904aace321d17ecd53db78b1539d2ebdad095d1de9827e638f",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.scientific_latex/api/viewer.tcl",
       "entrypoint_sha256": "38f780d11fa1e9755484ae716d0baabddbd3d7ab739f9f49a98eb2fafb33ebf9",
       "capabilities": [
@@ -23708,11 +25695,11 @@
       "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_library_workspace/module.ini",
-      "manifest_sha256": "4642574c47c70b024b6bac622a1222e3969c7d6cc8ed2fd153ea6767115a40c1",
+      "manifest_sha256": "413d651e14ac759738f106ef5d29513b76bb841e1d076b71dd3e7393adcdfaaf",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.scientific_library_workspace/api/viewer.tcl",
       "entrypoint_sha256": "61c5afd2413723725d6d6d89917d2fd0dd45684acc39dcf7f1f20b043b3144b3",
       "capabilities": [
@@ -23727,7 +25714,7 @@
       "api_id": "SCIENTIFIC_WORKSHEET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_worksheet/module.ini",
-      "manifest_sha256": "18e9d262690d9a05184dff8dfc7ee3caad6443fa0a27e3aa57fb7950c9f15f5e",
+      "manifest_sha256": "9e2983b49464214041a255d490c831de3988034cbc4966acdbcc958190dcf413",
       "script_registered": true,
       "operations": [
         "bind_dataset",
@@ -23758,7 +25745,36 @@
         "set_column",
         "set_sizes",
         "set_typed_cell"
-      ]
+      ],
+      "coverage_status": "already_script_callable",
+      "capabilities": [
+        "viewer_backend",
+        "interactive_document",
+        "dataset_publication",
+        "managed_statistical_columns",
+        "result_row_windows"
+      ],
+      "namespace": "::GX::ScientificWorksheet",
+      "entrypoint": "plugins/modules/viewer.scientific_worksheet/api/scientific_worksheet_api_v1.tcl",
+      "entrypoint_sha256": "b40bad0a11eda363bc1eb1186cbf73dda1e050963134c2ec6e86d68626c172d5"
+    },
+    {
+      "module_id": "viewer.script_library",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.script_library/module.ini",
+      "manifest_sha256": "b5e063e99a38e49cda73c1a837c81f09307e31d74c9fadd3371a92e14c55ac99",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_script_library",
+      "entrypoint": "plugins/modules/viewer.script_library/api/viewer.tcl",
+      "entrypoint_sha256": "581fa6aa09da37fc8127aab10df16097ebed028847ac398b87262fa704676579",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
     },
     {
       "module_id": "viewer.section_profile",
@@ -23769,7 +25785,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.section_profile/api/section_profile_viewer_api_v1.tcl",
       "entrypoint_sha256": "2552c3e485e057b5bc058d6ffe152e037eebf0dc551ac58673dd93ce09a3cc84",
       "capabilities": [
@@ -23787,11 +25803,11 @@
       "api_id": "SIGNAL_ANALYSIS_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.signal_analysis/module.ini",
-      "manifest_sha256": "d8dfd6320da6bcfd7c9eb4de601697fd7c5b1faf16434369c13451a81cfcc5d0",
+      "manifest_sha256": "cc14699ae8fb9efb07d34ff00d323b08bb372d6f011d13f2f5313b1ff5b35cff",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.signal_analysis/api/viewer.tcl",
       "entrypoint_sha256": "ab83a28393e24b796ac8dfd24cf00e8e03e78ce8695aa7b0eafba77b97c3a278",
       "capabilities": [
@@ -23807,13 +25823,13 @@
       "api_id": "SPECTRAL_LIBRARY_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.spectral_library/module.ini",
-      "manifest_sha256": "7b9b4033683b6bf921c44a8171daa556fd103282e84197b8192861489d1a246f",
+      "manifest_sha256": "554489a62a439da175cb87ac49d5490258d1b13fe628bbce5d3d79bccc4df04c",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.spectral_library/api/spectral_library_viewer_api_v1.tcl",
-      "entrypoint_sha256": "7684f0da86c1441971f249c3cd781c5e94067b37bd4dc15d1094b2990aa9bf72",
+      "entrypoint_sha256": "6490385f4cfc1b50edceb6d99207535edc574a02e95cd7033d984801e7adcbb8",
       "capabilities": [
         "viewer_backend",
         "reference_library",
@@ -23832,11 +25848,11 @@
       "api_id": "STATISTICAL_ANALYSIS_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.statistical_analysis/module.ini",
-      "manifest_sha256": "8a6d23337ea1f3e12aa1085f9bab4a12c8c47969344752c693bcb36925eb2716",
+      "manifest_sha256": "915ad48b50a842160538e7c12128dc6178f7eecea79f687d281e248a03ad6943",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.statistical_analysis/api/viewer.tcl",
       "entrypoint_sha256": "6cd00aad4711f3e87bf357496cb415d90f165238e3b5fc13b4248b8600d311a8",
       "capabilities": [
@@ -23848,17 +25864,35 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.stderr_diagnostics",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.stderr_diagnostics/module.ini",
+      "manifest_sha256": "780d87efa69cf37debe6c93f92920d2e82a45994317fe4144cff7839dd05dbeb",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_stderr_diagnostics",
+      "entrypoint": "plugins/modules/viewer.stderr_diagnostics/api/viewer.tcl",
+      "entrypoint_sha256": "713047535f6de36bae32cb05d553b394b33fb0393dca1b2db8b1d9f676764358",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.table_extractor",
       "api_id": "TABLE_EXTRACTOR_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.table_extractor/module.ini",
-      "manifest_sha256": "f5a72e72e43208d43dacc0cae6a171c92292ffd6d60ef9dd3e12c6757e6192b6",
+      "manifest_sha256": "507458b0a4d07ccf20a3a8bf08f119d8c903b7fa7f6021d3f7569ce3a3da27cb",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.table_extractor/api/table_extractor_viewer_api_v1.tcl",
-      "entrypoint_sha256": "35bb8b3ab4023f60b8ad031299ddd9e914d6cb7990a54581172e9cb09257630a",
+      "entrypoint_sha256": "d0c6b36ff34663aece4eddd2eec65f1671ecbddf93dbd9f4d4140d806c3e668f",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
@@ -23869,6 +25903,78 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.test_cad_1",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.test_cad_1/module.ini",
+      "manifest_sha256": "593045b654a45ae818f455e3131acc1a8351a1adf531a53d6cf608e63ab874ca",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_test_cad_1",
+      "entrypoint": "plugins/modules/viewer.test_cad_1/api/viewer.tcl",
+      "entrypoint_sha256": "29187303469b8a8a96ce37a4ce79f426f3942339cfae24a9206de64471b5a170",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "viewer.test_cad_2",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.test_cad_2/module.ini",
+      "manifest_sha256": "92e166ccbabefc618346f5baca94fb45a6ae599cefc43464c5075cf1c792f165",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_test_cad_2",
+      "entrypoint": "plugins/modules/viewer.test_cad_2/api/viewer.tcl",
+      "entrypoint_sha256": "941c18f6e91a75827f9e5674f45cc7a360b4e46ce0653c8275caa632dd41ab81",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "viewer.uml_editor",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.uml_editor/module.ini",
+      "manifest_sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_uml_editor",
+      "entrypoint": "plugins/modules/viewer.uml_editor/api/viewer.tcl",
+      "entrypoint_sha256": "d9cd2a5f9860a9a1ed5ef348ad3a026d0399c62f2d763623f5592f1240af5cc4",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
+      "module_id": "viewer.unified_document_extraction",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.unified_document_extraction/module.ini",
+      "manifest_sha256": "f755279120659e68617ab6b92b33cc46fa65c7d0f6b6b38dd2bc79ef9c149006",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_unified_document_extraction",
+      "entrypoint": "plugins/modules/viewer.unified_document_extraction/api/viewer.tcl",
+      "entrypoint_sha256": "5128e1302ee241d2b884686e7290bd88ba65160acfd9c36d3875e1a1040ebffb",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service."
+    },
+    {
       "module_id": "viewer.xas_spectra",
       "api_id": "XAS_SPECTRA_VIEWER_API_v1",
       "api_version": 1,
@@ -23877,7 +25983,7 @@
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
+      "reason": "No direct current Script registration; this does not claim absence of an equivalent public CORE or higher-version service.",
       "entrypoint": "plugins/modules/viewer.xas_spectra/api/xas_spectra_viewer_api_v1.tcl",
       "entrypoint_sha256": "45cdb6661fcd0ea0b55cd92c82c8b7b253f715c30e031951d09f8bad6df9d09e",
       "capabilities": [
@@ -23890,5 +25996,56 @@
       "namespace": "::GX::XASViewer",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     }
-  ]
+  ],
+  "patch_level": "035",
+  "registration_source_sha256": {
+    "core/script_bindings/canonical_dataset.py": "62e341aa89654c86f742407af5cf05a0235182c2478f79c82e10dc353c128a57",
+    "core/script_bindings/public_core_services.py": "93d1986a7da059a23a2cff1463baaf110613a4714ff058abffd598d100801f17",
+    "core/script_bindings/parameter_service.py": "c708a24af4cb48a74758004f2b9e8a7dccc885e37a141d0ce4aa931b78fb3943",
+    "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py": "54bbc1e44837226dc722a662e1e80a6667d1649c5e55684f9af328b9bec18cc4",
+    "plugins/modules/curvefit.family_global/api/script_bridge_binding.py": "137f1269d450612e0f82d5f676480feacb2c80e9c94eb5ccb986c8ba3e7a8dc7",
+    "plugins/modules/curve.replicate_analysis/api/script_bridge_binding.py": "68061e8e45c13643dcf7e21833fa507368fd31bb7c1144e871d4f2a22c054b8a",
+    "core/script_bindings/curve_source.py": "5a02964d346f9d80b39209312591fa171462c70fac5eb737e32b0bdec6c64de6",
+    "plugins/modules/viewer.dataset_curve_fit/api/script_bridge_binding.py": "4db400d03369d39ad9219dfaca5cd7417d4dc5bb8cee1e0c5155f961fd151e63",
+    "core/script_bindings/dataset_file_publication.py": "b0e40cfd3908377f7b451f0495a535b32d0421f528a769d19dc90de9dcf76cee",
+    "core/script_bindings/dataset_group.py": "13e5eff5270fcdb2998f59c9704912db3f350afaaff97a02827faba0fa6222fa",
+    "core/script_bindings/dataset_metadata.py": "e6d6c941627c8357fa2fe705f87b363d1c60072feeabb45db7cb946de7d91193",
+    "core/script_bindings/dataset_namespace.py": "c6e388913acd2fcf0570359e8f887e3657ea5c969e466df9ade039a65802bc1d",
+    "core/script_bindings/dataset_preview.py": "e7eaf6e7ec0f09c239c68e48d7f60a9d209102fa94cc7074a1c1e0d7ef950f76",
+    "core/script_bindings/dataset_publication.py": "4f0a85bd7f943c48baf5cf49dc7eb5747727aee30308af27e504aa7b0824c6bd",
+    "core/script_bindings/dataset_scientific_profile.py": "039f7c126a17c890752ff5ce88bf5acd6af6a6c6192c3d1f00a74ba37b756120",
+    "core/script_bindings/dataset_selection.py": "3a9b819d8cc663291d3aedb2aa32a195c3f2a4d2d2e2efa0094a7b5b7a11f3e6",
+    "core/script_bindings/dataset_transform.py": "da9ee675fda79bfd96ca97112c41463465954b74a7383743571102a0522837b0",
+    "core/script_bindings/dataset_variable_schema.py": "0f90a5f39483ff946f68e5b567c030b8bc72df3f191e2fed316dd797e81466f7",
+    "core/script_bindings/dataset_viewer.py": "3f5ad20d9b0f1c76f0e35c01ad464583f4166b68630136d0545247f9ea945862",
+    "plugins/modules/math.electromagnetic_simulation/api/script_bridge_binding.py": "9a5cdb10c955ee439588df26bb89ba2ff4035c85e9b2a2d310df7f7a200bcd0b",
+    "core/script_bindings/interactive_document_resources.py": "7cf14e3725f26021c8632ceb4f7eefe6da79bc4dbf5cbbaa64070c473d7c3ef9",
+    "plugins/modules/math.magnetics/api/script_bridge_binding.py": "1e72fff9001aaaef3874cf13755f769652bdaf8a89b4a9bc27a9521059f326a5",
+    "core/script_bindings/managed_resource.py": "123d0c65eb703f731d551332aec6db7a78c93690f039f62f82a694647c18bee2",
+    "core/script_bindings/native2d_geometry.py": "f728c97135b2cdce7b1cc1ad77f5162c10337481317ca70a321b07693157689a",
+    "core/script_bindings/native3d_geometry.py": "f818ffbab24a3e47b0b3bfd51a038ce5339a4890ab546a85bb50cb7e7987c1e2",
+    "plugins/modules/viewer.native_3d/api/script_bridge_binding.py": "c0a8aab62538cb455284771791224847d00e3d3ae9e3cca602540192e75df6d9",
+    "core/script_bindings/native_workspace.py": "418345e7828750f777aa45e487f3edbb745c5fe3a22b816e471ac7983d28a53b",
+    "core/script_bindings/note_document.py": "3b09eda48792a48e6ca1df1f05d7f68f921df58316b462545d81d8b5675a6659",
+    "plugins/modules/math.numeric/api/script_bridge_binding.py": "2167ca5e2ba0395e42bb6592f7045f5cf34bf5b5aa975953d0848c4c5f32cab1",
+    "plugins/modules/plot.dataset/api/script_bridge_binding.py": "8faeb1e3d3590d13ecaca23cc922f6c5edf97283c322d6cacecc20cbd080765c",
+    "plugins/modules/plot.dataset/api/script_bridge_binding_v4.py": "4c0d14728f5be90aad149e0b7c342f048ee1636d9fb7cdd5c85ba2867c0cdabd",
+    "plugins/modules/math.rf_network/api/script_bridge_binding.py": "22ba7e3b88a13541a029d72f10a2167dfe2fd80aebca52b4ca6b8832c399297e",
+    "core/script_bindings/scientific_execution.py": "d49f23a5097477c0406ae9a351ede68c3d4899e5701b08e8f366b63280f5700f",
+    "core/script_bindings/scientific_io.py": "2011a88697e881f17b5d8f0b3f6a184284cec53d00d6a951ebab63b652b10f7a",
+    "core/script_bindings/scientific_library_manager.py": "1cf64689bbbe1c9646b1bf471fc7df735d5166ef871ee059d11dc1e51fc64526",
+    "core/script_bindings/scientific_reference_library.py": "f8b203014a15f64e389d38a507909d15e2a7dafea4ffa78c148b84226cd211f7",
+    "plugins/modules/viewer.scientific_worksheet/api/script_bridge_binding.py": "dfced18c6b59412fe70dc24335e71387754d298637267b6e8fa89f4b2cab39e6",
+    "core/script_bindings/script_execution.py": "937241e5a23e30b4bbb4b04ea78a9fd794f778dfd0e21755b30f4392d2b4ea5c",
+    "core/script_bindings/session_workspace.py": "b07c9e21b5b8eeb21c4d49c566afbd5d3ab9e6c21be85673ef74ad6f17946ac8",
+    "plugins/modules/math.signal/api/script_bridge_binding.py": "a7d735612d9bf9292cb942391e370ad543a137d2dc65ecde4a8c4c8aef3bc64c",
+    "core/script_bindings/sketch_dataset.py": "e19a9e22b3c4902ea0db9b7a91b61722de6a115f085ad571a92488c2e37d12bc",
+    "core/script_bindings/source_surface.py": "2d7c18e6587b5ce8a2874a4ed8df2bb0d21568d2a4f8aba071b5a82001d4aabf",
+    "core/script_bindings/statistical_result_semantics.py": "e7f3e10e948fbba53a85b53d4c22690f424ddfa95272d05d731b5f99213908eb",
+    "core/script_bindings/table_stream.py": "a97892b752e6e5b7864ff6dd325a9b72f3aa2efa4fc64f6c4419bbea5043fd44",
+    "core/script_bindings/ui_field.py": "95d298e8ae34c6b20251e903080219c8c8e7b78cba4fddb93480bae3b319dab8",
+    "core/script_bindings/unit_registry.py": "b7c105ea565b8d9bf025b573bd4c635088feb8688ca93ec83901eee5d42885ba",
+    "core/script_bindings/workbench_extension.py": "0cda7e74748f5f012bc4c5b32f1efe4510c5fd712c2aaf11f488fc00a3ca3efe",
+    "core/script_bindings/xml_document.py": "affc157c5d361b07e03fe6a00a2224d73cf8db9ae4475799c62d9f9dcdfdd8de"
+  }
 }

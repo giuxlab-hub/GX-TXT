@@ -28,7 +28,13 @@ offers an editable color, chooser, and Inherit action for base graphs and
 Variants. GNUplot PNG export applies the effective background to the rendered
 image without changing the scientific data or legend background setting.
 
-Plot layout persists `layout_ylabel_allow_negative` per graph. The checkbox
+Plot layout persists its six margin/gap/offset fields, `layout_auto`, and
+`layout_ylabel_allow_negative` separately for each base graph or Variant through
+the existing Manifest Format 2 axis store. A layout-only row explicitly saves
+Axes `enabled=0`; saving does not enable Axes or alter scientific payloads or
+PlotSpec. Historical Axes rows without an enabled flag retain their legacy ON
+default when loaded; an absent negative-offset flag defaults to OFF.
+The checkbox
 is off by default; turning it on exposes a signed `layout_ylabel_dist` range
 of -30..30 percent. Turning it off clamps an active negative value to zero.
 The final CORE export normalizes displayed signed zero tick labels on X/Y/Z

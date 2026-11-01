@@ -1,0 +1,78 @@
+--- current Builder manual source
++++ proposed Builder manual source (not a direct module patch)
+@@ -28,7 +28,7 @@
+ 
+ **Translate…**, **Rotate…**, **Scale geometry…** and **Reset placement…** use the original transform forms and commit owner. Translation and pivots are in the working length unit. Rotation input degrees are converted by the owner to native radians; scale factors are dimensionless. Physical Scale changes geometry, whereas **Convert working length unit…** changes coordinate representation while preserving physical size. Unit conversion can make captured measurements/comparisons stale and requires the existing saved-view unit checks.
+ 
+-**Duplicate object** on **Model** (also on **Solids**) copies exactly one selected accepted, unlocked object through the original geometry owner. First prepare one canonical ID and press **Select**, then choose Duplicate object. The copy receives an independent canonical object ID while the source and its scientific bindings remain preserved. The copy can initially overlap the source; check the IDs, then use **Translate…** for explicit placement. The action creates one normal semantic History operation. Use **Undo geometry** and **Redo geometry** to reverse or restore it, then **Save geometry** for normal persistence. Empty, multiple, stale or locked selection must be resolved through the ordinary owner controls. **Duplicate group** on **Organize** remains a separate operation on a canonical group; it is not the single-object command. Installed0.1.6 Duplicate/Undo/Redo/SaveOpen acceptance remains OPEN.
++**Duplicate object** on **Model** (also on **Solids**) copies exactly one selected accepted, unlocked object through the original geometry owner. First prepare one canonical ID and press **Select**, then choose Duplicate object. The copy receives an independent canonical object ID while the source and its scientific bindings remain preserved. The copy can initially overlap the source; check the IDs, then use **Translate…** for explicit placement. The action creates one normal semantic History operation. Use **Undo geometry** and **Redo geometry** to reverse or restore it, then **Save geometry** for normal persistence. Empty, multiple, stale or locked selection must be resolved through the ordinary owner controls. **Duplicate group** on **Organize** remains a separate operation on a canonical group; it is not the single-object command. MAIN277 accepted installed0.1.6 single-object duplication with exact source preservation, native independent placement, Undo/Redo, normal save/reopen and bounded invalid-selection refusals; group duplication remains a separate owner action and whole§13 acceptance remains separate.
+ 
+ **Working plane…** opens the validated shared plane form. Its origin has length units; normal and U axis are directions. The owner normalizes the right-handed frame. Choose XY/XZ/YZ or provide the intended arbitrary frame through the actual form controls. Changing the current working plane does not change the plane already captured in an existing retained profile.
+ 
+@@ -101,7 +101,7 @@
+ 
+ **Scientific Recipe…** opens the existing recorder for inspect, validate, replay and Python export through the original owner. Replay validates retained resources, units, APIs/plugins and exact source fingerprints, stages original native geometry and commits one semantic History action. **Extensions / publication…** opens the shared compatible-action chooser; extension proposals use the original Begin/Apply/Commit/Rollback adapter and source guards. It does not grant arbitrary Tcl commands or a second geometry store.
+ 
+-**Interactive Documents…** offers the normal reviewed deletion workflow. Inspect exact logical owner/revision/generation and confirm explicitly. A changed source or Session invalidates the review. Source Datasets and published resources remain preserved; deleting a derived runtime cache is not deleting the scientific document.
++**Interactive Documents…** offers the normal reviewed deletion workflow. Inspect exact logical owner/revision/generation and confirm explicitly. Normal No/Yes, stale revision/Session and externally retained-resource preservation have genuine native evidence. The same captured Session token and document generation/revision are rechecked after Yes; changed context refuses before deletion. Same-ID generation replacement is unavailable through ordinary monotonic GUI allocation and is covered by explicitly typed guard proof, not a fabricated native workflow. Source Datasets and published resources remain preserved; deleting a derived runtime cache is not deleting the scientific document.
+ 
+ **Undo geometry** and **Redo geometry** restore the original canonical semantic geometry/history rather than merely changing labels. Logical allocation counters remain monotonic. A postcommit cleanup/Recovery notice means the scientific commit may already exist; do not assume failure implies rollback or retry a committed operation blindly.
+ 
+@@ -123,7 +123,47 @@
+ 
+ Closing or recreating the originating component, changing Session, deleting the origin, or changing its captured revision/generation/frame expires or rejects return according to the original owner checks. An expired presentation destination cannot attach to a different editor. A stale source, incompatible unit or changed working frame must be resolved explicitly. A retained path preserves exact straight vertices and closure; other supported curve families use explicitly sampled257-point reconstruction and cannot restore lost depth. Boundary projection uses actual supported source boundaries; it is not a general closed-solid silhouette.
+ 
+-MAIN's scoped review254 accepted the genuine217 section/projection/direct-return, idempotent retry, negative lifetime and SaveCloseOpen evidence for criteria13-37/38/39. The accepted example edited the retained outer dimension20→22mm, yielding profile area236mm² and perimeter110mm; a separate3mm extrusion gave708mm³ and802mm² with two solids, preserving original source geometry. Its source-grounded five-vertex open-mesh boundary projection dropped source Z1mm to plane Z0, with area14mm² and perimeter14.67004637770997mm. These are scoped prior015/shared-owner results, not new0.1.6 author tests. Canonical STEP resources and semantic geometry/history were preserved; native serialization fingerprints are not promised identical after STEP restore. Evidence: main_cad_review254/ACCEPTANCE.json and cad_planar_roundtrip217/HANDOFF76.json. Remaining246 organization and other feature tails, all45 acceptance and release/deposition remain OPEN.
++MAIN's scoped review254 accepted the genuine217 section/projection/direct-return, idempotent retry, negative lifetime and SaveCloseOpen evidence for criteria13-37/38/39. The accepted example edited the retained outer dimension20→22mm, yielding profile area236mm² and perimeter110mm; a separate3mm extrusion gave708mm³ and802mm² with two solids, preserving original source geometry. Its source-grounded five-vertex open-mesh boundary projection dropped source Z1mm to plane Z0, with area14mm² and perimeter14.67004637770997mm. These are scoped prior015/shared-owner results, not new0.1.6 author tests. Canonical STEP resources and semantic geometry/history were preserved; native serialization fingerprints are not promised identical after STEP restore. Evidence: main_cad_review254/ACCEPTANCE.json and cad_planar_roundtrip217/HANDOFF76.json. The finite geometry tails are now scoped by MAIN342; remaining current lifecycle/layout/editorial decisions, all45 acceptance and release/deposition remain MAIN-owned.
++
++
++## Generated source practice and accepted current behavior
++
++For a reproducible source-only start, use New Session → Generate Session…;
++Manage Libraries… → Import Library… imports the official Workbench Source
++Practice library when needed. Select CAD and Geometry → CAD Geometry Practice
++1.0.0 (`org.giuxlab.gxtxt.workbench_validation/cad_geometry_practice`). The host
++writes the actual library/generator versions and timestamp to
++`metadata/session_generator.ini`. It generates independent mesh/profile/image
++inputs, references and instructions; it does not generate completed CAD geometry,
++Workspaces, History or managed textures. Import sources through the normal CAD
++forms with explicit mm for unitless STL. No original user Session is required.
++
++After changing the document working unit, close and reopen retained forms before
++applying values. New measurement, New rigid constraint, Translate and Edit
++constraint target/tolerance reject the old captured context with “Geometry
++document changed; reopen this form”. Their first refusals preserve scientific
++Document, native scene, view, History and allocation counters. This is one shared
++context correction across four reported routes (MAIN331), not four independent
++repairs. Fresh Translate0.02cm gives0.2mm displacement; a fresh Edit target2mm and
++tolerance0.00002mm becomes pending without silently solving.
++
++MAIN342 accepts seven finite geometry tails in addition to existing117/176/206/
++246 positive evidence. An actual Heal B-Rep on a valid unitbox is an honest no-op
++derived result; it is not proof of damaged-solid repair. A one-boundary mesh
++correctly refuses seam healing. Ambiguous Stitch has eight independently checked
++boundary offsets; its native form reports generic DEGENERATE. Rotate supports an
++explicit nonorigin pivot; group Rotate/Scale preserve member identities, source
++bindings and History. Missing Selection Set/Saved View references refuse Apply
++with “Record has stale/missing references; recapture it explicitly”. Failed
++Boolean temporary disposal/retry preserves state on failure and monotonic IDs;
++no hidden heap-accounting guarantee is implied.
++
++The standalone illustrated guide is distributed separately from this module,
++framework and scientific Sessions. It preserves earlier genuine screenshots,
++science and first failures and adds current normal public workflows with exact
++units/source/History evidence. MAIN313/320/331/342 accept only their precise
++functional scopes. Remaining current layout/lifecycle/editorial/release status
++is recorded in the external current45 map; no whole§13 acceptance is implied.
+ 
+ ## Development provenance and remaining acceptance
+ 
+@@ -131,5 +171,7 @@
+ 
+ Installed startup and GUI events must execute the distributed precompiled native/viewer.so with zero C++ compiler/linker calls. Only genuine new source/build dependency changes require an explicit development Build. Closing/reopening an unchanged installed Viewer must reuse its distributed artifact.
+ 
+-All45 mandatory parity rows remain subject to installed Debian pointer/keyboard, scientific numerical, lifecycle and negative-case acceptance. Builder validation, compiled event plans and exported ZIPs do not establish those results. Debugger: NOT USED in this source integration; no observed C++ behavioral failure has required it. Final authentic screenshots and the separate illustrated HTML tutorial ZIP are still pending real installed execution. No final acceptance or TODO removal is implied by this guide.
++All45 mandatory parity rows remain subject to installed Debian pointer/keyboard, scientific numerical, lifecycle and negative-case acceptance. Builder validation, compiled event plans and exported ZIPs do not establish those results. Debugger: NOT USED in this source integration; no observed C++ behavioral failure has required it. A separate illustrated HTML guide with genuine installed captures and verified offline links exists; current editorial/remaining-row acceptance and official deposition remain MAIN-owned. No final acceptance or TODO removal is implied by this guide.
+ 
++
++The final font/layout wording is pending the sealed actual335 receipt; this preparation is not a complete product-manual source release.

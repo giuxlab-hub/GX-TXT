@@ -41,8 +41,8 @@ def debug(project,breakpoints,event,state,debug_token=None):
     import gxtxt_viewer_development as dev
     from gxtxt_cpp_policy import FRAMEWORK,POLICY,ACTIVE_PROCESSES
     from gxtxt_viewer_native_worker import runtime_limits
-    if not isinstance(breakpoints,list) or len(breakpoints)>128 or any(type(n)is not int or not 1<=n<=100000 for n in breakpoints):
-        raise dev.DevelopmentError('Breakpoints require bounded physical source lines','DEBUG_BREAKPOINTS')
+    if not isinstance(breakpoints,list) or len(breakpoints)>128:
+        raise dev.DevelopmentError('Breakpoints require at most128 source locations','DEBUG_BREAKPOINTS')
     debug_token=debug_token or uuid.uuid4().hex
     dev.read_project(project)
     channel=project/'derived/debug';channel.mkdir(exist_ok=True)
@@ -58,7 +58,14 @@ def debug(project,breakpoints,event,state,debug_token=None):
         dev.write_json(channel/'state.json',initial)
         return dict(built,debug=initial)
     meta,validation,design,requested=dev.validate(project)
-    snapshot={k:validation[k] for k in ('source_sha256','design_sha256','project_sha256')}
+    snapshot={k:validation[k] for k in ('source_sha256','design_sha256','project_sha256','source_tree_sha256','source_manifest','project_digest_sha256')}
+    source_files=dev.project_sources(project,meta)
+    admitted_breakpoints=[]
+    for item in breakpoints:
+        point=dict(file='handlers.cpp',line=item) if type(item)is int else item
+        if not isinstance(point,dict) or set(point)!={'file','line'} or point['file'] not in source_files or type(point['line'])is not int or not 1<=point['line']<=len(source_files[point['file']].splitlines()):
+            raise dev.DevelopmentError('Breakpoint must identify a declared source file and physical line','DEBUG_BREAKPOINTS')
+        if point not in admitted_breakpoints:admitted_breakpoints.append(point)
     components=[dev.dictionary(v) for v in dev.tkinter.Tcl().splitlist(design['components'])]
     by_index={n+1:c for n,c in enumerate(components)}
     event=event or {'kind':1,'component':4,'value':18.0};state=state or {'values':[0.0]*16,'counter':0}
@@ -68,7 +75,7 @@ def debug(project,breakpoints,event,state,debug_token=None):
     for v in state['values']:dev.finite(v)
     for name in ('command.json','worker-input.json','worker-output.json'):(channel/name).unlink(missing_ok=True)
     dev.write_json(channel/'worker-input.json',dict(library=str(project/'derived/debug-viewer.so'),event=event,state=state))
-    current={'schema':'gxtxt.viewer_cpp_debug.v1','backend':'GDB/MI2','state':'STARTING','debug_token':debug_token,**snapshot,'sequence':0,'frames':[],'locals':[],
+    current={'schema':'gxtxt.viewer_cpp_debug.v1','backend':'GDB/MI2','state':'STARTING','debug_token':debug_token,**snapshot,'sequence':0,'frames':[],'locals':[],'breakpoints':[],
              'worker_limits':runtime_limits(),'active_wall_seconds':POLICY['process_timeout_seconds'],'paused_lease_seconds':900,
              'capabilities':{'controls':['continue','into','over','out','pause','stop','frame','children'],'pause_supported':True,'variable_children':True,'variable_page_size':64,'variable_depth_limit':8,'variable_node_limit':512},'errors':[], 'operations':[], 'numeric_receipts':[]}
     dev.write_json(channel/'state.json',current)
@@ -95,9 +102,22 @@ def debug(project,breakpoints,event,state,debug_token=None):
                 if local.get('node_id'):issue('-var-delete '+json.dumps(local['node_id']),'delete_variable')
             current['inspection_id']=current.get('inspection_id',0)+1
             current['locals']=[];current['variable_nodes']={}
+        def project_frame(frame):
+            frame=dict(frame)
+            try:
+                filename=Path(frame.get('fullname',frame.get('file','')))
+                relative=filename.relative_to(project).as_posix() if filename.is_absolute() else filename.as_posix()
+                if relative in source_files:frame['project_file']=relative
+            except ValueError:pass
+            return frame
+        def breakpoint_record(value):
+            record=project_frame(value)
+            record['resolved']=bool(record.get('project_file') and record.get('addr') not in {None,'<PENDING>','<MULTIPLE>'})
+            records=current['breakpoints'];number=record.get('number')
+            current['breakpoints']=[r for r in records if r.get('number')!=number]+[record]
         def inspect_locals(frame):
             clear_variables()
-            if Path(frame.get('fullname',frame.get('file',''))).name!='handlers.cpp':
+            if not frame.get('project_file'):
                 emit();return
             issue('-stack-list-variables --simple-values','locals:'+str(current['inspection_id']))
         def variable_record(value,name,depth):
@@ -182,12 +202,12 @@ def debug(project,breakpoints,event,state,debug_token=None):
                             parent['children_error']='GDB returned no further children for this range'
             emit()
         def changed():
-            return any(dev.digest((project/name).read_bytes())!=snapshot[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')])
+            return not dev.sources_match(project,snapshot) or any(dev.digest((project/name).read_bytes())!=snapshot[key] for name,key in [('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')])
         try:
             issue('-gdb-set breakpoint pending on')
             issue('-gdb-set mi-async on')
-            for line in sorted(set(breakpoints)):
-                issue('-break-insert -f '+json.dumps(str(project/'handlers.cpp')+':'+str(line)),'breakpoint')
+            for point in admitted_breakpoints:
+                issue('-break-insert -f '+json.dumps(str(project/point['file'])+':'+str(point['line'])),'breakpoint')
             if not breakpoints:issue('-break-insert -f on_event','breakpoint')
             issue('-exec-run')
             while time.monotonic()<deadline:
@@ -214,17 +234,21 @@ def debug(project,breakpoints,event,state,debug_token=None):
                                     current['exit_signal_meaning']=detail.get('signal-meaning','')
                                     current['errors'].append('Native process terminated by '+current['exit_signal']+'; signal alone does not identify a resource-limit cause.')
                                 emit();break
-                            current.update(state='PAUSED',reason=reason,frame=detail.get('frame',{}),selected_frame=0,frames=[],locals=[])
+                            current.update(state='PAUSED',reason=reason,frame=project_frame(detail.get('frame',{})),selected_frame=0,frames=[],locals=[])
                             events.append(detail);current['stops']=events[-128:];emit()
                             issue('-stack-list-frames 0 15','frames');inspect_locals(current['frame'])
+                        elif line.startswith('=breakpoint-modified,'):
+                            update=MI.fields(line.partition(',')[2])
+                            if 'bkpt' in update:breakpoint_record(update['bkpt']);emit()
                         elif re.match(r'^\d+\^',line):
                             m=re.match(r'^(\d+)\^([^,]+),?(.*)$',line);kind=pending.pop(int(m[1]),'control');result=MI.fields(m[3]) if m[3] else {}
                             if kind.startswith('var:'):variable_response(kind,result,m[2]=='error')
                             elif m[2]=='error':current['errors']=(current['errors']+[result.get('msg','GDB control error')])[-16:];emit()
                             elif kind=='frames':
-                                current['frames']=[row.get('frame',row) for row in result.get('stack',[])][:16];emit()
+                                current['frames']=[project_frame(row.get('frame',row)) for row in result.get('stack',[])][:16];emit()
                             elif kind=='frame':
-                                current['frame']=result.get('frame',{});emit();inspect_locals(current['frame'])
+                                current['frame']=project_frame(result.get('frame',{}));emit();inspect_locals(current['frame'])
+                            elif kind=='breakpoint' and 'bkpt' in result:breakpoint_record(result['bkpt']);emit()
                             elif kind.startswith('locals:'):
                                 if int(kind[7:])!=current.get('inspection_id') or current['state']!='PAUSED':continue
                                 variables=result.get('variables',[])

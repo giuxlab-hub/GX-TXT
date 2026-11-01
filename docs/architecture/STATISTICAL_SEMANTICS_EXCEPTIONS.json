@@ -1,0 +1,22 @@
+[
+  {
+    "file": "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/generate.py",
+    "line": 20,
+    "rule": "private_statistic",
+    "owner": "measurement_uncertainty Session Generator independent reference fixture",
+    "reason": "Computes a fixed five-row teaching oracle from literal VALUES/SIGMA and writes only metadata/ground_truth.txt. Production demo consumes canonical Dataset values through Numeric and CORE semantics and never reads this oracle. No user measurement or production result interpretation is exempt.",
+    "scope": "Only this exact immutable reference assignment at line20; no directory, operation family or future source exemption.",
+    "test": "validation/integrated_dev097/generator_statistics_boundary.py",
+    "sha256": "85928ceb5a6749b6bc2140bda4ffbab72513a9d030121c4a760ec201c6229a95"
+  },
+  {
+    "file": "session_generator_packages/expanded/gxtxt_numerical_examples_measurement_uncertainty_1.0.1/generate.py",
+    "line": 20,
+    "rule": "private_statistic",
+    "owner": "measurement_uncertainty Session Generator independent reference fixture",
+    "reason": "Computes a fixed five-row teaching oracle from literal VALUES/SIGMA and writes only metadata/ground_truth.txt. Production demo consumes canonical Dataset values through Numeric and CORE semantics and never reads this oracle. No user measurement or production result interpretation is exempt.",
+    "scope": "Only this exact immutable reference assignment at line20; no directory, operation family or future source exemption.",
+    "test": "validation/integrated_dev097/generator_statistics_boundary.py",
+    "sha256": "85928ceb5a6749b6bc2140bda4ffbab72513a9d030121c4a760ec201c6229a95"
+  }
+]

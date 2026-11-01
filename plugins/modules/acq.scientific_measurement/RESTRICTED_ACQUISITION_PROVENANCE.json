@@ -1,0 +1,13 @@
+{
+  "author_tcl_adapter": false,
+  "binary_sha256": "3295fa27f45a8cab71479dcedbbb4a0b567e013ec0f5b34d85fd08681b442ff0",
+  "module_id": "acq.scientific_measurement",
+  "policy_sha256": "ad9789192f51e0d28e955411c1d35561cbc1ff73500675892e494616d59d4c6c",
+  "project_sha256": "5c3664b7f822446e3d946719b4c873d96ff7a4f0108039316f4154c93c83e398",
+  "promotion": "normal Plugin Manager only",
+  "runtime": "managed_cpp",
+  "schema": "gxtxt.restricted_acquisition_candidate.v1",
+  "sdk_sha256": "2a379c29e18f9cf565bb9876bec791eaad7408aec125249b3511067db4cbfe90",
+  "source_tree_sha256": "0dff84bf0285505c9a1bc796beab922e0d15f855bbaa2c27a921a8996869a1e3",
+  "version": "1.0.2"
+}

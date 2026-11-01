@@ -1,0 +1,337 @@
+{
+  "format": "task210.tutorial_source_package_provenance.v1",
+  "content_id": "tutorial.ticino_valley_3d",
+  "content_version": "0.1.0",
+  "status": "PARTIAL_ACTUAL_GUI_PREVIEW_FAILED_NOT_FINAL",
+  "language": "en",
+  "authoring_role": "GX210-TUTORIAL1-SUB3",
+  "scientific_content_visual_owner": "GX210-TUTORIAL1",
+  "integration_release_gui_owner": "MAIN",
+  "authoring_inputs": [
+    {
+      "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/TICINO_WORKFLOW_DRAFT.md",
+      "sha256": "765e81ac52ab894836b91b35d806b948854f457402cea4c0c5d0dcb217ec4ac6",
+      "commit": "8cd423d8cd0ac46677641ac1894f1c23a3df6d88",
+      "use": "Complete scientific prose preserved in HTML; source notes and evidence shells added."
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/TICINO_SOURCE_BASELINE.json",
+      "sha256": "a1d388c217bc2ed093b1915dbf3f653688e369ebafb038f5f56402d124a82445"
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/tutorials/task210/surface3d_thermal_field",
+      "use": "Current offline layout and optional reading-only script structure; no thermal outcomes, metrics or menu inventory reused."
+    }
+  ],
+  "baseline_source_record": {
+    "format": "task210.ticino_source_workflow.v1",
+    "status": "SOURCE_DRAFT_ALL_GUI_NOT_TESTED",
+    "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "source_root": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110",
+    "source_identity": {
+      "library_id": "org.giuxlab.gxtxt.accepted_generators",
+      "library_version": "1.0.0",
+      "generator_id": "ticino_valley_3d",
+      "generator_version": "1.0.1",
+      "module_id": "demo.geospatial.ticino_valley_3d",
+      "module_version": "2.0.0"
+    },
+    "pins": [
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/session-generator-library.ini",
+        "sha256": "51956c821f825be8908a040a2411f5b3899159ce30b18adbb56f29d9590f7dc1"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generator.ini",
+        "sha256": "3809eba1ba20f664ec5513cd8840e8973ad04f48f25220220fc9917d9726e37e"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generate.py",
+        "sha256": "d1a050c4a5acbf58ed0c8d0558d4dd00c4a7471c37e1700f4259262f2ff6a25e"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/session_recipe.py",
+        "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/README.md",
+        "sha256": "1fd90724cf9d3030c45d8f257051429e6e3534305c8d759b427e1807a0cc9f71"
+      },
+      {
+        "path": "plugins/modules/demo.geospatial.ticino_valley_3d/module.ini",
+        "sha256": "e4b407ab271dcfe945d758947f188e5e3196ce9bd0eeba97d089bdad317ce25d"
+      },
+      {
+        "path": "plugins/modules/demo.geospatial.ticino_valley_3d/MANUAL.md",
+        "sha256": "18e39d51f2afac7ba879a9e2f06d4d8f9132a3052d699414e57bb8bc85aef4c4"
+      },
+      {
+        "path": "plugins/modules/demo.geospatial.ticino_valley_3d/runtime/demo_geospatial_ticino_valley_3d_main.m",
+        "sha256": "10b5d515d81858eaeebd1bde871749a8f2a9fd034cf8782357874603d2b5f550"
+      },
+      {
+        "path": "plugins/modules/demo.geospatial.ticino_valley_3d/runtime/demo_geospatial_ticino_valley_3d_render.m",
+        "sha256": "9ea944299e9e1dbe570d00181a27650748e93f2561f4ed26652324712b0d15f0"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/SOURCES.md",
+        "sha256": "b193c0561efbeeb11c48600802cd65252e250be02443aa63f445ff33ee0c7fcd"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/ATTRIBUTIONS.md",
+        "sha256": "92645c9ef89a7e87ef2510cde9d493c9b939987e227ec982a7bdb3ea114adc4e"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley.metadata.txt",
+        "sha256": "c573f526d2992818901b7750239ca8b8312183c8068d73e7f28512cd9d6d59fb"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley_settlements.metadata.txt",
+        "sha256": "fbb7bb241b9eb913104f0f44d8fa897d0847489fb177727470c6fabd89d7e39e"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_hydraulic_demo.metadata.txt",
+        "sha256": "85167f2a6de861668ca1bfdb7ed9ce060686ec4f20fc58ddc9c0bf1714b81138"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_river_centerline.metadata.txt",
+        "sha256": "d7c380490a3f3f2fcce24630b6ce8632bc1859cf9909678c0ec8c51fd6c6fc99"
+      },
+      {
+        "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley_grid.metadata.txt",
+        "sha256": "4d140f8ee75ea65db522dc97672e9709b5b5491ced038ad59ebf0405f224811a"
+      }
+    ],
+    "source_assets_continuity": {
+      "scope": "Source bytes compared for actual110 baseline; prior source counts reused, not recounted, no generator/GUI execution",
+      "tables": [
+        {
+          "source_asset": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_hydraulic_demo.csv",
+          "sha256": "a51462a88b8e2bfd240c4d3ef9b2f9030a0b3ee34f1d93a6637df1fa505e11e9",
+          "matches_prior_source_inventory": true,
+          "reused_expected_rows": 560,
+          "headers": [
+            "hydro_cell_id",
+            "easting_m",
+            "northing_m",
+            "x_km",
+            "y_km",
+            "latitude_deg",
+            "longitude_deg",
+            "chainage_km",
+            "lateral_offset_m",
+            "terrain_reference_elevation_m",
+            "bed_elevation_m",
+            "water_surface_elevation_m",
+            "water_depth_m",
+            "velocity_m_s"
+          ],
+          "actual_generated_rows": null
+        },
+        {
+          "source_asset": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_river_centerline.csv",
+          "sha256": "e55291f82bd3f11f1cc8220a5a9ba0055dc50ef6d1ab9eae23a912cfa3157f0f",
+          "matches_prior_source_inventory": true,
+          "reused_expected_rows": 443,
+          "headers": [
+            "river_point_id",
+            "chainage_km",
+            "easting_m",
+            "northing_m",
+            "x_km",
+            "y_km",
+            "latitude_deg",
+            "longitude_deg",
+            "terrain_or_bed_reference_elevation_m"
+          ],
+          "actual_generated_rows": null
+        },
+        {
+          "source_asset": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_valley_grid.csv",
+          "sha256": "d19726af82fbee408f7be33e644ac2b5aaf82c8ea9b3720a964c44576aab8343",
+          "matches_prior_source_inventory": true,
+          "reused_expected_rows": 5440,
+          "headers": [
+            "grid_id",
+            "grid_i",
+            "grid_j",
+            "easting_m",
+            "northing_m",
+            "x_km",
+            "y_km",
+            "latitude_deg",
+            "longitude_deg",
+            "elevation_m",
+            "min_elevation_m",
+            "max_elevation_m",
+            "population",
+            "population_density_km2",
+            "built_fraction",
+            "forest_fraction",
+            "agriculture_fraction",
+            "water_fraction",
+            "other_land_fraction",
+            "distance_to_ticino_km",
+            "in_study_corridor"
+          ],
+          "actual_generated_rows": null
+        },
+        {
+          "source_asset": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_valley_settlements.csv",
+          "sha256": "2bc59dd5eaa76b7fcc224994dc0bad92b030b88aec03e24aa79a537aeb205bee",
+          "matches_prior_source_inventory": true,
+          "reused_expected_rows": 573,
+          "headers": [
+            "settlement_id",
+            "LOC_ID",
+            "name",
+            "easting_m",
+            "northing_m",
+            "x_km",
+            "y_km",
+            "latitude_deg",
+            "longitude_deg",
+            "ground_elevation_m",
+            "population",
+            "population_reference_year",
+            "settlement_class",
+            "distance_to_ticino_km"
+          ],
+          "actual_generated_rows": null
+        }
+      ]
+    },
+    "quantity_guards": [
+      "Cartography is historical normalized public-source data; hydraulic values are explicitly synthetic, not flood prediction",
+      "EPSG:25832; local kilometre offsets use E0=458000m,N0=4995000m; do not mix absolute UTM with local coordinates",
+      "Full grid5440 cells; default module metrics over whole grid, not corridor3578 mask",
+      "Schema omitted units are not dimensionless proof; inspect actual GUI and assign only documented actual units through supported normal tools or report gap",
+      "Source numeric role defaults are not independent evidence of physical-coordinate meaning",
+      "Terrain/elevation, population colour, dimensionless fractions and synthetic water height/depth/velocity remain distinct quantities"
+    ],
+    "actual_registered_identity": null,
+    "actual_session_id": null,
+    "actual_dataset_ids": [],
+    "actual_variable_ids": [],
+    "actual_graph_ids": [],
+    "actual_job_ids": [],
+    "actual_values": null,
+    "actual_timings": null,
+    "actual_gui_evidence": [],
+    "full_plots_matrix_completed": false,
+    "generator_or_module_executed": false,
+    "source_or_vendor_modified": false,
+    "draft": "TICINO_WORKFLOW_DRAFT.md"
+  },
+  "attribution_basis": {
+    "source": "Pinned actual110 reference/SOURCES.md and reference/ATTRIBUTIONS.md read only",
+    "data_redistributed": false,
+    "generated_derivatives_redistributed": false,
+    "source_licences": "Source-specific; GPL-3.0-or-later applies only to project-authored tutorial content/layout/script",
+    "final_captures_require": "Applicable notices, modification statements, licence references and no endorsement; retained source licence documents."
+  },
+  "actual_gui_status": "PARTIAL_ACTUAL_GUI_PREVIEW_FAILED",
+  "actual_html_host_status": "NOT_TESTED",
+  "actual_registered_identity": {
+    "library_display": "GX-TXT Accepted Session Generators",
+    "technical_library_identity": null,
+    "generator_display": {
+      "name": "Ticino Valley 3D Cartography",
+      "version": "1.0.1"
+    }
+  },
+  "actual_session_id": null,
+  "actual_dataset_ids": [],
+  "actual_variable_ids": [
+    "v0004",
+    "v0005",
+    "v0012"
+  ],
+  "actual_graph_ids": [],
+  "actual_job_ids": [],
+  "actual_values": null,
+  "actual_timings": null,
+  "actual_captures": [
+    {
+      "path": "assets/steps/grid_variables.png",
+      "raw_capture_number": "012",
+      "sha256": "d1459755021739ed5d234e34aa2d45d1cea447cc9ec5b794ccb17970d3a94a80",
+      "bytes": 89840,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Grid Variables distinguish projected metres, local kilometres and population density. Generic schema roles do not establish measured provenance. This frame shows 21 Variables, not grid topology or a map."
+    },
+    {
+      "path": "assets/steps/hydraulic_units_entered.png",
+      "raw_capture_number": "041",
+      "sha256": "65fd1793127230c08eca8147e4eccac72af7d07d14f95ca64bf4c0173b336964",
+      "bytes": 74180,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Documented hydraulic units entered through Variables: m for offset, reference/bed/water-surface elevation and depth; m/s for velocity. This is before Save, with the velocity field focused. Later normal Save and Technical Details readback are operator observations, not shown here. No conversion, calibration or cold persistence is established."
+    },
+    {
+      "path": "assets/steps/synthetic_hydraulics_warning.png",
+      "raw_capture_number": "048",
+      "sha256": "d24d08eb21d368280552f33d19b9b1e5246fcb5e3539536a8fa8cff8f1de6336",
+      "bytes": 107945,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "The imported metadata declares synthetic=true, calibrated=false, measured=false and internal-consistency-only scope. Read the complete selected warning in the lower Value field: not CFD, a shallow-water model, a flood model or a prediction. The table row is clipped; these are provenance declarations, not independent numerical validation."
+    },
+    {
+      "path": "assets/steps/hydraulic_preview_failed.png",
+      "raw_capture_number": "060",
+      "sha256": "3ba6d2591f34a71f21cab7780b518f602b93643dfe13e5c43c19aadd121021d1",
+      "bytes": 57819,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "One hydraulic Preview Render ended: Preview unavailable: Worker exit status 1. X/Y are local kilometres; the complete Z selection, water_surface_elevation_m (m), v0012, is attributed to the operator record because the selector is clipped here. No successful scientific plot or native 3D interaction was observed; dependent work stopped. Cause unknown."
+    },
+    {
+      "path": "assets/steps/quality_report_unavailable.png",
+      "raw_capture_number": "061",
+      "sha256": "2f17e3af97b4e405c426f2b2c0b844084dc84fec55b174590b63b41112542f13",
+      "bytes": 52479,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Quality reports no published report while Preview remains unavailable. Missing diagnostics or uncertainty do not mean zero error. This is an unavailable report, not a Quality PASS or numerical comparison."
+    }
+  ],
+  "full_plots_matrix_complete": false,
+  "final_zip": false,
+  "source_entry_sha256": "673fc5b41881603f67bb84cf7b2ae7632dc82c4e35e21db86cdcab1eb553ebf6",
+  "tested_manifest_fields_omitted": true,
+  "authoring_execution": "Original authoring/source baseline history below is preserved. This revision authors source/copies five unchanged admitted-frame candidates from the actual Ticino001 operator record; no new GUI, generator, module, browser/JS/API/helper/test/static/archive campaign or ZIP. Candidate source not yet adopted.",
+  "authored_at_owned_product_source_root": false,
+  "parent_source_review": {
+    "timestamp_utc": "2026-10-22T21:01:31.765175+00:00",
+    "scope": "Full HTML/source metadata/coverage/observations/README/manifest/local readingJS read; source-specific attribution compared with supplied source documents; no browser/host/science execution",
+    "status": "SOURCE_REVIEWED_DRAFT; ALL_ACTUAL_GUI_NOT_TESTED",
+    "child_original_index_sha256": "04f6f8009e4b25164ce2e36c317f16a4485d0c0462c2d9ecc8699cd281d5427e",
+    "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/drafts/ticino_product01"
+  },
+  "host_link_source_review": {
+    "finding_id": "HOST-LINK-01",
+    "status": "SOURCE_CORRECTED_ACTUAL_HOST_NOT_TESTED",
+    "source_review": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/FOUR_PACKAGE_HOST_EVIDENCE_REQUEST.md",
+    "source_review_sha256": "ecc55783753071f3f37ca517db49bfa61ef678629a21dfbf1d938ed44ea56c4e",
+    "change": "Non-web LICENSE/README/checksum links replaced by plain package-file references; original files retained unchanged",
+    "host_policy": "Actual110 webAsset allowlist excludes md, extensionless and sha256 assets; no runtime policy change",
+    "actual_host_validation": false
+  },
+  "actual_candidate_build": {
+    "version": "0.9.8.10-dev-111",
+    "commit": "e9aad5063f1223f4746760e6fc6e79f26392a412",
+    "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+    "installed": false,
+    "activated": false
+  },
+  "actual_observation_record": "evidence/ticino001.json",
+  "partial_revision": {
+    "parent_result_commit": "93edde22",
+    "MAIN_received_sequence": 1183,
+    "child_science_review_sha256": "d3b6eb694e731a16ea0eeaa24c833eb0e642dbc03655e36e0d538338b5f11470",
+    "child_lifecycle_review_sha256": "82dfb47bda6b3b0ad6a75fd1249188580a89759dd4289d33bcf99f8209e8eb46",
+    "child_visual_dispositions_sha256": "41c0fb0684b7e41a33efa7348653c5ad2b0acf42e8ac189b7bc30268ceac327b",
+    "layout_grid_note": "GUI5440 and source-defined68x80 are not topology validation; demo0Run.",
+    "HTML_science_review_R2_sha256": "487a7dfd78b64f219306a1a94fef02369c5479b9e5c3540caa56338648c6c001",
+    "HTML_visual_source_review_R2_sha256": "8967f88cec681fb1ea8acd36bb7548808492ebd93a6d12d484d16568d83a9aeb",
+    "R3_parent_corrections": "Distinct short name/display title/unknown immutableID; future unused name preserves historical evidence; no-image wording narrowed to scientific derivatives. R2 child reviews remain exact R2 scope, not claimed full R3/package/host validation."
+  }
+}

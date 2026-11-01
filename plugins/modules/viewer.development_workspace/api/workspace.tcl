@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Ordinary Viewer client. CORE owns policy, compiler, runtime, native views and packages.
 namespace eval ::GX::ViewerDevelopmentWorkspace {variable s;array set s {project {} mode cpp file handlers.cpp dirty 0 baseline {} busy {} generation 0 windowGeneration 0 status {Open or create a restricted C++ project, or maintain an approved installed Viewer. No scientific Session is required.} preview {} find {}}}
+source [file join [file dirname [info script]] project_files.tcl]
 proc ::GX::ViewerDevelopmentWorkspace::safe {method args} {
     if {[catch {[namespace current]::$method {*}$args} result options]} {set ::GX::ViewerDevelopmentWorkspace::s(status) $result;log "$result\n";return [dict create status FAILED message $result]}
     return $result
@@ -10,27 +11,29 @@ proc ::GX::ViewerDevelopmentWorkspace::log {message} {
     if {![winfo exists $text]} return
     $text configure -state normal;if {[string length [$text get 1.0 end]]>65536} {$text delete 1.0 end-32768c};$text insert end $message;$text see end;$text configure -state disabled
 }
-proc ::GX::ViewerDevelopmentWorkspace::text {} {return .gxViewerDevelopment.body.center.source.text}
-proc ::GX::ViewerDevelopmentWorkspace::modified {} {
+proc ::GX::ViewerDevelopmentWorkspace::text {} {variable s;return [expr {[info exists s(editor)]?$s(editor):{}}]}
+proc ::GX::ViewerDevelopmentWorkspace::modified {{widget {}}} {
     variable s;if {![winfo exists [text]]} return
+    if {$s(mode) in {cpp acquisition}} {projectDirty;return}
     set s(dirty) [expr {[::GX::sourceSurfaceGet [text]] ne $s(baseline)}]
     set s(status) "[file tail $s(project)] / $s(file) · [expr {$s(dirty)?{unsaved}:{saved}}]"
 }
 proc ::GX::ViewerDevelopmentWorkspace::prepare {} {
     variable s
+    if {$s(mode) eq {acquisition}} {return [acqPrepare]}
+    if {$s(mode) eq {cpp} && ![projectNotesReview]} {return 0}
     if {!$s(dirty)} {return 1}
-    set answer [tk_messageBox -parent .gxViewerDevelopment -type yesnocancel -icon question -title {Unsaved developer source} -message {Save the current source before continuing?}]
-    if {$answer eq {cancel}} {return 0};if {$answer eq {yes}} {save}
+    set answer [tk_messageBox -parent .gxViewerDevelopment -type yesnocancel -icon question -title {Unsaved developer source} -message [expr {$s(mode) eq {cpp}?{Save all changed project sources before continuing?}:{Save the current source before continuing?}}]]
+    if {$answer eq {cancel}} {return 0};if {$answer eq {yes}} {if {$s(mode) eq {cpp}} {saveAll} else {save};if {$s(dirty)} {error {New edits arrived during Save; review them before continuing}}}
     return 1
 }
 proc ::GX::ViewerDevelopmentWorkspace::save {} {
     variable s
     if {$s(mode) eq {maintenance}} {return [maintenanceSave]}
-    if {$s(project) eq {}||$s(file) ni {handlers.cpp project.json}} {error {Choose an editable project source first}}
-    set source [::GX::sourceSurfaceGet [text]]
-    transfer save $source $s(file)
-    set s(baseline) $source;set s(dirty) [expr {[::GX::sourceSurfaceGet [text]] ne $source}];set s(status) "Saved $s(file) · [string range [::GX::sha256File [file join $s(project) $s(file)]] 0 11]"
-    if {$s(file) eq {project.json}} {apiRefresh}
+    set note [projectNotesActive]
+    if {$note ne {}} {return [::GX::sourceNoteEditorSaveSafe [dict get $s(notes) $note editor]]}
+    if {$s(mode) eq {acquisition}} {return [acqSave]}
+    return [projectSave]
 }
 proc ::GX::ViewerDevelopmentWorkspace::transfer {operation source {filename handlers.cpp}} {
     variable s;variable transferSerial;variable transfers
@@ -55,36 +58,30 @@ proc ::GX::ViewerDevelopmentWorkspace::transferred {id response} {
     set transfers($id) $response
 }
 proc ::GX::ViewerDevelopmentWorkspace::read {name} {
-    variable s;if {![prepare]} return
-    if {$s(mode) eq {maintenance}} {return [maintenanceRead $name]}
-    set roots [dict create handlers.cpp [file join $s(project) handlers.cpp] project.json [file join $s(project) project.json] design.gxtxt-viewer [file join $s(project) design.gxtxt-viewer] validation.json [file join $s(project) derived validation.json] build.json [file join $s(project) derived build.json] adapter.cpp [file join $::GX::scriptDir core development sdk trusted_adapter_v1.cpp]]
-    if {![dict exists $roots $name]} {error {Unknown project browser file}}
-    set path [dict get $roots $name]
-    if {![file isfile $path]||[file type $path] eq {link}||[file size $path]>4194304} {error {Project file is unavailable or exceeds its bound}}
-    set f [::open $path rb];try {set source [encoding convertfrom utf-8 [::read $f 4194305]]} finally {::close $f}
-    set s(file) $name;set s(baseline) $source;set s(dirty) 0
-    set language [expr {[string match *.cpp $name] ? {cpp} : ([string match *.json $name] ? {javascript} : {tcl})}]
-    ::GX::sourceSurfaceConfigure [text] [dict create language $language mode [expr {$name in {handlers.cpp project.json}?{editable}:{read_only}}]]
-    ::GX::sourceSurfaceSet [text] $source
-    set s(status) "$name · [expr {$name in {handlers.cpp project.json}?{editable}:{read-only generated/design source}}]"
+    variable s
+    if {$s(mode) eq {maintenance}} {if {![prepare]} return;return [maintenanceRead $name]}
+    return [projectRead $name]
 }
 proc ::GX::ViewerDevelopmentWorkspace::selected {} {
     set name [lindex [.gxViewerDevelopment.body.left.files.tree selection] 0]
-    if {$name ne {}} {safe read $name}
+    if {$name ne {} && ![string match folder:* $name]} {safe read $name}
 }
 proc ::GX::ViewerDevelopmentWorkspace::project {path} {
     variable s
-    if {![prepare]} return
     set path [file normalize $path]
+    if {[acqTarget $path]} {return [acqProject $path]}
+    if {![prepare]} return
+    acqReferenceRestore
     if {[file isfile [file join $path maintenance.json]]} {return [maintenanceProject $path]}
     if {![file isfile [file join $path project.json]]} {error {Choose a developer project containing project.json or maintenance.json}}
     if {$s(busy) ne {}} {::GX::scriptJobRequestCancel $s(busy) closed;set s(busy) {}}
     incr s(generation)
     set s(project) $path;set s(mode) cpp;set s(dirty) 0
+    projectTabsReset
+    set s(projectHash) [::GX::sha256File [file join $path project.json]]
     wm title .gxViewerDevelopment {Viewer Development Workspace · restricted C++}
-    set tree .gxViewerDevelopment.body.left.files.tree;$tree delete [$tree children {}]
-    foreach {name label} {handlers.cpp {C++ handlers} project.json {Project / facilities / tests} design.gxtxt-viewer {Builder design (read-only)} validation.json {Validation report} build.json {Build manifest} adapter.cpp {Trusted C++ adapter}} {$tree insert {} end -id $name -text $label}
-    ::GX::uiFieldInspectionColumnsSchedule $tree
+    projectTreeRefresh
+    set tree .gxViewerDevelopment.body.left.files.tree
     $tree selection set handlers.cpp;read handlers.cpp
     set s(status) "Project: $path"
     apiRefresh
@@ -115,6 +112,7 @@ proc ::GX::ViewerDevelopmentWorkspace::openProject {} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::request {operation} {
     variable s
+    if {$s(mode) eq {acquisition}} {return [acqRun $operation]}
     if {$s(mode) eq {maintenance}} {
         if {$operation ni {validate export}} {error {C++ Build/Run/Preview/Test are unavailable in trusted Tcl maintenance; use approved candidate promotion and real GUI verification}}
         if {$s(dirty)} {save}
@@ -125,7 +123,9 @@ proc ::GX::ViewerDevelopmentWorkspace::request {operation} {
     }
     if {$s(project) eq {}} {error {Open or create a developer project first}}
     if {$s(busy) ne {}} {error {Wait or cancel the current development request}}
-    if {$s(dirty)} {save}
+    if {$s(dirty)} {saveAll}
+    if {$s(dirty)} {error {New edits arrived during Save All; save them before running the request}}
+    if {$operation eq {export}} {if {![projectNotesReview]} return;projectNotesSnapshotExport}
     incr s(generation)
     set s(busy) [::GX::viewerDevelopmentRequest $operation $s(project) [list ::GX::ViewerDevelopmentWorkspace::completed $operation $s(project) $s(generation)]]
     set s(status) "[string totitle $operation] running through the shared restricted backend…";controls
@@ -147,27 +147,35 @@ proc ::GX::ViewerDevelopmentWorkspace::completed {operation project generation r
 proc ::GX::ViewerDevelopmentWorkspace::diagnosticsShow {report} {
     set tree .gxViewerDevelopment.bottom.diagnostics.tree;$tree delete [$tree children {}]
     foreach row [::GX::datasetPublicationV2DictDefault $report diagnostics {}] {$tree insert {} end -values [list [dict get $row file] [dict get $row line] [dict get $row column] [dict get $row message]]}
-    ::GX::uiFieldInspectionColumnsSchedule $tree
+    ::GX::uiFieldInspectionColumnsSchedule $tree {fill message}
 }
 proc ::GX::ViewerDevelopmentWorkspace::controls {} {
     variable s
     if {![winfo exists .gxViewerDevelopment]} return
-    foreach id {validate build demo test export} {.gxViewerDevelopment.toolbar.$id state [expr {$s(busy) eq {}?{!disabled}:{disabled}}]}
+    .gxViewerDevelopment.menus.edit entryconfigure {Find…} -state [expr {$s(busy) eq {}?{normal}:{disabled}}]
+    .gxViewerDevelopment.menus.edit entryconfigure {Replace in Note…} -state [expr {[noteMenuHandle] ne {}?{normal}:{disabled}}]
+    if {$s(mode) eq {acquisition}} {acqControls;return}
+    foreach id {new open save saveall validate build demo test export} {.gxViewerDevelopment.toolbar.$id state [expr {$s(busy) eq {}?{!disabled}:{disabled}}]}
     .gxViewerDevelopment.toolbar.cancel state [expr {$s(busy) eq {}?{disabled}:{!disabled}}]
     if {[llength [info commands debugButtons]]} {debugButtons}
     if {$s(mode) eq {maintenance}} {
         foreach id {build demo test} {.gxViewerDevelopment.toolbar.$id state disabled}
         if {[winfo exists .gxViewerDevelopment.debugbar]} {foreach id {run start continue pause into over out stop} {.gxViewerDevelopment.debugbar.$id state disabled}}
     }
+    set sourceState [expr {$s(mode) eq {cpp} && $s(project) ne {} && $s(busy) eq {}?{!disabled}:{disabled}}]
+    foreach id {add import rename remove close} {.gxViewerDevelopment.toolbar.file_$id state $sourceState}
+    foreach label {{New project file…} {Add existing file…} {Rename / move file…} {Remove project file…} {Close source tab}} {.gxViewerDevelopment.menus.file entryconfigure $label -state [expr {$sourceState eq {!disabled}?{normal}:{disabled}}]}
     foreach label {Build {Demo / Preview} Test {Enable installed native GUI testing} {Review saved Workspace upgrade…}} {
         .gxViewerDevelopment.menus.develop entryconfigure $label -state [expr {$s(mode) eq {maintenance}?{disabled}:{normal}}]
     }
 }
 proc ::GX::ViewerDevelopmentWorkspace::cancel {} {variable s;if {$s(busy) ne {}} {::GX::scriptJobRequestCancel $s(busy)}}
 proc ::GX::ViewerDevelopmentWorkspace::demo {} {
-    variable s;if {$s(project) eq {}} {error {Open a project first}}
+    variable s
+    if {$s(mode) eq {acquisition}} {return [acqRun run]};if {$s(project) eq {}} {error {Open a project first}}
     if {$s(mode) eq {maintenance}} {error {Tcl maintenance does not execute edited source; export and request normal candidate promotion}}
-    if {$s(dirty)} {save}
+    if {$s(dirty)} {saveAll}
+    if {$s(dirty)} {error {New edits arrived during Save All; save them before Preview}}
     if {$s(preview) ne {}&&[winfo exists $s(preview)]} {destroy $s(preview)}
     set s(preview) [::GX::viewerDevelopmentPreview $s(project)]
 }
@@ -175,17 +183,18 @@ proc ::GX::ViewerDevelopmentWorkspace::diagnostic {} {
     variable s;set tree .gxViewerDevelopment.bottom.diagnostics.tree
     set item [lindex [$tree selection] 0];if {$item eq {}} return
     lassign [$tree item $item -values] file line column message
-    read handlers.cpp;set t [text];$t tag remove sel 1.0 end;$t tag add sel $line.0 $line.end;$t mark set insert $line.[expr {max(0,$column-1)}];$t see $line.0;focus $t
+    read $file;set t [text];$t tag remove sel 1.0 end;$t tag add sel $line.0 $line.end;$t mark set insert $line.[expr {max(0,$column-1)}];$t see $line.0;focus $t
     set s(status) "$file:$line:$column · $message"
 }
 proc ::GX::ViewerDevelopmentWorkspace::apiRefresh {} {
     variable s
-    set browser .gxViewerDevelopment.body.left.apiSplit.browser
+    set browser [apiBrowserWidget]
     ::GX::apiBrowserProjectSet $browser [expr {$s(mode) eq {maintenance}?{}:$s(project)}]
     ::GX::apiBrowserRefresh $browser
 }
-proc ::GX::ViewerDevelopmentWorkspace::apiSelect {} {::GX::apiBrowserSelect .gxViewerDevelopment.body.left.apiSplit.browser}
-proc ::GX::ViewerDevelopmentWorkspace::apiGuide {} {::GX::apiBrowserManual .gxViewerDevelopment.body.left.apiSplit.browser}
+proc ::GX::ViewerDevelopmentWorkspace::apiBrowserWidget {} {return .gxViewerDevelopment.body.right.api.scroll.content.browser}
+proc ::GX::ViewerDevelopmentWorkspace::apiSelect {} {::GX::apiBrowserSelect [apiBrowserWidget]}
+proc ::GX::ViewerDevelopmentWorkspace::apiGuide {} {::GX::apiBrowserManual [apiBrowserWidget]}
 proc ::GX::ViewerDevelopmentWorkspace::manual {} {::GX::documentationBrowserOpenModuleWindow viewer.development_workspace .gxViewerDevelopment}
 proc ::GX::ViewerDevelopmentWorkspace::supportCatalog {} {
     set w [::GX::documentationBrowserOpenModuleWindow viewer.development_workspace .gxViewerDevelopment]
@@ -202,7 +211,8 @@ proc ::GX::ViewerDevelopmentWorkspace::guiTesting {} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::find {direction} {variable s;::GX::sourceSurfaceFind [text] $s(find) $direction}
 proc ::GX::ViewerDevelopmentWorkspace::importSource {} {
-    variable s;if {$s(project) eq {}} {error {Open a project first}};if {![prepare]} return
+    variable s
+    if {$s(mode) eq {acquisition}} {return [acqFileDialog import]};if {$s(project) eq {}} {error {Open a project first}};if {![prepare]} return
     if {$s(mode) eq {maintenance}} {error {Use the admitted Source Surface file; arbitrary source import is unavailable in maintenance mode}}
     set path [tk_getOpenFile -parent .gxViewerDevelopment -title {Import C++ source as data} -filetypes {{{C++ source} {.cpp .cc .cxx}} {{All files} *}}]
     if {$path eq {}} return
@@ -222,6 +232,7 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     variable s;set w .gxViewerDevelopment
     if {[winfo exists $w]} {
         raise $w
+        if {[dict exists $context project] && [file normalize [dict get $context project]] ne $s(project)} {project [dict get $context project]}
         if {[dict exists $context maintenance_module]} {maintenanceDialog [dict get $context maintenance_module] [dict get $context maintenance_provider]}
         return $w
     }
@@ -229,19 +240,26 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     toplevel $w;wm title $w {Viewer Development Workspace · restricted C++};wm geometry $w 1320x860+40+60;wm minsize $w 980 650
     menu $w.menus -tearoff 0;$w configure -menu $w.menus
     foreach {id label} {file File edit Edit view View develop Develop help Help} {menu $w.menus.$id -tearoff 0;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$id}
-    foreach {label command} {{New project…} new {Open project…} openProject {Save source} save {Import C++ source…} importSource {Export candidate} {request export} Close close} {$w.menus.file add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
-    $w.menus.file insert 2 command -label {Maintain installed Viewer…} -command {::GX::ViewerDevelopmentWorkspace::safe maintenanceDialog}
+    foreach {label command} {{New project…} new {Open project…} openProject {Import project package…} importProject {Save source} save {Save all sources} saveAll {New project file…} {projectFileDialog add} {Add existing file…} {projectFileDialog import} {Rename / move file…} {projectFileDialog rename} {Remove project file…} projectFileRemove {Close source tab} projectTabClose {Import C++ source…} importSource {Export candidate} {request export} Close close} {$w.menus.file add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
+    $w.menus.file insert 2 command -label {New Acquisition project…} -command {::GX::ViewerDevelopmentWorkspace::safe acqBuilder 1}
+    $w.menus.file insert 3 command -label {Acquisition project metadata/profiles…} -command {::GX::ViewerDevelopmentWorkspace::safe acqBuilder}
+    $w.menus.file insert 4 command -label {Maintain installed Viewer…} -command {::GX::ViewerDevelopmentWorkspace::safe maintenanceDialog}
     foreach {label operation} {Undo undo Redo redo {Select all} select_all Copy copy Cut cut Paste paste} {$w.menus.edit add command -label $label -command [list ::GX::uiTextEdit $w $operation]}
+    $w.menus.edit add command -label {Find…} -accelerator Ctrl+F -command {::GX::ViewerDevelopmentWorkspace::safe projectNotesSearch find}
+    $w.menus.edit add command -label {Replace in Note…} -accelerator Ctrl+H -command {::GX::ViewerDevelopmentWorkspace::safe projectNotesSearch replace}
+    $w.menus.edit add command -label {Edit Notes} -command {::GX::ViewerDevelopmentWorkspace::safe projectNotesShow}
+    $w.menus.view add checkbutton -label {Show Notes} -variable ::GX::ViewerDevelopmentWorkspace::s(showNotes) -command {::GX::ViewerDevelopmentWorkspace::safe projectNotesToggle}
+    ::GX::sourceNoteEditorMenusAttach $w.menus.edit $w.menus.view ::GX::ViewerDevelopmentWorkspace::noteMenuHandle
     foreach {label command} {Validate {request validate} Build {request build} {Demo / Preview} demo Test {request test} {Cancel request} cancel} {$w.menus.develop add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
     $w.menus.develop add command -label {C/C++ support catalog} -command [list ::GX::ViewerDevelopmentWorkspace::safe supportCatalog]
     $w.menus.develop add command -label {Enable installed native GUI testing} -command [list ::GX::ViewerDevelopmentWorkspace::safe guiTesting]
     $w.menus.develop add command -label {Review saved Workspace upgrade…} -command [list ::GX::ViewerDevelopmentWorkspace::safe workspaceUpgradeDialog]
     $w.menus.help add command -label {Developer manual} -command ::GX::ViewerDevelopmentWorkspace::manual
     $w.menus.help add command -label {About…} -command [list ::GX::documentationBrowserAboutModule viewer.development_workspace development_workspace $w]
-    ttk::frame $w.toolbar;pack $w.toolbar -fill x -padx 5 -pady 5
-    foreach {id label command} {new New new open Open openProject save Save save validate Validate {request validate} build Build {request build} demo Preview demo test Test {request test} export Export {request export} cancel Cancel cancel} {ttk::button $w.toolbar.$id -text $label -width 0 -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command];pack $w.toolbar.$id -side left -padx 2}
-    ttk::label $w.status -textvariable ::GX::ViewerDevelopmentWorkspace::s(status) -anchor w -wraplength 1250;pack $w.status -side bottom -fill x -padx 6 -pady 5
-    ttk::notebook $w.bottom;pack $w.bottom -side bottom -fill x -padx 6 -pady 3
+    ttk::frame $w.toolbar;pack $w.toolbar -fill x -padx 5 -pady 1
+    foreach {id label command} {new New new open Open openProject save Save save saveall {Save All} saveAll validate Validate {request validate} build Build {request build} demo Preview demo test Test {request test} export Export {request export} cancel Cancel cancel} {ttk::button $w.toolbar.$id -text $label -width 0 -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command];pack $w.toolbar.$id -side left -padx 2}
+    ttk::label $w.status -textvariable ::GX::ViewerDevelopmentWorkspace::s(status) -anchor w -wraplength 1250;pack $w.status -side bottom -fill x -padx 6 -pady 1
+    ::GX::uiFieldComponentCreate $w.bottom tabs {} {} {};pack $w.bottom -side bottom -fill x -padx 6 -pady 1
     ttk::frame $w.bottom.diagnostics
     ttk::frame $w.bottom.output
     ttk::treeview $w.bottom.diagnostics.tree -columns {file line column message} -show headings -height 5
@@ -257,9 +275,11 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     $w.bottom add $w.bottom.diagnostics -text Diagnostics;$w.bottom add $w.bottom.output -text {Build / runtime output}
     bind $w.bottom.diagnostics.tree <Double-1> ::GX::ViewerDevelopmentWorkspace::diagnostic
     ttk::panedwindow $w.body -orient horizontal;pack $w.body -fill both -expand 1 -padx 6
-    ttk::frame $w.body.left;ttk::frame $w.body.center;ttk::notebook $w.body.right
+    ttk::frame $w.body.left -width 205;pack propagate $w.body.left 0
+    ttk::frame $w.body.center;::GX::uiFieldComponentCreate $w.body.right tabs {} {} {}
     $w.body add $w.body.left -weight 0;$w.body add $w.body.center -weight 1;$w.body add $w.body.right -weight 0
-    ttk::label $w.body.left.title -text {Developer project} -font TkHeadingFont;pack $w.body.left.title -fill x
+    ttk::label $w.body.left.title -text {Developer project} -font TkHeadingFont -width 1 -wraplength 180;pack $w.body.left.title -fill x
+    bind $w.body.left.title <Configure> [list ::GX::_uiFieldComponentTextWrap $w.body.left.title 32767 %W %w]
     ttk::frame $w.body.left.files;pack $w.body.left.files -fill both -expand 1
     ttk::treeview $w.body.left.files.tree -show tree -height 12 -selectmode browse
     $w.body.left.files.tree column #0 -width 260 -minwidth 150 -stretch 0
@@ -268,22 +288,37 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     $w.body.left.files.tree configure -yscrollcommand [list $w.body.left.files.vertical set] -xscrollcommand [list $w.body.left.files.horizontal set]
     pack $w.body.left.files.horizontal -side bottom -fill x;pack $w.body.left.files.vertical -side right -fill y;pack $w.body.left.files.tree -fill both -expand 1
     bind $w.body.left.files.tree <<TreeviewSelect>> ::GX::ViewerDevelopmentWorkspace::selected
-    ::GX::apiBrowserMount $w.body.left Cpp
-    $w.menus.view add checkbutton -label {API Browser} -variable ::GX::ApiBrowser::state($w.body.left.apiSplit,visible) -command [list ::GX::apiBrowserToggle $w.body.left]
-    set source [::GX::sourceSurfaceCreate $w.body.center.source {mode read_only language cpp}]
+    foreach {id label command} {add {New file} {projectFileDialog add} import {Add file} {projectFileDialog import} rename {Rename / move} {projectFileDialog rename} remove Remove projectFileRemove close {Close tab} projectTabClose} {
+        ttk::button $w.toolbar.file_$id -text $label -width 0 -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]
+        pack $w.toolbar.file_$id -side left -padx 2 -pady 2
+        bind $w.toolbar.file_$id <Enter> [list ::GX::plotsToolbarTipSchedule $w.toolbar.file_$id $label]
+        bind $w.toolbar.file_$id <Leave> ::GX::plotsToolbarTipHide
+    }
+    ::GX::uiFieldComponentCreate $w.body.center.sources tabs {} {} {}
+    pack $w.body.center.sources -fill both -expand 1
+    set s(tabs) {};set s(notes) {};set s(showNotes) 0;set s(tabSerial) 0
+    bind $w.body.center.sources <<NotebookTabChanged>> +::GX::ViewerDevelopmentWorkspace::projectTabSelected
     set s(baseline) "// Open or create a restricted C++ Viewer project.\n// The trusted SDK is supplied automatically; no scientific Session is needed.\n"
-    ::GX::sourceSurfaceSet $source $s(baseline)
-    pack $w.body.center.source -fill both -expand 1
-    bind $source <<Modified>> +::GX::ViewerDevelopmentWorkspace::modified
+    set source [projectTabCreate Welcome $s(baseline) 0 cpp {}];set s(editor) $source
     ttk::frame $w.body.center.find
     ttk::label $w.body.center.find.label -text Find:
     ttk::entry $w.body.center.find.entry -width 8 -textvariable ::GX::ViewerDevelopmentWorkspace::s(find)
     ttk::button $w.body.center.find.previous -text Prev -width 0 -command {::GX::ViewerDevelopmentWorkspace::find backward}
     ttk::button $w.body.center.find.next -text Next -width 0 -command {::GX::ViewerDevelopmentWorkspace::find forward}
     pack $w.body.center.find.label $w.body.center.find.entry $w.body.center.find.previous $w.body.center.find.next -side left -padx 3 -pady 3
-    pack $w.body.center.find -side bottom -fill x -before $w.body.center.source
+    pack $w.body.center.find -side bottom -fill x -before $w.body.center.sources
     ttk::frame $w.body.right.sdk;ttk::frame $w.body.right.profile
     $w.body.right add $w.body.right.sdk -text SDK;$w.body.right add $w.body.right.profile -text Profile
+    set apiContent [::GX::uiFieldScrollableCreate $w.body.right.api 360]
+    set apiBrowser [apiBrowserWidget]
+    ::GX::apiBrowserCreate $apiBrowser Cpp [dict create presentation compact title {}]
+    $apiBrowser.status configure -wraplength 320 -justify left
+    bind $apiBrowser.status <Configure> +[list ::GX::_uiFieldComponentTextWrap $apiBrowser.status 32767 %W %w]
+    pack $apiBrowser -in $apiContent -fill both -expand 1
+    bind $apiBrowser <<ApiBrowserLayout>> [list ::GX::ViewerDevelopmentWorkspace::responsiveBody $w]
+    $w.body.right add $w.body.right.api -text {API Browser}
+    set s(apiVisible) 1
+    $w.menus.view add checkbutton -label {API Browser tab} -variable ::GX::ViewerDevelopmentWorkspace::s(apiVisible) -command ::GX::ViewerDevelopmentWorkspace::apiPanelToggle
     set sdk [::GX::sourceSurfaceCreate $w.body.right.sdk.source {mode read_only language cpp}]
     pack $w.body.right.sdk.source -fill both -expand 1
     set f [::open [file join $::GX::scriptDir core development sdk gxtxt_viewer_sdk_v1.hpp] rb];try {::GX::sourceSurfaceSet $sdk [encoding convertfrom utf-8 [::read $f]]} finally {::close $f}
@@ -302,11 +337,13 @@ The same GUI/CLI backend owns admission, builds, native event lifetime and manag
     $w.body.right.profile.text configure -yscrollcommand [list $w.body.right.profile.vertical set]
     pack $w.body.right.profile.vertical -side right -fill y;pack $w.body.right.profile.text -fill both -expand 1
     $w.body.right configure -width 360
+    bind $w.body.right <<NotebookTabChanged>> +[list ::GX::ViewerDevelopmentWorkspace::responsiveBody $w]
     bind $w.status <Configure> [list $w.status configure -wraplength %w]
-    bind $w.toolbar <Configure> [list ::GX::uiFieldControlsLayout $w.toolbar %w]
+    bind $w.toolbar <Configure> [list ::GX::ViewerDevelopmentWorkspace::toolbarLayout $w %w]
     after idle [list ::GX::ViewerDevelopmentWorkspace::initialLayout $w]
     ::GX::uiTextEditingAttach $w [list $source]
     bind $w <Control-s> {::GX::ViewerDevelopmentWorkspace::safe save;break}
+    bind $w <Control-Shift-S> {::GX::ViewerDevelopmentWorkspace::safe saveAll;break}
     bind $w <F5> {::GX::ViewerDevelopmentWorkspace::safe request validate;break}
     bind $w <F6> {::GX::ViewerDevelopmentWorkspace::safe request build;break}
     bind $w <F7> {::GX::ViewerDevelopmentWorkspace::safe demo;break}
@@ -321,6 +358,7 @@ The same GUI/CLI backend owns admission, builds, native event lifetime and manag
     }
     bind $w <Configure> +[list ::GX::ViewerDevelopmentWorkspace::responsiveLayout $w %W %h]
     bind $w.body <Configure> +[list ::GX::ViewerDevelopmentWorkspace::responsiveBody $w]
+    bind $w <Destroy> +[list ::GX::ViewerDevelopmentWorkspace::responsiveDispose $w %W]
     wm protocol $w WM_DELETE_WINDOW {::GX::ViewerDevelopmentWorkspace::safe close}
     controls
     if {[dict exists $context project]} {project [dict get $context project]}
@@ -328,36 +366,96 @@ The same GUI/CLI backend owns admission, builds, native event lifetime and manag
     return $w
 }
 proc ::GX::ViewerDevelopmentWorkspace::initialLayout {w} {
+    variable s
     if {![winfo exists $w]} return
+    if {[info exists s(noteFocus)]} return
     set width [winfo width $w.body]
     if {$width<640} {after 100 [list ::GX::ViewerDevelopmentWorkspace::initialLayout $w];return}
     $w.body sashpos 0 205
     $w.body sashpos 1 [expr {$width-365}]
 }
+proc ::GX::ViewerDevelopmentWorkspace::toolbarLayout {w width} {
+    set children [winfo children $w.toolbar]
+    set needed 0;foreach child $children {incr needed [expr {[winfo reqwidth $child]+6}]}
+    if {$needed>$width} {
+        # File operations remain in the existing File menu, with the same
+        # commands and dirty-source decisions. Keep primary actions on one row
+        # rather than consuming the source/reference area with duplicate tools.
+        foreach child $children {
+            if {![string match $w.toolbar.file_* $child]} continue
+            pack forget $child;grid remove $child
+            set children [lsearch -all -inline -not -exact $children $child]
+        }
+    }
+    ::GX::uiFieldControlsLayout $w.toolbar $width $children
+}
 proc ::GX::ViewerDevelopmentWorkspace::responsiveLayout {w actual height} {
+    variable s
     if {$actual ne $w || ![winfo exists $w.bottom]} return
-    # Keep source usable when fonts and wrapped command bars need more room.
-    # All bottom panels retain their ordinary scrollbars and View toggles.
-    set desired [expr {max(60,min(200,int($height*.18)))}]
-    set browser $w.body.left.apiSplit.browser
-    if {[winfo exists $browser] && [winfo ismapped $browser] && [winfo height $w.body]>100} {
-        # The same Browser owner specifies its real font/chrome budget. Give
-        # useful reference lines priority over surplus diagnostic rows while
-        # keeping two diagnostic rows and their ordinary scrollbars available.
-        set minimum [::GX::apiBrowserMinimumHeight $browser]
+    if {[info exists s(layoutAfter)]} {after cancel $s(layoutAfter)}
+    set s(layoutAfter) [after idle [list ::GX::ViewerDevelopmentWorkspace::responsiveApply $w]]
+}
+proc ::GX::ViewerDevelopmentWorkspace::responsiveDispose {w actual} {
+    variable s
+    if {$w ne $actual} return
+    unset -nocomplain s(noteFocus)
+    if {[info exists s(layoutAfter)]} {after cancel $s(layoutAfter);unset s(layoutAfter)}
+}
+proc ::GX::ViewerDevelopmentWorkspace::responsiveApply {w} {
+    variable s
+    unset -nocomplain s(layoutAfter)
+    if {![winfo exists $w.bottom] || [winfo height $w.body]<100} return
+    set tree $w.body.left.files.tree
+    set key [list [font actual TkDefaultFont] [font actual TkHeadingFont] [ttk::style theme use] [winfo width $tree]]
+    if {![info exists s(treeLayoutKey)] || $s(treeLayoutKey) ne $key} {
+        set s(treeLayoutKey) $key
+        ::GX::uiFieldInspectionColumnsSchedule $tree {recursive 1}
+        ::GX::uiFieldInspectionColumnsSchedule $w.bottom.diagnostics.tree {fill message}
+        ::GX::uiFieldInspectionColumnsSchedule $w.bottom.stack.tree
+        ::GX::uiFieldInspectionColumnsSchedule $w.bottom.variables.tree {recursive 1 fill {#0 value}}
+    }
+    if {[info exists s(noteFocus)]} return
+    set height [winfo height $w]
+    set desired [expr {max(70,min(200,int($height*.18)))}]
+    set browser [apiBrowserWidget]
+    if {[winfo exists $browser]} {
+        set needed [expr {6*[font metrics TkDefaultFont -linespace]+20}]
+        # The existing reference Browser retains its own row/detail minima in
+        # the shared UI Field scroll area, without forcing a taller OS window.
+        if {[winfo ismapped $browser]} {
+            set viewport $w.body.right.api.scroll
+            set minimum [dict get [::GX::apiBrowserMinimumHeight $browser] browser]
+            set extent [expr {max($minimum,[winfo height $viewport])}]
+            if {[$viewport itemcget content -height]!=$extent} {$viewport itemconfigure content -height $extent}
+        }
         set tree $w.bottom.diagnostics.tree
         set heading [font metrics TkHeadingFont -linespace]
         set row [expr {max(12,int(double([winfo reqheight $tree]-$heading-4)/max(1,[$tree cget -height])))}]
-        set bottomMinimum [expr {2*$row+$heading+[winfo reqheight $w.bottom.diagnostics.horizontal]+4}]
-        set page [$w.bottom select]
-        set chrome [expr {max(0,[winfo height $w.bottom]-[winfo height $page])}]
-        set budget [expr {[winfo height $w.body]+[winfo height $w.bottom]-$chrome-[dict get $minimum browser]-[dict get $minimum explorer]}]
-        # At the supported minimum client height, wrapped bars and notebook
-        # tabs may leave room for one diagnostic row. Keep its real header and
-        # scrollbars rather than clipping the selected API reference. Larger
-        # windows retain the usual two or more rows.
-        if {$budget<$bottomMinimum} {set bottomMinimum [expr {$row+$heading+[winfo reqheight $w.bottom.diagnostics.horizontal]+4}]}
-        set desired [expr {max($bottomMinimum,min($desired,$budget))}]
+        set minimum [expr {$row+$heading+[winfo reqheight $w.bottom.diagnostics.horizontal]+4}]
+        # Notebook -height is its content height; both sets of tabs also
+        # consume client pixels. Measure them after ttk has allocated the panes.
+        set bottomContent 0
+        foreach pane [$w.bottom tabs] {set bottomContent [expr {max($bottomContent,[winfo reqheight $pane])}]}
+        if {[$w.bottom cget -height]>0} {set bottomContent [$w.bottom cget -height]}
+        set tabs [expr {[winfo reqheight $w.bottom]-$bottomContent}]
+        set referenceContent 0
+        foreach pane [$w.body.right tabs] {set referenceContent [expr {max($referenceContent,[winfo reqheight $pane])}]}
+        set referenceTabs [expr {[winfo reqheight $w.body.right]-$referenceContent}]
+        set referenceTabs [expr {max([font metrics TkDefaultFont -linespace]+8,$referenceTabs)}]
+        set tabs [expr {max([font metrics TkDefaultFont -linespace]+8,$tabs)}]
+        set chrome 0
+        foreach child [pack slaves $w] {
+            set options [pack info $child];set padding [dict get $options -pady]
+            if {[llength $padding]==1} {set padding [expr {2*$padding}]} else {set padding [expr {[lindex $padding 0]+[lindex $padding 1]}]}
+            incr chrome $padding
+            if {$child ni [list $w.body $w.bottom]} {incr chrome [expr {[winfo reqheight $child]+2*[dict get $options -ipady]}]}
+        }
+        set required [expr {$chrome+$needed+$referenceTabs+$minimum+$tabs+8}]
+        set minHeight [expr {max(650,$required)}]
+        if {[wm minsize $w] ne [list 980 $minHeight]} {wm minsize $w 980 $minHeight}
+        set budget [expr {$height-$chrome-$needed-$referenceTabs-$tabs-8}]
+        set desired [expr {max($minimum,min($desired,$budget))}]
+        if {[winfo ismapped $browser]} {::GX::apiBrowserCompactSchedule $browser}
     }
     if {[$w.bottom cget -height]!=$desired} {$w.bottom configure -height $desired}
 }
@@ -431,7 +529,11 @@ proc ::GX::ViewerDevelopmentWorkspace::maintenanceWait {operation payload} {
     variable s;variable transferSerial;variable transfers
     if {$s(busy) ne {}} {error {Wait or cancel the current development request}}
     set id [incr transferSerial];set project $s(project);set generation $s(generation);set windowGeneration $s(windowGeneration)
-    set request [::GX::viewerDevelopmentRequest $operation $project [list ::GX::ViewerDevelopmentWorkspace::transferred $id] [dict create request_json $payload]]
+    if {$operation eq {inspect}} {
+        if {$payload ne {sdk_v1}} {error {This reference adapter admits only the fixed current-target SDK}}
+        set options [dict create target sdk_v1]
+    } else {set options [dict create request_json $payload]}
+    set request [::GX::viewerDevelopmentRequest $operation $project [list ::GX::ViewerDevelopmentWorkspace::transferred $id] $options]
     set s(busy) $request;controls
     try {
         vwait ::GX::ViewerDevelopmentWorkspace::transfers($id)
@@ -458,6 +560,8 @@ proc ::GX::ViewerDevelopmentWorkspace::maintenanceProject {path} {
         return -options $options $message
     }
     set s(maintenanceFiles) [dict get $result files];set s(dirty) 0
+    projectTabsReset
+    set s(editor) [projectTabCreate Maintenance {} 1 tcl {}]
     set tree .gxViewerDevelopment.body.left.files.tree;$tree delete [$tree children {}]
     dict for {id info} $s(maintenanceFiles) {$tree insert {} end -id $id -text "[dict get $info path] ([expr {[dict get $info limit]/1024}] KiB)[expr {[dict get $info exists]?{}:{ · not authored}}]"}
     set first [lindex [dict keys $s(maintenanceFiles)] 0]
@@ -525,4 +629,13 @@ proc ::GX::ViewerDevelopmentWorkspace::maintenanceCreate {} {
     set s(busy) [::GX::viewerDevelopmentMaintenanceCreate $module $provider $project [list ::GX::ViewerDevelopmentWorkspace::created $s(generation)]]
     set s(status) {Staging original source/resources through the CORE project-write owner…};controls
     ::GX::uiFieldDialogClose .gxMaintainViewer
+}
+
+# The common Notes menu always queries the currently selected source notebook.
+proc ::GX::ViewerDevelopmentWorkspace::noteMenuHandle {} {
+    variable s
+    if {$s(busy) ne {} || $s(mode) ni {cpp acquisition}} {return {}}
+    set name [projectNotesActive]
+    if {$name eq {}} {return {}}
+    return [dict get $s(notes) $name editor]
 }

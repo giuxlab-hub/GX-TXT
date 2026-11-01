@@ -28,3 +28,10 @@ The returned struct always contains `graph_id`, `variant_id`, `artifact`,
 `output_dir`, `render_cache`, and `summary`.  State is committed through
 `PLOT_DATASET_API_v2` and the Session manifest before rendering.
 
+
+P035 preserves the validated original command arguments across CORE bootstrap
+and public API sourcing, which may use ordinary top-level Tcl variable names.
+In particular, an explicit `kind=variant` cannot become a bootstrap temporary.
+The public Octave signature, stable provider-key reuse, canonical Dataset and
+Variable IDs, PlotSpec validation, persistent variants and renderer ownership
+remain unchanged. Invalid kinds still refuse before executing the operation.

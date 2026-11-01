@@ -1,7 +1,7 @@
 {
   "module_id": "acq.metrohm_icnet_chw",
   "candidate_version": "0.3.0",
-  "upstream_archive": "[PRIVATE_UPSTREAM_ARCHIVE_PATH_REDACTED_SHA256_9635bfde2e4e]",
+  "upstream_archive": "/home/giu/electronics-server/GUIDA/VIEWER/importatori/cromatografo/acq.metrohm_icnet_chw_0.2.2_optimized.zip",
   "upstream_sha256": "fb17aeacb919959cc679fb29e28de154a8938a4e6dc82f4084e867e7da2afda6",
   "upstream_version": "0.2.2",
   "upstream_members": {
@@ -186,5 +186,11 @@
     "receipt": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB3/public-importers-003/RESULT.json",
     "sha256": "4115d0b2ebe5c6b9f0f198106a4800dbfa3cc6cbd88eb88fd99cf33288107e49",
     "scope": "seven original CHW source acquisitions, schema/metadata/source+payloadSHA,boundedcanonicalvalues,TableStream,SessionPersistenceCommit,freshprocessopen"
+  },
+  "p028_group_extension": {
+    "version": "0.4.0",
+    "scope": "Declarative actual-output Dataset Group only; original decoder/scientific bytes unchanged",
+    "core_owner": "DATASET_GROUP_API_v1",
+    "scientific_reference": "Existing source/native parity; independent vendor reference remains separate"
   }
 }

@@ -43,11 +43,11 @@ Previous is disabled on the first page; Next is disabled on the last page.
 
 Navigation and zoom change the presentation, not the canonical PDF bytes.
 
-![Actual installed CORE reader showing page 1 of a genuine three-page SYNTHETIC print fixture, at 1050×820 client size. The metre/volt table is test data, not a measurement.](../images/reader-normal.png)
+![Actual installed CORE reader showing page 1 of a genuine three-page SYNTHETIC print fixture, at 1050×820 client size. The metre/volt table is test data, not a measurement.](images/reader-normal.png)
 
-![Actual installed reader at 680×520 client size after Fit page. All page and zoom controls remain visible; zoom can enlarge small content. This is the same SYNTHETIC fixture.](../images/reader-narrow.png)
+![Actual installed reader at 680×520 client size after Fit page. All page and zoom controls remain visible; zoom can enlarge small content. This is the same SYNTHETIC fixture.](images/reader-narrow.png)
 
-![Actual page 2 of the eight-page SYNTHETIC table fixture, with source rows 43–81, metre and volt columns and an exact-count column. Navigation preserves the original PDF content.](../images/reader-table-page2.png)
+![Actual page 2 of the eight-page SYNTHETIC table fixture, with source rows 43–81, metre and volt columns and an exact-count column. Navigation preserves the original PDF content.](images/reader-table-page2.png)
 
 These genuine native Debian screenshots were captured from installed0.2.0 and
 admitted through the official manual-resource facility. Their original source
@@ -146,5 +146,21 @@ Historical failures remain preserved:
   whole-reader layout acceptance. Later genuine unobscured03/04 frames supplied
   that evidence without replacing the original images.
 
+The sealed independent handoff is `PDF_FINAL_INDEPENDENT_REVIEW_03.md`,
+SHA256 `f5eefa7bd1db1ec2f06cc81b66847df779aab73eb38a4601c7e8d489cd64104a`.
+Its326-file `PDF_FINAL_EVIDENCE_MANIFEST_03.json` has SHA256
+`3ca6e2377e13d71c6a385c65f4280ad81cd6ba5790f98820431c0f300002d96a`.
+These external acceptance artifacts retain exact evidence/source identities;
+they are not additional installed manual images or executable examples.
 
-Runtime limitations and verified scientific source identities are described in the public sections above. Local development acceptance evidence is not part of the distributable user manual.
+The integrated C++ debugger was available and encouraged but **NOT USED**:
+no author-code defect required debugging. No new header, library, compiler
+option, dependency or CPP_DEBUGGER_BUG was requested. Viewing historical PDFs
+containing Print graphs adds no new scientific plotting path and declares no
+deprecated Plot v3 operation.
+
+MAIN retains final framework activation, installed-release checks, whole-catalog
+theme/DPI integration, final documentation-package attachment if required, and
+source/checksum/archive/restore/delivery gates. This scoped PDF handoff does not
+claim completion of the five-Viewer family, the integrated15-workstream task or
+a final release.

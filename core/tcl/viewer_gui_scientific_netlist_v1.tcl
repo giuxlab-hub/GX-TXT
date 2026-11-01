@@ -66,7 +66,7 @@ proc ::GX::viewerGuiDesignScientificNetlist {window form} {
         set domain [viewerGuiDesignContextGet $window];dict set domain scientific_netlists $form $record
         viewerGuiDesignContextSet $window $domain
         viewerGuiDesignTextSet $window [dict get $p scientific_netlist] $text
-        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Inspect source/netlist $form"}
+        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Inspect source/netlist $form"}
         return [dict remove $record text]
     } on error {message options} {
         viewerGuiDesignTextSet $window [dict get $p scientific_netlist] "Source/netlist unavailable: $message\nExisting scientific Jobs, Dataset, Plot and cached provenance are retained. Correct the source/case context and inspect again."

@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <map>
+#include <openssl/evp.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -60,17 +62,17 @@ NamedSource namedSource(const std::string &path) {
     }
 }
 
-void ordinary(const struct stat &value) {
+void ordinary(const struct stat &value, std::size_t limit = captureLimit) {
     if (!S_ISREG(value.st_mode) || value.st_nlink != 1 || value.st_size < 0 ||
-        static_cast<std::uintmax_t>(value.st_size) > captureLimit)
-        throw std::runtime_error("Source must be singly linked, regular and at most 4 MiB");
+        static_cast<std::uintmax_t>(value.st_size) > limit)
+        throw std::runtime_error(limit == captureLimit ? "Source must be singly linked, regular and at most 4 MiB" : "Document cache source must be singly linked, regular and within64 MiB");
 }
 
-struct stat namedStat(const NamedSource &source) {
+struct stat namedStat(const NamedSource &source, std::size_t limit = captureLimit) {
     struct stat value {};
     if (::fstatat(source.parent.get(), source.leaf.c_str(), &value, AT_SYMLINK_NOFOLLOW) != 0)
         throw std::runtime_error("Source name cannot be inspected");
-    ordinary(value);
+    ordinary(value, limit);
     return value;
 }
 
@@ -133,23 +135,23 @@ std::string nativePath(Tcl_Obj *path) {
     return std::string(native, bytes);
 }
 
-Tcl_Obj *capture(Tcl_Interp *interp, Tcl_Obj *path) {
+Tcl_Obj *capture(Tcl_Interp *interp, Tcl_Obj *path, std::size_t limit = captureLimit) {
     const auto name = nativePath(path);
     auto named = namedSource(name);
-    const auto beforeName = namedStat(named);
+    const auto beforeName = namedStat(named, limit);
     Descriptor fd(::openat(named.parent.get(), named.leaf.c_str(),
                            O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK));
     if (fd.get() < 0) throw std::runtime_error("Source cannot be opened without following links");
     struct stat before {}, after {};
     if (::fstat(fd.get(), &before) != 0) throw std::runtime_error("Source descriptor cannot be inspected");
-    ordinary(before);
+    ordinary(before, limit);
     if (!same(beforeName, before)) throw std::runtime_error("Source changed before capture");
     std::vector<unsigned char> bytes;
     bytes.reserve(static_cast<std::size_t>(before.st_size) + 1);
     unsigned char block[65536];
     bool eof = false;
     for (unsigned call = 0; call < 8192; ++call) {
-        const auto wanted = std::min(sizeof block, captureLimit + 1 - bytes.size());
+        const auto wanted = std::min(sizeof block, limit + 1 - bytes.size());
         const auto count = ::read(fd.get(), block, wanted);
         if (count < 0) {
             if (errno == EINTR) continue;
@@ -157,13 +159,13 @@ Tcl_Obj *capture(Tcl_Interp *interp, Tcl_Obj *path) {
         }
         if (count == 0) { eof = true; break; }
         bytes.insert(bytes.end(), block, block + count);
-        if (bytes.size() > captureLimit) throw std::runtime_error("Source grew beyond 4 MiB during capture");
+        if (bytes.size() > limit) throw std::runtime_error("Source grew beyond its capture budget");
     }
     if (!eof) throw std::runtime_error("Source capture read-call budget exceeded");
     if (::fstat(fd.get(), &after) != 0) throw std::runtime_error("Captured descriptor cannot be inspected");
-    ordinary(after);
+    ordinary(after, limit);
     /* Resolve the current absolute name afresh, including every parent. */
-    const auto finalName = namedStat(namedSource(name));
+    const auto finalName = namedStat(namedSource(name), limit);
     if (!same(before, after) || !same(after, finalName) ||
         bytes.size() != static_cast<std::size_t>(after.st_size))
         throw std::runtime_error("Source identity changed during capture");
@@ -204,8 +206,13 @@ int command(ClientData, Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
         return TCL_ERROR;
     }
 }
+
+#include "source_snapshot_cache_v1.inc"
 }
 
 void GXDocumentSourceCaptureInit(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "::GX::NativeDocument::sourceCapture", command, nullptr, nullptr);
+    auto *cache = new SnapshotCache;
+    Tcl_SetAssocData(interp, "gxtxt.document.snapshot_cache.v1", disposeSnapshotCache, cache);
+    Tcl_CreateObjCommand(interp, "::GX::NativeDocument::snapshotCache", snapshotCacheCommand, cache, nullptr);
 }

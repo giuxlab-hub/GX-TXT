@@ -42,8 +42,12 @@ proc ::GX::ViewerDevelopmentWorkspace::debugMount {w} {
     bind $vars <ButtonRelease-1> [list ::GX::ViewerDevelopmentWorkspace::debugVariableClick $vars %x %y]
     bind $vars <space> {::GX::ViewerDevelopmentWorkspace::debugVariableToggle .gxViewerDevelopment.bottom.variables.tree [.gxViewerDevelopment.bottom.variables.tree focus];break}
     bind $w.bottom.stack.tree <<TreeviewSelect>> ::GX::ViewerDevelopmentWorkspace::debugFrame
-    ttk::label $w.debugstatus -textvariable ::GX::ViewerDevelopmentWorkspace::debug(status) -anchor w -padding 4
-    pack $w.debugstatus -after $w.debugbar -fill x
+    ttk::label $w.debugstatus -textvariable ::GX::ViewerDevelopmentWorkspace::debug(status) -anchor w -padding 4 -width 1 -wraplength 400
+    # Keep the original status widget/variable beside the existing controls.
+    # Geometry -in preserves its identity and avoids a second full chrome row.
+    foreach widget [winfo children $w.debugbar] {pack forget $widget}
+    grid $w.debugstatus -in $w.debugbar -row 0 -column 16 -sticky ew
+    bind $w.debugstatus <Configure> [list ::GX::_uiFieldComponentTextWrap $w.debugstatus 32767 %W %w]
     bind $w <Control-F5> {::GX::ViewerDevelopmentWorkspace::safe request run;break}
     bind $w <F5> {::GX::ViewerDevelopmentWorkspace::safe debugStart;break}
     bind $w <F10> {::GX::ViewerDevelopmentWorkspace::safe debugControl over;break}
@@ -55,19 +59,46 @@ proc ::GX::ViewerDevelopmentWorkspace::debugMount {w} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::debugLayout {frame width} {
     variable debug
-    set presentation [expr {$width<$debug(full_toolbar_width) ? {icon_only} : {icon_text}}]
+    # Saved Appearance fonts can change after this toolbar was constructed.
+    # Measure the current native requests; retain the full-text estimate even
+    # while the same existing buttons are displaying their compact icons.
+    set debug(full_toolbar_width) 0
+    foreach widget [winfo children $frame] {
+        set requested [winfo reqwidth $widget]
+        if {[dict exists $::GX::ViewerGui::iconBindings $widget]} {
+            set properties [dict get $::GX::ViewerGui::iconBindings $widget properties]
+            if {[::GX::datasetPublicationV2DictDefault $properties presentation icon_text] eq {icon_only}} {
+                set style [$widget cget -style];if {$style eq {}} {set style [winfo class $widget]}
+                set font [ttk::style lookup $style -font];if {$font eq {}} {set font TkDefaultFont}
+                incr requested [expr {[font measure $font [$widget cget -text]]+[::GX::datasetPublicationV2DictDefault $properties icon_spacing 4]}]
+            }
+        }
+        incr debug(full_toolbar_width) [expr {$requested+8}]
+    }
+    set status [winfo parent $frame].debugstatus
+    set reserve 0
+    if {[winfo exists $status]} {
+        set font [$status cget -font];if {$font eq {}} {set font TkDefaultFont}
+        set reserve [expr {max(240,min(480,[font measure $font $debug(status)]+16))}]
+    }
+    set presentation [expr {$width<$debug(full_toolbar_width)+$reserve ? {icon_only} : {icon_text}}]
     foreach widget [winfo children $frame] {
         if {![dict exists $::GX::ViewerGui::iconBindings $widget]} continue
         set record [dict get $::GX::ViewerGui::iconBindings $widget]
         set properties [dict get $record properties];dict set properties presentation $presentation
         ::GX::uiFieldIconApply $widget $properties [dict get $record asset] [dict get $record catalog]
     }
-    ::GX::uiFieldControlsLayout $frame $width
+    set children [winfo children $frame]
+    ::GX::uiFieldControlsLayout $frame $width $children
+    if {[winfo exists $status]} {
+        grid columnconfigure $frame [expr {2*[llength $children]}] -weight 1
+        grid $status -sticky ew
+    }
 }
 proc ::GX::ViewerDevelopmentWorkspace::debugView {id} {
     variable debug;set w .gxViewerDevelopment
     if {$id eq {debug}} {
-        if {$debug(show,debug)} {pack $w.debugbar -after $w.toolbar -fill x -padx 5;pack $w.debugstatus -after $w.debugbar -fill x} else {pack forget $w.debugbar $w.debugstatus}
+        if {$debug(show,debug)} {pack $w.debugbar -after $w.toolbar -fill x -padx 5} else {pack forget $w.debugbar}
     } elseif {$debug(show,$id)} {$w.bottom add $w.bottom.$id} else {$w.bottom hide $w.bottom.$id}
 }
 proc ::GX::ViewerDevelopmentWorkspace::debugButtons {} {
@@ -82,12 +113,18 @@ proc ::GX::ViewerDevelopmentWorkspace::debugButtons {} {
 proc ::GX::ViewerDevelopmentWorkspace::debugStart {} {
     variable s;variable debug
     if {$debug(request) ne {}} {if {$debug(state) eq {PAUSED}} {debugControl continue};return}
-    if {$s(project) eq {}||$s(file) ne {handlers.cpp}||$s(dirty)||$s(busy) ne {}} {error {Open and save handlers.cpp before starting Debug}}
+    if {$s(project) eq {}||$s(file) ni [::GX::viewerDevelopmentSourceFiles $s(project)]||$s(dirty)||$s(busy) ne {}} {error {Open a declared C++ source/header and Save All before starting Debug}}
     set debug(snapshot) [::GX::_viewerDevelopmentSnapshot $s(project)]
     set debug(state) STARTING;set debug(sequence) -1;incr debug(generation)
     set debug(token) [format debug-%x-%x [pid] [clock microseconds]]
-    ::GX::sourceSurfaceBreakpoints [text] lock
-    set debug(request) [::GX::viewerDevelopmentRequest debug $s(project) [list ::GX::ViewerDevelopmentWorkspace::debugFinished $debug(generation)] [dict create breakpoints [::GX::sourceSurfaceBreakpoints [text]] debug_token $debug(token)]]
+    set breakpoints {}
+    dict for {name tab} $s(tabs) {
+        if {$name ni [::GX::viewerDevelopmentSourceFiles $s(project)]} continue
+        set widget [dict get $tab text]
+        foreach line [::GX::sourceSurfaceBreakpoints $widget] {lappend breakpoints [dict create file $name line $line]}
+        ::GX::sourceSurfaceBreakpoints $widget lock
+    }
+    set debug(request) [::GX::viewerDevelopmentRequest debug $s(project) [list ::GX::ViewerDevelopmentWorkspace::debugFinished $debug(generation)] [dict create breakpoints $breakpoints debug_token $debug(token)]]
     set debug(status) {GDB is validating and compiling the current admitted C++ source…}
     debugButtons;after 150 [list ::GX::ViewerDevelopmentWorkspace::debugPoll $debug(generation)]
 }
@@ -105,27 +142,35 @@ proc ::GX::ViewerDevelopmentWorkspace::debugPolled {generation response} {
     after 180 [list ::GX::ViewerDevelopmentWorkspace::debugPoll $generation]
 }
 proc ::GX::ViewerDevelopmentWorkspace::debugRender {snapshot} {
-    variable debug
+    variable debug;variable s
     set previousState $debug(state)
     set debug(state) [dict get $snapshot state]
     if {$previousState eq $debug(state)&&[dict exists $snapshot sequence]&&$debug(sequence)==[dict get $snapshot sequence]} {debugButtons;return}
     set debug(sequence) [::GX::datasetPublicationV2DictDefault $snapshot sequence 0]
     set debug(status) "GDB / admitted C++ · $debug(state)"
     if {$debug(state) eq {PAUSED}&&[dict exists $snapshot reason]} {append debug(status) " · [dict get $snapshot reason]"}
+    if {$debug(state) eq {PAUSED} && [dict exists $snapshot frame project_file]} {append debug(status) " · [dict get $snapshot frame project_file]:[dict get $snapshot frame line]"}
+    set pending 0
+    foreach point [::GX::datasetPublicationV2DictDefault $snapshot breakpoints {}] {if {![::GX::datasetPublicationV2DictDefault $point resolved 0]} {incr pending}}
+    if {$pending} {append debug(status) " · $pending unresolved breakpoint(s)"}
     if {[dict exists $snapshot errors]&&[llength [dict get $snapshot errors]]} {append debug(status) " · [lindex [dict get $snapshot errors] end]"}
     set line 0
+    dict for {name tab} $s(tabs) {::GX::sourceSurfaceLocation [dict get $tab text] 0}
     if {$debug(state) eq {PAUSED}&&[dict exists $snapshot frame line]} {
         set frame [dict get $snapshot frame]
-        if {[file tail [::GX::datasetPublicationV2DictDefault $frame fullname {}]] eq {handlers.cpp}} {set line [dict get $frame line]}
+        if {[dict exists $frame project_file]} {
+            read [dict get $frame project_file]
+            set line [dict get $frame line]
+        }
     }
-    ::GX::sourceSurfaceLocation [text] $line
+    if {[winfo exists [text]]} {::GX::sourceSurfaceLocation [text] $line}
     if {$debug(state) ni {PAUSED RUNNING CONTINUING STARTING}} {dict set snapshot frames {};dict set snapshot locals {}}
     set stack .gxViewerDevelopment.bottom.stack.tree
     set selected [::GX::datasetPublicationV2DictDefault $snapshot selected_frame 0]
     $stack delete [$stack children {}]
     foreach frame [::GX::datasetPublicationV2DictDefault $snapshot frames {}] {
         set level [dict get $frame level]
-        $stack insert {} end -id frame$level -values [list $level [dict get $frame func] [file tail [::GX::datasetPublicationV2DictDefault $frame file {}]] [::GX::datasetPublicationV2DictDefault $frame line {}]]
+        $stack insert {} end -id frame$level -values [list $level [dict get $frame func] [::GX::datasetPublicationV2DictDefault $frame project_file [::GX::datasetPublicationV2DictDefault $frame file {}]] [::GX::datasetPublicationV2DictDefault $frame line {}]]
     }
     debugVariablesRender $snapshot
     # Rows arrive asynchronously after the empty inspector was constructed.
@@ -244,8 +289,10 @@ proc ::GX::ViewerDevelopmentWorkspace::debugFinished {generation response} {
     if {$generation!=$debug(generation)} return
     set debug(request) {}
     if {![winfo exists .gxViewerDevelopment]} return
-    ::GX::sourceSurfaceBreakpoints [text] unlock
-    ::GX::sourceSurfaceLocation [text] 0
+    dict for {name tab} $::GX::ViewerDevelopmentWorkspace::s(tabs) {
+        ::GX::sourceSurfaceBreakpoints [dict get $tab text] unlock
+        ::GX::sourceSurfaceLocation [dict get $tab text] 0
+    }
     if {[dict get $response ok]&&[dict exists $response result debug]} {
         debugRender [dict get $response result debug]
     } else {

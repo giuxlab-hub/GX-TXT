@@ -2,6 +2,7 @@
 proc ::GX::CurveWorkbench::_documentOwnerInvalidated {w event} {
     variable st
     if {![info exists st($w,document)]||$st($w,document) ne [dict get $event document_id]||$st($w,token) ne [dict get $event session_token]} return
+    _wheelDrawDispose $w
     _pointSyncCancel $w
     set st($w,ownerInvalidated) 1
     set st($w,token) "invalidated:[dict get $event owner_generation]"
@@ -34,6 +35,7 @@ proc ::GX::CurveWorkbench::_disposeInvalidated {w} {
     variable st
     if {![info exists st($w,ownerInvalidated)]} return
     if {$st($w,publishBusy)} {set st($w,disposeAfter) [after 50 [list ::GX::CurveWorkbench::_disposeInvalidated $w]];return}
+    if {[info exists st($w,historyReady)] && $st($w,historyReady)} {::GX::scientificHistoryViewerDetach $w 0;set st($w,historyReady) 0}
     set sources [_ownedSources $w];set failures {}
     if {[catch {_residualDispose $w} message]} {lappend failures $message}
     set disposed {}
@@ -57,7 +59,11 @@ proc ::GX::CurveWorkbench::_load {w} {
     variable st
     set result [_load_lifecycle_base $w]
     if {$st($w,document) ne ""} {_parameterBind $w}
-    if {$st($w,document) ne ""} {set st($w,ownerGeneration) [dict get [::GX::interactiveDocumentRead $st($w,document)] generation]}
+    if {$st($w,document) ne ""} {
+        set owner [::GX::interactiveDocumentMetadata $st($w,document)]
+        set st($w,ownerGeneration) [dict get $owner generation]
+        set st($w,ownerRevision) [dict get $owner revision]
+    }
     if {$st($w,document) ne ""&&! [info exists st($w,lifecycleSubscription)]} {set st($w,lifecycleSubscription) [::GX::interactiveDocumentLifecycleSubscribe [list ::GX::CurveWorkbench::_documentOwnerInvalidated $w] $w $st($w,document)]}
     return $result
 }

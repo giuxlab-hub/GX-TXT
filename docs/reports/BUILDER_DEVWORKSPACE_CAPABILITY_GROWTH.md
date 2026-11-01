@@ -1,0 +1,39 @@
+# Independent dev108 capability-growth append03
+
+PREINSTALL_SOURCE_AND_RETAINED_EVIDENCE_RECONCILIATION. No final release or all104 acceptance certified.
+
+Growth02 remains immutable.85operation rows,8tool surfaces and203stable Builder IDs are retained; sealed107 Host6→25methods,21author-used and88call sites remain unchanged. Eight compiled event plans remain eight plans, not85executed workflows.
+
+|Gap|Existing owner/minimal extension|Actual retry evidence and bounds|Reusable consumer|
+|---|---|---|---|
+|GAP-SPICE-038|VIEWER_DEVELOPMENT_API_v1 existing bounded public-document explorer; NUMERIC_API_v1 existing official companion. Admit exact fixed NUMERIC_EXPRESSION_OPERATIONS and optional .md alias only when owning public API exists; same inert UTF-8 bytes/hash/read_only response, no arbitrary reader or new API ID.|Same restricted author successfully retried both approved CLI aliases in original agent tool history; no persisted sameauthor receipt exists. Independent public contract provides persisted exact bytes/SHA and nine negative cases; these evidence levels remain distinct.|Any restricted author needing canonical Numeric expression grammar or current Design schema; exact fixed official companions only.|
+|GAP-SPICE-039|NATIVE2D_VIEWPORT_HOST_v1 existing diagram Properties/document route validation; VIEWER_GUI_HOST_API_v1 diagram_command; VIEWER_DEVELOPMENT_API_v1 constrained GUI test. Typed selected-wire endpoints and ordered bend editor in existing canonical owner. Optional route start/end extend existing wire edit; stable wire ID/next_id, full candidate validation, ordinary guarded History/UndoRedo. Existing route-only callers retain behavior.|Sameauthor original selected wire_7 Properties opens actual editor; actual point_y replacement draft60,50 then Close preserves source SHA/rev16 and History45. Independent actual native editing QA additionally exercises Apply/reconnect/invalid/UndoRedo/two-size/cold scopes. Sameauthor did not Apply the original science example, so do not convert its Close receipt into Apply proof.|Any admitted Native2D catalog with real stable pins/junction endpoints can edit canonical wire routes; does not add an unregistered catalog, free-form payload API or second renderer.|
+|GAP-SPICE-040|VIEWER_GUI_HOST_API_v1 existing Scientific form/probe; SCIENTIFIC_EXECUTION_API_v1 source/net mapping; NUMERIC_API_v1 existing split-complex projection; PLOT_DATASET_API_v4 existing binding. Actual completed AC Job canonical pair/frequency metadata selects an already declared compatible complex_projection form. Optional scientific_probe_ac_form resolves ambiguity. Preserve explicit row start/count/projection and existing waveform/result; explicit Evaluate then Publish/Bind performs scientific work through existing Numeric/Public Dataset owners.|Original sameC5.n voltage and actual V-source current native mappings passed; public Numeric explicit current magnitude publication and Save/reopen receipts retained. Fresh independent GUI maps V/A with 1/7 phase_deg retained, ground/nonV/foreignDataset refusal and recovery; zero automatic computation/publication/submit/remote. Primary independently operates two-size actual ladder Plot and canonical row hit.|Declared spectral/instrument dashboards can reuse existing canonical split-complex projection form selection under exact source/Job/units guards. Electrical endpoint→Variable mapping remains admitted circuit provider semantics; no inference of unsupported device current or arbitrary provider.|
+
+The independent public portable Session test exposed a separate real saved-Numeric carrier-path defect. Its sealed original failure remains. Existing Dataset/content guard now recognizes unchanged canonical identity after transport, while strict live guards and immutable Document/Workspace provenance remain. The SAME prior imported ladder reopened under fresh current owners, with zero recomputation. This is not a fabricated author GAP041.
+
+All late sameauthor approved response paths and hashes,40original requests, operation crosswalks, current owner source lines, independent reports and precise generic/current-author distinctions are in the JSON and evidence index.193 exported identity validation is separate from native192 scientific receipts and normal final install.
+
+## Qualifications
+
+- Source-derived85operations/eighttool surfaces/203stable IDs/25Hostmethods21used/88call-sites/eight compiled event plans remain exact. No additional compiled event test or scientific simulation executed by this audit.
+- Actual installed1.9.2 native editing, source/reopen, four positive examples plus negative, local/loopback parity and genuine remote running-case cancellation remain separate scoped evidence. All computations are original public Numeric/Math/Statistics API receipts, not new calculations by this audit.
+- Remote HTTPS/mTLS tests use one physical Debian machine with isolated localhost43835 agent; not two-computer proof. Actual solver ngspice44.2; installed Xyce7.10 not executed. Parallel coordinator workers1 serial admission with true concurrent Script Jobs; do not call coordinator parallel2.
+- Original stricter diode failure receipts and three shorter completed-before-Cancel timing misses remain retained, not relabelled successful.
+- Fresh040 independent native stale-source and malformed shape/unit negatives NOT_TESTED; source guards inspected and public headless content-token/design negatives separately cited. No malformed scientific Dataset injection invented.
+- Final five-example portable deliverable, new193 normal PluginManager install/manual mount, final package parity/NUM/source freeze/deposition/activation/preservation and final active GUI remain separate pending release gates.
+- Late038 sameauthor success is tool-history-only, no filesystem receipt fabricated.039 original sameauthor retry safely closed its draft, not Apply; independent generic/native QA proves committed editing.
+- No API family, queue, renderer, transport, File/Dataset registry, numerical library or runtime introduced by this audit. Bounded non-Circuit consumers are future reuse contracts, not claims of new installed domain applications.
+
+## Current GROW evidence scopes
+
+- **GROW01**: Original001/007 immutable genuine restricted-author denial/provenance retained;40 original author requests +one independently reproduced QA finding, not synthetic041.
+- **GROW02**: All40 exact reported denied approved calls/Builder profiles and original snapshots preserved; no invented before screenshot or rerun of predecessor.
+- **GROW03**: Current existing owner source/line/SHA +minimal compatible extension for all late gaps; no new public family required.
+- **GROW04**: Existing Builder declaration/property/profile and actual Native2D/GUI owner wire editor/AC form metadata mapping validated; fixed explorer is tool-only, not fake component.
+- **GROW05**: Same unchanged policy-compliant C++/design203ordinals/existing SDK methods use late39/40; retained actual original retries.038 exact approved CLI tool-history-only. No fabricated extra Host method or eight-event coverage expansion.
+- **GROW06**: Primary personally operated installed exactsource GUI edit/source/probe/plots/local/remote/reopen; independent specialized native/remote/040 and public Numeric scientific evidence retained. Finalactive193 and finalportable delivery gates remain separate.
+- **GROW07**: Every original row retains bounded futureconsumer; late additions explicitly bound reuse and no alternate store/queue/render/numeric/transport. No claim of arbitraryprovider/catalog/general scripting.
+
+
+Current complete ledger:40 author requests + QA-PORTABLE-NUMERIC-001. The method count stays25: late tool/native metadata corrections need no extra C++ runtime authority. Final activated checks remain external to this source checkpoint.

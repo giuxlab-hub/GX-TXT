@@ -32,6 +32,13 @@ prefix-compatible history. Corrupt files are quarantined when verified recovery 
 absent valid recovery and divergent histories produce explicit startup errors without
 issuing a replacement or fabricating continuity. A retained initial temporary write
 also requires recovery rather than silent reissuance. Hashes attest bytes, not creators.
-Durability depends on the host filesystem and operating system; callers should use the supported installation recovery operations and maintain independent backups.
+On this Debian host locking/fsync/recovery are executed; Windows code is supplied but
+physical Windows crash/durability behavior is not claimed verified.
 
-The installation identity API remains authoritative for generation and recovery of instance identifiers. Scientific provenance uses this authority through its documented CORE interfaces.
+Astra must reuse this authority. Dev082 demonstrates I01–I03, I05–I07; object
+creation/import/duplication portions of I04/I08 follow in dev083. Scientific-resource
+origin extension and geometry remain future work.
+
+Dev083 recovery also refreshes the verified backup before clearing pending history.
+The combined interruption → recovery → primary corruption test preserves the newest
+serial/history; this fixes an edge case discovered before final dev083 handoff.

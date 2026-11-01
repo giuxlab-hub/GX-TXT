@@ -1,0 +1,102 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "value_get"
+      ]
+    },
+    {
+      "api_id": "COMPARISON_PLOT_API_v1",
+      "version": 1,
+      "operations": [
+        "comparison_command"
+      ]
+    },
+    {
+      "api_id": "NUMERIC_API_v1",
+      "version": 1,
+      "operations": [
+        "comparison_curves"
+      ]
+    },
+    {
+      "api_id": "PLOT_DATASET_API_v4",
+      "version": 4,
+      "operations": [
+        "widgetCreate"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_LIBRARY_MANAGER_API_v1",
+      "version": 1,
+      "operations": [
+        "libraryCatalogPage",
+        "getLibraryCapabilities",
+        "libraryEntriesPage",
+        "getLibraryEntryInfo",
+        "getLibraryInfo",
+        "readLibraryEntry"
+      ]
+    },
+    {
+      "api_id": "NATIVE_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "get",
+        "save"
+      ]
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list",
+        "export",
+        "import"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    },
+    {
+      "api_id": "MODULE_TARGETED_ANALYSIS_API_v1",
+      "version": 1,
+      "operations": [
+        "analysis_command"
+      ]
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "viewer.ir_spectroscopy",
+  "profile": "scientific_view_v1",
+  "provenance": {
+    "authoring": "normal_new_project_and_actual_native_builder",
+    "stage": "P035_native_IR_client_author_candidate",
+    "scientific_data_included": false
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "source_files": [
+    "handlers.cpp",
+    "include/ir_viewer_client.hpp",
+    "src/ir_viewer_client.cpp"
+  ],
+  "tests": {
+    "events": [],
+    "expected_counter": 0,
+    "expected_values": {}
+  },
+  "version": "1.0.1"
+}

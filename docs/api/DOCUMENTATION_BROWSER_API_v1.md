@@ -64,7 +64,7 @@ full browser layout are not promised by this renderer. Manual text is never a
 script and has no Save/Edit callback. File reading retains the 2 MiB limit.
 
 Independent module windows also render standalone Markdown PNG image lines
-(using a Markdown image reference with a relative PNG path) through the existing markup owner's optional
+(`![caption](images/example.png)`) through the existing markup owner's optional
 trusted image callback. Paths must be relative and remain inside the installed
 module root. Files are limited to 8 MiB and dimensions to 4096 × 4096; remote
 images and final symbolic links are refused. Ordinary markup consumers need not
@@ -94,6 +94,9 @@ Tk host. A module manual window does not require a scientific Session.
 | `documentationBrowserRefresh` | rebuilds the existing index from the loaded descriptor catalogs and installed docs; returns ordered document IDs; does not activate scientific module implementations |
 | `documentationBrowserList ?query?` | query default `""`; ordered descriptor dict list for the current index |
 | `documentationBrowserRead id` | UTF-8 text for current indexed ID, or generated About text; unknown IDs/file errors propagate |
+| `documentationBrowserOpenReferenceWindow path module ?parent?` | an installed provider/public documentation path through the same confined independent manual owner; returns the actual window |
+| `documentationBrowserOpenApiWindow api ?module? ?parent?` | normal indexed API reference in an independent manual window; returns that actual window |
+| `documentationBrowserManualInspect window` | transient source-correlated presentation receipt for an owned manual window |
 | `documentationBrowserOpenApi api` | selects the indexed `api:API_ID` in the existing main Help UI and raises root; returns that document ID; unavailable API manual errors |
 | `documentationBrowserOpenModuleWindow module ?parent?` | parent default `{}`; returns/reuses module-owned independent manual toplevel; current implementation accepts parent but does not make the window transient |
 | `documentationBrowserAttachViewerHelp module viewer window` | attaches to a normal Tk Viewer toplevel when eligible; side effect only, no stable result value |
@@ -126,10 +129,9 @@ entries = gxtxt_api_call('DOCUMENTATION_BROWSER_API_v1', 'list', {'SOURCE_SURFAC
 text = gxtxt_api_call('DOCUMENTATION_BROWSER_API_v1', 'read', {'api:SOURCE_SURFACE_API_v1'});
 ```
 
-These are source-backed call shapes, not a new executed integration test. The
-runtime must provide the actual bridge functions/context; ordinary standalone
+The runtime must provide the actual bridge functions/context; ordinary standalone
 Python/Octave sessions do not gain them from this Markdown. There is no generic
-C++ invoke and no typed `gx::Host` Documentation Browser method in the reviewed
+C++ invoke and no typed `gx::Host` Documentation Browser method in the supported
 SDK. Development's supported document-read projection remains a distinct
 [Viewer Development](VIEWER_DEVELOPMENT_API_v1.md) contract.
 
@@ -169,7 +171,7 @@ and image/presentation limits; scientific precision and the completeness of
 each manual remain their actual public owner's responsibility. Discovery/read
 success is not proof of all-functions documentation or release acceptance.
 
-## TASK210 HTML manuals and installed tutorial packages
+## HTML manuals and installed tutorial packages
 
 The existing index also admits declared `.html`/`.htm` documents. HTML selection
 opens the same module Guides window using the shared `HTML_VIEWER_API_v1`
@@ -180,13 +182,11 @@ guide and quick-start order. `module:MODULE:guide` remains unchanged for old
 public/Script reads. Missing native capabilities show explicit HTML
 unavailability and offer the preserved Markdown manual when installed.
 
-The module window retains its invocation and repeated-open identity, now with
+The module window retains its invocation and repeated-open identity, with
 Manual and Interactive Tutorial tabs. Tutorial selection uses the same descriptor
 index, with independent native handles/lifetimes for the two presentations. Main
 Help HTML selection delegates to this shared host. Curve Digitizer remains ASIS.
-This batch does not claim its existing Help/F1/HELP_OPEN route is connected. Any compatibility must reside in a
-legitimate existing CORE owner without altering or monkey-patching the vendor
-implementation.
+Its existing Help/F1/HELP_OPEN route remains separate from this shared window. Compatibility belongs to the existing CORE owner, without altering or monkey-patching the vendor implementation.
 
 Installed packages are discovered at fixed versioned-framework paths:
 `docs/guides/*/*/documentation-package.ini` and
@@ -241,14 +241,63 @@ the Generator dialog keeps its own lifetime if the manual closes. Missing host
 operation or HTML support retains plain normal-selection guidance. No URI,
 page-script, Script Bridge or restricted SDK capability is introduced.
 
-Bounded headless consumer checks cover actual catalog/manifest resolution and
-pure context/result predicates, including the actual Generator owner's truthful
-headless unavailable result. Native button interaction, dialog selection and
-reentrant UI/renderer behavior still require MAIN-coordinated actual GUI checks.
-Generator metadata does not grant automatic generation; no Generate action or
-Session creation is triggered. The native button uses the accepted host selection
-operation; URI dispatch remains unavailable.
+The native control uses the accepted host selection operation. It does not grant
+URI dispatch, automatic generation or Session creation. Independent GUI
+validation is required to establish the actual tab layout, renderer presentation
+and retained plugin-local Help/F1 behavior; index/read success alone does not
+establish them.
 
-These changes have source-only catalog/read/codec coverage. Actual tab layout,
-HTML rendering and unchanged Digitizer Help/F1 flow require MAIN-coordinated GUI
-acceptance; no graphical, scientific or media PASS follows from catalog checks.
+## Owned presentation inspection
+
+`::GX::documentationBrowserManualInspect window` is a read-only host operation
+for an actual independent manual window returned by the existing normal opening
+route. Unknown/destroyed windows or changed window incarnations fail explicitly.
+The result uses `gxtxt.documentation.presentation.v1` and contains `window`,
+`window_id`, `module`, a positive presentation `generation`, `document_id`,
+`path`, `source_sha256`, `format`, `renderer`, `state`, `error` and
+`rendering_verified`.
+
+Each attempted document selection owns a new transient receipt. Source identity
+is validated before rendering; a source that changes while opening fails. The
+existing GX-Markup path reports `ready` only after its synchronous widget update
+succeeds. HTML retains the actual public `HTML_VIEWER_API_v1` native receipt,
+renderer generation, loading/ready/error state and bounded error. Failure to
+attach the actual HTML runtime remains visible even when the document file is
+present. No new renderer, document index or persisted result registry is created.
+
+A caller must correlate the actual window incarnation, document path, source
+SHA and presentation generation before associating a result with an API/provider.
+A reused window can display another source. `ready` is a renderer outcome, not
+independent proof of correct pixels; `rendering_verified` remains false. Physical
+paths and GUI lifetimes make this operation host-only. Existing Script list/read
+projections and scientific admission remain unchanged.
+
+`::GX::documentationBrowserOpenReferenceWindow path module ?parent?` opens an
+explicit already-declared host/Bridge document when the common API-family manual
+is a different valid surface. It validates the installed module/public-docs path
+through the existing manual owner and its bounded source resolver, then reuses
+the same module window, GX-Markup/HTML renderer and transient presentation receipt.
+Linked documents remain in the existing derived documentation index; no second
+manual file or persistence store is created. Outside, linked, oversized or
+unsupported files fail. This physical-path GUI operation is host-only and adds
+no Script read-by-path capability or scientific provider activation.
+
+## P031 manual-host references
+
+The existing module manual window provides primary File, View and References
+menus. References links its descriptor-indexed preserved Markdown manual and
+declared available `documentation.api_refs` through the same resolver, renderer,
+source-SHA receipt and history. A current descriptor/index check at invocation
+refuses stale, removed or undeclared targets. Missing references are visibly
+unavailable. General navigation remains available through File/View and existing
+controls. No document store, renderer, API capability or filesystem grant is
+added. HTML resources retain their package containment; an HTML guide can point
+readers to References for original Markdown and public CORE/API documents
+without embedding dead cross-package/raw-Markdown HTML links.
+
+The existing `documentation.html_manual` descriptor entry is indexed alongside
+`guide` and `manual`, so a declared illustrated HTML manual can be the normal
+User Manual while preserving the original Markdown reference. View also exposes
+the existing shared HTML zoom operations (50–300%, 25% steps and reset100%) for
+the active manual/tutorial; unavailable or bounded actions are disabled. This
+changes presentation only, with source and native generation checks retained.

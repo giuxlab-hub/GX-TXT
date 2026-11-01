@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Dataset consultation shares the installed native engine; no script evaluation.
 namespace eval ::GX::DocumentSource {variable serial 0;variable zoom {}}
-proc ::GX::documentPresentationZoomAttach {widget} {
+proc ::GX::documentPresentationZoomAttach {widget {bodyFont TkDefaultFont}} {
     variable ::GX::DocumentSource::zoom
     documentPresentationZoomDispose $widget $widget
     set fonts {};set byRole {}
     foreach {role base} {body TkDefaultFont heading TkHeadingFont bold TkDefaultFont italic TkDefaultFont code TkFixedFont} {
+        if {$role eq {body}} {set base $bodyFont}
         set options [font actual $base]
         if {$role eq {bold}} {dict set options -weight bold}
         if {$role eq {italic}} {dict set options -slant italic}
@@ -33,7 +34,7 @@ proc ::GX::documentPresentationZoom {widget action} {
     variable ::GX::DocumentSource::zoom
     if {![dict exists $zoom $widget] || ![winfo exists $widget]} {return {}}
     set factor [dict get $zoom $widget factor]
-    switch -- $action {in {set factor [expr {min(3.0,$factor+.25)}]} out {set factor [expr {max(.5,$factor-.25)}]} reset {set factor 1.0} default {error {Document zoom action must be in, out or reset}}}
+    switch -- $action {in {set factor [expr {min(3.0,$factor+.25)}]} out {set factor [expr {max(.5,$factor-.25)}]} reset {set factor 1.0} current {} default {error {Document zoom action must be in, out or reset}}}
     set view [$widget yview]
     foreach font [dict get $zoom $widget fonts] {
         lassign $font name size
@@ -106,6 +107,7 @@ proc ::GX::documentRenderToWidget {widget language source} {
 }
 proc ::GX::datasetDocumentKind {id} {
     set contract [datasetField $id contract [datasetField $id kind {}]]
+    if {$contract eq {document.uml}} {return uml}
     if {$contract ni {document.text code.source}} {return {}}
     set media [string tolower [datasetField $id media_type {}]]
     set metadata [datasetMetadataRead $::GX::currentSession $id]
@@ -123,13 +125,43 @@ proc ::GX::datasetDocumentKind {id} {
     if {$contract eq {code.source}} {return code}
     return {}
 }
+proc ::GX::documentUtf8Prefix {bytes limit} {
+    # Validate every scalar which starts inside the requested prefix. Lookahead
+    # distinguishes an incomplete valid scalar from malformed leading, trailing,
+    # overlong, surrogate and out-of-range encodings; only the former is omitted.
+    set size [string length $bytes];set position 0;set accepted 0
+    set end [expr {min($limit,$size)}]
+    while {$position<$end} {
+        if {![regexp -indices -start $position {[\u0080-\u00ff]} $bytes found] || [lindex $found 0]>=$end} {set accepted $end;break}
+        set position [lindex $found 0];set accepted $position
+        scan [string index $bytes $position] %c lead
+        if {$lead>=0xc2 && $lead<=0xdf} {set width 2
+        } elseif {$lead>=0xe0 && $lead<=0xef} {set width 3
+        } elseif {$lead>=0xf0 && $lead<=0xf4} {set width 4
+        } else {error {Canonical document is not valid UTF-8}}
+        if {$position+$width>$size} {error {Canonical document has an incomplete UTF-8 scalar}}
+        for {set offset 1} {$offset<$width} {incr offset} {
+            scan [string index $bytes [expr {$position+$offset}]] %c next
+            if {$next<0x80 || $next>0xbf || ($offset==1 &&
+                (($lead==0xe0 && $next<0xa0) || ($lead==0xed && $next>0x9f) ||
+                 ($lead==0xf0 && $next<0x90) || ($lead==0xf4 && $next>0x8f)))} {error {Canonical document is not valid UTF-8}}
+        }
+        if {$position+$width>$end} break
+        incr position $width;set accepted $position
+    }
+    return [string range $bytes 0 [expr {$accepted-1}]]
+}
 proc ::GX::datasetDocumentRead {id {limit 262144}} {
+    if {![string is integer -strict $limit] || $limit<1 || $limit>4194304} {error {Document read limit must be1..4194304 UTF-8 bytes}}
     set payload [sessionInspectionDatasetPayload $id]
     set file [dict get $payload path]
     if {[sha256File $file] ne [dict get $payload sha256]} {error {Canonical document integrity changed}}
-    set ch [open $file r];fconfigure $ch -encoding utf-8
-    try {set text [read $ch $limit];set complete [eof $ch]} finally {close $ch}
-    return [dict create source $text complete $complete sha256 [dict get $payload sha256]]
+    set ch [open $file rb]
+    try {set bytes [read $ch [expr {$limit+4}]];set complete [expr {[string length $bytes]<=$limit && [eof $ch]}]} finally {close $ch}
+    set bytes [documentUtf8Prefix $bytes $limit]
+    set text [encoding convertfrom utf-8 $bytes]
+    if {[sha256File $file] ne [dict get $payload sha256]} {error {Canonical document changed during read}}
+    return [dict create source $text complete $complete bytes [string length $bytes] sha256 [dict get $payload sha256]]
 }
 proc ::GX::datasetDocumentRender {widget id} {
     set kind [datasetDocumentKind $id]
@@ -143,7 +175,7 @@ proc ::GX::datasetDocumentRender {widget id} {
         sourceSurfaceSet $text $source
         return 1
     }
-    if {$kind eq {markdown}} {markupRenderStringToWidget $widget $source
+    if {$kind eq {markdown}} {markupRenderStringToWidget $widget $source {} [markdownNavigationContext dataset $id]
     } elseif {$kind in {html xml}} {documentRenderToWidget $widget $kind $source
     } else {return 0}
     if {![dict get $read complete]} {$widget configure -state normal;$widget insert end "\n\nTruncated preview: first 256 Ki characters. Open for a larger bounded consultation.\n";$widget configure -state disabled}
@@ -224,3 +256,8 @@ proc ::GX::documentInteractiveAllocationRelease {allocation} {
     # Only this authority-created allocation is eligible; never source paths.
     resourceManagementCleanup [list $id]
 }
+
+# Same document authority; the subordinate file supplies guarded authoring and
+# embedded shared-editor projections, not another reader or persistence store.
+source [file join [file dirname [info script]] document_edit_v1.tcl]
+source [file join [file dirname [info script]] uml_document_api_v1.tcl]

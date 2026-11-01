@@ -1,4 +1,4 @@
-# Replicate Curve Analysis — Input workflow
+# Replicate Curve Analysis v13 — input workflow
 
 Normal use is deliberately simple:
 

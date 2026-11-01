@@ -127,6 +127,10 @@ proc ::GX::datasetRename {session oldId newId} {
     set created {}
     set stamp ".dataset-rename.[pid].[clock clicks]"
     set touched [lsort -unique [concat $inputs [dict keys $changes] [list $noteSource $noteTarget]]]
+    # The Group descriptor participates in this same authority transaction.
+    # Enlist all renamed resources before mutation so a later group failure or
+    # process interruption restores the exact old Dataset and reference files.
+    foreach path $touched {datasetAuthorityEnlist $path}
     try {
         foreach path $touched {
             if {![file isfile $path]} continue
@@ -187,6 +191,7 @@ proc ::GX::datasetRename {session oldId newId} {
             set variableReferenceIdentity($name) [datasetRenameReference variable_reference_id.identity identity $variableReferenceIdentity($name) $oldId $newId]
         }
     }
+    if {[llength [info commands ::GX::_datasetGroupDatasetRenamed]]} {_datasetGroupDatasetRenamed $session $oldId $newId}
     return $newId
 }
 

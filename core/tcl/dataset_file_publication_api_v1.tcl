@@ -247,7 +247,7 @@ proc ::GX::datasetFileEditAuthorize {capability session datasetId editor} {
     loadDatasetRegistry $session
     # Ownership, not the current user-assigned namespace, permits this exact
     # revision handoff. It does not authorize any ordinary namespace write.
-    if {[datasetField $datasetId source_module {}] ne $owner || [datasetField $datasetId contract {}] ni {geometry.sketch document.pdf document.text}} {error {Only the file Dataset producer may authorize editing}}
+    if {[datasetField $datasetId source_module {}] ne $owner || [datasetField $datasetId contract {}] ni {geometry.sketch document.pdf document.text document.uml}} {error {Only the file Dataset producer may authorize editing}}
     datasetPublicationV2ValidateId module $editor
     set grant [dict create dataset_id $datasetId session [file normalize $session] editor $editor owner $owner sha256 [datasetField $datasetId sha256 [datasetField $datasetId canonical_sha256 {}]] contract [datasetField $datasetId contract {}]]
     _datasetFrameworkMetadataUpdate $session $datasetId [dict create file_edit_grant $grant]

@@ -44,6 +44,16 @@ def validate(archive, output=None):
             name(n)
             if n in files or not n.startswith(('resources/','dependencies/')): raise ValueError('Invalid Project directory: '+n)
             (Path(td)/n).mkdir(parents=True,exist_ok=True)
+        omitted=m.get('excluded_unassociated_sessions',[])
+        if not isinstance(omitted,list) or len(omitted)>10000 or len(omitted)!=len(set(omitted)):
+            raise ValueError('Invalid unassociated Session exclusions')
+        for relative in omitted:
+            name(relative)
+            if len(PurePosixPath(relative).parts)!=2 or not relative.startswith('Sessions/'):
+                raise ValueError('Invalid excluded Project Session path')
+            prefix='resources/'+relative
+            if any(n==prefix or n.startswith(prefix+'/') for n in [*files,*directories]):
+                raise ValueError('Excluded unassociated Session is present in Project resources')
         eids=set(); paths=set()
         for r in m['sessions']:
             if not r['source_experiment_id'] or r['source_experiment_id'] in eids or r['archive'] in paths:
@@ -62,6 +72,9 @@ def validate(archive, output=None):
                 for b in iter(lambda:f.read(1024*1024),b''): h.update(b);out.write(b)
             if h.hexdigest()!=r['sha256']: raise ValueError('Project SHA-256 mismatch: '+n)
         transfer=session.simple_ini(Path(td)/'source/transfer.ini')
+        exclusion_sections={f'portable_exclusion.{i}' for i in range(1,len(omitted)+1)}
+        if {k for k in transfer if k.startswith('portable_exclusion.')}!=exclusion_sections or [transfer[f'portable_exclusion.{i}'].get('relative_path') for i in range(1,len(omitted)+1)]!=omitted:
+            raise ValueError('Project exclusion metadata disagrees with package')
         if transfer.get('project',{}).get('id')!=m['source_project_id']:
             raise ValueError('Project source metadata disagrees with package')
         expected={f'experiment.{i}' for i in range(1,len(m['sessions'])+1)}
@@ -107,6 +120,23 @@ def export(spec, archive, framework):
                 if sec.startswith('dependency.'): deps.add(d['module_id'])
             records.append(dict(archive=a,source_experiment_id=rec['experiment_id'],name=rec['experiment_name']))
             excluded.append(Path(rec['session_path']).resolve())
+    # Registered Sessions remain mandatory. This optional owner policy omits
+    # only complete unassociated immediate Session children from raw resources;
+    # aggregate transport can serialize them once through Session Portable.
+    omitted=[]
+    sections={k for k in transfer if k.startswith('portable_exclusion.')}
+    if len(sections)>10000 or sections!={f'portable_exclusion.{i}' for i in range(1,len(sections)+1)}:
+        raise ValueError('Invalid Project exclusion inventory')
+    for index in range(1,len(sections)+1):
+        relative=transfer[f'portable_exclusion.{index}'].get('relative_path','')
+        name(relative)
+        if len(PurePosixPath(relative).parts)!=2 or not relative.startswith('Sessions/') or relative in omitted:
+            raise ValueError('Invalid excluded Project Session path')
+        raw=root/relative;path=raw.resolve(strict=True)
+        manifest=path/'metadata/manifest.ini'
+        if raw.is_symlink() or path!=raw or path in excluded or not (path/'channels').is_dir() or manifest.is_symlink() or not manifest.is_file() or session.simple_ini(manifest).get('pipeline',{}).get('format')!='2':
+            raise ValueError('Exclusion must identify a complete unassociated Project Session')
+        excluded.append(path);omitted.append(relative)
     # Save Project-owned resources outside registered Sessions, including hidden files.
     # Reject unresolvable symlink trees: silently omitting resources is not portable.
     def addtree(src,dst,omit=()):
@@ -128,6 +158,7 @@ def export(spec, archive, framework):
         deps.update(session.split_ids(meta.get('depends','')))
     m=dict(format=FORMAT,source_project_id=p['id'],carrier_installation=p['carrier_installation'],sessions=records,
            dependencies=sorted(seen),directories=[name(f.relative_to(spec).as_posix()) for f in sorted(spec.rglob('*')) if f.is_dir() and f.relative_to(spec).parts[0] in ('resources','dependencies') and len(f.relative_to(spec).parts)>1],files={})
+    if omitted:m['excluded_unassociated_sessions']=omitted
     for f in sorted(spec.rglob('*')):
         if f.is_file():m['files'][name(f.relative_to(spec).as_posix())]=dict(size=f.stat().st_size,sha256=digest(f))
     archive.parent.mkdir(parents=True,exist_ok=True)

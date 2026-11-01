@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 — 2026-09-28
 
 - Classified the independently packaged module as a managed external plugin.
 

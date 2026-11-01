@@ -4,13 +4,12 @@ from gxtxt_script_bridge_server import BridgeError
 
 _COMMANDS = {
     "available_name": ("::GX::sessionWorkspaceAvailableName", ["preferred"]),
-    "resource_copy_tree": ("::GX::sessionWorkspaceResourceCopyTreeUtf8", ["workspace_id", "payload_utf8"]),
     "list": ("::GX::sessionWorkspaceList", []),
     "get": ("::GX::sessionWorkspaceGet", ["workspace_id"]),
     "create": ("::GX::sessionWorkspaceCreate", ["provider_id", "name", "payload_utf8"]),
-    "update": ("::GX::sessionWorkspaceUpdate", ["workspace_id", "payload_utf8"]),
+    "update": ("::GX::sessionWorkspaceUpdate", ["workspace_id", "payload_utf8", "expected", "asynchronous"]),
     "rename": ("::GX::sessionWorkspaceRename", ["workspace_id", "name"]),
-    "delete": ("::GX::sessionWorkspaceDelete", ["workspace_id"]),
+    "delete": ("::GX::sessionWorkspaceDelete", ["workspace_id", "confirmed", "expected"]),
     "validate": ("::GX::sessionWorkspaceValidate", ["workspace_id"]),
     "note_read": ("::GX::noteDocumentRead", ["workspace_id"]),
     "note_write": ("::GX::noteDocumentWrite", ["workspace_id", "text"]),
@@ -53,8 +52,6 @@ def invoke(host, operation, args):
     raw = host.call(command, *args)
     if operation == "available_name":
         return str(raw)
-    if operation == "resource_copy_tree":
-        return bytes(raw).decode("utf-8")
     if operation == "list":
         return [receipt(host, item) for item in host.as_list(raw)]
     if operation == "delete":

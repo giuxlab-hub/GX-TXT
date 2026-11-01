@@ -338,7 +338,7 @@ edit metadata
 The exported file can later be imported back into the same or another Dataset
 Metadata editor, subject to the one-line value rule above.
 
-## Acquisition Handler metadata transfer
+## Acquisition Handler handoff (GX-TXT 0.9.7.38)
 
 Acquisition Handler Plugin API v1 Dataset result descriptors may include an
 optional `structured_metadata` dictionary. CORE registers the Dataset and then

@@ -215,6 +215,7 @@ proc ::GX::_viewerGuiWorkbenchDirty {window form} {
     if {![_viewerGuiWorkbenchOwned $window $form]} {return 0}
     set info [::GX::Workbench3D::guiInspect]
     if {[dict get $info status] ne {ready}} {return 0}
+    if {[datasetPublicationV2DictDefault $info sketch_pending 0] || [datasetPublicationV2DictDefault $info sketch_dirty 0]} {return 1}
     return [expr {[_viewerGuiWorkbenchStamp $info] ne [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workbench_saved {}] $form {}]}]
 }
 proc ::GX::_viewerGuiWorkbenchSave {window form} {

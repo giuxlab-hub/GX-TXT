@@ -22,7 +22,7 @@ proc ::GX::CurveDigitizerNumericCore::covarianceUnit {xUnit yUnit} {
 # Preflight factor values must reproduce both independent and shared Numeric
 # factors. Marginal sigma/covariance checks alone miss cross-point differences.
 # The first 4N little-endian float64 values are 2N x 2 local factors;
-# the next 24N values are 2N x 12 shared factors, in original point order.
+# the next 2*N*M values (M=12 or 14) are shared factors in original order.
 proc ::GX::CurveDigitizerNumericCore::_checkPreflightFactors {json state n} {
     # Narrow integration adapter for this flat canonical wire record. Reject
     # duplicate/unknown fields and trailing content before inspecting factors.
@@ -43,19 +43,23 @@ proc ::GX::CurveDigitizerNumericCore::_checkPreflightFactors {json state n} {
     }
     if {[dict size $fields]!=5 || ![dict exists $fields raw_sha256] || ![regexp {^"([a-f0-9]{64})"$} [dict get $fields raw_sha256] -> rawSha]} {error {Factor record requires a canonical raw SHA-256}}
     if {[string length $json] > 1150000 ||
-        ![regexp {"format"\s*:\s*"zlib-base64-float64-le-v1"} $json] ||
+        ![regexp {"format"\s*:\s*"zlib-base64-float64-le-v(1|2)"} $json -> factorVersion] ||
         ![regexp {"shape_local"\s*:\s*\[\s*([0-9]+)\s*,\s*2\s*,\s*2\s*\]} $json -> localRows] ||
-        ![regexp {"shape_shared"\s*:\s*\[\s*([0-9]+)\s*,\s*12\s*\]} $json -> sharedRows] ||
+        ![regexp {"shape_shared"\s*:\s*\[\s*([0-9]+)\s*,\s*(12|14)\s*\]} $json -> sharedRows width] ||
         ![regexp {"payload"\s*:\s*"([A-Za-z0-9+/=]+)"} $json -> payload] ||
         $localRows != $n || $sharedRows != 2*$n} {
         error {Uncertainty preflight has an invalid full-factor shape or representation}
+    }
+    if {($factorVersion eq {1} && $width != 12) ||
+        ($factorVersion eq {2} && $width != 14)} {
+        error {Uncertainty factor version and calibration width disagree.}
     }
     set independent [dict get $state independent_factor]
     set shared [dict get $state shared_factor]
     if {[llength $independent] != 2*$n || [llength $shared] != 2*$n} {
         error {CORE full-factor row alignment differs from preflight}
     }
-    set expectedBytes [expr {$n*28*8}]
+    set expectedBytes [expr {$n*(4+2*$width)*8}]
     set inflater [zlib stream decompress]
     try {
         $inflater put [binary decode base64 -strict $payload]
@@ -68,7 +72,7 @@ proc ::GX::CurveDigitizerNumericCore::_checkPreflightFactors {json state n} {
     }
     if {[::GX::datasetStorageSha256Bytes [::GX::sessionInspectionCurrentSession] $raw] ne $rawSha} {error {Factor raw SHA-256 mismatch}}
     binary scan $raw q* scalarFactors
-    if {[llength $scalarFactors] != 28*$n} {
+    if {[llength $scalarFactors] != (4+2*$width)*$n} {
         error {Preflight factors are not binary64 arrays}
     }
     set at 0
@@ -84,7 +88,7 @@ proc ::GX::CurveDigitizerNumericCore::_checkPreflightFactors {json state n} {
         }
     }
     foreach row $shared {
-        if {[llength $row] != 12} {error {CORE shared factor width differs}}
+        if {[llength $row] != $width} {error {CORE shared factor width differs}}
         foreach core $row {
             set old [lindex $scalarFactors $at]
             if {![expr {abs(double($core)) < Inf && abs(double($old)) < Inf}] ||

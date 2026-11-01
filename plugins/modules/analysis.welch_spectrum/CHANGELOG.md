@@ -8,7 +8,7 @@
 
 # Changelog
 
-## 1.1.0
+## 1.1.0 — 2026-09-26
 
 - Use the public `NUMERIC_API_v1` binding in workers for FFT, detrending and window generation; retain Welch PSD scaling and aggregation semantics.
 

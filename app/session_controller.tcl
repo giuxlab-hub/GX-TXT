@@ -96,12 +96,19 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
         error "The selected folder does not contain channels/: $d"
     }
     # Real Session open includes folders without a Manifest. Reject inconsistent
-    # saved Preview dependencies before switching owners or refreshing consumers.
+    # non-Preview dependencies before switching owners or refreshing consumers.
     set selectionData [_modulePreviewOpenPreflight $d]
-    _modulePreviewReset
+    if {$currentSession ne {} && [file normalize $currentSession] ne $d && ![sessionWorkspaceSessionLeave {switching Sessions}]} {
+        return -code error -errorcode {GXTXT SESSION CANCELLED} {Session switch cancelled; the current Session remains open}
+    }
+    # A channels-only Session has no Manifest to reset presentation state.
+    set ::GX::cfg(analysis_hidden_modules) {}
     # A preview image belongs to the Session that supplied its source PNG.
     # Clear it before loading the next Manifest or rebuilding graph discovery.
     catch {clearGraphPreview}
+    # Reset previous-Session script source projections before loading target
+    # Manifest bindings. Identical script IDs/SHA do not identify a Session.
+    scriptAnalysisResetSessionState $d
     set currentSession $d
     set mf [file join $d metadata manifest.ini]
     if {[file isfile $mf]} {
@@ -156,6 +163,9 @@ proc ::GX::createNewSession {name {projectId ""} {copyDocumentation 1}} {
     if {$requested eq ""} {error {Enter a session name.}}
     set safe [sanitize $requested]
     set saved [_sessionCreationSavedState]
+    if {$currentSession ne {} && ![sessionWorkspaceSessionLeave {creating a Session}]} {
+        return -code error -errorcode {GXTXT SESSION CANCELLED} {New Session cancelled; the current Session remains open}
+    }
     set documentation [_experimentDocumentsSnapshot]
     file mkdir $root
     set record {}

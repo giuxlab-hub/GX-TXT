@@ -259,7 +259,7 @@ proc ::GX::SII::editPaste {} {
 proc ::GX::SII::editUndo {} {
     variable ui
     if {[editFocusInText] || [annotationLocked]} return
-    if {[info exists ui(editDomain)] && $ui(editDomain) eq "annotations" && [llength $ui(figureUndo)]} {
+    if {[info exists ui(editDomain)] && $ui(editDomain) eq "annotations" && [historyDomainAvailable figure undo]} {
         undoFigure
         set ui(editDomain) annotations
     } else {
@@ -270,7 +270,7 @@ proc ::GX::SII::editUndo {} {
 proc ::GX::SII::editRedo {} {
     variable ui
     if {[editFocusInText] || [annotationLocked]} return
-    if {[info exists ui(editDomain)] && $ui(editDomain) eq "annotations" && [llength $ui(figureRedo)]} {
+    if {[info exists ui(editDomain)] && $ui(editDomain) eq "annotations" && [historyDomainAvailable figure redo]} {
         redoFigure
     } else {redo}
 }

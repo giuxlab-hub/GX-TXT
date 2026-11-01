@@ -6,6 +6,12 @@ proc ::GX::_viewerGuiGeometryObserved window {
     if {![dict exists $::GX::ViewerGui::instances $window] || ![winfo exists $window]} return
     catch {dict unset ::GX::ViewerGui::instances $window resize_timer}
     set geometry [lindex [split [wm geometry $window] +] 0]
+    if {[datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_geometry_pending 0]} {
+        # Mapping settles the requested saved size. Only this presentation
+        # baseline changes here; edits made while mapping remain dirty.
+        dict set ::GX::ViewerGui::instances $window workspace_geometry_pending 0
+        if {[dict exists $::GX::ViewerGui::instances $window saved]} {dict set ::GX::ViewerGui::instances $window saved gui_properties [dict create geometry [wm geometry $window]]}
+    }
     if {[dict exists $::GX::ViewerGui::instances $window last_geometry] && [dict get $::GX::ViewerGui::instances $window last_geometry] eq $geometry} return
     dict set ::GX::ViewerGui::instances $window last_geometry $geometry
     viewerGuiTraceEmit $window window resized [dict create status settled geometry $geometry]
@@ -73,16 +79,25 @@ proc ::GX::viewerGuiCompare {original rebuilt {tolerance 4}} {
 proc ::GX::viewerGuiComponentCapabilities {} {
     set result [uiFieldComponentCapabilities]
     foreach {type label api properties} {
+        api_catalog {Installed API Catalog} API_CATALOG_SERVICE_API_v1 {title string language choice surface choice query string api_filter string provider_filter string presentation choice enabled boolean}
+        library_browser {Scientific Library Browser page} SCIENTIFIC_LIBRARY_MANAGER_API_v1 {page choice group identifier scope dictionary}
         command_toolbar {Responsive command toolbar} CONFIGURATION_API_v1 {actions list}
         native2d {Native2D scientific viewport} NATIVE2D_VIEWPORT_HOST_v1 {title string diagram_catalog choice document_slot identifier source_kind choice}
         plot {Native Plot Dataset v4 host} PLOT_DATASET_API_v4 {title string spec dictionary empty_style choice}
-        document {Canonical document consultation or declared TeX source} VIEWER_GUI_HOST_API_v1 {kind choice title string mode choice}
+        document {Canonical document consultation or authorized Markdown/TeX/UML editing} VIEWER_GUI_HOST_API_v1 {kind choice title string mode choice pane choice}
         context_menu {Viewer contextual command menu} CONFIGURATION_API_v1 {actions list}
         menu {Viewer command menu} CONFIGURATION_API_v1 {label string actions list}
         help {Current module Manual and About} DOCUMENTATION_BROWSER_API_v1 {}
         workspace {Session Workspace lifecycle} SESSION_WORKSPACE_API_v1 {}
         history {Description / History and Undo / Redo} SCIENTIFIC_RECIPE_API_v1 {}
     } {dict set result $type [dict create label $label api_id $api api_version [expr {$type eq {plot} ? 4 : 1}] owner core/tcl/viewer_gui_host_api_v1.tcl properties $properties events [expr {$type in {native2d plot} ? {selection view_changed} : {invoke}}] status AVAILABLE]}
+    dict set result api_catalog owner core/tcl/api_catalog_service_v1.tcl
+    dict set result document default_properties {kind code mode read_only title Document}
+    dict set result library_browser owner core/tcl/scientific_library_browser_v1.tcl
+    dict set result library_browser events {view_changed}
+    dict set result library_browser default_properties {page records group libraries}
+    dict set result library_browser scope_contract [dict create type dictionary dimensions {library_types record_types library_ids provider_ids source_ids} max_ids_per_dimension 64 max_utf8_json_bytes 32768 semantics {OR within each dimension; AND across dimensions; shared by every page in the group; absent or empty is unfiltered}]
+    dict set result api_catalog events {selection_changed manual_opened view_changed}
     dict set result checkbutton properties plot_visibility dictionary
     foreach type {toggle checkbutton action} {dict set result $type properties component_visibility identifier}
     foreach type {menu context_menu command_toolbar} {dict set result $type properties visibility_commands dictionary}
@@ -93,6 +108,15 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     foreach key {plot_dataset plot_x plot_y plot_probe plot_x_scale plot_y_scale} {dict set result section properties $key identifier}
     foreach key {plot_series plot_series_label plot_series_axis plot_series_enabled plot_panel plot_panel_title plot_series_target plot_series_status} {dict set result section properties $key identifier}
     dict set result section properties plot_series_commands dictionary
+    foreach key {comparison_target comparison_dataset comparison_x comparison_y comparison_library comparison_entry comparison_mode comparison_normalization comparison_offset comparison_floor comparison_sources comparison_source comparison_status} {dict set result section properties $key identifier}
+    dict set result section properties comparison_commands dictionary
+    dict set result section properties analysis_module string
+    foreach key {analysis_dataset analysis_status analysis_candidates analysis_candidate analysis_comparison_form analysis_page} {dict set result section properties $key identifier}
+    foreach key {analysis_bindings analysis_config analysis_commands} {dict set result section properties $key dictionary}
+    dict set result section properties comparison_library_browser_group identifier
+    dict set result section properties comparison_single_source boolean
+    dict set result plot properties comparison_form identifier
+    foreach key {script_library_components scientific_preview_components} {dict set result section properties $key dictionary}
     dict set result section properties transform_kind choice
     foreach key {transform_dataset transform_x transform_y transform_method transform_grid_policy transform_nonfinite transform_output transform_baseline transform_corrected transform_row transform_status transform_report transform_plot} {dict set result section properties $key identifier}
     foreach key {transform_options transform_commands} {dict set result section properties $key dictionary}
@@ -103,13 +127,19 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     foreach key {numeric_variables numeric_parameters} {dict set result section properties $key dictionary}
     dict set result section properties numeric_kind choice
     dict set result section properties catalog_owner choice
-    foreach key {catalog_records catalog_mode catalog_filter catalog_info catalog_capabilities catalog_entries catalog_log catalog_status catalog_count catalog_extra_action catalog_page} {dict set result section properties $key identifier}
+    foreach key {catalog_records catalog_mode catalog_filter catalog_type catalog_providers catalog_entry_filter catalog_entry_info catalog_entry_count catalog_info catalog_capabilities catalog_entries catalog_log catalog_status catalog_count catalog_extra_action catalog_page} {dict set result section properties $key identifier}
     dict set result section properties catalog_actions dictionary
+    dict set result section properties catalog_browser_group identifier
+    dict set result action properties preview_operation choice
+    dict set result panel properties preview_anchor choice
+    foreach type {label status} {dict set result $type properties preview_context choice}
     foreach key {numeric_y numeric_query_dataset numeric_query_x numeric_query_start numeric_query_count numeric_method numeric_extrapolation numeric_real numeric_imaginary numeric_projection} {dict set result section properties $key identifier}
     foreach key {tex_source tex_pdf tex_projects tex_assets tex_diagnostics tex_log tex_status tex_info tex_source_status tex_pdf_status} {dict set result section properties $key identifier}
     dict set result section properties em_parameters dictionary
     dict set result section properties em_actions dictionary
     dict set result section properties workbench_parameters dictionary
+    dict set result section properties diagnostics_owner choice
+    foreach key {diagnostics_log diagnostics_records diagnostics_status diagnostics_changed} {dict set result section properties $key identifier}
     foreach key {workbench_viewport workbench_documents workbench_objects workbench_selection workbench_selection_mode workbench_unit workbench_status} {dict set result section properties $key identifier}
     foreach key {em_models em_jobs em_status em_log em_report em_output_id em_dataset em_field_plot em_profile_plot em_field_native3d} {dict set result section properties $key identifier}
     dict set result plot properties plot_form identifier
@@ -117,6 +147,8 @@ proc ::GX::viewerGuiComponentCapabilities {} {
         foreach {key datatype} {icon string icon_disabled string icon_hover string icon_selected string presentation choice icon_position choice icon_size number icon_spacing number} {dict set result $type properties $key $datatype}
     }
     dict set result action properties diagram_tool list
+    dict set result action properties cad_action list
+    dict set result cad_sketch [dict create label {Exact editable Sketch in 3D context} api_id NATIVE2D_API_v1 api_version 1 owner core/tcl/native_cad_sketch_v1.tcl properties {title string working_unit string plane dictionary presentation choice} events {changed selection} status AVAILABLE]
     dict set result action properties raster_tool list
     dict set result action properties raster_command list
     dict set result action properties plot_navigation_target identifier
@@ -125,7 +157,8 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     foreach type {command_toolbar menu context_menu} {dict set result $type properties command_icons dictionary}
     dict set result context_menu properties semantic_viewport identifier
     dict set result context_menu properties semantic_rules dictionary
-    foreach type {field toggle choice dataset_selector entry combobox checkbutton list} {dict set result $type properties change_action identifier}
+    dict set result context_menu properties cad_context identifier
+    foreach type {field toggle choice dataset_selector entry combobox checkbutton list table} {dict set result $type properties change_action identifier}
     dict set result native3d [dict create label {Native3D embedded viewport} api_id NATIVE_3D_GUI_HOST_API_v2 api_version 2 owner core/tcl/native3d_gui_host_v2.tcl properties {title string width number height number projection choice camera_position string camera_target string camera_up string axes_world boolean navigation_cube_visible boolean demo boolean} events {ready view_changed selected error source_changed released} status AVAILABLE]
     dict set result editable3d [dict create label {Native3D canonical geometry editor} api_id WORKBENCH_3D_API_v1 api_version 1 owner plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl properties {title string} events {ready selected view_changed error released} status AVAILABLE]
     foreach {type owner} {native2d core/tcl/native2d_viewport_curve_source.tcl plot plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl menu core/tcl/configuration_viewer_commands.tcl help app/gui/documentation_module_window.tcl workspace core/tcl/session_workspace_api_v1.tcl history core/tcl/scientific_recipe_history.tcl} {dict set result $type owner $owner}
@@ -179,6 +212,7 @@ proc ::GX::viewerGuiDesignAction {window id} {
     }
     if {![viewerGuiDesignGuard $window]} {return [dict create status rejected message {Viewer belongs to a previous Session.}]}
     set instance [dict get $::GX::ViewerGui::instances $window]
+    set incarnation [winfo id $window]
     if {[dict get $instance mode] eq {demo}} {return [viewerGuiDemoAction $window $id]}
     set correlation [viewerGuiTraceEmit $window $id invoke [dict create status started]]
     set started [clock microseconds]
@@ -186,7 +220,7 @@ proc ::GX::viewerGuiDesignAction {window id} {
     set statusMessage {}
     set navigate 0
     if {$id in {undo redo} && [dict exists $::GX::ScientificHistory::viewers $window]} {
-        set record [scientificHistoryViewerRecord $window]
+        set record [scientificHistoryViewerSummary $window]
         set navigate [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     try {
@@ -215,9 +249,9 @@ proc ::GX::viewerGuiDesignAction {window id} {
         } elseif {[dict exists [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]} {
             set target [dict get [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]
             viewerGuiDesignComponentVisible $window $target [expr {![viewerGuiDesignComponentVisibleGet $window $target]}]
-            if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Toggle pane $target"}
+            if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Toggle pane $target"}
             set status completed
-        } elseif {$id in {fit zoom_in zoom_out}} {
+        } elseif {$id in {fit zoom_in zoom_out} && ![_viewerGuiMarkdownZoomHandler $instance $id]} {
             set navigationTargets [_viewerGuiPlotNavigationTargets [dict get $instance design]]
             set navigationTarget [datasetPublicationV2DictDefault $navigationTargets $id {}]
             dict for {component widget} [dict get $instance widgets] {
@@ -256,25 +290,32 @@ proc ::GX::viewerGuiDesignAction {window id} {
             set statusMessage [datasetPublicationV2DictDefault $result message {}]
         }
     } on error {message options} {
+        if {![winfo exists $window] || [winfo id $window] ne $incarnation || ![dict exists $::GX::ViewerGui::instances $window]} {return [dict create status failed message $message window_closed 1]}
         viewerGuiTraceEmit $window $id result [dict create status failed message $message elapsed_us [expr {[clock microseconds]-$started}]] $correlation
-        dict get $instance slots status
-        [dict get $instance slots status] configure -text $message
+        set statusWidget [dict get $instance slots status]
+        if {[winfo exists $statusWidget]} {$statusWidget configure -text $message}
         return [dict create status failed message $message]
     }
     set display [expr {$status eq {not_connected} ? "Action '$id': not connected" : "Action '$id': $status"}]
     if {$statusMessage ne {}} {append display ": $statusMessage"}
-    [dict get $instance slots status] configure -text $display
     set receipt [dict create status $status]
     if {$statusMessage ne {}} {dict set receipt message $statusMessage}
+    if {![winfo exists $window] || [winfo id $window] ne $incarnation || ![dict exists $::GX::ViewerGui::instances $window]} {dict set receipt window_closed 1;return $receipt}
+    set statusWidget [dict get $instance slots status]
+    if {[winfo exists $statusWidget]} {$statusWidget configure -text $display}
     viewerGuiTraceEmit $window $id result [dict merge $receipt [dict create elapsed_us [expr {[clock microseconds]-$started}]]] $correlation
     return $receipt
 }
 proc ::GX::viewerGuiDesignActionEnabled {window id} {
+    set comparison [_viewerComparisonPlotActionEnabled $window $id]
+    if {$comparison ne {}} {return $comparison}
     set pcb [_viewerGuiPCBActionEnabled $window $id]
     if {$pcb ne {}} {return $pcb}
     set transform [_viewerGuiTransformActionEnabled $window $id]
     if {$transform ne {}} {return $transform}
     if {![viewerGuiDesignGuard $window]} {return 0}
+    set uml [_viewerGuiUmlActionEnabled $window $id]
+    if {$uml ne {}} {return $uml}
     set instance [dict get $::GX::ViewerGui::instances $window]
     set anchored [_viewerGuiAnchoredActionEnabled $window $id]
     if {$anchored ne {}} {
@@ -294,10 +335,11 @@ proc ::GX::viewerGuiDesignActionEnabled {window id} {
     if {[dict exists $instance design handlers $id available]} {return [dict get $instance design handlers $id available]}
     if {$id in {undo redo}} {
         if {![dict exists $::GX::ScientificHistory::viewers $window]} {return 0}
-        set record [scientificHistoryViewerRecord $window]
+        set record [scientificHistoryViewerSummary $window]
         return [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     if {$id in {fit zoom_in zoom_out}} {
+        if {[_viewerGuiMarkdownZoomHandler $instance $id]} {return 1}
         if {[dict exists $instance demo_bindings]&&[dict size [dict get $instance demo_bindings]]} {return 1}
         if {[dict exists $instance native3d]} {dict for {component h} [dict get $instance native3d] {if {[dict get [native3DViewportInspect $h] status] eq {ready}} {return 1}}}
         dict for {component binding} [dict get $instance bindings] {
@@ -324,7 +366,10 @@ proc ::GX::_viewerGuiPlotViewState axes {
     }
     return $view
 }
-proc ::GX::viewerGuiDesignCapture window {
+proc ::GX::viewerGuiDesignCapture {window {validateCustom 1}} {
+    if {[llength [info commands ::GX::comparisonPlotApiInfo]] && [llength [info commands ::GX::_viewerGuiComparisonCapture]]} {_viewerGuiComparisonCapture $window}
+    _viewerGuiMarkdownCapture $window
+    _viewerGuiScriptLibraryWorkspaceCapture $window
     set bindings [dict get $::GX::ViewerGui::instances $window bindings]
     dict for {id binding} $bindings {
         if {[dict get $binding kind] eq {raster}} {dict set bindings $id [_viewerGuiRasterCapture $window $id $binding]}
@@ -348,7 +393,11 @@ proc ::GX::viewerGuiDesignCapture window {
         }
     }
     set choices [_viewerGuiEMCapturedChoices $window [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] choice_options {}]]
-    return [dict create schema gxtxt.viewer_interface_state.v1 values [_viewerGuiAnchoredCaptureValues $window] bindings $bindings choices $choices visibility [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] component_visibility {}] domain_state [viewerGuiDesignContextGet $window]]
+    set state [dict create schema gxtxt.viewer_interface_state.v1 values [_viewerGuiAnchoredCaptureValues $window] bindings $bindings choices $choices visibility [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] component_visibility {}] domain_state [viewerGuiDesignContextGet $window] gui_properties [dict create geometry [wm geometry $window]]]
+    if {[dict exists $::GX::ViewerGui::instances $window cpp_workspace_state]} {dict set state custom_state [dict get $::GX::ViewerGui::instances $window cpp_workspace_state]}
+    set hooks [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_hooks {}]
+    if {[dict exists $hooks capture]} {set custom [uplevel #0 [list {*}[dict get $hooks capture] $window]];if {$validateCustom && [dict exists $hooks validate]} {uplevel #0 [list {*}[dict get $hooks validate] $custom]};dict set state custom_state $custom}
+    return $state
 }
 proc ::GX::viewerGuiDesignComponent {window id} {
     foreach component [dict get $::GX::ViewerGui::instances $window design components] {if {[dict get $component id] eq $id} {return $component}}
@@ -366,6 +415,9 @@ proc ::GX::_viewerGuiDesignUIFieldMount {window component widget mode context {c
     set componentContext {}
     if {$mode eq {demo} && $type eq {dataset_selector}} {set componentContext {demo_choices {{Synthetic sensor A} {Synthetic sensor B} {Synthetic calibration}}}}
     uiFieldComponentCreate $widget $type $p ::GX::ViewerGui::values($window,$id) $callback $componentContext
+    if {$type eq {table} && [dict exists $p change_action]} {
+        bind [uiFieldComponentTableWidget $widget] <<TreeviewSelect>> [list ::GX::viewerGuiDesignFieldChanged $window $id]
+    }
     _viewerGuiPCBComponentMounted $window $id $widget
     if {$type eq {dataset_selector} && [dict exists $context dataset_id] && [dict get $context dataset_id] in [$widget.entry cget -values]} {set ::GX::ViewerGui::values($window,$id) [dict get $context dataset_id]}
     return $widget
@@ -407,8 +459,25 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         if {$type eq {action}} {
             set id [dict get $properties action]
             dict set catalog $id [dict create label [dict get $properties label] default [datasetPublicationV2DictDefault $properties shortcut {}]]
+            if {[dict exists $properties cad_action]} {
+                foreach state {enabled checked} {dict set commands $id $state [list ::GX::_viewerGuiCadBindingState $window [dict get $properties cad_action] $state]}
+            }
         } elseif {$type eq {menu}} {lappend menus $properties} elseif {$type eq {history}} {set history 1} elseif {$type eq {workspace}} {set workspace 1} elseif {$type eq {help}} {set help 1}
+        # Embedded services report actionable diagnostics through the existing
+        # shell status when no catalog status component is declared. A minimal
+        # compatible Viewer must not need to author its own footer to see them.
+        if {$type eq {library_browser} && $mode eq {runtime}} {lappend regions footer}
         set parent [dict get $component parent];if {$parent in {toolbar inspector footer} && ($type ni {menu context_menu workspace help}||$mode eq {demo})} {lappend regions $parent}
+    }
+    # History is a declared CORE component. Older generated sources need no
+    # handwritten Undo handlers to receive the shared actions and shortcuts.
+    if {$history && $mode ne {demo}} {
+        foreach {action shortcut} {undo Ctrl+z redo Ctrl+y} {
+            if {![dict exists $catalog $action]} {
+                dict set catalog $action [dict create label [string totitle $action] default $shortcut]
+                dict set commands $action [dict create command [list ::GX::scientificHistoryViewerNavigate $window $action] enabled [list ::GX::viewerGuiDesignHistoryEnabled $window $action]]
+            }
+        }
     }
     set commandCatalog [datasetPublicationV2DictDefault $context command_catalog $module.$provider.design_commands]
     set shortcutKey design_shortcuts_[format %08x [zlib crc32 [list [dict get $design module_id] [dict get $design provider_id]]]]
@@ -421,10 +490,17 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     set token {};if {$mode ne {demo}} {catch {set token [interactiveDocumentSessionToken]}}
     set slots [viewerGuiCompose $manifest]
     set payload {};set workspaceId [datasetPublicationV2DictDefault $context workspace_id {}]
+    if {$workspace && $mode ne {demo}} {viewerGuiWorkspaceProviderEnsure $module $provider $design $mode $handlers $context}
     set stamp {}
     if {$workspaceId ni {{} new}} {set item [sessionWorkspaceGet $workspaceId];set payload [dict get $item payload];set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]} else {set workspaceId {}}
-    dict set ::GX::ViewerGui::instances $window [dict create design $design module [dict get $design module_id] provider [dict get $design provider_id] mode $mode handlers $handlers slots $slots widgets {} token $token opened_us [clock microseconds] traces {} subscriptions {} workspace_id $workspaceId workspace_name $workspaceName workspace_stamp $stamp bindings {} restoring 0 help $help]
+    dict set ::GX::ViewerGui::instances $window [dict create design $design actor_module $module module [dict get $design module_id] provider [dict get $design provider_id] mode $mode handlers $handlers slots $slots widgets {} token $token opened_us [clock microseconds] traces {} subscriptions {} workspace_id $workspaceId workspace_name $workspaceName workspace_stamp $stamp bindings {} restoring 0 help $help workspace_hooks [datasetPublicationV2DictDefault $context workspace_hooks {}]]
+    dict set ::GX::ViewerGui::instances $window uml_operations [datasetPublicationV2DictDefault $context uml_operations {}]
+    _interactiveDocumentSessionChanged
+    dict set ::GX::ViewerGui::instances $window context_epoch $::GX::DocumentSessionScope::epoch
     _viewerGuiAnchoredInitialize $window
+    dict set ::GX::ViewerGui::instances $window workspace_properties [expr {$workspaceId eq {}?{object {}}:[datasetPublicationV2DictDefault $item typed_properties {object {}}]}]
+    dict set ::GX::ViewerGui::instances $window saved_workspace_properties [dict get $::GX::ViewerGui::instances $window workspace_properties]
+    dict set ::GX::ViewerGui::instances $window workspace_geometry_pending 1
     bind $window <Destroy> +[list ::GX::viewerGuiDesignDispose $window %W]
     bind $window <Configure> +[list ::GX::_viewerGuiGeometrySchedule $window %W]
     try {
@@ -449,9 +525,30 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
                 nativePlotDisplayCreate $widget.plot [viewerGuiDemoPlotModel] [list ::GX::viewerGuiDemoNativeEvent $window $id]
                 pack $widget.plot -fill both -expand 1
                 dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture plot widget $widget.plot provenance display_only_RAM scientific_source {}]
+            } elseif {$type eq {library_browser}} {
+                # Mount all declared pages together after every component has
+                # its normal shell-owned widget. C++ receives no widget paths.
+                ttk::frame $widget
+            } elseif {$type eq {api_catalog}} {
+                apiBrowserCreate $widget [datasetPublicationV2DictDefault $p language Public] [dict create scope catalog title [datasetPublicationV2DictDefault $p title {API Catalog}] api_id [datasetPublicationV2DictDefault $p api_filter {}] provider_id [datasetPublicationV2DictDefault $p provider_filter {}] presentation [datasetPublicationV2DictDefault $p presentation full] enabled [datasetPublicationV2DictDefault $p enabled 1]]
+                if {[dict exists $p surface]} {set ::GX::ApiBrowser::state($widget,surface) [dict get $p surface]}
+                if {[dict exists $p query]} {set ::GX::ApiBrowser::state($widget,query) [dict get $p query]}
+                bind $widget <<ApiCatalogSelection>> [list ::GX::viewerGuiTraceEmit $window $id selection_changed {status reference_selected}]
+                bind $widget <<ApiCatalogManual>> [list ::GX::viewerGuiTraceEmit $window $id manual_opened {status reference_manual}]
+                bind $widget <<ApiCatalogView>> [list ::GX::viewerGuiTraceEmit $window $id view_changed {status indexed_reference_view}]
             } elseif {$type eq {command_toolbar}} {
                 set widget $host
                 viewerGuiActionsMount $window $widget [dict get $p actions]
+            } elseif {$mode eq {demo}&&$type eq {cad_sketch}} {
+                # Builder's synthetic layout demonstration must not create a
+                # canonical Sketch Document or attach a scientific History.
+                ttk::frame $widget
+                ttk::label $widget.empty -text {CAD Sketch: use Preview in an isolated Session to edit exact geometry.} -wraplength 400
+                pack $widget.empty -fill both -expand 1 -padx 12 -pady 12
+                dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture cad_sketch widget $widget provenance layout_only_RAM scientific_source {}]
+            } elseif {$type eq {cad_sketch}} {
+                ttk::frame $widget
+                _viewerGuiCadSketchMount $window $id $widget $p $payload
             } elseif {$type eq {editable3d}} {
                 ttk::frame $widget
                 ttk::label $widget.empty -text {Open or create a canonical 3D Document.} -wraplength 400
@@ -463,7 +560,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
                 foreach event {ready view_changed selected error source_changed} {native3DViewportSubscribe $handle $event [list ::GX::_viewerGuiNative3DEvent $window $id]}
                 if {[datasetPublicationV2DictDefault $p demo 0]} {native3DViewportBind $handle {kind demo};dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture native3d widget $widget provenance display_only_RAM scientific_source {}]}
             } elseif {$type eq {document}} {
-                if {[datasetPublicationV2DictDefault $p kind {}] ni {html pdf code table tex}} {error {Document kind must be html, pdf, code, table or declared tex source}}
+                if {[datasetPublicationV2DictDefault $p kind {}] ni {html pdf code table tex markdown uml}} {error {Unsupported canonical document kind}}
                 ttk::frame $widget
                 ttk::label $widget.empty -text {Select a compatible canonical Dataset, then Open.} -wraplength 500
                 pack $widget.empty -fill both -expand 1 -padx 12 -pady 12
@@ -477,6 +574,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             }
             if {[dict exists $p icon]&&[dict get $p icon] ne {}} {uiFieldIconApply $widget $p [dict get $design icons [dict get $p icon]] [dict get $design icons]}
             dict set widgets $id $widget
+            if {$type eq {document} && [dict get $p kind] in {markdown uml}} {_viewerGuiMarkdownMount $window $id $widget [datasetPublicationV2DictDefault $context dataset_id {}]}
             if {$type eq {action}} {dict lappend actionWidgets [dict get $p action] $widget}
             set parentType {};foreach ancestor [dict get $design components] {if {[dict get $ancestor id] eq $parent} {set parentType [dict get $ancestor type];break}}
             set layout [dict get $component layout]
@@ -497,6 +595,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         }
         dict for {key policy} $policies {lassign $key host axis index;grid ${axis}configure $host $index -weight [dict get $policy weight] -minsize [dict get $policy minsize]}
         dict set ::GX::ViewerGui::instances $window widgets $widgets
+        _viewerGuiLibraryMount $window
         viewerCommandWidgetsAttach $window $actionWidgets
         dict for {id spec} [_viewerGuiAnchoredDefinitions $design] {
             set placeholder [dict get $widgets $id]
@@ -507,20 +606,33 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         _viewerGuiEMInitialize $window $context
         _viewerGuiWorkbenchInitialize $window
         _viewerGuiPCBInitialize $window
+        _viewerGuiAnalysisInitialize $window
         if {$payload ne {}} {viewerGuiDesignRestore $window $payload}
         dict set ::GX::ViewerGui::instances $window committed_values [viewerGuiDesignValues $window]
         dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
         if {$history && $token ne {}} {
             scientificRecipeHostRegister $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] validate ::GX::viewerGuiDesignHistoryValidate replay ::GX::scientificHistoryState]
-            scientificHistoryViewerAttach $window $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] restore [list ::GX::viewerGuiDesignRestore $window] commit [list ::GX::viewerGuiDesignHistoryCommit $window] guard [list ::GX::viewerGuiDesignGuard $window]] [datasetPublicationV2DictDefault $payload history {}]
-            dict set ::GX::ViewerGui::instances $window saved_history [scientificHistoryViewerRecord $window]
+            set savedHistory [datasetPublicationV2DictDefault $payload history {}]
+            set libraryPresentation [_viewerGuiScriptLibraryRecoveryCapture $window $savedHistory $payload]
+            set activeHistory [scientificHistoryViewerAttach $window $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] restore [list ::GX::viewerGuiDesignRestore $window] commit [list ::GX::viewerGuiDesignHistoryCommit $window] guard [list ::GX::viewerGuiDesignGuard $window] before_transition [list ::GX::_viewerGuiScriptLibraryHistoryFlush $window] document_id $workspaceId] $savedHistory]
+            _viewerGuiScriptLibraryRecoveryRestore $window $libraryPresentation
+            set savedRevision [dict get [scientificHistoryViewerStatus $window] revision]
+            if {$savedHistory ne {} && $activeHistory ne $savedHistory} {set savedRevision -1}
+            dict set ::GX::ViewerGui::instances $window saved_history_revision $savedRevision
             scientificHistoryViewerStrip $window [dict get $slots footer] [dict get $slots status]
+            menu $window.menus.history -tearoff 0 -postcommand [list ::GX::viewerCommandMenusRefresh $window]
+            foreach action {undo redo} {viewerCommandMenuAdd $window $window.menus.history $action}
+            $window.menus.history add separator
+            $window.menus.history add command -label {Show / hide Description / History strip} -command [list ::GX::scientificHistoryViewerStripToggle $window]
+            $window.menus.history add command -label {History details…} -command [list ::GX::scientificHistoryViewerDetails $window]
+            $window.menus add cascade -label History -menu $window.menus.history
         }
         if {$workspace && $token ne {}} {
-            set wp [datasetPublicationV2DictDefault $context workspace_provider [string map {. _ - _} $module]_${provider}_interface_state]
-            set open [datasetPublicationV2DictDefault $context workspace_open [list ::GX::viewerGuiDesignWorkspaceOpen $module $provider $design $mode $handlers]]
-            sessionWorkspaceProviderRegister $wp [dict create module_id $module viewer_provider $provider type {Designed Viewer state} schema gxtxt.viewer_interface_state.v1 version 1 validate ::GX::viewerGuiDesignStateValidate open $open]
-            set callbacks [dict create current [list ::GX::viewerGuiDesignCurrent $window] save [list ::GX::viewerGuiDesignWorkspaceSave $window] dirty [list ::GX::viewerGuiDesignDirty $window] close [list ::GX::viewerGuiDesignWorkspaceClose $window] open $open discard [list destroy $window]]
+            set registered [viewerGuiWorkspaceProviderEnsure $module $provider $design $mode $handlers $context]
+            set wp [dict get $registered provider];set open [dict get $registered open]
+            set callbacks [dict create current [list ::GX::viewerGuiDesignCurrent $window] save [list ::GX::viewerGuiDesignWorkspaceSave $window] dirty [list ::GX::viewerGuiDesignDirty $window] close [list ::GX::viewerGuiDesignWorkspaceClose $window] open $open discard [list ::GX::viewerGuiDesignWorkspaceDiscard $window]]
+            dict set callbacks rename [list ::GX::viewerGuiDesignWorkspaceRename $window]
+            dict set callbacks save_as [list ::GX::viewerGuiDesignWorkspaceSaveAs $window]
             dict set ::GX::ViewerGui::instances $window workspace_provider $wp
             dict set ::GX::ViewerGui::instances $window workspace_callbacks $callbacks
             menu $window.menus.workspace -tearoff 0
@@ -546,26 +658,48 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             }
         }
         dict set ::GX::ViewerGui::instances $window widgets $widgets
+        _viewerGuiCadContextsMount $window
         uiFieldViewerRegionsSet $window [lsort -unique $regions]
         _viewerGuiCommandIconsMount $window
         if {[dict exists $design shell status]} {[dict get $slots status] configure -text [dict get $design shell status]}
+        set scriptLibraryClose 0
+        dict for {form maps} [_viewerGuiClientRoleMapsValidate $design] {if {[dict exists $maps script_library_components]} {set scriptLibraryClose 1;break}}
+        if {[dict exists $::GX::ViewerGui::instances $window library_browsers] || $scriptLibraryClose} {
+            # A User Script Library remains useful without a Session. Its Close
+            # action and the WM must still reach the same draft review owner.
+            wm protocol $window WM_DELETE_WINDOW [list ::GX::viewerGuiDesignClose $window]
+        }
         if {$mode eq {runtime} && [dict exists $design initial_action]} {viewerGuiDesignAction $window [dict get $design initial_action]}
         if {$workspaceId eq {}} {dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]}
         return $slots
     } on error {message options} {destroy $window;return -options $options $message}
 }
 proc ::GX::viewerGuiDesignCurrent window {return [dict get $::GX::ViewerGui::instances $window workspace_id]}
+proc ::GX::viewerGuiDesignHistoryEnabled {window action} {
+    if {![dict exists $::GX::ScientificHistory::viewers $window] || ![viewerGuiDesignGuard $window] || ![scientificHistoryViewerEditable $window]} {return 0}
+    set status [scientificHistoryViewerStatus $window]
+    return [expr {$action eq {undo} ? [dict get $status cursor]>0 : [dict get $status cursor]<[dict get $status count]}]
+}
 proc ::GX::viewerGuiDesignDirty window {
+    set instance [dict get $::GX::ViewerGui::instances $window]
+    if {[datasetPublicationV2DictDefault $instance workspace_properties {object {}}] ne [datasetPublicationV2DictDefault $instance saved_workspace_properties {object {}}]} {return 1}
+    if {[_viewerGuiCadDirty $window]} {return 1}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] tex_forms {}]] {if {[_viewerGuiTeXDirty $window $form]} {return 1}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] em_forms {}]] {if {[_viewerGuiEMDirty $window $form]} {return 1}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workbench_forms {}]] {if {[_viewerGuiWorkbenchDirty $window $form]} {return 1}}
     # A return to the saved visible state can still append meaningful History.
-    # Browsing is transient; compare the durable record, including its cursor.
-    if {[dict exists $::GX::ScientificHistory::viewers $window] && [scientificHistoryViewerRecord $window] ne [dict get $::GX::ViewerGui::instances $window saved_history]} {return 1}
-    return [expr {[viewerGuiDesignCapture $window] ne [dict get $::GX::ViewerGui::instances $window saved]}]
+    # Browsing is transient. The accepted revision detects meaningful History
+    # edits without exporting or comparing the accumulated scientific log.
+    if {[dict exists $::GX::ScientificHistory::viewers $window] && [dict get [scientificHistoryViewerStatus $window] revision] != [dict get $::GX::ViewerGui::instances $window saved_history_revision]} {return 1}
+    set current [viewerGuiDesignCapture $window];set saved [dict get $::GX::ViewerGui::instances $window saved]
+    if {[datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_geometry_pending 0]} {set current [dict remove $current gui_properties];set saved [dict remove $saved gui_properties]}
+    return [expr {$current ne $saved}]
 }
 proc ::GX::viewerGuiDesignDispose {window actual} {
+    if {$window eq $actual && [dict exists $::GX::ViewerGui::instances $window]} {_viewerDiagnosticsDispose $window}
+    if {$window eq $actual && [dict exists $::GX::ViewerGui::instances $window]} {_viewerGuiCadDispose $window}
     if {$window ne $actual} return
+    if {[llength [info commands ::GX::_viewerNativeClientDisposed]]} {_viewerNativeClientDisposed $window}
     _viewerGuiPCBDispose $window
     _viewerGuiTransformDispose $window
     _viewerGuiCatalogDispose $window
@@ -574,7 +708,11 @@ proc ::GX::viewerGuiDesignDispose {window actual} {
     if {[llength [info commands ::GX::viewerGuiLaboratoryDispose]]} {viewerGuiLaboratoryDispose $window}
     if {[dict exists $::GX::ViewerGui::instances $window resize_timer]} {after cancel [dict get $::GX::ViewerGui::instances $window resize_timer]}
     if {[dict exists $::GX::ViewerGui::instances $window document_watch]} {after cancel [dict get $::GX::ViewerGui::instances $window document_watch]}
+    if {[dict exists $::GX::ViewerGui::instances $window workspace_save_watch]} {after cancel [dict get $::GX::ViewerGui::instances $window workspace_save_watch]}
     if {[dict exists $::GX::ViewerGui::instances $window]} {
+        if {[dict exists $::GX::ViewerGui::instances $window document_editors]} {
+            foreach component [dict keys [dict get $::GX::ViewerGui::instances $window document_editors]] {viewerGuiDocumentRelease $window $component}
+        }
         if {[dict exists $::GX::ViewerGui::instances $window document_readers]} {
             foreach component [dict keys [dict get $::GX::ViewerGui::instances $window document_readers]] {viewerGuiDocumentRelease $window $component}
         }
@@ -596,12 +734,24 @@ proc ::GX::viewerGuiDesignFieldChanged {window id args} {
     set component [viewerGuiDesignComponent $window $id]
     if {[_viewerGuiAnchoredMember $window $id] ne {}} {return}
     if {[dict get $component type] eq {list}} {set widget [dict get $::GX::ViewerGui::instances $window widgets $id];set ::GX::ViewerGui::values($window,$id) [$widget curselection]}
+    if {[dict get $component type] eq {table}} {
+        set table [uiFieldComponentTableWidget [dict get $::GX::ViewerGui::instances $window widgets $id]]
+        set selected {};foreach row [$table selection] {lappend selected [$table index $row]}
+        set ::GX::ViewerGui::values($window,$id) $selected
+    }
     set value $::GX::ViewerGui::values($window,$id)
     # Explicitly choosing the already displayed singleton still replaces local
     # multiple candidates. Do this projection before the scalar no-op guard;
     # only the existing Select command changes authoritative geometry selection.
     _viewerGuiWorkbenchSelectionFieldChanged $window $id
     if {[dict exists $::GX::ViewerGui::instances $window committed_values $id] && [dict get $::GX::ViewerGui::instances $window committed_values $id] eq $value} {return}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+        if {![scientificHistoryViewerEditable $window] || ![scientificHistoryViewerPrepareEdit $window]} {
+            if {[dict exists $::GX::ViewerGui::instances $window committed_values $id]} {set ::GX::ViewerGui::values($window,$id) [dict get $::GX::ViewerGui::instances $window committed_values $id]}
+            [dict get $::GX::ViewerGui::instances $window slots status] configure -text {History inspection or preparation is read-only. Return to latest before editing.}
+            return
+        }
+    }
     dict set ::GX::ViewerGui::instances $window committed_values $id $value
     if {[dict exists $component properties component_visibility] && [dict get $component type] in {toggle checkbutton}} {viewerGuiDesignComponentVisible $window [dict get $component properties component_visibility] $value}
     if {[dict exists $component properties plot_visibility]} {
@@ -614,7 +764,7 @@ proc ::GX::viewerGuiDesignFieldChanged {window id args} {
         }
     }
     viewerGuiTraceEmit $window $id changed [dict create status accepted value redacted]
-    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Change $id"}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Change $id"}
     if {[dict exists $component properties change_action]} {viewerCommandInvoke $window [dict get $component properties change_action]}
     viewerGuiActionsRefresh $window
 }
@@ -627,12 +777,15 @@ proc ::GX::viewerGuiDesignHandlerSource {module provider} {
     set channel [open $path rb];try {return [read $channel]} finally {close $channel}
 }
 proc ::GX::viewerGuiDesignGenerate {project sourceDirectory outputDirectory callback} {
-    viewerGuiDesignRead $project
+    set design [viewerGuiDesignRead $project]
     set command [list [runtimeToolRequired python] -B [file join $::GX::scriptDir core python viewer_gui_request.py]]
-    return [scriptJobAsync $command [dict create operation generate project [file normalize $project] source_directory [file normalize $sourceDirectory] output_directory [file normalize $outputDirectory]] $callback {timeout_ms 60000 max_bytes 1048576 process_group 1 ui_lifetime 1 label {Viewer module generation}}]
+    set timeout [expr {[datasetPublicationV2DictDefault $design target viewer] eq {preview} && [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault $design preview {}] runtime {}] eq {managed_cpp}?180000:60000}]
+    return [scriptJobAsync $command [dict create operation generate project [file normalize $project] source_directory [file normalize $sourceDirectory] output_directory [file normalize $outputDirectory]] $callback [list timeout_ms $timeout max_bytes 1048576 process_group 1 ui_lifetime 1 label {Viewer module generation}]]
 }
 proc ::GX::viewerGuiDesignGuard window {
     if {![dict exists $::GX::ViewerGui::instances $window] || ![winfo exists $window]} {return 0}
+    _interactiveDocumentSessionChanged
+    if {[dict exists $::GX::ViewerGui::instances $window context_epoch] && [dict get $::GX::ViewerGui::instances $window context_epoch] ne $::GX::DocumentSessionScope::epoch} {return 0}
     set token [dict get $::GX::ViewerGui::instances $window token]
     return [expr {$token eq {} || (![catch {interactiveDocumentSessionToken} current] && $token eq $current)}]
 }
@@ -726,12 +879,33 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
         icon {set design [viewerGuiIconEdit $design {*}$args];set components [dict get $design components]}
         add {
             set item [lindex $args 0];set actions {}
+            if {[dict get $item type] eq {library_browser} && ![dict exists $item properties scope]} {
+                set inherited [_viewerGuiLibraryScope $design [dict get $item properties group]]
+                if {$inherited ne {}} {dict set item properties scope $inherited}
+            }
             set capability [dict get [viewerGuiComponentCapabilities] [dict get $item type]]
             dict set design requirements [dict get $capability api_id] [dict get $capability api_version]
             if {[dict get $item type] eq {action}} {set actions [list [dict get $item properties action]]} elseif {[dict get $item type] in {menu context_menu command_toolbar}} {set actions [dict get $item properties actions]}
             if {[dict exists $item properties change_action]} {lappend actions [dict get $item properties change_action]}
             foreach action $actions {if {$action ne {-} && ![dict exists $design handlers $action]} {dict set design handlers $action [dict create arguments {window action} effect unbound]}}
             lappend components $item
+        }
+        analysis_profile {
+            if {[llength $args]!=2} {error {Analysis profile requires a section and complete typed property map}}
+            set design [viewerGuiDesignAnalysisProfile $design {*}$args]
+            set components [dict get $design components]
+        }
+        comparison_browser_only {
+            if {[llength $args]!=2} {error {Browser-only profile requires a Comparison section and Browser group}}
+            if {$index<0} {error {Select an existing Comparison section}}
+            set item [lindex $components $index]
+            if {[dict get $item type] ne {section} || ![dict exists $item properties comparison_target] || ![dict exists [_viewerGuiLibraryDefinitions $design 1] [lindex $args 1]]} {error {Select a Comparison section and complete shared Browser group}}
+            dict set item properties comparison_library_browser_group [lindex $args 1]
+            foreach key {comparison_library comparison_entry} {dict unset item properties $key}
+            set commands [dict get $item properties comparison_commands]
+            dict for {action operation} $commands {if {$operation eq {add_library}} {dict unset commands $action}}
+            dict set item properties comparison_commands $commands
+            lset components $index $item
         }
         properties {
             if {$index<0} {error {Select a component}}
@@ -747,12 +921,21 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
         }
         bind {
             if {$index<0} {error {Select an action, menu or input component.}}
-            lassign $args id action effect
-            dict set design handlers $action [dict create arguments {window action} effect $effect]
+            lassign $args id action effect options
+            set contract [datasetPublicationV2DictDefault [dict get $design handlers] $action {}]
+            dict set contract arguments {window action};dict set contract effect $effect
+            if {$options ne {}} {
+                if {[catch {dict size $options}]} {error {Handler options must be a dictionary}}
+                dict for {key value} $options {
+                    if {$key ni {label default}} {error {Only label and shortcut defaults are authorable handler options}}
+                    dict set contract $key $value
+                }
+            }
+            dict set design handlers $action $contract
             set item [lindex $components $index];set type [dict get $item type]
             if {$type eq {action}} {dict set item properties action $action} elseif {$type in {menu context_menu command_toolbar}} {
                 if {$action ni [dict get $item properties actions]} {set actions [dict get $item properties actions];lappend actions $action;dict set item properties actions $actions}
-            } elseif {$type in {field toggle choice dataset_selector entry combobox checkbutton list}} {dict set item properties change_action $action} else {error {This component emits no bindable action/change event.}}
+            } elseif {$type in {field toggle choice dataset_selector entry combobox checkbutton list table}} {dict set item properties change_action $action} else {error {This component emits no bindable action/change event.}}
             lset components $index $item
         }
         reparent {
@@ -835,8 +1018,42 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
                 lappend components $item
             }
         }
-        metadata {if {[lindex $args 0] eq {inspector_width}} {dict set design shell inspector_width [lindex $args 1]} else {dict set design [lindex $args 0] [lindex $args 1]}}
+        target {
+            set target [lindex $args 0]
+            if {$target ni {viewer preview}} {error {Choose Viewer or Preview Module}}
+            dict set design target $target
+            dict set design module_id "$target.[dict get $design provider_id]"
+            if {$target eq {preview}} {
+                dict set design preview {dataset_contracts table.generic view_role complementary}
+                dict set design requirements PREVIEW_COMPONENT_GUI_API_v1 1
+            } else {
+                dict unset design preview
+                if {[dict exists $design requirements PREVIEW_COMPONENT_GUI_API_v1]} {dict unset design requirements PREVIEW_COMPONENT_GUI_API_v1}
+            }
+        }
+        metadata {
+            set key [lindex $args 0];set value [lindex $args 1]
+            if {$key eq {inspector_width}} {dict set design shell inspector_width $value
+            } elseif {[string match preview.* $key]} {dict set design preview [string range $key 8 end] $value
+            } elseif {[string match catalog.* $key]} {dict set design catalog [string range $key 8 end] $value
+            } elseif {[string match contract_visualizer.* $key]} {dict set design contract_visualizer [string range $key 20 end] $value
+            } else {dict set design $key $value}
+        }
         default {error {Unknown Viewer design edit operation.}}
+    }
+    if {$operation in {property properties} && $index>=0 && [dict get [lindex $components $index] type] eq {library_browser} && (($operation eq {property} && [lindex $args 1] eq {scope}) || ($operation eq {properties} && [dict exists [lindex $args 1] scope]))} {
+        # The ordinary property editor changes one group-level scope in one
+        # model revision/Undo step; hand-authored mismatched pages still refuse.
+        set item [lindex $components $index]
+        set scope [_viewerGuiLibraryScopeNormalize [dict get $item properties scope]]
+        set group [dict get $item properties group];set updated {}
+        foreach sibling $components {
+            if {[dict get $sibling type] eq {library_browser} && [dict get $sibling properties group] eq $group} {
+                if {$scope eq {}} {dict unset sibling properties scope} else {dict set sibling properties scope $scope}
+            }
+            lappend updated $sibling
+        }
+        set components $updated
     }
     dict set design components $components;set design [viewerGuiDesignValidate $design]
     if {$design eq $prior} {return $model}
@@ -870,13 +1087,14 @@ proc ::GX::viewerGuiDesignPlotSet {window component spec {context {}}} {
         foreach child [winfo children $widget] {if {$child ne $plot} {destroy $child}}
         pack $plot -fill both -expand 1
         _viewerGuiPlotAttach $window $component $plot
+        _viewerComparisonPlotAttach $window $component $plot
         viewerGuiSourceScopeAttach $window $component $plot
         if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $plot}
     }
     if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind plot spec $spec context $context]
     _viewerGuiPlotBindingChanged $window $component
-    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind Plot $component"}
+    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Bind Plot $component"}
     viewerGuiActionsRefresh $window
     return $plot
 }
@@ -904,27 +1122,68 @@ proc ::GX::viewerGuiDesignPublish {window design widgets values bindings {bounda
 }
 proc ::GX::viewerGuiDesignRead path {
     if {![file isfile $path] || [file size $path]>4194304} {error {Viewer project is unavailable or exceeds 4 MiB.}}
-    set f [open $path r];fconfigure $f -encoding utf-8
-    try {set design [read $f 4194305]} finally {close $f}
+    # Tcl8.6's channel decoder can split supplementary Unicode characters at
+    # buffer boundaries. Decode the complete bounded UTF-8 buffer once so
+    # persisted literal scope identities retain their exact scalar characters.
+    set f [open $path rb]
+    try {set bytes [read $f 4194305]} finally {close $f}
+    if {[string length $bytes]>4194304} {error {Viewer project is unavailable or exceeds 4 MiB.}}
+    set design [encoding convertfrom utf-8 $bytes]
+    set design [string map [list \r\n \n \r \n] $design]
     return [viewerGuiDesignValidate $design]
 }
 proc ::GX::viewerGuiDesignRestore {window state} {
+    _viewerGuiDesignRestoreCheck $window $state
+    set previous [viewerGuiDesignCapture $window 0]
+    try {
+        set result [_viewerGuiDesignRestoreApply $window $state 1]
+    } on error {message options} {
+        # Hooks must be compensatable by restoring their captured prior state.
+        # Keep the complete prior snapshot if compensation itself fails; saved
+        # native data is untouched, and further persistence is explicitly denied.
+        set rollbackFailure {}
+        if {[catch {_viewerGuiDesignRestoreApply $window $previous} rollback]} {set rollbackFailure $rollback}
+        if {$rollbackFailure ne {}} {
+            dict set ::GX::ViewerGui::instances $window workspace_restore_failure [dict create before $previous requested $state error $message rollback_error $rollbackFailure]
+            dict set options -errorcode {GX WORKSPACE RESTORE_RECOVERY_REQUIRED}
+            append message "; prior-state restoration also failed: $rollbackFailure"
+        }
+        return -options $options $message
+    }
+    if {[dict exists $::GX::ViewerGui::instances $window workspace_restore_failure]} {dict unset ::GX::ViewerGui::instances $window workspace_restore_failure}
+    return $result
+}
+proc ::GX::_viewerGuiDesignRestoreCheck {window state} {
     viewerGuiDesignStateValidate $state
+    if {[llength [info commands ::GX::comparisonPlotApiInfo]] && [llength [info commands ::GX::_viewerGuiComparisonRestoreCheck]]} {_viewerGuiComparisonRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]}
+    set hooks [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_hooks {}]
+    if {[dict exists $state custom_state] && [dict exists $hooks validate]} {uplevel #0 [list {*}[dict get $hooks validate] [dict get $state custom_state]]}
     _viewerGuiPCBRestoreCheck $window $state
     _viewerGuiTeXRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
     _viewerGuiEMRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
     _viewerGuiWorkbenchRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
+    if {[dict exists $state domain_state markdown_drafts]} {_viewerWorkspaceMarkdownEncode [dict get $state domain_state markdown_drafts]}
+    if {[dict exists $state domain_state uml_drafts]} {_viewerWorkspaceUmlEncode [dict get $state domain_state uml_drafts]}
+    _viewerGuiScriptLibraryWorkspaceCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
     dict for {id binding} [datasetPublicationV2DictDefault $state bindings {}] {
         if {[dict get $binding kind] eq {document}} {_viewerGuiDocumentRestoreCheck $window $id $binding}
         if {[dict get $binding kind] eq {raster}} {_viewerGuiRasterRestoreCheck $window $id $binding}
     }
+}
+proc ::GX::_viewerGuiDesignRestoreApply {window state {checked 0}} {
+    if {!$checked} {_viewerGuiDesignRestoreCheck $window $state}
+    set hooks [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_hooks {}]
     # Stop only after existing restore admission succeeds. A restore starts a
     # new form lifetime even when its displayed scalar values happen to match.
     _viewerGuiPCBDispose $window
     _viewerGuiTransformDispose $window
     dict set ::GX::ViewerGui::instances $window restoring 1
     try {
+        if {[dict exists $state custom_state] && [dict exists $hooks restore]} {uplevel #0 [list {*}[dict get $hooks restore] $window [dict get $state custom_state]]}
+        _viewerWorkspaceCppRestore $window $state
         viewerGuiDesignContextSet $window [datasetPublicationV2DictDefault $state domain_state {}]
+        if {[dict exists $state gui_properties geometry]} {wm geometry $window [dict get $state gui_properties geometry]}
+        if {[dict exists $state custom_state] && ![dict exists $hooks restore]} {dict set ::GX::ViewerGui::instances $window cpp_workspace_state [dict get $state custom_state]}
         _viewerGuiTeXRestore $window
         _viewerGuiEMRestore $window [dict get $state values]
         dict for {id choices} [datasetPublicationV2DictDefault $state choices {}] {if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {viewerGuiDesignChoicesSet $window $id $choices}}
@@ -937,6 +1196,7 @@ proc ::GX::viewerGuiDesignRestore {window state} {
                 if {[dict get $page type] ne {tab} || [dict get $page parent] ne $id} {error {Saved notebook selection must name its own declared tab}}
                 set widgets [dict get $::GX::ViewerGui::instances $window widgets]
                 if {[viewerGuiDesignComponentVisibleGet $window $value]} {[dict get $widgets $id] select [dict get $widgets $value]}
+            } elseif {[dict get $definition type] eq {api_catalog}} {apiBrowserRestore [dict get $::GX::ViewerGui::instances $window widgets $id] $value
             } elseif {[dict get $definition type] in {field toggle choice dataset_selector progress entry combobox checkbutton list}} {viewerGuiDesignValueSet $window $id $value} else {set ::GX::ViewerGui::values($window,$id) $value}
         }
         set desired [datasetPublicationV2DictDefault $state bindings {}]
@@ -963,7 +1223,10 @@ proc ::GX::viewerGuiDesignRestore {window state} {
                 dict set ::GX::ViewerGui::instances $window bindings $id $binding
             }
         }
+        _viewerGuiMarkdownRestore $window [datasetPublicationV2DictDefault $state domain_state {}]
+        _viewerGuiScriptLibraryWorkspaceRestore $window [datasetPublicationV2DictDefault $state domain_state {}]
         _viewerGuiNumericRestore $window
+        if {[llength [info commands ::GX::comparisonPlotApiInfo]] && [llength [info commands ::GX::_viewerGuiComparisonRestore]]} {_viewerGuiComparisonRestore $window [datasetPublicationV2DictDefault $state domain_state {}]}
         _viewerGuiScientificRestore $window
         _viewerGuiWorkbenchRestore $window
         _viewerGuiPCBRestore $window
@@ -1001,7 +1264,7 @@ proc ::GX::viewerGuiDesignSourceSet {window component request {expectedSource {}
     if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $canvas}
     if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind native2d request $request source_id [dict get $descriptor source_id]]
-    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind scientific source $component"}
+    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Bind scientific source $component"}
     viewerGuiTraceEmit $window $component source_bound [dict create status loading source_identity [dict get [native2DViewportCurveDescribe $canvas] source]]
     viewerGuiActionsRefresh $window
     return $canvas
@@ -1019,12 +1282,224 @@ proc ::GX::viewerGuiDesignTableSet {window id rows} {
     if {[dict get $component type] ne {table} || [llength $rows]>1000 || [string bytelength $rows]>4194304} {error {Use a declared table and a bounded page of at most 1000 rows / 4 MiB.}}
     set widget [dict get $::GX::ViewerGui::instances $window widgets $id]
     set table [uiFieldComponentTableWidget $widget]
+    set selected {}
+    if {[dict exists $component properties change_action]} {foreach row [$table selection] {lappend selected [$table index $row]}}
     $table delete [$table children {}];foreach row $rows {$table insert {} end -values $row}
+    set children [$table children {}]
+    foreach index $selected {if {$index<[llength $children]} {$table selection add [lindex $children $index]}}
     if {[datasetPublicationV2DictDefault [dict get $component properties] scrollbars none] in {horizontal both}} {uiFieldInspectionColumnsSchedule $table}
+}
+proc ::GX::_viewerGuiManagedNumericPreview {design} {
+    if {[datasetPublicationV2DictDefault $design target viewer] ne {preview} || [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault $design preview {}] runtime {}] ne {managed_cpp}} {return 0}
+    foreach component [dict get $design components] {if {[dict get $component type] ne {document}} {return 1}}
+    return 0
+}
+proc ::GX::_viewerGuiNumericPreviewDesignValidate {design} {
+    set capabilities [viewerGuiComponentCapabilities];set surfaces 0
+    foreach component [dict get $design components] {
+        set id [dict get $component id];set type [dict get $component type];set p [dict get $component properties]
+        if {![regexp {^[a-z][a-z0-9_]{0,47}$} $id] || [string match gxpreview_* $id]} {error {Managed numeric Preview requires stable unreserved control IDs}}
+        if {$type ni [viewerGuiPreviewComponentTypes $design]} {error {Managed numeric Preview supports read-only canonical Plot/table and presentation controls only}}
+        foreach key [dict keys $p] {
+            if {![dict exists $capabilities $type properties $key]} {error {Unsupported numeric Preview component property}}
+            if {$type eq {plot} && $key ni {title plot_form}} {error {Numeric Preview Plots bind only the host's actual canonical Dataset}}
+            if {$type eq {section} && $key ni {title padding plot_dataset plot_x plot_y plot_probe plot_x_scale plot_y_scale scientific_preview_components}} {error {Numeric Preview section has an unsupported scientific facility}}
+            if {$key in {component_visibility diagram_tool raster_tool raster_command cad_action change_action}} {error {Numeric Preview has no mutation or alternate host capability}}
+        }
+        if {$type in {plot table}} {incr surfaces}
+    }
+    if {!$surfaces} {error {Managed numeric Preview requires a real Plot or read-only table}}
+    dict for {id handler} [dict get $design handlers] {
+        if {[datasetPublicationV2DictDefault $handler effect unbound] ni {presentation unbound}} {error {Numeric Preview handlers must be presentation-only}}
+    }
+    if {![dict exists $design requirements VIEWER_GUI_HOST_API_v1] || [dict get $design requirements VIEWER_GUI_HOST_API_v1]!=1} {error {Numeric Preview requires the typed Viewer GUI Host context}}
+    _viewerGuiPlotDesignValidate $design
+}
+proc ::GX::_viewerGuiPreviewDesignValidate {design} {
+    if {![dict exists $design preview]} {error {Preview Module requires compatibility options}}
+    if {[dict exists $design initial_action]} {
+        set initial [dict get $design initial_action]
+        set declaration [dict get $design handlers $initial]
+        if {[datasetPublicationV2DictDefault $declaration effect {}] ne {presentation} || ![datasetPublicationV2DictDefault $declaration available 1]} {error {Preview initial action must be an available presentation-only handler}}
+        set bound 0
+        foreach component [dict get $design components] {
+            if {[dict get $component type] eq {action} && [datasetPublicationV2DictDefault [dict get $component properties] action {}] eq $initial} {set bound 1}
+        }
+        if {!$bound} {error {Preview initial action must have a declared action control}}
+    }
+    set options [dict get $design preview]
+    foreach key [dict keys $options] {if {$key ni {runtime dataset_contracts view_role match_producer_modules match_source_modules match_producer_versions match_provenance match_metadata match_semantic_roles match_source_contracts}} {error {Unknown Preview compatibility option}}}
+    dict for {key value} $options {
+        if {[string bytelength $value]>4096 || [regexp {[\x00\r\n]} $value]} {error {Preview compatibility values must be bounded single-line text}}
+        if {$key eq {match_metadata}} {
+            if {[catch {dict size $value}] || [dict size $value]>32} {error {Preview metadata constraints require a bounded dictionary}}
+            dict for {name expected} $value {_datasetMetadataValidateKey $name}
+        } elseif {$key ni {runtime view_role match_provenance dataset_contracts}} {
+            if {[llength $value]>32 || [llength [lsort -unique $value]]!=[llength $value]} {error {Preview match list must be bounded and unique}}
+            foreach item $value {if {![regexp {^[A-Za-z0-9_][A-Za-z0-9_.:+-]*$} $item]} {error {Invalid Preview match identity}}}
+        }
+    }
+    _datasetPreviewProviderContracts [dict get $options dataset_contracts]
+    if {[dict exists $options runtime]} {
+        if {[dict get $options runtime] ne {managed_cpp}} {error {Unknown managed Preview runtime}}
+        if {[datasetPublicationV2DictDefault $options view_role complementary] ni {primary complementary}} {error {Managed Preview role must be primary or complementary}}
+        if {[dict exists $design initial_action]} {error {Managed Preview starts through its compiled open event}}
+        if {[_viewerGuiManagedNumericPreview $design]} {_viewerGuiNumericPreviewDesignValidate $design;return}
+        set panes {};set documentKind {}
+        foreach component [dict get $design components] {
+            set p [dict get $component properties]
+            if {[dict get $component type] ne {document} || [dict get $component parent] ne {canvas} || [dict get $p kind] ni {markdown uml} || [datasetPublicationV2DictDefault $p mode read_only] ne {read_only}} {error {Managed document Preview requires read-only canonical Markdown/UML panes in the standard Preview host}}
+            set kind [dict get $p kind]
+            if {$documentKind ne {} && $documentKind ne $kind} {error {Managed Preview panes must share one document kind}}
+            set documentKind $kind
+            set pane [datasetPublicationV2DictDefault $p pane [expr {$kind eq {uml}?{diagram}:{rendered}}]]
+            if {$pane in $panes} {error {Managed Preview declares each document pane once}}
+            lappend panes $pane
+        }
+        if {[llength $panes]>[expr {$documentKind eq {uml}?3:4}]} {error {Managed Preview exceeds the declared document family pane limit}}
+        return
+    }
+    if {[datasetPublicationV2DictDefault $options view_role complementary] ne {complementary}} {error {Authored GUI Preview modules contribute complementary panes}}
+    # The same UI Field definitions own widgets in both targets. Native Viewer
+    # surfaces, Workspace/History and menu hosts have no Preview GUI admission.
+    set fields [uiFieldComponentCapabilities]
+    foreach c [dict get $design components] {
+        set id [dict get $c id];set type [dict get $c type];set p [dict get $c properties]
+        if {![regexp {^[a-z][a-z0-9_]{0,47}$} $id] || [string match gxpreview_* $id]} {error {Preview component IDs have at most 48 characters; gxpreview_ is reserved}}
+        if {![dict exists $fields $type]} {error "CORE gap: '$type' has no public Preview GUI component; use existing Preview view actions and panels"}
+        set allowed [dict get $fields $type properties]
+        foreach key [dict keys $p] {
+            if {![dict exists $allowed $key] && $key ni {change_action preview_context preview_operation preview_anchor}} {error "CORE gap: Preview component '$id' does not support '$key'"}
+        }
+        if {[dict exists $p preview_context] && ($type ni {label status} || [dict get $p preview_context] ni {dataset_id session_token component_id})} {error {Preview context labels support Dataset, Session and component identity}}
+        if {[dict exists $p preview_operation] && ($type ne {action} || [dict get $p preview_operation] ni {fit zoom_in zoom_out})} {error {Preview actions support fit, zoom_in and zoom_out}}
+        if {[dict exists $p preview_anchor] && ($type ne {panel} || [dict get $p preview_anchor] ni {top-left top-center top-right center-left center center-right bottom-left bottom-center bottom-right})} {error {Preview panels require a public viewport anchor}}
+    }
+}
+proc ::GX::viewerGuiDesignPreviewMount {design host callback} {
+    set design [viewerGuiDesignValidate $design]
+    if {[datasetPublicationV2DictDefault $design target viewer] ne {preview}} {error {Select the Preview Module target}}
+    set context [datasetPreviewGuiContext $host]
+    set icons [datasetPublicationV2DictDefault $design icons {}]
+    # Slot containers preserve the established design grid without a Viewer
+    # shell. Every widget and overlay remains owned by the real Preview host.
+    set row 0
+    foreach slot {toolbar inspector canvas footer menubar} {
+        set slotWidget [datasetPreviewGuiControlCreate $host gxpreview_$slot panel {} [dict create layout [dict create row $row column 0 sticky nsew weight [expr {$slot eq {canvas}}]] icons $icons]]
+        set pane [winfo parent $slotWidget]
+        grid rowconfigure $pane $row -weight [expr {$slot eq {canvas}}]
+        incr row
+    }
+    foreach c [_viewerGuiDesignParentOrder [dict get $design components]] {
+        set id [dict get $c id];set type [dict get $c type];set p [dict get $c properties]
+        set parent [dict get $c parent]
+        if {$parent in {toolbar inspector canvas footer menubar}} {set parent gxpreview_$parent}
+        set overlay [datasetPublicationV2DictDefault $p preview_anchor {}]
+        set identity [datasetPublicationV2DictDefault $p preview_context {}]
+        foreach key {change_action preview_context preview_operation preview_anchor} {if {[dict exists $p $key]} {dict unset p $key}}
+        if {$overlay ne {}} {
+            if {![dict get $context viewport_available]} {error {This Preview source has no public Plot viewport for the declared panel}}
+            datasetPreviewGuiPanelCreate $host $id [datasetPublicationV2DictDefault $p title $id] $overlay
+        } elseif {[_viewerGuiManagedNumericPreview $design] && $type eq {plot}} {
+            set plotProperties {};if {[dict exists $p title]} {dict set plotProperties title [dict get $p title]}
+            datasetPreviewGuiPlotCreate $host $id $plotProperties [dict create parent $parent layout [dict get $c layout] icons $icons]
+        } elseif {[_viewerGuiManagedNumericPreview $design] && $type eq {dataset_selector}} {
+            # A numeric Preview always consults its exact current Dataset. A
+            # disabled single-choice field cannot select a foreign source.
+            datasetPreviewGuiControlCreate $host $id choice [dict create label [datasetPublicationV2DictDefault $p label Dataset] choices [list [dict get $context dataset_id]] default [dict get $context dataset_id]] [dict create parent $parent layout [dict get $c layout] icons $icons]
+            datasetPreviewGuiControlState $host $id {enabled 0}
+        } else {
+            datasetPreviewGuiControlCreate $host $id $type $p [dict create parent $parent layout [dict get $c layout] callback $callback icons $icons]
+            if {$identity ne {}} {
+                set key [expr {$identity eq {session_token} ? {token} : $identity}]
+                datasetPreviewGuiControlSet $host $id "$identity: [datasetPublicationV2DictDefault $context $key unavailable]"
+            }
+        }
+    }
+    # A sole weighted notebook is the canvas viewport, not a request to make
+    # every hidden page simultaneously fit. Structural slot padding/empty rows
+    # must not steal its live allocation. Authored controls and page overflow
+    # retain their own layout, paths and existing shared owners.
+    set childrenByParent {}
+    foreach component [dict get $design components] {
+        dict lappend childrenByParent [dict get $component parent] $component
+    }
+    set canvasChildren [datasetPublicationV2DictDefault $childrenByParent canvas {}]
+    if {[llength $canvasChildren]==1 &&
+        [dict get [lindex $canvasChildren 0] type] eq {tabs} &&
+        [datasetPublicationV2DictDefault [dict get [lindex $canvasChildren 0] layout] weight 0]>0} {
+        foreach slot {toolbar inspector canvas footer menubar} {
+            set widget [dict get [_datasetPreviewGuiControl $host gxpreview_$slot] widget]
+            $widget configure -padding 0
+            grid configure $widget -padx 0 -pady 0
+            if {$slot eq {canvas}} {
+                grid propagate $widget 0
+                $widget configure -width 1 -height 1
+            }
+        }
+        # Default control gaps must not consume the small scientific viewport.
+        # Explicit authored padding remains authoritative.
+        foreach slot {toolbar footer} {
+            foreach component [datasetPublicationV2DictDefault $childrenByParent $slot {}] {
+                if {[dict exists $component layout padding]} continue
+                set widget [dict get [_datasetPreviewGuiControl $host [dict get $component id]] widget]
+                if {[winfo manager $widget] eq {grid}} {grid configure $widget -pady 0}
+            }
+        }
+        # The declared zero-padding Plot already owns its complete page.
+        # Do not add the generic tab and panel insets around that viewport.
+        set notebook [dict get [lindex $canvasChildren 0] id]
+        foreach page [datasetPublicationV2DictDefault $childrenByParent $notebook {}] {
+            if {[dict get $page type] ne {tab}} continue
+            set content [datasetPublicationV2DictDefault $childrenByParent [dict get $page id] {}]
+            if {[llength $content]!=1} continue
+            set plot [lindex $content 0]
+            if {[dict get $plot type] ne {plot} ||
+                [datasetPublicationV2DictDefault [dict get $plot layout] padding {}] ne {0} ||
+                [datasetPublicationV2DictDefault [dict get $plot layout] weight 0]<=0} continue
+            foreach id [list [dict get $page id] [dict get $plot id]] {
+                set widget [dict get [_datasetPreviewGuiControl $host $id] widget]
+                $widget configure -padding 0
+            }
+        }
+    }
+    # The same adaptive grid owner used by native tab pages retains every
+    # control's parent/path and original fitting grid. Its wheel and focus
+    # projection reveals an overflowing generated pane without another host.
+    uiFieldTabOverflowAttach $pane
+    if {[dict exists $design initial_action]} {
+        foreach component [dict get $design components] {
+            if {[dict get $component type] ne {action} || [datasetPublicationV2DictDefault [dict get $component properties] action {}] ne [dict get $design initial_action]} continue
+            # Same authored callback and live source/module guard as user input.
+            # Only bounded context metadata/choices may initialize here; scientific
+            # reads, imports and scans remain explicit user actions.
+            datasetPreviewGuiContext $host
+            {*}$callback $host [dict create control_id [dict get $component id] type action event invoke value {} mount 1]
+            datasetPreviewGuiContext $host
+            break
+        }
+    }
+    return [dict create target preview controls [llength [dict get $design components]]]
 }
 proc ::GX::viewerGuiDesignValidate design {
     foreach field {schema title module_id provider_id version geometry requirements components handlers origin} {if {![dict exists $design $field]} {error "Viewer design requires '$field'."}}
-    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell initial_action icons catalog}} {error "Unknown Viewer design field '$field'."}}
+    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell initial_action icons catalog target preview contract_visualizer}} {error "Unknown Viewer design field '$field'."}}
+    if {[dict exists $design contract_visualizer]} {
+        set role [dict get $design contract_visualizer]
+        foreach key [dict keys $role] {if {$key ni {id name contracts targets inheritance document_kinds media_types formats source_note_open match_provenance_fields}} {error {Unknown Contract Visualizer authoring field}}}
+        if {[dict exists $role match_provenance_fields]} {_contractVisualizerProvenanceFields [dict get $role match_provenance_fields]}
+        if {[dict exists $role id] && ![regexp {^[a-z][a-z0-9_]{0,63}$} [dict get $role id]]} {error {Visualizer provider ID must be a stable identifier}}
+        if {[dict exists $role name] && ([string length [dict get $role name]]>200 || [regexp {[\r\n\x00]} [dict get $role name]])} {error {Visualizer name must be bounded single-line text}}
+        foreach key {contracts targets document_kinds media_types formats} {
+            if {![dict exists $role $key]} continue
+            if {[string bytelength [dict get $role $key]]>4096} {error {Visualizer authoring list exceeds its bound}}
+            _contractVisualizerList [dict get $role $key]
+        }
+        if {[dict exists $role inheritance] && [dict get $role inheritance] ni {exact declared}} {error {Visualizer inheritance must be exact or declared}}
+        if {[dict exists $role source_note_open] && [dict get $role source_note_open] ni {none source_editor_first}} {error {Source-note Open policy must be none or source_editor_first}}
+    }
+    set target [datasetPublicationV2DictDefault $design target viewer]
+    if {$target ni {viewer preview}} {error {Design target must be viewer or preview}}
     if {[dict exists $design initial_action] && ![dict exists $design handlers [dict get $design initial_action]]} {error {Initial action must name a declared public handler}}
     if {[dict exists $design shell]} {
         foreach key [dict keys [dict get $design shell]] {if {$key ni {inspector_width status}} {error {Unknown Viewer shell property.}}}
@@ -1033,7 +1508,8 @@ proc ::GX::viewerGuiDesignValidate design {
     }
     if {[dict get $design schema] ne {gxtxt.viewer_design.v1}} {error {Unsupported Viewer design schema.}}
     if {[string trim [dict get $design title]] eq {} || [string length [dict get $design title]]>200 || [regexp {[\r\n]} [dict get $design title]]} {error {Use a single-line Viewer title of 1–200 characters.}}
-    if {![regexp {^viewer\.[a-z][a-z0-9_]*$} [dict get $design module_id]] || ![regexp {^[a-z][a-z0-9_]*$} [dict get $design provider_id]] || ![regexp {^[0-9]+\.[0-9]+\.[0-9]+$} [dict get $design version]]} {error {Use a stable viewer.lowercase_id, provider ID and semantic version.}}
+    if {![regexp "^${target}\\.\[a-z\]\[a-z0-9_\]*$" [dict get $design module_id]] || ![regexp {^[a-z][a-z0-9_]*$} [dict get $design provider_id]] || ![regexp {^[0-9]+\.[0-9]+\.[0-9]+$} [dict get $design version]]} {error "Use a stable ${target}.lowercase_id, provider ID and semantic version."}
+    if {$target eq {preview}} {_viewerGuiPreviewDesignValidate $design} elseif {[dict exists $design preview]} {error {Preview options require the Preview Module target}}
     if {![regexp {^[0-9]{3,4}x[0-9]{3,4}$} [dict get $design geometry]]} {error {Runtime geometry must be WIDTHxHEIGHT.}}
     if {[string bytelength $design]>4194304 || [llength [dict get $design components]]>1000} {error {Viewer design exceeds its 4 MiB / 1000-component bound.}}
     set icons [viewerGuiIconsValidate [datasetPublicationV2DictDefault $design icons {}]]
@@ -1046,9 +1522,9 @@ proc ::GX::viewerGuiDesignValidate design {
         }
     }
     set capabilities [viewerGuiComponentCapabilities];set ids {};set cells {};set singletons {}
-    set versions {VIEWER_GUI_HOST_API_v1 1}
+    set versions {VIEWER_GUI_HOST_API_v1 1 PREVIEW_COMPONENT_GUI_API_v1 1}
     dict for {type capability} $capabilities {if {[dict get $capability status] eq {AVAILABLE}} {dict set versions [dict get $capability api_id] [dict get $capability api_version]}}
-    foreach {api command} {SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo SCIENTIFIC_LIBRARY_MANAGER_API_v1 ::GX::ScientificLibraryManagerAPIv1::apiInfo FILE_PUBLICATION_API_v1 ::GX::filePublicationApiInfo} {
+    foreach {api command} {SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo SCIENTIFIC_LIBRARY_MANAGER_API_v1 ::GX::ScientificLibraryManagerAPIv1::apiInfo FILE_PUBLICATION_API_v1 ::GX::filePublicationApiInfo STDERR_DIAGNOSTICS_API_v1 ::GX::stderrDiagnosticsApiInfo} {
         if {[llength [info commands $command]]} {dict set versions $api [dict get [$command] api_version]}
     }
     if {[llength [info commands ::GX::datasetTransformExecuteResponsive]]} {dict set versions DATASET_TRANSFORM_API_v1 1}
@@ -1060,6 +1536,10 @@ proc ::GX::viewerGuiDesignValidate design {
         modulePublicApiActivate math.electromagnetic_simulation ELECTROMAGNETIC_SIMULATION_API_v1
         dict set versions ELECTROMAGNETIC_SIMULATION_API_v1 [dict get [::GX::ElectromagneticSimulation::apiInfo] api_version]
     }
+    dict set versions NATIVE_WORKSPACE_API_v1 1
+    if {[llength [info commands ::GX::scriptLibraryApiInfo]]} {dict set versions SCRIPT_LIBRARY_API_v1 1}
+    if {[llength [info commands ::GX::comparisonPlotApiInfo]]} {dict set versions COMPARISON_PLOT_API_v1 [dict get [comparisonPlotApiInfo] api_version]}
+    if {[llength [info commands ::GX::moduleTargetedAnalysisApiInfo]]} {dict set versions MODULE_TARGETED_ANALYSIS_API_v1 [dict get [moduleTargetedAnalysisApiInfo] api_version]}
     dict for {api version} [dict get $design requirements] {if {![dict exists $versions $api] || ![string is integer -strict $version] || [dict get $versions $api]!=$version} {error "Unavailable CORE API/version: $api @ $version"}}
     # Index every declaration first: a parent may follow its child without
     # changing either one's public one-based SDK component number.
@@ -1097,12 +1577,24 @@ proc ::GX::viewerGuiDesignValidate design {
         if {[dict exists $properties alpha] && ($type ne {field} || [datasetPublicationV2DictDefault $properties datatype string] ne {color})} {error {Alpha is an option of an existing color field only}}
         set allowed [dict get $capabilities $type properties]
         if {$type eq {document}} {
-            if {[datasetPublicationV2DictDefault $properties kind {}] ni {html pdf code table tex}} {error {Document kind must be html, pdf, code, table or declared tex source}}
-            if {[datasetPublicationV2DictDefault $properties mode read_only] ni {read_only editable} || ([datasetPublicationV2DictDefault $properties mode read_only] eq {editable} && [dict get $properties kind] ne {tex})} {error {Only a declared TeX source form is editable}}
+            if {[datasetPublicationV2DictDefault $properties kind {}] ni {html pdf code table tex markdown uml}} {error {Unsupported canonical document kind}}
+            if {[datasetPublicationV2DictDefault $properties mode read_only] ni {read_only editable} || ([datasetPublicationV2DictDefault $properties mode read_only] eq {editable} && [dict get $properties kind] ni {tex markdown uml})} {error {Only declared Markdown, TeX or UML source forms are editable}}
+            if {[dict exists $properties pane]} {
+                set kind [dict get $properties kind];set panes [expr {$kind eq {uml}?{diagram source metadata}:{rendered source metadata associated_source}}]
+                if {$kind ni {markdown uml} || [dict get $properties pane] ni $panes} {error {Document pane must match its declared Markdown or UML kind}}
+            }
+        }
+        if {$type eq {api_catalog}} {
+            set language [datasetPublicationV2DictDefault $properties language Public]
+            if {$language ni {Public Python Octave Cpp}} {error {API Catalog language must be Python, Octave or Cpp}}
+            set surfaces {{All public} {Script Bridge} {C++ documentation} {C++ SDK} {Trusted host}}
+            if {[dict exists $properties surface] && [dict get $properties surface] ni $surfaces} {error {API Catalog surface does not match its language}}
+            if {[datasetPublicationV2DictDefault $properties presentation full] ni {full compact}} {error {API Catalog presentation must be full or compact}}
+            if {[string length [datasetPublicationV2DictDefault $properties query {}]]>256} {error {API Catalog query exceeds 256 characters}}
         }
         if {$type eq {table} && [datasetPublicationV2DictDefault $properties scrollbars none] ni {none vertical horizontal both}} {error {Table scrollbars must be none, vertical, horizontal or both.}}
         if {$type eq {tabs} && [datasetPublicationV2DictDefault $properties tab_position north] ni {north west}} {error {Tab position must be north or west}}
-        if {$type eq {dataset_selector} && [datasetPublicationV2DictDefault $properties content_kind {}] ni {{} html pdf code table raster}} {error {Unsupported canonical Dataset content_kind}}
+        if {$type eq {dataset_selector} && [datasetPublicationV2DictDefault $properties content_kind {}] ni {{} html pdf code table raster markdown uml}} {error {Unsupported canonical Dataset content_kind}}
         dict for {key value} $properties {
             if {![dict exists $allowed $key]} {error "Unsupported $type property '$key'."}
             set datatype [dict get $allowed $key]
@@ -1134,11 +1626,43 @@ proc ::GX::viewerGuiDesignValidate design {
             if {[dict get $properties scientific_provider] ne {core.ngspice.circuit}} {error {Unsupported declared scientific source profile}}
         }
         if {$type eq {field} && [datasetPublicationV2DictDefault $properties datatype string] ni {string integer double number boolean choice color}} {error {Unsupported UI Field datatype.}}
+        if {$type in {field toggle choice}} {
+            set descriptor [uiFieldComponentDescriptor $type $properties]
+            # Ask the value owner to admit both endpoints against the complete
+            # range, even when no initial value was declared. No widget or
+            # design model has changed at this point.
+            set bounds [dict create type number]
+            foreach key {min max} {if {[dict exists $descriptor $key]} {dict set bounds $key [uiFieldNormalize {type number} [dict get $descriptor $key]]}}
+            foreach key {min max} {if {[dict exists $bounds $key]} {uiFieldNormalize $bounds [dict get $bounds $key]}}
+            # Existing optional empty/unset values remain admitted. A declared
+            # nonempty initial value must obey the actual mounted descriptor.
+            if {[dict exists $properties default] && [dict get $properties default] ne {}} {uiFieldNormalize $descriptor [dict get $properties default]}
+        }
         if {$type eq {plot} && [datasetPublicationV2DictDefault $properties empty_style canvas] ni {blank canvas}} {error {Unsupported empty Plot style.}}
         if {$type eq {native3d}} {
             if {[datasetPublicationV2DictDefault $properties projection perspective] ni {perspective orthographic}} {error {Native3D projection must be perspective or orthographic.}}
             foreach key {camera_position camera_target camera_up} {if {[dict exists $properties $key]} {viewerTriple [dict get $properties $key] $key}}
             foreach key {width height} {if {[dict exists $properties $key]&&[dict get $properties $key]<160} {error {Native3D dimensions must be at least 160 pixels.}}}
+        }
+        if {$type eq {cad_sketch}} {
+            if {![dict exists $design requirements NATIVE2D_API_v1] || [dict get $design requirements NATIVE2D_API_v1]!=1} {error {Editable Sketch requires NATIVE2D_API_v1@1}}
+            if {[datasetPublicationV2DictDefault $properties presentation canvas] ni {viewer canvas}} {error {Sketch control presentation must be viewer or canvas}}
+            unitRegistryConversionPlan [datasetPublicationV2DictDefault $properties working_unit mm] mm
+            if {[dict exists $properties plane]} {::GX::NativeCadSketch::validate [dict create format gxtxt.native_cad_sketch.v1 working_unit [datasetPublicationV2DictDefault $properties working_unit mm] plane [dict get $properties plane]]}
+        }
+        if {[dict exists $properties cad_action]} {
+            set pair [dict get $properties cad_action]
+            if {[llength $pair]!=2 || ![dict exists [native2DCadActions] [lindex $pair 1]]} {error {CAD action binding requires a declared Sketch ID and a catalogued action ID}}
+            set target {};foreach item [dict get $design components] {if {[dict get $item id] eq [lindex $pair 0]} {set target [dict get $item type]}}
+            if {$target ne {cad_sketch}} {error {CAD action target must be a declared Sketch component}}
+        }
+        if {[dict exists $properties cad_context]} {
+            set target {};foreach item [dict get $design components] {if {[dict get $item id] eq [dict get $properties cad_context]} {set target [dict get $item type]}}
+            if {$type ne {context_menu} || $target ne {cad_sketch} || [dict exists $properties semantic_viewport]} {error {CAD context requires its declared Sketch component and cannot also bind another semantic viewport}}
+        }
+        if {[dict exists $properties diagnostics_owner]} {
+            if {$type ne {section} || [dict get $properties diagnostics_owner] ne {stderr}} {error {Unsupported diagnostic consultation owner}}
+            if {![dict exists $design requirements STDERR_DIAGNOSTICS_API_v1] || [dict get $design requirements STDERR_DIAGNOSTICS_API_v1]!=1} {error {Diagnostics form requires STDERR_DIAGNOSTICS_API_v1@1}}
         }
         if {$type eq {list} && [datasetPublicationV2DictDefault $properties selectmode browse] ni {browse single multiple extended}} {error {Unsupported native list selection mode.}}
         set layout [dict get $component layout]
@@ -1169,6 +1693,8 @@ proc ::GX::viewerGuiDesignValidate design {
         dict set ids $id $type
     }
     dict for {id contract} [dict get $design handlers] {
+        if {[dict exists $contract label] && ([string length [dict get $contract label]]>200 || [regexp {[\x00\r\n]} [dict get $contract label]])} {error {Handler label must be bounded single-line text}}
+        if {[dict exists $contract default] && ([catch {llength [dict get $contract default]}] || [string length [dict get $contract default]]>256 || [regexp {[\x00\r\n]} [dict get $contract default]])} {error {Handler shortcuts require a bounded key list}}
         if {[dict exists $contract available] && ![string is boolean -strict [dict get $contract available]]} {error {Command availability must be boolean.}}
         foreach key {arguments effect} {if {![dict exists $contract $key]} {error "Handler '$id' requires '$key'."}}
         foreach key [dict keys $contract] {if {$key ni {arguments effect label default available}} {error "Unknown handler contract field '$key'."}}
@@ -1186,6 +1712,9 @@ proc ::GX::viewerGuiDesignValidate design {
         foreach id $actions {if {$id ne {-} && ![dict exists $design handlers $id]} {error "Missing handler contract '$id'."}}
     }
     _viewerGuiScientificDesignValidate $design
+    _viewerGuiClientRoleMapsValidate $design
+    _viewerGuiComparisonDesignValidate $design
+    _viewerGuiAnalysisDesignValidate $design
     _viewerGuiPlotDesignValidate $design
     _viewerGuiPlotNavigationTargets $design
     _viewerGuiTransformDesignValidate $design
@@ -1241,6 +1770,7 @@ proc ::GX::viewerGuiDesignValues window {
     set result {};set design [dict get $::GX::ViewerGui::instances $window design]
     foreach component [dict get $design components] {
         set id [dict get $component id]
+        if {[dict get $component type] eq {api_catalog} && [dict exists $::GX::ViewerGui::instances $window widgets $id]} {dict set result $id [apiBrowserCapture [dict get $::GX::ViewerGui::instances $window widgets $id]];continue}
         if {[dict get $component type] eq {tabs} && [dict exists $::GX::ViewerGui::instances $window widgets $id]} {
             set widget [dict get $::GX::ViewerGui::instances $window widgets $id]
             if {[winfo exists $widget]} {dict set result $id [file tail [string map {. /} [$widget select]]];continue}
@@ -1250,8 +1780,27 @@ proc ::GX::viewerGuiDesignValues window {
     return $result
 }
 proc ::GX::viewerGuiDesignWorkspaceClose window {
+    if {[dict exists $::GX::ViewerGui::instances $window project_draft]} {return [_viewerDevelopmentProjectDraftClose $window]}
+    if {![_viewerGuiLibraryCanClose $window]} {return}
     set instance [dict get $::GX::ViewerGui::instances $window]
     sessionWorkspaceViewerAction [dict get $instance workspace_provider] [dict get $instance workspace_callbacks] $window close
+}
+proc ::GX::viewerGuiDesignWorkspaceDiscard window {
+    # Drain accepted bytes before Viewer widgets and scientific callbacks vanish.
+    # The journal retains recovery state; discard never projects into a saved
+    # Workspace or an unrelated Session.
+    set instance [dict get $::GX::ViewerGui::instances $window]
+    set incarnation [winfo id $window]
+    if {[viewerGuiDesignGuard $window] && [dict get $instance workspace_id] ne {} && [_nativeWorkspaceExists [dict get $instance workspace_id]]} {
+        nativeWorkspaceFlush [dict get $instance workspace_id]
+        if {[datasetPublicationV2DictDefault $instance workspace_pending_saves {}] ne {}} {
+            if {[dict exists $instance workspace_save_watch]} {after cancel [dict get $instance workspace_save_watch]}
+            _viewerWorkspaceSaveWatch $window [winfo id $window]
+        }
+    }
+    if {![winfo exists $window] || [winfo id $window] ne $incarnation} {return}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerFlush $window 30000 0}
+    destroy $window
 }
 proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers context} {
     if {$context ne {} && ![catch {sessionWorkspaceGet $context} item]} {set context [dict create workspace_id [dict get $item workspace_id]]}
@@ -1265,8 +1814,16 @@ proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers co
     viewerGuiDesignCompose $design $window $module $provider $mode $handlers $context
     return $window
 }
-proc ::GX::viewerGuiDesignWorkspaceSave window {
+proc ::GX::viewerGuiDesignWorkspaceSave {window {asynchronous 0}} {
+    if {[dict exists $::GX::ViewerGui::instances $window project_draft]} {
+        if {![string is boolean -strict $asynchronous] || $asynchronous} {error {Local project drafts use explicit synchronous Save}}
+        return [_viewerDevelopmentProjectDraftSave $window]
+    }
     if {![viewerGuiDesignGuard $window]} {error {Session changed; reopen this Viewer.}}
+    if {[dict exists $::GX::ViewerGui::instances $window workspace_restore_failure]} {return -code error -errorcode {GX WORKSPACE RESTORE_RECOVERY_REQUIRED} {Recover the retained prior snapshot or reopen the saved Workspace before saving}}
+    _viewerGuiUmlHistoryBeforeSave $window
+    _viewerGuiCadSave $window
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerFlush $window}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] tex_forms {}]] {if {[_viewerGuiTeXDirty $window $form]} {_viewerGuiTeXSave $window $form}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] em_forms {}]] {if {[_viewerGuiEMDirty $window $form]} {_viewerGuiEMSave $window $form}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workbench_forms {}]] {if {[_viewerGuiWorkbenchDirty $window $form]} {_viewerGuiWorkbenchSave $window $form}}
@@ -1277,16 +1834,31 @@ proc ::GX::viewerGuiDesignWorkspaceSave window {
     if {$id eq {}} {
         set name [datasetPublicationV2DictDefault $instance workspace_name {}]
         if {$name eq {}} {set name [sessionWorkspaceAvailableName [dict get $instance design title]]}
-        set item [sessionWorkspaceCreate [dict get $instance workspace_provider] $name $payload]
+        set item [sessionWorkspaceCreate [dict get $instance workspace_provider] $name $payload $asynchronous [dict get $instance workspace_properties]]
     } else {
         set current [sessionWorkspaceGet $id]
         if {[dict get $instance workspace_stamp] ne [list [dict get $current generation] [dict get $current revision] [dict get $current sha256]]} {error {Workspace changed in another window; reopen it before saving.}}
-        set item [sessionWorkspaceUpdate $id $payload]
+        set item [sessionWorkspaceUpdate $id $payload $current $asynchronous [dict get $instance workspace_properties]]
     }
     dict set ::GX::ViewerGui::instances $window workspace_id [dict get $item workspace_id]
     dict set ::GX::ViewerGui::instances $window workspace_stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
     dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
-    if {[dict exists $::GX::ScientificHistory::viewers $window]} {dict set ::GX::ViewerGui::instances $window saved_history [scientificHistoryViewerRecord $window]}
+    dict set ::GX::ViewerGui::instances $window saved_workspace_properties [dict get $instance workspace_properties]
+    set hooks [datasetPublicationV2DictDefault $instance workspace_hooks {}]
+    if {!$asynchronous && [dict exists $hooks committed]} {uplevel #0 [list {*}[dict get $hooks committed] $window [nativeWorkspaceStatus [dict get $item workspace_id]]]}
+    if {!$asynchronous} {_viewerWorkspaceCppCommitted $window [nativeWorkspaceStatus [dict get $item workspace_id]]}
+    if {$asynchronous} {
+        set pending [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workspace_pending_saves {}]
+        lappend pending [nativeWorkspaceStatus [dict get $item workspace_id]]
+        dict set ::GX::ViewerGui::instances $window workspace_pending_saves $pending
+        _viewerWorkspaceSaveWatchStart $window
+    }
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+        scientificHistoryViewerBindDocument $window [dict get $item workspace_id]
+        scientificHistoryViewerFlush $window 30000 0
+        dict set ::GX::ViewerGui::instances $window saved_history_revision [dict get [scientificHistoryViewerStatus $window] revision]
+    }
+    if {$asynchronous} {return [nativeWorkspaceStatus [dict get $item workspace_id]]}
     return [dict get $item workspace_id]
 }
 proc ::GX::viewerGuiHostInspect window {
@@ -1413,6 +1985,10 @@ proc ::GX::viewerGuiScientificBindingSummary {binding} {
         return $result
     }
     set spec [dict get $binding spec];set datasets {};set seriesCount 0
+    if {[dict exists $spec comparison]} {
+        set configuration [dict get $spec comparison]
+        return [dict create kind plot comparison_mode [dict get $configuration mode] source_count [llength [dict get $configuration sources]] source_pins [dict get $configuration sources] authority COMPARISON_PLOT_API_v1 payload redacted]
+    }
     if {[dict exists $spec dataset_id]} {lappend datasets [dict get $spec dataset_id]}
     foreach panel [datasetPublicationV2DictDefault $spec panels {}] {
         foreach series [dict get $panel series] {incr seriesCount;if {[dict exists $series dataset_id]} {lappend datasets [dict get $series dataset_id]}}
@@ -1477,7 +2053,17 @@ proc ::GX::viewerGuiDesignTextSet {window component content} {
 }
 
 proc ::GX::viewerGuiDesignContextSet {window value} {
-    if {[catch {dict size $value}] || [string bytelength $value]>65536} {error {Viewer domain state requires a bounded inert dictionary of at most 64 KiB}}
+    if {[catch {dict size $value}]} {error {Viewer domain state requires an inert dictionary}}
+    # Canonical Markdown draft bodies have their own declared typed owner and
+    # 4MiB text limit. Keep the original 64KiB limit for every other domain.
+    if {[string bytelength [dict remove $value markdown_drafts uml_drafts script_library_drafts]]>65536} {error {Ordinary Viewer domain state exceeds64KiB}}
+    if {[dict exists $value markdown_drafts]} {
+        set drafts [dict get $value markdown_drafts]
+        if {[string bytelength $drafts]>16777216} {error {Markdown draft domain exceeds16MiB}}
+        _viewerWorkspaceMarkdownEncode $drafts
+    }
+    if {[dict exists $value uml_drafts]} {_viewerWorkspaceUmlEncode [dict get $value uml_drafts]}
+    if {[dict exists $value script_library_drafts]} {_viewerWorkspaceScriptLibraryEncode [dict get $value script_library_drafts]}
     dict set ::GX::ViewerGui::instances $window domain_state $value
 }
 proc ::GX::viewerGuiDesignContextGet {window} {return [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] domain_state {}]}
@@ -1528,3 +2114,10 @@ source [file join [file dirname [info script]] viewer_gui_tex_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_em_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_workbench_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_pcb_source_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_numeric_preview_authoring_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_comparison_design_v1.tcl]
+if {[file isfile [file join [file dirname [info script]] viewer_gui_comparison_v1.tcl]]} {source [file join [file dirname [info script]] viewer_gui_comparison_v1.tcl]}
+source [file join [file dirname [info script]] viewer_gui_comparison_presentation_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_role_maps_v1.tcl]
+
+source [file join [file dirname [info script]] viewer_gui_analysis_v1.tcl]

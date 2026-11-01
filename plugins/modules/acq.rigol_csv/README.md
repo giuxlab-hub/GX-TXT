@@ -1,8 +1,8 @@
 # acq.rigol_csv
 
-Standard Module API v1 acquisition/import plugin for supported Rigol oscilloscope and sequence CSV exports. It preserves the RAW source and produces canonical time-series datasets through the streaming Octave worker.
+Standard Module API v1 acquisition/import plugin for supported Rigol oscilloscope and sequence CSV exports. It preserves the RAW source and produces canonical time-series datasets through the measured native or retained streaming Octave parser and CORE Publication.
 
-## Acquisition workflow
+## Version 2.3.0
 
 The acquisition module now uses its Acquisition Handler Plugin API v1 runtime instead of the legacy `rigol_csv` handler ID. This makes pending-file preview and variable discovery use the module's own inspector.
 
@@ -12,5 +12,9 @@ For native Rigol DS1000Z-style exports, channel names are taken from the first h
 
 See also `docs/guides/RIGOL_NATIVE_IMPORT.md`, `docs/api/DATASET_API_v1.md`, and `docs/api/MODULE_API_v1.md` in the GX-TXT framework sources.
 
-Install `acq.rigol_csv_2.0.0.zip` through Plugin Install API v1. See
+Install `acq.rigol_csv_2.3.0.zip` through Plugin Install API v1. See
 `MANUAL.md` for the current workflow and `CHANGELOG.md` for the change scope.
+
+Normal GUI import now runs as an owned managed Acquisition request with visible
+parser/publication progress and Cancel import. See MANUAL.md for transaction
+recovery, Session protection and synchronous API compatibility.

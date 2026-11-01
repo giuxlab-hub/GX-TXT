@@ -15,7 +15,10 @@ proc ::GX::_documentResourceRoot {document {allowRetired 0}} {
     # Resource ownership is registry identity/generation authority. Reading and
     # hashing the complete scientific payload for every resource reference
     # makes history/recipe collection quadratic in document size.
-    if {[interactiveDocumentExists $document]} {} elseif {$allowRetired} {
+    if {[interactiveDocumentExists $document]} {} elseif {$allowRetired && [_nativeWorkspaceRetiredGeneration $document] ne {}} {
+        # Native deletion retains generation authority in its own database.
+        # Existing scientific references need no parallel Tcl owner registry.
+    } elseif {$allowRetired} {
         set marker [file join $root .retired.ini]
         if {![file isfile $marker]||[file type $marker] eq "link"} {error "Document resource owner does not exist"}
         set retired [parseIni $marker]
@@ -26,6 +29,8 @@ proc ::GX::_documentResourceRoot {document {allowRetired 0}} {
 proc ::GX::_documentResourceOwnerGeneration {document} {
     set registry [_interactiveDocumentRegistryRead [_interactiveDocumentRequireSession]]
     if {[dict exists $registry $document]} {return [dict get $registry $document generation]}
+    set native [_nativeWorkspaceRetiredGeneration $document]
+    if {$native ne {}} {return $native}
     return [dict get [parseIni [file join [_documentResourceRoot $document 1] .retired.ini]] resource_owner.generation]
 }
 proc ::GX::interactiveDocumentResourceOpenWriter {document metadata} {
@@ -246,10 +251,24 @@ proc ::GX::_documentResourceReferences {value document depth budgetName referenc
         if {$item ne $value} {_documentResourceReferences $item $document [expr {$depth+1}] budget references}
     }
 }
-proc ::GX::_documentResourceExternalReferences {document budgetName referencesName} {
+# Metadata-only obsolete recognition cannot prove any old body reference absent.
+# Conservatively pin this owner's complete blob pool while such a Workspace is
+# retained. Confirmed deletion removes the old record, never guesses its graph.
+proc ::GX::_documentResourceObsoletePins {document referencesName} {
+    upvar 1 $referencesName references
+    set root [_documentResourceRoot $document 1]
+    foreach path [glob -nocomplain -directory $root *.blob] {
+        if {[file type $path] ne {file} || ![regexp {^([a-f0-9]{64})\.blob$} [file tail $path] -> sha]} {error {Unsafe legacy resource retention path}}
+        dict set references $sha [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 document_id $document owner_generation [_documentResourceOwnerGeneration $document] sha256 $sha size_bytes [file size $path]]
+    }
+}
+proc ::GX::_documentResourceExternalReferences {document budgetName referencesName {includeNativeOwner 0}} {
     upvar 1 $budgetName budget $referencesName references
+    _nativeWorkspaceResourcePins $document [expr {!$includeNativeOwner}] references
+    if {[llength [info commands _viewerScriptLibraryResourceReferences]]} {_documentResourceReferences [_viewerScriptLibraryResourceReferences $document] $document 0 budget references}
     foreach item [interactiveDocumentList] {
-        if {[dict get $item id] ne $document} {_documentResourceReferences [dict get [interactiveDocumentRead [dict get $item id]] payload] $document 0 budget references}
+        if {![datasetPublicationV2DictDefault $item native_workspace 0] && [_sessionWorkspaceKnownObsolete $item]} {_documentResourceObsoletePins $document references;continue}
+        if {[dict get $item id] ne $document && ![datasetPublicationV2DictDefault $item native_workspace 0]} {_documentResourceReferences [dict get [interactiveDocumentRead [dict get $item id]] payload] $document 0 budget references}
     }
     foreach dataset [datasetRegistryIds] {_documentResourceReferences [_datasetMetadataReadAll [_interactiveDocumentRequireSession] $dataset] $document 0 budget references}
     if {[llength [info commands _workbenchRecoveryResourceReferences]]} {_documentResourceReferences [_workbenchRecoveryResourceReferences $document 1] $document 0 budget references}
@@ -259,7 +278,7 @@ proc ::GX::interactiveDocumentResourceCollect {document {liveReferences {}}} {
     # retained in document history/payload or a caller's live previews survive.
     set root [_documentResourceRoot $document 1]
     set references {};set budget 0
-    if {[interactiveDocumentExists $document]} {_documentResourceReferences [dict get [interactiveDocumentRead $document] payload] $document 0 budget references}
+    if {![_nativeWorkspaceExists $document] && [interactiveDocumentExists $document] && ![_sessionWorkspaceKnownObsolete [interactiveDocumentMetadata $document]]} {_documentResourceReferences [dict get [interactiveDocumentRead $document] payload] $document 0 budget references}
     _documentResourceReferences $liveReferences $document 0 budget references
     if {[llength [info commands _workbenchRecoveryResourceReferences]]} {_documentResourceReferences [_workbenchRecoveryResourceReferences $document] $document 0 budget references}
     dict for {token reader} $::GX::DocumentResource::readers {
@@ -268,7 +287,7 @@ proc ::GX::interactiveDocumentResourceCollect {document {liveReferences {}}} {
     # Explicit publication can retain scientific model/residual provenance.
     # Other documents can also hold this owner's references. Scan committed
     # public metadata before deciding that a blob is unreferenced.
-    _documentResourceExternalReferences $document budget references
+    _documentResourceExternalReferences $document budget references 1
     set paths [glob -nocomplain -directory $root *.blob];set removed 0;set bytes 0
     # Validate the complete deletion set before changing any file.
     set unreferenced {}
@@ -307,9 +326,11 @@ proc ::GX::_documentResourceDeletePlan {document} {
     return [dict create root $root marker $marker unreferenced $unreferenced retained [dict size $references] session [_interactiveDocumentRequireSession]]
 }
 proc ::GX::_documentResourceDeleteRollback {plan} {
+    if {$plan eq {}} return
     if {[dict get $plan marker] ne ""} {file delete -- [dict get $plan marker]}
 }
 proc ::GX::_documentResourceDeleteCommit {document plan} {
+    if {$plan eq {}} return
     variable ::GX::DocumentResource::writers;variable ::GX::DocumentResource::readers
     dict for {token writer} $writers {
         if {[dict get $writer document] eq $document&&[dict get $writer session_token] eq [interactiveDocumentSessionToken]} {interactiveDocumentResourceAbort $token}

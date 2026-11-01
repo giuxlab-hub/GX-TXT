@@ -89,9 +89,9 @@ The textual report contains:
 - carrier-locked pulses;
 - rejected/spurious pulses.
 
-## Protocol-identification data exchange
+## Protocol-identification handoff
 
-v3.3 writes `ir_analysis_manifest.ini`, containing the dataset, signal, measured carrier, lock metadata and path to `eventi_mark_space.csv`. This is the deterministic data exchange consumed by **gxtxt.ir_identify v2.0**.
+v3.3 writes `ir_analysis_manifest.ini`, containing the dataset, signal, measured carrier, lock metadata and path to `eventi_mark_space.csv`. This is the deterministic handoff consumed by **gxtxt.ir_identify v2.0**.
 
 Protocol identification therefore remains logically separate from waveform extraction.
 

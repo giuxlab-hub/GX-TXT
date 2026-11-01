@@ -573,15 +573,17 @@ proc ::GX::manifestStringV2_before_temporal_set_v1 {} {
     # sole axisOverride authority remained in CORE.
     if {[string first "\n\[plot.axis.overrides\]\n" $out] < 0} {
         set axisKeys {}
-        foreach name [array names axisOverride "*,enabled"] {
-            set key [string range $name 0 end-8]
+        foreach name [concat [array names axisOverride "*,enabled"] [array names axisOverride "*,layout_auto"]] {
+            set key [string range $name 0 [expr {[string last , $name]-1}]]
             if {$key ni $axisKeys} { lappend axisKeys $key }
         }
         append out "\n\[plot.axis.overrides\]\n"
         appendKV out keys [join [lsort $axisKeys] ","]
         foreach key [lsort $axisKeys] {
             append out "\n\[plot.axis.$key\]\n"
-            foreach {field default} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color ""} {
+            # Layout is orthogonal to Axes: absent enabled means OFF for a
+            # layout-only row, and serialization must not mutate the store.
+            foreach {field default} {enabled 0 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color "" layout_auto 1 layout_ylabel_allow_negative 0 layout_margin_left "" layout_margin_right "" layout_margin_top "" layout_margin_bottom "" layout_gap "" layout_ylabel_dist ""} {
                 appendKV out $field [expr {[info exists axisOverride($key,$field)] ? $axisOverride($key,$field) : $default}]
             }
             set panels [expr {[info exists axisOverride($key,panels)] ? $axisOverride($key,panels) : {}}]
@@ -622,7 +624,7 @@ proc ::GX::loadManifestV2_before_temporal_set_v1 {path} {
             set key [string trim $key]
             if {$key eq ""} continue
             axisOverrideEnsure $key {}
-            foreach {field default} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color ""} {
+            foreach {field default} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color "" layout_auto 1 layout_ylabel_allow_negative 0 layout_margin_left "" layout_margin_right "" layout_margin_top "" layout_margin_bottom "" layout_gap "" layout_ylabel_dist ""} {
                 set name "plot.axis.$key.$field"
                 set axisOverride($key,$field) [expr {[dict exists $d $name] ? [dict get $d $name] : $default}]
             }

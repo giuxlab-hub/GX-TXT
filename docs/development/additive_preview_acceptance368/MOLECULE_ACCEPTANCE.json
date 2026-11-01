@@ -1,0 +1,217 @@
+{
+  "utc": "2026-10-21T19:01:16.511947+00:00",
+  "status": "ACCEPTED_ALL_9_ADDITIVE_MOLECULE_CRITERIA",
+  "authority": "MAIN1",
+  "rows": [
+    {
+      "id": "MOLECULE-01",
+      "exact_requirement": "Reproduce original imported Dataset in authorized read-only Session copy; identify exact importer, contract, metadata, format and actual geometry without assuming importer",
+      "status": "ACCEPTED",
+      "existing_evidence": "Normal library imports and authentic GLY import identify acq.molecule_structure, molecular.structure, SDF metadata and actual geometry for supported HOH/TYR/GLY sources. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-02",
+      "exact_requirement": "Verify acquisition preserved original coordinates and dedicated Molecule Viewer loads the same canonical Dataset",
+      "status": "ACCEPTED",
+      "existing_evidence": "Source RAW/canonical coordinates and dedicated source binding were checked with angstrom units: HOH3atoms/2bonds, TYR24/24, GLY10/9. Separate genuine PubChem frames have21atoms/21bonds each and distinct preserved coordinates. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-03",
+      "exact_requirement": "Normal Open3Dstructure renders actual Native3D geometry; molecule selection, orbit, zoom, fit and conformer changes operate",
+      "status": "ACCEPTED",
+      "existing_evidence": "Actual Open3D, atom pick, orbit, wheel zoom, Fit and styles have separate native receipts. Genuine distinct conformer changes are recorded. Corrected cold normal root close ends actualhost428650 exit0 with all533 tracees terminal; original orphan failure remains preserved. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-04",
+      "exact_requirement": "Diagnose Dataset Preview's missing usable molecular3D presentation or clear dedicated Viewer route",
+      "status": "ACCEPTED",
+      "existing_evidence": "Ordinary generic Preview displayed actual HOH/TYR/GLY molecular geometry. The authentic GLY retained-layer composition defect was diagnosed and corrected at its scoped owner; no universal historical cause is inferred. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-05",
+      "exact_requirement": "Expose appropriate ordinary discoverable Previewin3D/OpeninMoleculeViewer through existing public Preview, Viewer dispatch and Native3D services",
+      "status": "ACCEPTED",
+      "existing_evidence": "Normal browser Open in Molecule Viewer button and TYR context menu opened the same canonical sources in cold native evidence. GLY genericPreview to dedicatedViewer and one ordinary Open3D has actual source-bound native evidence. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-06",
+      "exact_requirement": "Preserve molecular.structure scientific contract without numerical three-column masquerade",
+      "status": "ACCEPTED",
+      "existing_evidence": "The molecular.structure source contract remained intact. Independent numeric switching data stayed table.generic/csv with undeclared units; no molecular numerical-XYZ coercion was used. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-07",
+      "exact_requirement": "Separate actual acceptance of import, coordinates, derived geometry, native render and usable GUI integration",
+      "status": "ACCEPTED",
+      "existing_evidence": "Acquisition, authoritative coordinates, derived VTP geometry, actual native frame, ordinary GUI integration and terminal lifecycle were recorded as separate scopes, with failures and originals preserved. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-08",
+      "exact_requirement": "Focused genuine supported SDF/MOL, XYZ or PDB example, conformer where available, malformed/unsupported source, Dataset switching and Session reopening",
+      "status": "ACCEPTED",
+      "existing_evidence": "Genuine supported SDF, malformed/unsupported native errors, numeric/molecule switching and coldSession reopen have prior receipts. Separate real PubChem conformer Save and SessionABA preserve source/frame geometry. SDF/MOL,XYZ OR PDB is an alternative-format requirement, not all formats. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    },
+    {
+      "id": "MOLECULE-09",
+      "exact_requirement": "Original files, Dataset metadata, atom/bond identities, physical units, source hashes and existing dedicated Viewer functionality preserved",
+      "status": "ACCEPTED",
+      "existing_evidence": "Canonical public metadata, source hashes, atom/bond identities and angstrom units were preserved. Authentic GLY source and unrelated stored crystal descriptors remained unchanged. Corrected dedicated Viewer lifecycle and source-bound presentations have separate authentic evidence. Actual registered molecular_structure_practice1.0.0 GUI Generate/normal HOH import/public geometry/Preview/dedicated Native3D frame/Save/reopen now supplies112 completed assertions. This supersedes only the earlier native25 PENDING observation, while actual native root-shutdown SIGSEGV remains open. Genuine earlier conformer/navigation/unsupported-format/Session evidence is reused; HOH and TYR are independent one-record molecules, never concatenated as conformers.",
+      "references": [
+        "molecular284",
+        "molecular_tail309",
+        "template28",
+        "molecular_native01",
+        "molecular_cold02",
+        "molecular_import08"
+      ],
+      "authority": "MAIN1 complete compound review; independent actual scientific and native receipts; current lifetime/callback fixes separately integrated and accepted"
+    }
+  ],
+  "source_policy": "All newacceptancetests useappropriate registeredSessionGenerators; nooriginalavailabilitygate. No newtest run by this review. Prior validnative science, conformer, quality and scientificfacts preserved without broadreplay.",
+  "historical_identity_limit": "Neither originalrandommolecularID nor historicuserthermalSessionavailability is releasegate or universalcauseclaim; correctcontract/function verified againstproperrelativeGenerators.",
+  "references": [
+    {
+      "path": "/srv/gxtxt/core/dev109/validation/main2_preview109/final_matrix28/FINAL_ACCEPTANCE_MATRIX.json",
+      "sha256": "3ee945617818d1561b3ada9279c9395649fbe859fdd334b43620f054729bbdf9",
+      "bytes": 144332
+    },
+    {
+      "path": "/srv/gxtxt/core/dev109/docs/development/main2_preview109/THERMAL_MOLECULAR_MATRIX284.json",
+      "sha256": "271b7d3a63ec9ca3068a1b6358728cc82db02755abb1095d0cbaac99dc1b35c4",
+      "bytes": 32793
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/CURRENT_ACCEPTANCE_SOURCE_POLICY.json",
+      "sha256": "bb0103cdb34550ffeb34f33cd13a13eb99768b9a1b935863060409f0291dab7c",
+      "bytes": 1546
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/preview_metadata359/ACCEPTANCE.json",
+      "sha256": "ed54fe93ad7a19a7c4cb9b508b034b04a38be2decafbd22b9238a83a12e15484",
+      "bytes": 2372
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/main2_preview109/molecular_native25/RESULT.json",
+      "sha256": "5e1e7be43ad9cdf7e19c9740b775b2faa5f515aff1a07f9fc930afa46a956f53",
+      "bytes": 21998
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/native_host_integration339/ACCEPTANCE.json",
+      "sha256": "94afbec74a0f7c148a04b81094487f6e1168e9e8e9c8685b0884132e0e674373",
+      "bytes": 3423
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/main2_preview109/MAIN1_MOLECULAR_GENERATOR_TAIL309.md",
+      "sha256": "812fe8f0f68afeded2edfcfc99f5e8d9a98ff76f9ff29124d2e0539f0bb8d0d4",
+      "bytes": 1986
+    },
+    {
+      "path": "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_private_next/agents/qa_preview_import_regressions/SCOPED_GUI_FINDINGS_08.md",
+      "sha256": "f10bf19fe072de6822ca26dab84842668d07dd50c40cc2bd26ff9bce035e92af",
+      "bytes": 9706
+    }
+  ],
+  "source_epoch_qualification": [
+    {
+      "historical_pin": {
+        "path": "/srv/gxtxt/agents/worktrees/main2_preview109/core/tcl/dataset_viewer_api_v1.tcl",
+        "sha256": "4b4164537edf77bf2e19019b1949f85d5ea636a9061c2461380d9f81937836cc",
+        "bytes": 78776
+      },
+      "current_sha256": "aa88bfe3a2d41eaa2fb406787bc157b22e3fab3d6f265fb8d70e4ace211db8e6",
+      "qualification": "Mutable specializedworktreeViewer449 nowaa88; historical sourceepoch notcurrentequality, publicmetadata order fix303f retains strictsourceguards/Raw exact."
+    }
+  ],
+  "MAIN_visual_review": [
+    "ActualproperGeneratorHOH3atoms/2bonds Native3Dframe plusgenuinePubChemconformer1 frame personallyviewed; coordinates/sourceSHA/VTP identities checked, no duplicatedHOH/TYR masquerade.",
+    "Publicacquisition/molecularcontract/geometry/nativeframe/normalPreview-and-dedicatedroute/SaveReopen and corrected317hostlifetime assessedseparately."
+  ],
+  "limits": [
+    "No entire15releaseacceptance or officialdeposition",
+    "Historicfailedattempts, GLXsoftwarefallback, SIGPIPE/SIGTERM families and originalrootSIGSEGV preserved; actual317coldnormalclosure supplies correctedlifetime proof, not allhistoricalprocess0",
+    "Previewinitialterminalfailure366, generalcachewhole2 andDatasetaxeswhole4 separate OPEN acceptance"
+  ],
+  "generator": "org.giuxlab.gxtxt.accepted_generators/molecular_structure_practice@1.0.0 actualnormalGUIGenerate beforeordinaryMoleculeViewerSDFimport",
+  "scientific_identity": {
+    "dataset": "hoh_ideal",
+    "contract": "molecular.structure",
+    "canonical_sha256": "df2920cc0a8f577693c9f48294ed44f0db9b8c3cef135465dcdf527d129bbbe9",
+    "units": "angstrom",
+    "atoms": 3,
+    "bonds": 2,
+    "conformers": 1
+  },
+  "specific_qualification": "112newproperGenerator/nativeimport/SaveReopen checks plusprior genuine21atom21bond distinctPubChemconformers andmalformedsource evidence. SDF/MOL,XYZorPDB is alternatives, no allformatscampaign invented. OriginalGLY/sourcefixtures retaineddiagnostic, not requiredacceptanceSession.317actualcold26/149all0 fixesnormalrootshutdown; constructedASan isnotcapturedVTKstack."
+}

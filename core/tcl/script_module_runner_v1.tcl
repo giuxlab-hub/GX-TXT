@@ -180,6 +180,11 @@ proc ::GX::scriptModuleApiInvoke {id apiId operation arguments} {
     if {![moduleIsEnabled $id]} { error "$id is disabled in this Session." }
     set info [scriptModuleDescriptor $id]
     set descriptor [dict get $info descriptor]
+    if {[descriptorValue $descriptor script provided_manifest {}] ne {} &&
+        [_scriptModuleProvidedOperationSchema $id $apiId $operation] ne {}} {
+        set json [_scriptModuleProvidedTclArguments $id $apiId $operation $arguments]
+        return [nativeWorkspaceDecode [nativeWorkspaceJsonDecode [scriptModuleProvidedApiInvokeJson $id $apiId $operation $json]]]
+    }
     if {$apiId ni [splitList [descriptorValue $descriptor public_apis ids ""]]} {
         error "$id does not declare public API '$apiId'."
     }
@@ -274,3 +279,5 @@ proc ::GX::scriptModuleBuildQueueItem {id} {
         $::GX::scriptDir $currentSession $id $runtime $output $statusPath]
     return [list "Analysis - [moduleField $id name $id]" $command $id $runId]
 }
+
+source [file join [file dirname [info script]] script_provided_runtime_v1.tcl]

@@ -124,6 +124,26 @@ proc ::GX::sessionOriginRead {{session {}}} {
     if {[catch {dict size $origin}] || ![dict exists $origin creator_installation]} {error {Invalid declared Session origin.}}
     return $origin
 }
+# Compare Session namespace identity while retaining the existing ordered local
+# import audit. No source pin, scientific provenance or Manifest is rewritten.
+proc ::GX::_sessionOriginAuditExtensionMatches {previous current} {
+    if {[catch {dict size $previous}] || [catch {dict size $current}]} {return 0}
+    if {$previous eq $current} {return 1}
+    set oldIdentity [dict remove $previous events];set newIdentity [dict remove $current events]
+    if {[lsort [dict keys $oldIdentity]] ne [lsort [dict keys $newIdentity]]} {return 0}
+    dict for {key value} $oldIdentity {if {[dict get $newIdentity $key] ne $value} {return 0}}
+    if {[datasetPublicationV2DictDefault $current version {}] ne {1}} {return 0}
+    set before [datasetPublicationV2DictDefault $previous events {}]
+    set after [datasetPublicationV2DictDefault $current events {}]
+    if {[catch {llength $before}] || [catch {llength $after}] || [llength $after]<[llength $before]} {return 0}
+    for {set i 0} {$i<[llength $before]} {incr i} {if {[lindex $before $i] ne [lindex $after $i]} {return 0}}
+    foreach event [lrange $after [llength $before] end] {
+        if {[catch {dict size $event}] || [lsort [dict keys $event]] ne {at installation_id kind source_experiment_id source_project_id}} {return 0}
+        if {[dict get $event kind] ne {import} || [dict get $event installation_id] eq {} || [dict get $event at] eq {}} {return 0}
+        dict for {key value} $event {if {[regexp {[\x00\r\n]} $value]} {return 0}}
+    }
+    return 1
+}
 proc ::GX::projectOriginRead {id} {
     if {![projectExists $id]} {error "Unknown Project '$id'."}
     set origin [projectField $id origin {}]

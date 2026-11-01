@@ -542,6 +542,14 @@ proc ::GX::NumericAPIv1::unwrap {phase {options {}}} {
 }
 
 # Low-level vector/matrix operations.
+proc ::GX::NumericAPIv1::comparisonCurves {mode x1 y1 x2 y2 {options {}}} {
+    requireCapability resampling
+    requireCapability elementwise_binary
+    foreach key [dict keys $options] {if {$key ni {normalization offset denominator_floor}} {_error {Unknown comparison option}}}
+    set data [_vectorData x1 $x1 y1 $y1 x2 $x2 y2 $y2]
+    dict set data mode [dict create kind string value $mode]
+    return [_run comparison_curves $data $options]
+}
 proc ::GX::NumericAPIv1::interpolate {x y xq {options {}}} {requireCapability interpolation; return [_run interpolate [_vectorData x $x y $y xq $xq] $options]}
 proc ::GX::NumericAPIv1::resample {x y targetX {options {}}} {requireCapability resampling; return [_run resample [_vectorData x $x y $y xq $targetX] $options]}
 proc ::GX::NumericAPIv1::resampleUniform {x y step {options {}}} {requireCapability resampling; set d [_vectorData x $x y $y]; dict set d step [dict create kind vector value [list $step]]; return [_run resample_uniform $d $options]}

@@ -101,7 +101,7 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
                 set st($w,sketchUnit) [lindex $targetFrame 0]
             }
             if {[dict get $descriptor row_count]>65536} {
-                _save $w
+                if {$st($w,document) eq {}} {_flushWorkspace $w}
                 dict set record source_token $source
                 set id [::GX::curveSourceWithNumericInput $source [list ::GX::CurveWorkbench::_ingestSource $w $record] {} [list ::GX::CurveWorkbench::_sourceLoadProgress $w $source]]
                 set source ""
@@ -137,38 +137,6 @@ proc ::GX::CurveWorkbench::_sampleAt {w id index} {
     set xy [lindex [::GX::Native2D::core points_page $st($w,scene) [dict get $record native] $index 1] 0]
     binary scan [::GX::interactiveDocumentResourceReadChunk [dict get $record row_resource] [expr {8*$index}] 8] wu row
     return [dict create x [lindex $xy 0] y [lindex $xy 1] row $row order $index point_id "source:[dict get $record source]:$row"]
-}
-proc ::GX::CurveWorkbench::_drawPointMarkers {w id ignored color} {
-    variable st
-    set record [_record $w $id];set canvas $w.right.viewport.canvas
-    set sampled [::GX::Native2D::core render_lod $st($w,scene) [dict get $record native] 4096]
-    set indices [dict get $sampled point_indices];set coords [dict get $sampled points]
-    set selected {};foreach selectedIndex [_semanticPointIndices $w $id] {dict set selected $selectedIndex 1}
-    set flags [lmap index $indices {dict exists $selected $index}]
-    set shown {};set selectedIndices {};set selectedCoords {}
-    foreach index $indices point $coords chosen $flags {
-        dict set shown $index 1
-        if {$chosen} {lappend selectedIndices $index;lappend selectedCoords $point} else {
-            lassign $point x y;$canvas create oval [expr {$x-3}] [expr {$y-3}] [expr {$x+3}] [expr {$y+3}] -fill $color -outline white
-        }
-    }
-    # A table-selected exact point must be located even when display LOD omits it.
-    foreach index [expr {$id eq $st($w,active)?[_pointTableSelected $w]:{}}] {
-        if {[dict exists $shown $index]} continue
-        set point [lindex [::GX::Native2D::core points_page $st($w,scene) [dict get $record native] $index 1] 0]
-        lappend selectedIndices $index;lappend selectedCoords [::GX::Native2D::core device $st($w,scene) $point]
-    }
-    set rows {}
-    if {[_bulkRecord $record]&&$selectedIndices ne {}} {
-        set ranges [lmap index $selectedIndices {list [expr {8*$index}] 8}]
-        foreach bytes [::GX::interactiveDocumentResourceReadRanges [dict get $record row_resource] $ranges] {binary scan $bytes wu row;lappend rows $row}
-    } else {set rows [lmap index $selectedIndices {dict get [lindex [dict get $record samples] $index] row}]}
-    foreach index $selectedIndices point $selectedCoords row $rows {
-        lassign $point x y;$canvas create oval [expr {$x-5}] [expr {$y-5}] [expr {$x+5}] [expr {$y+5}] -fill #ffc83d -outline #1a2430
-        if {[dict get $record source] ne ""&&$row>=0} {
-            $canvas create oval [expr {$x-9}] [expr {$y-9}] [expr {$x+9}] [expr {$y+9}] -outline #c51d24 -width 2 -tags [list dataset_row_locator dataset_locator_$id source_row_$row locator_point_$index]
-        }
-    }
 }
 proc ::GX::CurveWorkbench::_pointPagerGui {w} {
     variable st
@@ -352,7 +320,8 @@ proc ::GX::CurveWorkbench::publish {w requested {ids {}}} {
         dict set manifest options polar_output $polar
     }
     set result [_publicationRunTransform $w $manifest]
-    set st($w,status) "Published $requested: [dict get $result row_count] complete tuples / explicit Native samples with source lineage."
+    set action [expr {[info exists st($w,publicationPrepareOnly)] && $st($w,publicationPrepareOnly) ? {Prepared} : {Published}}]
+    set st($w,status) "$action $requested: [dict get $result row_count] complete tuples / explicit Native samples with source lineage."
     return $result
 }
 proc ::GX::CurveWorkbench::_sourceSnapshotRequire {w record} {

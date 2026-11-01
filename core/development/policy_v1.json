@@ -5,7 +5,21 @@
   "language": "C++17, ordinary language with reviewed public CORE integration",
   "language_support": {
     "standard": "C++17 including C facilities",
-    "features": ["functions", "pointers/references", "classes/structs/enums/unions", "inheritance/virtual dispatch/RTTI", "overloads/templates", "recursion", "callbacks/lambdas", "malloc/free/new/delete/RAII", "containers/algorithms", "preprocessing/macros/assert", "exceptions", "threads/synchronization", "fork/wait"],
+    "features": [
+      "functions",
+      "pointers/references",
+      "classes/structs/enums/unions",
+      "inheritance/virtual dispatch/RTTI",
+      "overloads/templates",
+      "recursion",
+      "callbacks/lambdas",
+      "malloc/free/new/delete/RAII",
+      "containers/algorithms",
+      "preprocessing/macros/assert",
+      "exceptions",
+      "threads/synchronization",
+      "fork/wait"
+    ],
     "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
     "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
     "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation"
@@ -83,6 +97,7 @@
     "plot_discover",
     "plot_bind",
     "document_bind",
+    "document_command",
     "raster_bind",
     "raster_tool",
     "raster_command",
@@ -96,7 +111,38 @@
     "numeric_evaluate",
     "numeric_statistics",
     "numeric_compare",
-    "numeric_publish"
+    "numeric_publish",
+    "input",
+    "data",
+    "cad_command",
+    "diagnostics_command",
+    "text_runs",
+    "table",
+    "workspace",
+    "set_state",
+    "set_property",
+    "state",
+    "property",
+    "status",
+    "query",
+    "save",
+    "save_as",
+    "rename",
+    "open",
+    "close",
+    "dataset_group_review",
+    "dataset_group_create",
+    "dataset_publish_batch",
+    "dataset_producer_result",
+    "script_library_command",
+    "script_library_result",
+    "scientific_preview_command",
+    "scientific_preview_result",
+    "scientific_frame_bind",
+    "comparison_command",
+    "comparison_result",
+    "analysis_command",
+    "analysis_result"
   ],
   "allowed_state_members": [
     "values",
@@ -114,23 +160,66 @@
   "capabilities": {
     "WORKBENCH_3D_API_v1": {
       "version": 1,
-      "operations": ["activateDocument", "guiMount", "guiInspect", "selectionSet", "guiCommand"]
+      "operations": [
+        "activateDocument",
+        "guiMount",
+        "guiInspect",
+        "selectionSet",
+        "guiCommand"
+      ]
     },
     "CONFIGURATION_API_v1": {
       "version": 1,
-      "operations": ["open_page"]
+      "operations": [
+        "open_page"
+      ]
     },
     "FILE_PUBLICATION_API_v1": {
       "version": 1,
-      "operations": ["publish_bundle"]
+      "operations": [
+        "publish_bundle"
+      ]
     },
     "ELECTROMAGNETIC_SIMULATION_API_v1": {
       "version": 1,
-      "operations": ["defaultModel", "validate", "saveModel", "listModels", "loadModel", "runAsync", "jobStatus", "jobLog", "cancel", "resultDescribe", "resultPreview", "publish", "fieldDescribe"]
+      "operations": [
+        "defaultModel",
+        "validate",
+        "saveModel",
+        "listModels",
+        "loadModel",
+        "runAsync",
+        "jobStatus",
+        "jobLog",
+        "cancel",
+        "resultDescribe",
+        "resultPreview",
+        "publish",
+        "fieldDescribe"
+      ]
     },
     "SCIENTIFIC_LIBRARY_MANAGER_API_v1": {
       "version": 1,
-      "operations": ["libraryCatalogPage", "getProviderCapabilities", "getLibraryCapabilities", "listLibraryEntries", "openLibraryViewer", "verifyLibrary", "installLibrary", "updateLibrary", "removeLibrary", "registerLibrary", "unregisterLibrary", "invokeLibraryAction"]
+      "operations": [
+        "libraryCatalogPage",
+        "listLibraryTypes",
+        "getProviderCapabilities",
+        "getLibraryCapabilities",
+        "listLibraryEntries",
+        "searchLibraryEntries",
+        "libraryEntriesPage",
+        "getLibraryEntryInfo",
+        "openLibraryViewer",
+        "verifyLibrary",
+        "installLibrary",
+        "updateLibrary",
+        "removeLibrary",
+        "registerLibrary",
+        "unregisterLibrary",
+        "invokeLibraryAction",
+        "getLibraryInfo",
+        "readLibraryEntry"
+      ]
     },
     "VIEWER_GUI_HOST_API_v1": {
       "version": 1,
@@ -138,6 +227,7 @@
         "value_set",
         "text_set",
         "document_bind",
+        "document_command",
         "raster_bind",
         "raster_tool",
         "raster_command",
@@ -145,7 +235,12 @@
         "em_command",
         "workbench_command",
         "transform_form",
-        "pcb_source_form"
+        "pcb_source_form",
+        "value_get",
+        "cad_command",
+        "diagnostics_command",
+        "text_runs",
+        "table_set"
       ]
     },
     "VIEWER_COMPONENT_DEMO_API_v1": {
@@ -177,7 +272,8 @@
         "complex_unary.magnitude",
         "complex_unary.phase_rad",
         "complex_unary.phase_deg",
-        "uniform_grid"
+        "uniform_grid",
+        "comparison_curves"
       ]
     },
     "NATIVE2D_VIEWPORT_HOST_v1": {
@@ -222,22 +318,115 @@
     },
     "PARALLEL_EXECUTION_API_v1": {
       "version": 1,
-      "operations": ["parallelExecutionExecute"]
+      "operations": [
+        "parallelExecutionExecute"
+      ]
     },
     "PLOT_DATASET_API_v4": {
       "version": 4,
       "operations": [
-        "widgetCreate", "cellFieldProfileSpec", "upsertPlotFromSpec", "render", "widgetExport"
+        "widgetCreate",
+        "cellFieldProfileSpec",
+        "upsertPlotFromSpec",
+        "render",
+        "widgetExport"
       ]
     },
     "DATASET_TRANSFORM_API_v1": {
       "version": 1,
-      "operations": ["execute_responsive", "cancel", "provenance"]
+      "operations": [
+        "execute_responsive",
+        "cancel",
+        "provenance"
+      ]
     },
     "DATASET_PUBLICATION_API_v2": {
       "version": 2,
       "operations": [
-        "datasetPublicationV2Finalize"
+        "datasetPublicationV2Finalize",
+        "datasetProducerPublishBatchV1"
+      ]
+    },
+    "NATIVE2D_API_v1": {
+      "version": 1,
+      "operations": [
+        "cad_sketch_create",
+        "cad_sketch_command",
+        "cad_sketch_state",
+        "cad_action_catalog",
+        "cad_action_invoke"
+      ]
+    },
+    "STDERR_DIAGNOSTICS_API_v1": {
+      "version": 1,
+      "operations": [
+        "info",
+        "status",
+        "meta",
+        "read",
+        "request",
+        "cancel",
+        "subscribe",
+        "unsubscribe",
+        "export"
+      ]
+    },
+    "NATIVE_WORKSPACE_API_v1": {
+      "version": 1,
+      "operations": [
+        "get",
+        "query",
+        "save",
+        "save_as",
+        "rename",
+        "open",
+        "close",
+        "set_property",
+        "set_state",
+        "status"
+      ]
+    },
+    "DATASET_GROUP_API_v1": {
+      "version": 1,
+      "operations": [
+        "datasetGroupProducerReviewV1",
+        "datasetGroupProducerCreateV1"
+      ]
+    },
+    "UML_DOCUMENT_API_v1": {
+      "version": 1,
+      "operations": [
+        "umlDocumentRead",
+        "umlDocumentParse",
+        "umlDocumentLayout",
+        "umlDocumentEdit",
+        "umlDocumentWrite",
+        "umlDocumentExport"
+      ]
+    },
+    "SCRIPT_LIBRARY_API_v1": {
+      "version": 1,
+      "operations": [
+        "script_library_command"
+      ]
+    },
+    "PREVIEW_COMPONENT_GUI_API_v1": {
+      "version": 1,
+      "operations": [
+        "scientific_preview_command",
+        "scientific_frame_bind"
+      ]
+    },
+    "COMPARISON_PLOT_API_v1": {
+      "version": 1,
+      "operations": [
+        "comparison_command"
+      ]
+    },
+    "MODULE_TARGETED_ANALYSIS_API_v1": {
+      "version": 1,
+      "operations": [
+        "analysis_command"
       ]
     }
   },
@@ -246,7 +435,8 @@
       "VIEWER_GUI_HOST_API_v1",
       "VIEWER_COMPONENT_DEMO_API_v1",
       "NATIVE_3D_GUI_HOST_API_v2",
-      "NATIVE2D_VIEWPORT_HOST_v1"
+      "NATIVE2D_VIEWPORT_HOST_v1",
+      "NATIVE_WORKSPACE_API_v1"
     ],
     "numeric_view_v1": [
       "VIEWER_GUI_HOST_API_v1",
@@ -254,7 +444,10 @@
       "NATIVE_3D_GUI_HOST_API_v2",
       "NUMERIC_API_v1",
       "NATIVE2D_VIEWPORT_HOST_v1",
-      "DATASET_PUBLICATION_API_v2"
+      "DATASET_PUBLICATION_API_v2",
+      "NATIVE_WORKSPACE_API_v1",
+      "DATASET_GROUP_API_v1",
+      "COMPARISON_PLOT_API_v1"
     ],
     "document_view_v1": [
       "WORKBENCH_3D_API_v1",
@@ -270,7 +463,15 @@
       "SESSION_WORKSPACE_API_v1",
       "SCIENTIFIC_RECIPE_API_v1",
       "PLOT_DATASET_API_v4",
-      "DATASET_PUBLICATION_API_v2"
+      "DATASET_PUBLICATION_API_v2",
+      "NATIVE2D_API_v1",
+      "STDERR_DIAGNOSTICS_API_v1",
+      "NATIVE_WORKSPACE_API_v1",
+      "DATASET_GROUP_API_v1",
+      "UML_DOCUMENT_API_v1",
+      "SCRIPT_LIBRARY_API_v1",
+      "COMPARISON_PLOT_API_v1",
+      "MODULE_TARGETED_ANALYSIS_API_v1"
     ],
     "scientific_view_v1": [
       "DATASET_TRANSFORM_API_v1",
@@ -289,7 +490,119 @@
       "SCIENTIFIC_EXECUTION_API_v1",
       "PARALLEL_EXECUTION_API_v1",
       "PLOT_DATASET_API_v4",
-      "DATASET_PUBLICATION_API_v2"
+      "DATASET_PUBLICATION_API_v2",
+      "NATIVE_WORKSPACE_API_v1",
+      "DATASET_GROUP_API_v1",
+      "PREVIEW_COMPONENT_GUI_API_v1",
+      "COMPARISON_PLOT_API_v1",
+      "MODULE_TARGETED_ANALYSIS_API_v1"
     ]
+  },
+  "restricted_native_clients": {
+    "request_bytes_max": 49152,
+    "result_bytes_max": 49152,
+    "context_is_authority": false,
+    "script_library_command": {
+      "opcode": 45,
+      "api_id": "SCRIPT_LIBRARY_API_v1",
+      "operation": "script_library_command",
+      "finite_operations": [
+        "list",
+        "select",
+        "new_script",
+        "new_project",
+        "source_select",
+        "save",
+        "copy_record",
+        "assign_session",
+        "open_workspace",
+        "run_review",
+        "import_script",
+        "import_project",
+        "export",
+        "delete",
+        "jobs",
+        "refresh",
+        "close",
+        "undo",
+        "redo",
+        "find",
+        "replace",
+        "cut",
+        "copy_text",
+        "paste",
+        "select_all"
+      ],
+      "result_context_key": "script_library_result"
+    },
+    "scientific_preview_command": {
+      "opcode": 46,
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "operation": "scientific_preview_command",
+      "finite_operations": [
+        "discover",
+        "page",
+        "metadata",
+        "source"
+      ],
+      "result_context_key": "scientific_preview_result",
+      "requires_live_preview_context": true
+    },
+    "scientific_frame_bind": {
+      "opcode": 47,
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "operation": "scientific_frame_bind",
+      "requires_live_preview_context": true,
+      "wire_components": {
+        "component": "form",
+        "left": "viewport"
+      }
+    },
+    "comparison_command": {
+      "opcode": 48,
+      "api_id": "COMPARISON_PLOT_API_v1",
+      "operation": "comparison_command",
+      "finite_operations": [
+        "discover",
+        "add_dataset",
+        "add_library",
+        "add_browser",
+        "add_opened",
+        "remove",
+        "up",
+        "down",
+        "prepare",
+        "clear",
+        "inspect",
+        "plot_fit",
+        "plot_zoom_in",
+        "plot_zoom_out",
+        "plot_cursor",
+        "plot_clear_cursor",
+        "plot_reverse_x",
+        "plot_properties",
+        "plot_legend",
+        "plot_style",
+        "plot_copy",
+        "plot_export",
+        "plot_save_variant",
+        "plot_load_variant"
+      ],
+      "result_context_key": "comparison_result"
+    },
+    "analysis_command": {
+      "opcode": 49,
+      "api_id": "MODULE_TARGETED_ANALYSIS_API_v1",
+      "operation": "analysis_command",
+      "finite_operations": [
+        "discover",
+        "submit",
+        "status",
+        "cancel",
+        "candidates",
+        "add_candidate"
+      ],
+      "result_context_key": "analysis_result"
+    }
   }
 }

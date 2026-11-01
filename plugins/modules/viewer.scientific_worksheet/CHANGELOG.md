@@ -1,4 +1,4 @@
-## 2.1.1
+## 2.1.1 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 
@@ -70,7 +70,7 @@ Declare distinct native-resolution scientific catalog artwork, short title and s
 - Added vector and matrix spill, mixed text/numeric Dataset binding, source lineage, sorting and filtering, and public Unit Registry conversion.
 - Added a categorized function browser and guided execution for public Numeric, Signal, RF Network and Magnetics operations, including provider-owned declarative callback models and structured result fields.
 - Preserved Worksheet plotting through the public Plot Dataset API.
-- Validated four copied DEMO Sessions in the production GUI, with saved document and full Session reopen checks. 
+- Validated four copied DEMO Sessions in the production GUI, with saved document and full Session reopen checks. See `TEST_RESULTS.md` and the Task 005 real-use report.
 
 ## 1.0.0 — Initial Worksheet
 

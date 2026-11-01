@@ -61,7 +61,7 @@ Multiple installed languages can be selected together. The plugin passes them to
 
 Dependency checks occur only when the Viewer backend is activated. Module discovery remains headless and does not initialize Tk or execute OCR tools.
 
-The plugin uses CORE `gxtxt.pdf_canvas` for its Tk page canvas
+Dev-070: the plugin uses CORE `gxtxt.pdf_canvas` for its established Tk page canvas
 and Poppler renderer. The backend passes the installed CORE Python directory to
 support external plugin installations. Ordinary PDF Dataset reading uses this
 shared component without OCRmyPDF/Tesseract/qpdf activation requirements; the

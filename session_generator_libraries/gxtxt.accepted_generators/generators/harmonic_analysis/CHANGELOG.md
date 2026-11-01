@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Initial deterministic Harmonic Analysis teaching generator.
 - Added known H1-H5 amplitudes, phases, DC offset and analytical THD ground truth.

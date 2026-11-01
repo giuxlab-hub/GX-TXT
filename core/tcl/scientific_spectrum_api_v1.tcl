@@ -8,7 +8,7 @@ namespace eval ::GX::SpectrumAPIv1 {
 proc ::GX::SpectrumAPIv1::apiInfo {} {
     variable apiVersion
     variable contract
-    return [dict create api_name SCIENTIFIC_SPECTRUM_API_v1 api_version $apiVersion contract $contract]
+    return [dict create api_name SCIENTIFIC_SPECTRUM_API_v1 api_version $apiVersion contract $contract host_validation_operations {validatePages} page_samples_max 4096]
 }
 
 proc ::GX::SpectrumAPIv1::_required {spec key} {
@@ -36,18 +36,37 @@ proc ::GX::SpectrumAPIv1::_dict {value label} {
     return $value
 }
 
+proc ::GX::SpectrumAPIv1::_hashHeader {channel spec} {
+    foreach key {spectrum_kind x_quantity x_unit y_quantity y_representation y_unit} {puts $channel [_required $spec $key]}
+}
+proc ::GX::SpectrumAPIv1::_hashRows {channel xValues yValues} {
+    foreach x $xValues y $yValues {puts $channel "[format %.17g $x]\t[format %.17g $y]"}
+}
+proc ::GX::SpectrumAPIv1::_samplePage {state xRaw yRaw} {
+    if {[llength $xRaw]!=[llength $yRaw]} {error {Scientific Spectrum API v1: X/Y page lengths differ}}
+    set x {};set y {};set i [dict get $state index];set direction [dict get $state direction];set previous [dict get $state previous]
+    foreach xv $xRaw yv $yRaw {
+        set xv [_finite $xv "x sample $i"];set yv [_finite $yv "y sample $i"]
+        if {$i>0} {
+            if {$xv==$previous} {error "Scientific Spectrum API v1: X contains a duplicate at sample $i"}
+            set step [expr {$xv>$previous?1:-1}]
+            if {$direction==0} {set direction $step}
+            if {$step!=$direction} {error {Scientific Spectrum API v1: X must be strictly monotonic}}
+        } else {dict set state first $xv}
+        lappend x $xv;lappend y $yv;set previous $xv;incr i
+    }
+    dict set state index $i;dict set state direction $direction;dict set state previous $previous
+    return [dict create state $state x $x y $y]
+}
+proc ::GX::SpectrumAPIv1::_sampleInitial {} {return {index 0 direction 0 previous {} first {}}}
 proc ::GX::SpectrumAPIv1::_hash {spec} {
     # The numerical hash excludes identity, names and provenance, so copies of
     # the same scientific trace can be detected across independent libraries.
     set channel [file tempfile path]
     fconfigure $channel -translation lf -encoding utf-8
     try {
-        foreach key {spectrum_kind x_quantity x_unit y_quantity y_representation y_unit} {
-            puts $channel [dict get $spec $key]
-        }
-        foreach x [dict get $spec x] y [dict get $spec y] {
-            puts $channel "[format %.17g $x]\t[format %.17g $y]"
-        }
+        _hashHeader $channel $spec
+        _hashRows $channel [dict get $spec x] [dict get $spec y]
         close $channel
         set channel ""
         return [::GX::sha256File $path]
@@ -68,20 +87,8 @@ proc ::GX::SpectrumAPIv1::create {fields} {
     if {$count < 2 || [llength $yRaw] != $count} {
         error "Scientific Spectrum API v1: x and y must contain the same number of samples (at least two)"
     }
-    set x {}; set y {}; set direction 0; set previous ""
-    for {set i 0} {$i < $count} {incr i} {
-        set xv [_finite [lindex $xRaw $i] "x sample $i"]
-        set yv [_finite [lindex $yRaw $i] "y sample $i"]
-        if {$i > 0} {
-            if {$xv == $previous} { error "Scientific Spectrum API v1: X contains a duplicate at sample $i" }
-            set step [expr {$xv > $previous ? 1 : -1}]
-            if {$direction == 0} { set direction $step }
-            if {$step != $direction} { error "Scientific Spectrum API v1: X must be strictly monotonic" }
-        }
-        lappend x $xv
-        lappend y $yv
-        set previous $xv
-    }
+    set page [_samplePage [_sampleInitial] $xRaw $yRaw]
+    set x [dict get $page x];set y [dict get $page y];set direction [dict get $page state direction]
     set metadata [expr {[dict exists $fields metadata] ? [dict get $fields metadata] : [dict create]}]
     set provenance [expr {[dict exists $fields provenance] ? [dict get $fields provenance] : [dict create]}]
     _dict $metadata metadata
@@ -104,6 +111,30 @@ proc ::GX::SpectrumAPIv1::create {fields} {
     }
     dict set result spectrum_hash [_hash $result]
     return $result
+}
+
+# Trusted host page reader only, not an authored Tcl/Script Bridge/native grant.
+# It returns real X/Y samples by offset/count from an already admitted owner.
+# All value rules and the numerical hash are the same implementation as create.
+proc ::GX::SpectrumAPIv1::validatePages {fields count reader} {
+    _dict $fields fields
+    if {![string is wideinteger -strict $count] || $count<2 || $count>536870912} {error {Scientific Spectrum API v1: invalid bounded sample count}}
+    if {[catch {llength $reader}] || ![llength $reader]} {error {Scientific Spectrum API v1: a trusted page reader is required}}
+    set channel [file tempfile path];fconfigure $channel -translation lf -encoding utf-8
+    try {
+        _hashHeader $channel $fields
+        set state [_sampleInitial]
+        for {set offset 0} {$offset<$count} {incr offset $n} {
+            set n [expr {min(4096,$count-$offset)}]
+            set raw [uplevel #0 [list {*}$reader $offset $n]]
+            if {[catch {dict size $raw}] || [lsort [dict keys $raw]] ne {x y} || [llength [dict get $raw x]]!=$n || [llength [dict get $raw y]]!=$n} {error {Scientific Spectrum API v1: page reader returned a different exact sample count/schema}}
+            set page [_samplePage $state [dict get $raw x] [dict get $raw y]]
+            set state [dict get $page state]
+            _hashRows $channel [dict get $page x] [dict get $page y]
+        }
+        close $channel;set channel {}
+        return [dict create sample_count $count spectrum_hash [::GX::sha256File $path] x_ordering [expr {[dict get $state direction]==1?{ascending}:{descending}}] x_min [expr {min([dict get $state first],[dict get $state previous])}] x_max [expr {max([dict get $state first],[dict get $state previous])}]]
+    } finally {if {$channel ne {}} {catch {close $channel}};catch {file delete -- $path}}
 }
 
 proc ::GX::SpectrumAPIv1::validate {spectrum} {

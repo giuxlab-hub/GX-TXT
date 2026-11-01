@@ -1,0 +1,11 @@
+# Native2D long X-axis title correction258
+
+A real Scientific Dataset Viewer narrow-window test retained the complete canonical label but rendered its831-pixel title outside a618-pixel Canvas. The shared snapshot now declares the available X-title span, and the existing Canvas renderer wraps the original text without changing names, units, font size or source points. The shared native2DAxisTitleView returns measured bottom space for title and numeric graduations; the Dataset Viewer applies that view through the existing Native2D owner. Snapshot reads remain readonly. Rotated Y titles, ordinary annotations and legends retain their previous layout.
+
+The precompiled alpha text owner receives measured line breaks; its existing photo lifetime remains intact. No new renderer, compiler or scientific engine was added.
+
+MAIN actual pointer/keyboard Open/axis choices/Plot and1100→620resize passed25 checks: full original X(A), Y potential(V), six actual canonical source-point comparisons, title bounds and separation from graduations, source/schema/Session-token/original bytes unchanged and normal close. The clearly synthetic retained public fixture is explicitly not the user's original measurement. Independent262 confirmation remains pending at this commit; full sections4/5 are not accepted by this correction alone.
+
+Actual alpha-device component tests passed12. Its first screenshot was captured before Tk repaint and is preserved as blank, with structural tests qualified separately; a repaint-only helper correction captures the actual component in freshalpha02. Two native driver launches stopped before Plot on an OS active-window lookup; their errors/pixels/traces are preserved. Ordinary titlebar pointer focus replaces the failing activation helper. The first wrapping-only run revealed title/graduation contact on personal visual review, prompting the measured margin correction; its original evidence remains intact.
+
+Durable receipts and original negative references: `/srv/gxtxt/checkpoints/dev109/native_axis_title258/`, `/srv/gxtxt/checkpoints/dev109/main2_preview109/OWNER_REQUEST_NATIVE2D_LONG_AXIS235.json`. Raw private copies and process traces remain under RAID tests/native_axis_title258. MAIN1 alone accepts integration and release.

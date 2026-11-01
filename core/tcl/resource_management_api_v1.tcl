@@ -5,7 +5,7 @@ namespace eval ::GX::ResourceManagement {variable requests {}; variable serial 0
 
 proc ::GX::resourceManagementApiInfo {} {
     return [dict create api_id RESOURCE_MANAGEMENT_API_v1 api_version 1 scope framework \
-        operations {allocate observe release inventory reconcile cleanup policy} \
+        operations {allocate observe release inspect inventory reconcile cleanup policy} \
         external_cleanup 0 legacy_cleanup 0]
 }
 proc ::GX::resourceManagementRoot {} {
@@ -38,6 +38,7 @@ proc ::GX::resourceManagementRelease {id {state verified_orphan} {retention ""}}
     return [resourceManagementCall release {*}$options]
 }
 proc ::GX::resourceManagementInventory {{rescan 0}} {return [resourceManagementCall inventory rescan $rescan]}
+proc ::GX::resourceManagementInspect {id} {return [resourceManagementCall inspect resource_id $id]}
 proc ::GX::resourceManagementCleanup {ids} {return [resourceManagementCall cleanup {*}$ids]}
 proc ::GX::resourceManagementPolicy {{options {}}} {return [resourceManagementCall policy {*}$options]}
 

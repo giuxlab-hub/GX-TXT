@@ -1,4 +1,4 @@
-# GX-TXT Replicate Curve Analysis
+# GX-TXT `curve.replicate_analysis` v15.2
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,7 +26,7 @@ Every digitized point is preserved. A deterministic local regression estimates s
 
 ## Published Datasets
 
-The module publishes three compact long-form Datasets:
+v15 publishes three compact long-form Datasets:
 
 - `curve.replicate.traces`
 - `curve.replicate.profiles`
@@ -54,21 +54,21 @@ Graph artifacts:
 
 The visible graph owner is always `curve.replicate_analysis`.
 
-## Uncertainty-band rendering for curve families
+## v15.2 family-band correction
 
-`plot.dataset` rejects an uncertainty band attached directly to a family-grouped Series. The module resolves this through public Dataset-family expansion, without modifying the shared renderer. When a replicate consensus Series has both `family_variable_id` and `band`, the bridge reads family membership through `TABLE_STREAM_API_v3`, expands the family into ordinary exact-value filtered Series, removes the family-grouping field from each expanded Series, and preserves the lower/upper band bindings.
+`plot.dataset` correctly rejects an uncertainty band attached directly to a family-grouped Series. v15.2 fixes the producer integration instead of changing the renderer. When a replicate consensus Series has both `family_variable_id` and `band`, the bridge reads family membership through `TABLE_STREAM_API_v3`, expands the family into ordinary exact-value filtered Series, removes the family-grouping field from each expanded Series, and preserves the lower/upper band bindings.
 
-No Dataset file path or CSV representation is opened to perform this expansion. The same Table Stream path is used to obtain family-summary tick labels. Saved Sessions with `family_index` and `secondary_variable_id=family_value` are translated at render time. New Sessions bind `family_value` directly as the family grouping variable.
+No Dataset file path or CSV representation is opened to perform this expansion. The same Table Stream path is used to obtain family-summary tick labels. Existing v15.1 Session Graph Series remain compatible: old `family_index` + `secondary_variable_id=family_value` state is translated at render time, while new Sessions seed `family_value` directly as the family grouping variable.
 
-## Provider-neutral Dataset access
+## v15.1 input regression fix
 
-Input data are resolved exclusively from Analysis Source Dataset IDs and read through `TABLE_STREAM_API_v3`. The module does not open canonical CSV paths, inspect CSV headers, or fall back to direct file parsing. Replicate-ID auto-detection uses Analysis Source variable metadata only. This supports provider-neutral Dataset access for CSV, HDF5, materialized and other framework-backed representations.
+Input data are resolved exclusively from Analysis Source Dataset IDs and read through `TABLE_STREAM_API_v3`. The module does not open canonical CSV paths, inspect CSV headers, or fall back to direct file parsing. Replicate-ID auto-detection uses Analysis Source variable metadata only. This restores provider-neutral Dataset access for CSV, HDF5, materialized, or future framework-backed representations.
 
-The Octave-to-Tcl graphics bridge uses `gxtxt_persistent_bridge_readline()` like the framework Plot Dataset bridge, preventing a temporary empty pipe read from being misinterpreted as EOF.
+The Octave-to-Tcl graphics bridge now uses `gxtxt_persistent_bridge_readline()` like the framework Plot Dataset bridge, preventing a temporary empty pipe read from being misinterpreted as EOF.
 
-## Graphics architecture
+## v15.1 graphics architecture
 
-The module contains no private scientific renderer. The module does not call `plot()`, `bar()`, `errorbar()`, `legend()`, `xlim()`, `ylim()`, `gxtxt_plot_new_figure()` or `gxtxt_print_png_atomic()` for result graphs.
+v15 contains no private scientific renderer. The module does not call `plot()`, `bar()`, `errorbar()`, `legend()`, `xlim()`, `ylim()`, `gxtxt_plot_new_figure()` or `gxtxt_print_png_atomic()` for result graphs.
 
 The graphics path is:
 
@@ -93,7 +93,7 @@ Global Graphics
      -> Series override when explicitly set
 ```
 
-The module exposes no module graph-level line-width field. The hidden Plot Dataset backend is reset to `line_width=inherit` on every render. A Series line width is blank by default. Therefore changing **Global graphics** or **Module graphics** line width changes the rendered graph unless the user deliberately sets an explicit Series line-width override.
+v15 deliberately exposes no module graph-level line-width field. The hidden Plot Dataset backend is reset to `line_width=inherit` on every render. A Series line width is blank by default. Therefore changing **Global graphics** or **Module graphics** line width changes the rendered graph unless the user deliberately sets an explicit Series line-width override.
 
 ### Shared graphical services
 
@@ -114,15 +114,15 @@ The module opts into and preserves the applicable GX-TXT public graphical servic
 - Render Cache API v1;
 - standard export/print/annotation workflows operating on the producer-owned artifact.
 
-For Region Selection, the graphics bridge copies the renderer-generated `.gxtxt_plotmeta` sidecar to the producer artifact, so the framework can convert preview pixels to data coordinates without guessing margins.
+For Region Selection, v15.1 copies the renderer-generated `.gxtxt_plotmeta` sidecar to the producer artifact, so the framework can convert preview pixels to data coordinates without guessing margins.
 
 ### Plot layout and axes
 
-The plugin does not own X/Y limits or layout margins. Those values are owned by the shared GX-TXT axis/layout state. Before the backend render command is created, the graphics bridge projects the current producer graph axis state—including `layout_*` fields—onto the backend graph key. This is what makes the Plots-tab layout sliders and Axes/Grid editor affect the rendered result.
+The plugin does not own X/Y limits or layout margins. Those values are owned by the shared GX-TXT axis/layout state. Before the backend render command is created, v15.1 projects the current producer graph axis state—including `layout_*` fields—onto the backend graph key. This is what makes the Plots-tab layout sliders and Axes/Grid editor affect the rendered result.
 
 ### Legend
 
-Legend content may remain graph-specific when scientifically meaningful, but legend placement, layout, alignment, typography and manual position are common GX-TXT state. The graphics bridge projects the producer legend runtime state to the backend before rendering.
+Legend content may remain graph-specific when scientifically meaningful, but legend placement, layout, alignment, typography and manual position are common GX-TXT state. v15.1 projects the producer legend runtime state to the backend before rendering.
 
 ### Series presentation
 
@@ -138,11 +138,11 @@ A normal analysis requests a backend `render`; a GX-TXT rerender requests the pu
 
 ## Compatibility
 
-Compatibility is governed by the current `module.ini` descriptors and public API contracts.
+Target baseline: GX-TXT 0.9.8.10-dev-031.
 
 Required public interfaces include Standard Module API v1, Analysis Source Map/Access APIs, Dataset Variable Schema API v3, Table Stream API v3, Dataset Publication API v2, `NUMERIC_API_v1`, Graph Provider API v1, Graph Series API v1, Series Editor Extension API v1, Graphics Inheritance API v1, Plot Module API v1, Graph Workflow API v1, Plot Annotation API v1, Plot Region Selection API v1, Level Scale API v1, Render Cache API v1, Scientific Plot Framework API v1 and Plot Dataset API v2/v3.
 
-See [the current graphics reference](GRAPHICS_REFERENCE.md) for the supported plotting interfaces.
+See [`GRAPHICS_V15_IMPLEMENTATION.md`](GRAPHICS_V15_IMPLEMENTATION.md) for the graphics capability matrix and validation procedure.
 
 ## dev097 / 15.3 scientific integration
 

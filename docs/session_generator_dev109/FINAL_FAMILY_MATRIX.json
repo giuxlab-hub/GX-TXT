@@ -1,0 +1,347 @@
+{
+  "schema": "gxtxt.session_generator.seven_criteria.v1",
+  "source_register_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+  "source_register_path": "/home/giu/electronics-server/work-agent/compito/GXTXT_NEXT_TASK_AGREED_REQUIREMENTS_20261018.md",
+  "criterion_count": 7,
+  "owner_source_sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7",
+  "independent_review_checks": 25,
+  "MAIN_candidate_head": "24dbbdd6d2ebf218ace1ab9467909140bc3badf8",
+  "rows": [
+    {
+      "id": "SESSION-GEN-BROWSER-01",
+      "criterion_exact": "Generate Session reliably presents the hierarchical browsing tree and side-by-side detailed description.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Independent25-case reviewer and MAIN source33f301 real normal GUI show hierarchical left tree and right current generator details.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_generator_normal.png",
+          "sha256": "33b3a1d1ab8670d8382e212c1b91c18d76b33429f08cb18e8f2cadcfb7de9e41"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_real_description.tcldict",
+          "sha256": "2d86bf1349ecab495071e9ea776f2fe81ab92b6ec59f3fd036549d2bab9bb6f5"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_browser_normal.png",
+          "sha256": "62c3c9db2a4de9595123920cfa697a0596699e2f5e376e08756ed06aaa7c40b5"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_generator_live.tcldict",
+          "sha256": "bc4a8eb8d9d58c5e483ca91344fc69e057612ff11cd3f8c2f6bf5c98ca83e4a2"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-01"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-02",
+      "criterion_exact": "Manage Libraries and return/Hide Manager work repeatedly with preserved sensible selection and geometry.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Independent both return routes preserve registry identity/collapse/focus/sash/window; MAIN repeated Manager return and upper Generate route.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_return_identity_0.tcldict",
+          "sha256": "fe3c808ad5759ac86a8d5bd62ba7cab2a3e262e8a6247d9419253cb4ce74438e"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_return_sash_1.tcldict",
+          "sha256": "31943b350ae58ad37e12526527e422f56251ca7f03b849da2e4f13bd69afb77c"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_return_focus_1.tcldict",
+          "sha256": "91161e3361c8dcf6f46f43488d0174146aa47d42d0bf446f4153f4a352924e91"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_return_collapse_1.tcldict",
+          "sha256": "ce1eb9d2dd7b6f51da4f4e1c9c8c8762e68520a93442c020fca506cc98675bb9"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_roundtrip_1.tcldict",
+          "sha256": "1617d4787e475b7d653e54e246466218b651a3902b8c5aff645d05a94a12837a"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_roundtrip_2.tcldict",
+          "sha256": "1617d4787e475b7d653e54e246466218b651a3902b8c5aff645d05a94a12837a"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_upper_return.tcldict",
+          "sha256": "134606d7c0c74792993241d4f60333f792373f02bad8eff9b920d0a83d4747af"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-02"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-03",
+      "criterion_exact": "correct visible controls/scrolling/focus at ordinary and narrow window sizes.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Independent actual680x520 tabs/layout plus MAIN normal/narrow layout/geometry. Long-name independent scrolling reuses preserved author receipts, not a new campaign.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_browser_narrow.png",
+          "sha256": "916eb9fcdbaefadd457972abecab0d36a678d79fcb92f7b5d98cda151a8cd935"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_manager_narrow.png",
+          "sha256": "e17018677b7a5c5abf62ab1077256243969695ca108959973eff703e70ea6d14"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_metadata_narrow.png",
+          "sha256": "6a5785985f336fec3f07d68b75e9a2b2684a24f3cabec20326ee1765a075113d"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_copy_narrow.png",
+          "sha256": "1a78e55506498b0101028299113501060136b88d098e3faf4aaf28f6a194f710"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_browser_narrow.png",
+          "sha256": "217cb69c7755ef6d56636a38fa8ac8a5a2e533d8c0a543ec0fe889981dddd7c5"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_manager_narrow.png",
+          "sha256": "36434343295cf284dfe203b319b31de6c2584fc2169c842c8beccf86fde48d5c"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_narrow_browser_geometry.tcldict",
+          "sha256": "fda038626203aaa13b574e518884dd2c48de200eb39c9860fa1b33d712fcfb4a"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_final02/check_details_scroll_retained.tcldict",
+          "sha256": "93f270c15bf70f9493422e31e23a1a1a7887d1c214f7d9a0e857b32130d6e8c4"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-03"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-04",
+      "criterion_exact": "original libraries/generators and ordinary New Session/Generate behavior are preserved without data changes.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "MAIN genuine41-row Project generation, canonical provenance and ground truth, standalone manual Create, reopen/normalclose PASS. Backend prefix and bundled trees unchanged from base.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/GENERATION_MAIN_VERIFIED.json",
+          "sha256": "ef1582b044107836bebb6131cc0215ef55954c9591e841a8531f955bbe08f9fb"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_genuine_session.tcldict",
+          "sha256": "cacd2620b56f5027fb8af67bdcf8357b50ae901d276f6cb21c08454f00d68ec7"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_manual_session.tcldict",
+          "sha256": "252e97c3d6f11d024dc510b87cb8d0b1931aa286462eef8fff69a0a20b0a92b9"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/normal_terminal.tcldict",
+          "sha256": "8d20913aaec93bd7ede23178e4c8dee340b514da575560b7a395dbf6b936a47e"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/BATCH4_MAIN_COMPATIBILITY_VERIFIED.json",
+          "sha256": "c0ec93e7dedc4d1ce37bd96be778a403e92d8148f9017c8184069c53674f9157"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-04"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-05",
+      "criterion_exact": "independent GUI screenshots and MAIN's own installed-GUI check confirm a usable restored browser, not merely hidden Tcl widgets.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Fresh-context independent child native screenshots and MAIN-driven integrated24db snapshot native GUI agree at exact owner33f301. This is candidate evidence; no official production release/deployment implied.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/INDEPENDENT_REVIEW01/REVIEW.json",
+          "sha256": "55e2cc47743eef21ee3dcbe453a2bb4ee5679ab0cf9b0109e5b602f4d0ecd410"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_browser_complete.tcldict",
+          "sha256": "68960164d666af5ac5ea122591030696d33985ab0a0c0f81d3d0524b1f1b02de"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/LAUNCH02.json",
+          "sha256": "89aa236d19070cafd961fd5895222d20f9cbd85dd76759abf2f688e543c3b775"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_category_disabled.png",
+          "sha256": "57bdfa8d19d6b3710f579a5365a8a592a5217932bc1f329ccfdbf4fc05b6ec05"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_manager_normal_1.png",
+          "sha256": "2bbcfae9fb1bf60e4f6035b3ae0857445845dc33eb8319406ba7f455b0f216ba"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/main_manager_narrow.png",
+          "sha256": "36434343295cf284dfe203b319b31de6c2584fc2169c842c8beccf86fde48d5c"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-05"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-06",
+      "criterion_exact": "repeated actual navigation among libraries/categories/generators, expand/collapse, details refresh, scrolling and selection is functional and stable, including after return from Manager.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Actual generator/category/library navigation, collapse/expand, both Manager returns, current details, cached-selection clearing and reopen. Prior real horizontal/wheel scrolling retained.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_category_clear.tcldict",
+          "sha256": "58430413abfc36fce9ac9a758e33412b03bd04fa4118e1c02f9ee99625b2d94b"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_library_clear.tcldict",
+          "sha256": "d150f1b3b65a90ca3a34e1cab5f0e3ec6ebb558bece2ddbc24b55f3559186547"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_collapse.tcldict",
+          "sha256": "f2716e12a3199720ca326c919991ac7c3f969ca0b94344070873dbec6dae2116"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_expand.tcldict",
+          "sha256": "e981f528ec3dd0fbf96318ff0f0eea8b01504ceeb7c13a18044d1bc957648230"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/check_independent_narrow_identity.tcldict",
+          "sha256": "fe3c808ad5759ac86a8d5bd62ba7cab2a3e262e8a6247d9419253cb4ce74438e"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_final02/check_long_tree_scrolled.tcldict",
+          "sha256": "36e0f0ac476b56882ce331baa9445674325695e37d5302fc517041a7b1a98417"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_final04/check_long_collapse_persist.tcldict",
+          "sha256": "e9f68ddb940c7b158115d5c0dc587176c86124134f2cd884b6c47962faad22f7"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_category_clears.tcldict",
+          "sha256": "d150f1b3b65a90ca3a34e1cab5f0e3ec6ebb558bece2ddbc24b55f3559186547"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/gui_main01/check_main_reopen_no_stale.tcldict",
+          "sha256": "d150f1b3b65a90ca3a34e1cab5f0e3ec6ebb558bece2ddbc24b55f3559186547"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-06"
+      }
+    },
+    {
+      "id": "SESSION-GEN-BROWSER-07",
+      "criterion_exact": "source/API review confirms actual reuse of the same public GUI framework facilities as Viewers while the dialog remains a normal New Session interface **and is not registered or packaged as a Viewer**.",
+      "status": "MAIN_ACCEPTED",
+      "finished_evidence": "Same public UI_FIELD_API_v1 components/controls/columns/window fit as Viewer design; only local dialog mode/sash state. Existing New Session entrypoint and explicit-ID generator API unchanged; no Viewer registration/provider or replacement backend.",
+      "evidence": [
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/INDEPENDENT_REVIEW01/REVIEW.json",
+          "sha256": "55e2cc47743eef21ee3dcbe453a2bb4ee5679ab0cf9b0109e5b602f4d0ecd410"
+        },
+        {
+          "path": "/srv/gxtxt/agents/worktrees/dev109/core_session_generator/core/tcl/session_generator_library_api_v1.tcl",
+          "sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7"
+        },
+        {
+          "path": "/srv/gxtxt/agents/worktrees/dev109/core_session_generator/docs/api/UI_FIELD_API_v1.md",
+          "sha256": "9aedaf4f7800a5c741866b27f49f25914588e9afbe2fba454980081b9e234586"
+        },
+        {
+          "path": "/srv/gxtxt/agents/worktrees/dev109/core_session_generator/core/tcl/viewer_gui_design_v1.tcl",
+          "sha256": "d0ac81501fed0c4ab89b48c71c31c23010a3c3164a304872902e4c08250494dc"
+        },
+        {
+          "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/BATCH4_MAIN_COMPATIBILITY_VERIFIED.json",
+          "sha256": "c0ec93e7dedc4d1ce37bd96be778a403e92d8148f9017c8184069c53674f9157"
+        }
+      ],
+      "remaining_gate": "MAIN integration of this documentation reconciliation and refreshed candidate guide only; family criterion already accepted.",
+      "prior_status": "EVIDENCE_COMPLETE_MAIN_SIGNOFF_PENDING",
+      "MAIN_acceptance": {
+        "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+        "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+        "criterion": "SESSION-GEN-BROWSER-07"
+      }
+    }
+  ],
+  "formal_MAIN_accepted_claimed": true,
+  "full15_release_accepted": false,
+  "acceptance_register_line_exact": "**Acceptance \u2014 SESSION-GEN-BROWSER-01..07:** 01 Generate Session reliably presents the hierarchical browsing tree and side-by-side detailed description; 02 Manage Libraries and return/Hide Manager work repeatedly with preserved sensible selection and geometry; 03 correct visible controls/scrolling/focus at ordinary and narrow window sizes; 04 original libraries/generators and ordinary New Session/Generate behavior are preserved without data changes; 05 independent GUI screenshots and MAIN's own installed-GUI check confirm a usable restored browser, not merely hidden Tcl widgets; 06 repeated actual navigation among libraries/categories/generators, expand/collapse, details refresh, scrolling and selection is functional and stable, including after return from Manager; 07 source/API review confirms actual reuse of the same public GUI framework facilities as Viewers while the dialog remains a normal New Session interface **and is not registered or packaged as a Viewer**. This is an addition to existing workstream #6, **not** a sixteenth workstream; running dev108 is untouched.",
+  "supplemental_documentation_gate": {
+    "status": "PASS_BOUNDED_DOCUMENTATION_HELP_REVIEW_ONLY",
+    "checks_passed": 22,
+    "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/REVIEW.json",
+    "sha256": "ac8bb4b09ad21299e03cd12f016c8608605ad5023166277d178713f0d6b86496"
+  },
+  "remaining_real_gates": [
+    "MAIN integrates this docs-only acceptance reconciliation and refreshed candidate offline guide.",
+    "Whole workstream6 (including API Explorer/SDK Builder) and all15 release remain OPEN; seven family criteria are not seven workstreams."
+  ],
+  "MAIN_family_acceptance": {
+    "authority": "MAIN",
+    "status": "MAIN_ACCEPTED_SEVEN_CRITERION_SESSION_GENERATOR_BROWSER_FAMILY",
+    "utc": "2026-10-21T04:15:45.787784+00:00",
+    "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+    "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+    "criteria": [
+      "SESSION-GEN-BROWSER-01",
+      "SESSION-GEN-BROWSER-02",
+      "SESSION-GEN-BROWSER-03",
+      "SESSION-GEN-BROWSER-04",
+      "SESSION-GEN-BROWSER-05",
+      "SESSION-GEN-BROWSER-06",
+      "SESSION-GEN-BROWSER-07"
+    ],
+    "source_owner_sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7",
+    "MAIN_integrated_commits": [
+      "b6a3c24",
+      "24dbbdd",
+      "facbe2e",
+      "52cc619",
+      "349a5ac",
+      "619b162",
+      "30c5b09"
+    ],
+    "scope": "Seven mandatory SESSION-GEN-BROWSER criteria only; full workstream6 and all15 release/deposition remain OPEN; no new generator/backend/Viewer registration or public ABI.",
+    "basis": {
+      "browser_independent_native_checks": 25,
+      "MAIN_own_native_and_genuine_generation": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/GENERATION_MAIN_VERIFIED.json",
+      "scoped_root_signoff": "/srv/gxtxt/checkpoints/dev109/checkpoint48/SESSION_GENERATOR_SCOPED_ACCEPTANCE.json",
+      "native_Help_independent_checks": 22,
+      "MAIN_Help_seal_recheck": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/MAIN_RECHECK87.json",
+      "all13_reviewed_affected_source_doc_helper_image_pins_match_current_MAIN": true,
+      "MAIN_personally_viewed_actual_Help": "03_guide_top_browser.png"
+    },
+    "related_receipts": {
+      "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/MAIN_RECHECK87.json": "f9c3dc5750afc44b7abd85c268f12ad0c3d5c5dfa136a3205409eed5fef80cdc",
+      "/srv/gxtxt/checkpoints/dev109/checkpoint48/SESSION_GENERATOR_SCOPED_ACCEPTANCE.json": "da3b5ed2a8cbb321c01cd68fe9e1d92826ac13ea913e0d77f178d7508c9db4a6"
+    },
+    "reconciliation": "Documentation status/provenance only. Existing native evidence and reviewed byte pins remain historical, unchanged receipts; no native checks rerun for these appended notes."
+  },
+  "whole_workstream6_accepted": false
+}

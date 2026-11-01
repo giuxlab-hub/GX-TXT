@@ -1885,3 +1885,6 @@ gx2d_status gx2d_symmetry_construct(gx2d_scene *s,const gx2d_reference *axis,con
 }
 
 #include "gx2d_parts.inc"
+
+#include "gx2d_presentation_visit_v1.h"
+#include "gx2d_presentation_visit_v1.inc"

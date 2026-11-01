@@ -58,30 +58,21 @@ proc ::GX::ScientificWorksheet::restoreBookIdentity {snapshot currentBook} {
     return [_upgrade $snapshot]
 }
 proc ::GX::ScientificWorksheet::save {book} {
-    set book [_upgrade $book];set book [refreshBookAuthority $book];validateBook $book
-    set book [_flush [_formulaResourceReferences $book]]
+    set book [prepareSave $book]
     set id [dict get $book document_id]
     if {$id eq ""} {
-        set item [::GX::interactiveDocumentCreate viewer.scientific_worksheet scientific_worksheet scientific_worksheet.v2 2 [snapshot $book]]
-        dict set book document_id [dict get $item id]
+        set item [::GX::sessionWorkspaceCreate scientific_worksheet [dict get $book name] [snapshot $book]]
+    } else {
+        set expected [dict create id $id generation [dict get $book _runtime owner_generation] revision [dict get $book _runtime document_revision]]
+        set item [::GX::sessionWorkspaceUpdate $id [dict remove [snapshot $book] workspace_metadata] $expected]
     }
-    set prior [dict get [::GX::interactiveDocumentRead [dict get $book document_id]] payload]
-    if {[dict exists $prior workspace_metadata]} {dict set book workspace_metadata [dict get $prior workspace_metadata]}
-    set item [::GX::interactiveDocumentUpdate [dict get $book document_id] [snapshot $book] scientific_worksheet.v2 2]
-    # Existing public promotion adopts legacy documents without changing identity.
-    ::GX::sessionWorkspacePromote [dict get $book document_id]
-    set item [::GX::interactiveDocumentRead [dict get $book document_id]]
-    dict set book workspace_metadata [dict get $item payload workspace_metadata]
-    dict set book _runtime owner_generation [dict get $item generation]
-    dict set book _runtime document_revision [dict get $item revision]
-    dict set book _runtime base_payload [dict remove [snapshot $book] workspace_metadata]
-    return $book
+    return [load [dict get $item workspace_id]]
 }
 proc ::GX::ScientificWorksheet::load {id} {
-    set item [::GX::interactiveDocumentRead $id]
-    if {[dict get $item module_id] ne "viewer.scientific_worksheet" || [dict get $item provider_id] ne "scientific_worksheet" || [dict get $item format] ni {scientific_worksheet.v1 scientific_worksheet.v2}} {error {Document is not a supported Scientific Worksheet}}
+    set item [::GX::sessionWorkspaceGet $id]
+    if {[dict get $item module_id] ne "viewer.scientific_worksheet" || [dict get $item provider_id] ne "scientific_worksheet" || [dict get $item format] ne {scientific_worksheet.v2}} {error {Document is not a supported Scientific Worksheet}}
     set book [dict get $item payload]
-    if {[dict get $book format] ni {scientific_worksheet.v1 scientific_worksheet.v2}} {error {Unsupported Worksheet payload}}
+    if {[dict get $book format] ne {scientific_worksheet.v2}} {error {Unsupported Worksheet payload}}
     if {[dict exists $book _runtime]} {dict unset book _runtime}
     dict set book document_id $id;set book [_upgrade $book]
     dict set book _runtime owner_generation [dict get $item generation]

@@ -46,12 +46,12 @@ proc ::GX::CurveWorkbench::importFitGeometry {name transfer {coordinateConfigura
         set created [::GX::sessionWorkspaceCreate curve_workbench $name $payload];set document [dict get $created id]
         # No reference to another owner's generation survives in the scientific
         # archive. The original source_reference remains an identity receipt only.
-        set archived [::GX::managedResourceCopyTree $document [dict get $transfer source_record]]
+        set archived [::GX::nativeWorkspaceScientificDecode [::GX::managedResourceCopyTree $document [::GX::nativeWorkspaceEncode {named fitter_accepted_record} [dict get $transfer source_record]]]]
         dict set record retained_fit [dict create schema gxtxt.retained_fit_archive.v1 source_reference [dict get $transfer source_reference] record $archived immutable_import_snapshot 1]
         dict set record conversion_provenance [dict remove $transfer source_record]
         dict set record operations [list [dict create operation import_accepted_fit representation $representation source_reference [dict get $transfer source_reference]]]
         dict set payload curves curve1 $record
-        ::GX::sessionWorkspaceUpdate $document $payload
+        ::GX::sessionWorkspaceUpdate $document $payload $created
         ::GX::sessionWorkspaceValidate $document
         return [dict create schema gxtxt.fit_workbench_receipt.v1 workspace_id $document curve_id curve1 representation $representation reason [dict get $geometry reason] parameter_domain [dict get $geometry parameter_domain] coordinate_units $units source_reference [dict get $transfer source_reference] independent_resources 1 fit_performed 0]
     } on error {message options} {

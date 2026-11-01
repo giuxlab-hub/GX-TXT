@@ -36,6 +36,9 @@ function analysis_octave_script_main(args, framework_root)
   script_version = strtrim(gxtxt_ini_get(cfg, 'config.script_version', ''));
   script_revision = strtrim(gxtxt_ini_get(cfg, 'config.script_revision', ''));
   expected_sha256 = lower(strtrim(gxtxt_ini_get(cfg, 'config.script_sha256', '')));
+  project_manifest = gxtxt_ini_get(cfg, 'script_project.project_manifest', '');
+  project_root = gxtxt_ini_get(cfg, 'script_project.project_root', '');
+  project = [];
   if (strcmp(source_mode, 'external_file'))
     script_reference = '';
     script_id = '';
@@ -88,11 +91,31 @@ function analysis_octave_script_main(args, framework_root)
     endif
 
     source_bytes = read_binary_file(script_file, module_id);
-    write_binary_file(snapshot_path, source_bytes, module_id);
+    if (!isempty(project_manifest))
+      project=jsondecode(fileread(project_manifest));
+      if (!strcmp(project.sha256,expected_sha256) || !strcmp(project.schema,'gxtxt.script_project.v1'))
+        error('Project manifest identity differs');
+      endif
+      for project_index=1:numel(project.files)
+        project_record=project.files(project_index);
+        project_path=fullfile(project_root,project_record.path);
+        if (!strcmp(sha256_bytes(read_binary_file(project_path,module_id)),project_record.sha256))
+          error('Project helper SHA differs: %s',project_record.path);
+        endif
+        % Each admitted function directory participates in this bounded path.
+        addpath(fileparts(project_path));
+      endfor
+      snapshot_path=script_file;
+    else
+      write_binary_file(snapshot_path, source_bytes, module_id);
+    endif
     script_sha256 = sha256_bytes(source_bytes);
-    if (strcmp(source_mode, 'registered_script') && !strcmpi(script_sha256, expected_sha256))
+    byte_expected=expected_sha256;
+    if (!isempty(project)),byte_expected=gxtxt_ini_get(cfg,'script_project.entrypoint_sha256','');endif
+    if (strcmp(source_mode, 'registered_script') && !strcmpi(script_sha256, byte_expected))
       error('%s: registered Session script SHA-256 differs from the selected snapshot', module_id);
     endif
+    if (!isempty(project)),script_sha256=expected_sha256;endif
 
     required_bridge = {
       'gxtxt_script_bridge_start', ...
@@ -115,6 +138,7 @@ function analysis_octave_script_main(args, framework_root)
     execution = struct();
     execution.script_name = script_name;
     execution.script_sha256 = script_sha256;
+    if (!isempty(project)),execution.script_sha256=expected_sha256;endif
     execution.arguments_raw = arguments_raw;
     execution.script_snapshot_name = 'executed_script.m';
     execution.module_version = module_version;
@@ -165,6 +189,16 @@ function analysis_octave_script_main(args, framework_root)
       cd(working_directory);
     endif
 
+    if (!isempty(project))
+      for project_index=1:numel(project.files)
+        project_record=project.files(project_index);
+        [project_folder,project_name]=fileparts(project_record.path);
+        if (!strcmp(canonicalize_file_name(which(project_name)),canonicalize_file_name(fullfile(project_root,project_record.path))))
+          error('Octave source resolves outside its admitted project file or has an ambiguous filename: %s',project_record.path);
+        endif
+      endfor
+    endif
+
     if (strcmp(gxtxt_ini_get(cfg, 'debug.enabled', '0'), '1'))
       debug_on_interrupt(true);
       PS1(['GXTXT_' getenv('GXTXT_DEBUG_TOKEN') '> ']);
@@ -172,11 +206,36 @@ function analysis_octave_script_main(args, framework_root)
       breakpoint_lines=str2double(strsplit(breakpoint_text,';'));
       if (isempty(breakpoint_lines) || any(!isfinite(breakpoint_lines))), breakpoint_lines=1; endif
       addpath(fileparts(snapshot_path));
-      for debug_line=breakpoint_lines, dbstop('executed_script',num2str(debug_line)); endfor
+      if (isempty(project))
+        for debug_line=breakpoint_lines, dbstop('executed_script',num2str(debug_line)); endfor
+      else
+        debug_index=1;debug_count=0;
+        while (!isempty(gxtxt_ini_get(cfg,sprintf('debug_file.%d.path',debug_index),'')))
+          debug_file=gxtxt_ini_get(cfg,sprintf('debug_file.%d.path',debug_index),'');
+          debug_text=strtrim(gxtxt_ini_get(cfg,sprintf('debug_file.%d.lines',debug_index),''));
+          if (isempty(debug_text)),debug_index+=1;continue;endif
+          debug_lines=str2double(strsplit(debug_text,';'));
+          if (any(!isfinite(debug_lines)) || any(debug_lines<1) || any(debug_lines!=fix(debug_lines)))
+            error('Octave breakpoint lines must be finite positive integers');
+          endif
+          [debug_folder,debug_name]=fileparts(debug_file);
+          if (!strcmp(canonicalize_file_name(which(debug_name)),canonicalize_file_name(fullfile(project_root,debug_file))))
+            error('Octave breakpoint function resolves outside its admitted project file: %s',debug_file);
+          endif
+          for debug_line=debug_lines,dbstop(debug_name,num2str(debug_line));endfor
+          debug_count+=numel(debug_lines);
+          debug_index+=1;
+        endwhile
+        if (debug_count==0),[debug_folder,debug_name]=fileparts(snapshot_path);dbstop(debug_name,'1');endif
+      endif
     endif
-    callable_entrypoint = gxtxt_ini_get(cfg, 'registered_callable.entrypoint', '');
-    callable_function = execute_user_script(snapshot_path, callable_entrypoint);
-    if (!isempty(callable_entrypoint)), gxtxt_registered_callable_v1(callable_function, cfg); endif
+    if (!isempty(gxtxt_ini_get(cfg, 'provided_api.request_json', '')))
+      gxtxt_script_provided_execute(cfg, project);
+    else
+      callable_entrypoint = gxtxt_ini_get(cfg, 'registered_callable.entrypoint', '');
+      callable_function = execute_user_script(snapshot_path, callable_entrypoint);
+      if (!isempty(callable_entrypoint)), gxtxt_registered_callable_v1(callable_function, cfg); endif
+    endif
 
     cd(original_pwd);
     path(original_path);

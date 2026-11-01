@@ -228,6 +228,7 @@ proc ::GX::DatasetCurveFit::_complexImport {document workspace binding report} {
     }
     dict set report complex_binding $binding
     dict set report complex_conversion [dict get $facts complex_conversion]
+    dict set report complex_conversion_types [::GX::nativeWorkspaceTransportSubtypes [dict get $report numeric_statistics_types] complex_conversion]
     return $report
 }
 proc ::GX::DatasetCurveFit::_complexSavedNode {p} {

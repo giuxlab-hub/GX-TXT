@@ -917,23 +917,102 @@ by itself establish absolute instrument accuracy or systematic error.
 
 ## Calibration verification
 
-The verification panel is beside the four projective-calibration corner buttons;
-calibration measurements occupy the scrollable section underneath.
+The **Calibration** tab presents **Projective calibration and verification**
+as two vertically stacked, full-width sections:
 
-Select **Verify calibration...** to reveal the Expected X / Expected Y fields.
-While in verification mode, clicking the original image places a bright red
-**X** exactly at the selected pixel-center location. The marker is temporary,
-with a configurable size, color and line width in *screen pixels*, independent
-of zoom. The program displays the calculated scientific coordinates and, when
-provided, the differences from the expected values. You may enter or change
-expected values *after* selecting the image point; the residuals update
-immediately and the marker remains visible.
+- **Projective calibration (upper section)**: BL/BR/TL/TR corner selection,
+  Clear corners, geometric status and the active calibration measurement.
+- **Calibration verification (lower section)**: a compact Verify calibration
+  button and active-measurement caption; when Verify is clicked, this section
+  **expands downward inside the same scrollable Calibration tab**. There is no
+  secondary window or modal dialog. The original plot remains visible beside
+  the calibration panel, and the normal mouse wheel scrolls the expanded form.
 
-A subsequent click moves the X instead of accumulating markers. Press **Esc**,
-choose **Clear verification**, or switch to another image-editing mode to remove
-it. No temporary verification marker is saved in a Dataset or Interactive
-Document. A verification residual is not automatically a measurement
-uncertainty estimate.
+### Checking a known graph coordinate
+
+1. Confirm the four image calibration corners (BL, BR, TL, TR), axis limits,
+   units and linear/logarithmic scale, and activate the calibration
+   measurement you intend to check.
+2. Click **Verify calibration...** in the lower section. The panel expands,
+   revealing separate cards for X, Y1 and optional Y2. It may scroll into
+   view automatically on a short desktop.
+3. Click a known grid intersection or other reference pixel on the **source
+   image**. A temporary cross marks exactly that source-image pixel center.
+   The panel reports the active measurement and pixel coordinates.
+4. Enter the **physical expected value** for each scientific axis whose
+   coordinate is known, either before or after clicking. Leave any
+   unknown reference blank. The per-axis calculated values and residuals
+   update immediately as you type.
+
+Each axis card displays its **logical axis identifier, scientific label,
+physical unit, and linear/log scale**, followed by the expected physical
+value, calculated physical coordinate, physical difference and a
+scale-appropriate deviation.
+
+### Logarithmic references
+
+**Always enter the actual positive scientific value, NOT its logarithm.**
+For example, to check a frequency grid line at 1000 Hz, enter any of:
+
+- `1000`
+- `1e3`
+- `10^3`
+
+Typing `3` means **3 Hz**, never an implicit `10^3 Hz`. Decimal commas are
+accepted, for example `1,5e-3`. Do not mix decimal separators in one number.
+Logarithmic references must be positive and finite; a negative, zero or
+non-numeric input is indicated as invalid, without changing any calibration.
+
+The same convention applies independently to a logarithmic Y2 axis, whether
+its scientific label appears on the left or right of the image.
+
+### Reading the results
+
+All results begin with the **physical residual**:
+
+    Δ = calculated − expected
+
+It is expressed in the same unit as that axis. For a **linear** axis, if the
+expected value is nonzero, the relative deviation is:
+
+    Relative Δ (%) = 100 × Δ / |expected|
+
+If the expected value is zero, the relative deviation is undefined, so
+the panel shows only the physical Δ.
+
+For a **logarithmic** axis, the comparison is expressed in decades:
+
+    Δlog10 = log10(calculated / expected)
+
+The panel additionally shows the **multiplicative ratio**. For example,
+a measured frequency of 1100 Hz versus an expected 1000 Hz gives physical
+Δ = +100 Hz and Δlog10 ≈ +0.04139 decades (×1.1). A negative logarithmic
+deviation means the calculated reading lies below the reference.
+
+Minor machine-precision numerical differences may be rounded to zero in
+the display; the underlying numerical calculation remains unmodified.
+A blank expected field is explicitly *not assessed*, not an error or zero.
+
+### Logical Y axes and calibration measurements
+
+X, Y1 and Y2 are calculated from **one shared four-corner homography** and
+the same normalized image coordinates. Y1 and Y2 may have different units
+and scales, but their physical position (left or right) does not matter.
+
+The verification always uses the **active** calibration measurement, not
+merely a selected but non-activated measurement in the table. Select
+**Activate** to change which accepted calibration is evaluated. The
+comparison is diagnostic; it does not fit or adjust the four corners.
+
+### Closing and lifetime
+
+Click **Close verification**, press **Escape**, or switch away from the
+Calibration tab to collapse the lower section and remove the temporary
+marker. **Clear expected values** clears references but keeps the expanded
+panel open. The verification records are transient and never modify a
+Session, Dataset, calibration, points, quality declaration, or uncertainty
+estimate. Marker size, color and line width are configured through
+Viewer settings.
 
 ## Image Processing: non-destructive enhancement
 
@@ -1494,3 +1573,227 @@ Existing Smooth curve prior, per-path red-X Exclusion paths and unified Edit Und
 
 ### 2.0.9 selection and status correction
 The stroke-width panel always follows the currently selected curve. Changing selection updates the `Measure this curve` checkbox, Automatic/Manual selection, probe radius, measured-width status and the Calibration tab's summary without transferring a previous curve's options. The panel remains collapsed on opening a new configuration; its saved values are retained per curve. The two manual boundaries still belong only to their source-bound curve. This diagnostic remains separate from the Uncertainty declaration and cannot automatically add a nonzero pixel sigma.
+
+### 2.0.12 — Calibration tab at reduced window heights
+
+Calibration scrolls vertically when its controls exceed the available window height.
+Use the page scrollbar, or the mouse wheel above any Calibration form control, to
+reach the calibration-measurement list and its action buttons, and the Raster
+stroke width panel. The measurement list has its own independent scrollbar and
+wheel handling. Scrolling over the raster continues to zoom the image.
+When the entire form fits, the outer scrollbar is hidden. The About dialog
+now displays 2.0.12, matching the installed package descriptor.
+
+### 2.0.13 — Editing guide points and regenerating after exclusions
+
+Before generating a tracing proposal, choose **Move** and drag any orange
+guide marker to reposition it; choose **Delete** and click a guide to remove
+it. Both operations have the ordinary **Edit → Undo** and **Redo** support.
+The point's position may not reverse a declared monotonic X/Y guide order.
+Context-menu **Move point** and **Delete point** also work before Propose.
+No scientific point is created or deleted by editing transient guides.
+
+Exclusion paths, smoothing, and other trace constraints describe the current
+candidate. If these are changed after a proposal is generated, the previously
+computed candidate is marked stale. Click **Propose** to recompute, **inspect
+the new trace** and then click **Accept**. A stale candidate can never
+silently be published. Accept is also blocked while a new proposal is still
+being generated. Existing accepted scientific points are never edited by this
+invalidating/refresh process.
+
+### 2.0.14 — Smooth curve prior and scientific interpretation
+
+**Off**, **Gentle** and **Strong** are alternative optimization priors
+for tracing the original raster. They do not post-process already accepted
+scientific points. When the user changes the selection with a fully
+unaccepted proposal and at least two guides, the viewer automatically requests
+a replacement candidate. After processing, the status explicitly identifies
+the active mode, the number of proposed points and the difference from the
+previous candidate (where both candidates have corresponding point counts).
+Inspect the new path before using **Accept**. A small or zero difference
+on an already smooth or uniquely identified raster curve is normal; strength
+does not imply a mandatory or artificial path displacement.
+
+If any proposal segment has already been accepted, the viewer does not
+automatically discard its accepted-segment provenance. Review the accepted
+scientific points and consciously create a new proposal as required.
+Changing exclusions, source, or other constraints continues to invalidate
+an old candidate. Never accept a stale or in-progress proposal.
+
+### 2.0.15 — Coordinate-invariant Edit proposal and Add correction point
+
+**Edit proposal** targets guides and unaccepted proposal vertices using a
+distance of at most 6 source-image pixels, independent of the displayed zoom,
+pan, window dimensions or calibrated physical axis units. Zooming in does not
+make the hit target smaller in scientific pixel coordinates. A faraway click
+does not select an unrelated candidate vertex. To place a correction far from
+the currently proposed path, use **Add correction point** instead: for X/Y
+monotonic traces, the release/click is assigned to the guide interval using the
+calibrated X/Y coordinate; for free-form traces, select Segment # explicitly.
+Only the split interval is recalculated. The target point becomes a mandatory
+guide; unaffected intervals and accepted scientific points are unchanged.
+
+If any exclusion path, enabled state or smooth prior changes, the old candidate
+is stale. Press **Propose** and inspect the fully regenerated candidate BEFORE
+Edit proposal / Add correction point / Accept. Mixed-constraint local repairs
+are not permitted. All edits remain undoable using the existing Edit history.
+
+### 2.0.16 — Configuration Save, Duplicate and Rename
+
+Zoom and pan are view-only changes and do not trigger a Save/Discard prompt.
+Explicit **Save configuration** still persists the current image viewport.
+Before duplicating a configuration with pending edits, **Yes** saves the draft
+and duplicates the saved result; **No** duplicates the last persisted state
+without copying pending changes; **Cancel** performs no duplication. Native
+Workspace names and Curve Digitalizer configuration JSON names are synchronized
+when renaming; failure to save after a native rename attempts to restore its
+original native name and reports unsuccessful restoration explicitly.
+Notes and other editor FocusOut saves continue to work when leaving the
+Digitalizer window, except when an internal modal or Workspace review has
+taken control of the save decision.
+
+### 2.0.17 — Foreground-aware assisted tracing and continuous guide references
+
+**Propose** now estimates the target stroke appearance from foreground raster
+pixels rather than taking a neighborhood median that could identify a white
+background beside a one-pixel-colored curve. With at least three guides, the
+candidate search is centered on a continuously interpolated Hermite/PCHIP
+reference passing through the guides, instead of separate straight chords.
+The same reference treatment is used after local correction and guide repair.
+
+This improves the documented sample family, but **does not guarantee**
+that every scanned source is unambiguous. Choose original source pixels,
+place accurate guides, select a suitable Corridor and inspect every generated
+proposal before using **Accept**. Off, Gentle and Strong can yield identical
+geometry when the raster already determines a unique route. More points in a
+candidate do not create additional independent experimental observations.
+
+### 2.0.18 — Step (px) for assisted tracing
+
+The supported **Step (px)** range is now **0.5 to 20** in ORIGINAL source
+image pixels. The default remains **2.0**. Step controls how densely
+the proposal search evaluates the source image. A larger Step reduces
+the candidate count and can smooth over raster artifacts and accelerate
+search, but can also skip narrow peaks, sharp changes or small features.
+It is not a post-processing smoothness setting.
+
+Use the **Strong** prior if it fits the source, select Step based on
+the resolution and curvature of the source, then click **Propose** and
+inspect the displayed candidate before Accept. Editing Step alone does
+not silently change an already generated proposal. The proposal status
+reports the Step used for the generated path.
+
+**Output points (Accept)** controls the final numerical point count:
+a candidate with 53 points may be resampled to 100 output points,
+but these extra values are interpolated on the reviewed candidate,
+not separately rediscovered in the raster. Inspect the candidate
+especially carefully with large Steps before publishing.
+
+### 2.0.19 — Exclusion path persistence across curves
+
+**Exclusion paths** are stored as part of the active Curve Digitalizer
+configuration, separately for each Curve ID and bound to the original raster
+source. Saving and reopening the configuration preserves red-X nodes,
+path identity, enabled flags and the search width. Selecting a different
+curve updates the list to show only that curve's paths. Paths created on
+another curve have not been deleted; switch back to view them.
+The transient proposed route and the operator's temporary guide points
+remain separate from this persistent exclusion-path configuration.
+
+### 2.0.20 — Calibration classification during publication
+
+A full-image calibration establishes where the image corners are, but the
+declared scientific axes can still be Time (s) and Voltage (V). The
+calibration manifest identifies the scientific transformation as affine,
+not pixel. During Publish the viewer now transmits that existing authoritative
+classification unchanged, avoiding inconsistent preflight declarations.
+The user does not need to change axis units, remove existing measurements,
+or delete any previously accepted points. Combined datasets retain a distinct
+curve and calibration key for every accepted row.
+
+
+## 2.0.24 — Grouping published Y-axis and calibration outputs
+
+In the Publish tab, select the accepted calibrations and the Separate or
+Combined layout as before. The optional checkbox **Group published Datasets**
+defaults to unchecked. It is independent of curve-family classification
+and Y-axis selection.
+
+- For one output (single axis, or shared-unit Y1/Y2 with Combined layout)
+  no Dataset Group is created, even with the checkbox selected.
+- For distinct physical Y units, the producer publishes a separate Dataset
+  per used Y axis. With multiple calibrations in Separate mode, each accepted
+  calibration may generate further canonical outputs.
+- With Group selected, the authenticated producer requests one Group
+  containing all the completed outputs. Member roles distinguish logical
+  Y1/Y2; a Group does not merge physical units or duplicate numeric data.
+- CORE requires the registered producer's opaque capability, same authorized
+  Namespace and accurate current Dataset revisions. If access is not granted
+  or more than 64 outputs are planned, the request is rejected before publishing
+  a grouped batch.
+- Dataset creation precedes a subsequent Group Review/Create operation.
+  If Group creation fails, already-accepted canonical datasets remain
+  published and the separate grouping error is reported. This mode is not
+  an atomic batch transaction across the specialized Curve Digitalizer writer.
+
+The public CURVE_DIGITIZER_DATASET_SCHEMA_API_v1 exposes describe, axes,
+curves and datasetGroup for downstream Viewers. These methods interpret
+versioned producer metadata so readers need not track its private format.
+A schema-2 Dataset adds a per-row y_axis_id text variable; published X/Y
+values always use the physical unit declared in their canonical Variable
+Schema. For Y1/Y2 with different physical units, separate outputs are required.
+
+This feature is under independent development: end-to-end creation in a
+disposable real Session and the shared-covariance uncertainty extension
+remain acceptance work, not promised functionality of an approved release.
+
+
+## 2.0.25 — Review physical uncertainty with two Y axes
+
+The Uncertainty dialog is opened from the existing **Publish** tab. For
+ordinary single-Y graphs it behaves as before: eight corner-coordinate
+uncertainties, two X endpoint values and two Y endpoint values (12 inputs).
+For dual-Y graphs it explicitly requests **14** shared calibration standard
+uncertainties, in this exact order:
+
+    BL x, BL y, BR x, BR y, TL x, TL y, TR x, TR y,
+    X minimum, X maximum, Y1 minimum, Y1 maximum,
+    Y2 minimum, Y2 maximum.
+
+Corner coordinates are measured in original source pixels. Axis endpoints
+are in the scientific unit of their own axis. Use an actual justified
+standard uncertainty for each input and document the evidence/rationale.
+Zero is permitted where an input is explicitly held fixed; nothing is
+guessed from the raster size or curve width. If using a rectangular pixel
+localization width, it is converted to standard uncertainty by dividing
+by sqrt(12); for a normal standard uncertainty enter the sigma directly.
+
+Alternatively choose **physical_override** and enter X, Y1, Y2 physical
+standard uncertainties (three values), with independent numerical
+assumptions and an explicit rationale. Single-axis configurations retain
+the existing X/Y pair. An override replaces the pixel/calibration model; it
+is not an estimate of that underlying correlation.
+
+The single four-point homography is always shared. In particular, Y1 and
+Y2 can have different log/linear scales while their pixel/corner errors
+remain correlated. The published canonical Dataset retains each curve's
+text y_axis_id, sigma_x, sigma_y and within-row covariance_xy, plus the
+reviewed low-rank calibration factors. Fitting or combining these points
+requires interpreting the full covariance; independent marginal sigmas
+are not sufficient when the shared factor is nonzero.
+
+For several selected calibrations, use **Separate** publication if reviewed
+uncertainty is enabled. Combined multi-realization uncertainty is not
+supported, because the general cross-calibration model has not been
+scientifically reviewed. Outputs with different physical Y units are
+always separate and may optionally be linked using a Dataset Group.
+
+For a dual-axis graph the Numeric public backend reviews **14 shared
+calibration inputs** without a change to CORE. Publication refuses stale
+source/curve fingerprint, missing Numeric functionality, invalid/unknown
+axis bindings, unreviewed assumptions or incompatible units. The
+downstream uncertainty public API reports the retained CORE interpretation,
+not a local GUI-side approximation.
+
+The verification fields in the Calibration tab remain distinct: they
+compare expected versus calculated values and do not declare uncertainty.

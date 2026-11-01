@@ -336,16 +336,19 @@ proc ::GX::manifestString_v048 {} {
 
     variable axisOverride
     set axisKeys {}
-    foreach k [array names axisOverride "*,enabled"] {
-        set gk [string range $k 0 end-8]
+    # Per-plot layout is an independent override owner; using its inspector
+    # does not implicitly enable the Axes override.
+    foreach k [concat [array names axisOverride "*,enabled"] [array names axisOverride "*,layout_auto"]] {
+        set gk [string range $k 0 [expr {[string last , $k]-1}]]
         if {[lsearch -exact $axisKeys $gk] < 0} { lappend axisKeys $gk }
     }
     append out "\n\[plot.axis.overrides\]\n"
     appendKV out keys [join [lsort $axisKeys] ","]
     foreach gk [lsort $axisKeys] {
         append out "\n\[plot.axis.$gk\]\n"
-        foreach field {enabled time_unit x_unit y_unit y2_unit align_ylabels ylabel_x x_min x_max x_step x_format y_min y_max y_step y_format y2_min y2_max y2_step y2_format xgrid ygrid ygrid_source grid_color layout_auto layout_margin_left layout_margin_right layout_margin_top layout_margin_bottom layout_gap layout_ylabel_dist} {
+        foreach field {enabled time_unit x_unit y_unit y2_unit align_ylabels ylabel_x x_min x_max x_step x_format y_min y_max y_step y_format y2_min y2_max y2_step y2_format xgrid ygrid ygrid_source grid_color layout_auto layout_ylabel_allow_negative layout_margin_left layout_margin_right layout_margin_top layout_margin_bottom layout_gap layout_ylabel_dist} {
             set v [expr {[info exists axisOverride($gk,$field)] ? $axisOverride($gk,$field) : ""}]
+            if {$v eq {} && $field in {enabled layout_ylabel_allow_negative}} {set v 0}
             appendKV out $field $v
         }
         set panels [expr {[info exists axisOverride($gk,panels)] ? $axisOverride($gk,panels) : {}}]

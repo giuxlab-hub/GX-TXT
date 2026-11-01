@@ -386,6 +386,9 @@ proc ::GX::sessionGeneratorInstallAcceptedLibrary {} {
 proc ::GX::sessionGeneratorRegistryLoad {} {
     variable sessionGeneratorRegistryDefaultsInitialized
     variable sessionGeneratorRegistryAcceptedInitialized
+    # Only the first default installation adds optional maintained collections.
+    # Existing registries retain their enabled/removed choices and library roots.
+    set freshDefaults [expr {![file isfile [sessionGeneratorRegistryPath]]}]
     sessionGeneratorRegistryLoadRaw
     if {!$sessionGeneratorRegistryDefaultsInitialized} {
         sessionGeneratorInstallDefaultLibrary
@@ -393,6 +396,13 @@ proc ::GX::sessionGeneratorRegistryLoad {} {
     }
     if {!$sessionGeneratorRegistryAcceptedInitialized} {
         sessionGeneratorInstallAcceptedLibrary
+        sessionGeneratorRegistryLoadRaw
+    }
+    if {$freshDefaults} {
+        foreach directory {gxtxt.workbench_validation gxtxt.worksheet_examples} {
+            sessionGeneratorInstallBundledLibrary $directory
+        }
+        sessionGeneratorRegistryWrite
         sessionGeneratorRegistryLoadRaw
     }
     return [sessionGeneratorLibraryIds]
@@ -633,6 +643,52 @@ proc ::GX::sessionGeneratorVerifySession {session} {
     return 1
 }
 
+# CORE creation admission only. The reservation owner remains authoritative;
+# the name check avoids an extra process on ordinary published notifications.
+proc ::GX::_sessionGeneratorStagingActive {session} {
+    if {![string match {.gxtxt-create-*} [file tail [file dirname [file normalize $session]]]]} {return 0}
+    if {[catch {set record [_sessionCreationProbe $session]}]} {return 1}
+    return [dict get $record pending]
+}
+proc ::GX::_sessionGeneratorStageJobs {session} {
+    # The ordinary list excludes CORE services and has a presentation row cap.
+    # Its existing complete lifecycle projection includes hidden/cache Jobs.
+    set snapshot [scriptJobViewList [dict create scope $session filter Active]]
+    if {![dict exists $snapshot lifecycle]} {error {Job lifecycle projection is unavailable}}
+    set active {}
+    foreach row [dict get $snapshot lifecycle] {
+        if {[dict get $row state] in {QUEUED PREPARING RUNNING FINALIZING} &&
+            [file normalize [dict get $row session]] eq $session} {lappend active [dict get $row id]}
+    }
+    return [lsort -unique $active]
+}
+proc ::GX::_sessionGeneratorQuiesce {record {timeoutMs 120000}} {
+    if {![string is integer -strict $timeoutMs] || $timeoutMs<1 || $timeoutMs>300000} {error {Invalid generation drain bound}}
+    set session [file normalize [dict get $record stage]]
+    set started [clock milliseconds]
+    try {
+        while {1} {
+            set current [_sessionCreationInspect $record]
+            if {[dict get $current state] ne {claimed} || ![dict get $current owner_alive]} {error {Generator staging ownership changed before promotion}}
+            set jobs [_sessionGeneratorStageJobs $session]
+            if {![llength $jobs]} break
+            if {[clock milliseconds]-$started >= $timeoutMs} {error {Staging Jobs are still active; promotion was not attempted}}
+            # Do not enter a nested GUI loop or cancel a user Job. The existing
+            # independent supervisor owns completion/descendants/recovery.
+            after 100
+        }
+        datasetPublicationRecover $session
+        nativeWorkspacePortableDrain $session
+        set current [_sessionCreationInspect $record]
+        if {[dict get $current state] ne {claimed} || ![dict get $current owner_alive] ||
+            [llength [_sessionGeneratorStageJobs $session]]} {error {Staging lifetime changed during finalization}}
+    } on error {message options} {
+        # The caller must retain the reservation if completion is uncertain;
+        # deleting/renaming a Session under a live writer is never recovery.
+        return -code error -errorcode {GXTXT GENERATOR QUIESCE} $message
+    }
+}
+
 proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionName {copyDocumentation 0}} {
     variable cfg
     variable currentSession
@@ -672,6 +728,7 @@ proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionNa
         if {![file isfile $manifest]} {writeManifest $manifest}
         sessionGeneratorWriteProvenance $staging $libraryInfo $generatorInfo
         sessionGeneratorVerifySession $staging
+        _sessionGeneratorQuiesce $record
         set record [_sessionCreationPromote $record]
         set target [dict get $record target]
         # No global Project lock spans the producer or public callbacks. Reload
@@ -686,6 +743,11 @@ proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionNa
         _sessionCreationOpen $record
         return $target
     } on error {message options} {
+        if {[dict exists $options -errorcode] && [dict get $options -errorcode] eq {GXTXT GENERATOR QUIESCE}} {
+            append message "\nUnpromoted Session retained for review: [dict get $record stage]"
+            if {[catch {_sessionCreationRestore $saved $root} issue]} {append message "\nPrevious Session restoration failed: $issue"}
+            return -options $options $message
+        }
         _sessionCreationFailure $message $options $record $saved $root
     }
 }

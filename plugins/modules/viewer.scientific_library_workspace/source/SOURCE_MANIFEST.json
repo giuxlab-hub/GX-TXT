@@ -1,0 +1,11 @@
+{
+  "source_manifest": [
+    {
+      "bytes": 1988,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "e365580bf46ed4c4d4e99df567066bdb9b1b119868afb64178b7e57c7c13646a"
+    }
+  ],
+  "source_tree_sha256": "98989a622b1e68905dbc4ffe52dcf8bdaf5efffc8e92e1158d1da5d19a7f517c"
+}

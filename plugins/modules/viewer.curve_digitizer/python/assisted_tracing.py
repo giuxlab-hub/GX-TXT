@@ -14,9 +14,11 @@ from dataclasses import dataclass, field
 import math
 import numpy as np
 from PIL import Image
-from assisted_constraints import exclusion_penalty, second_order_indices
+from assisted_constraints import exclusion_penalty, second_order_indices, _slopes
 
 Point = tuple[float, float]
+ASSIST_STEP_MIN = 0.5
+ASSIST_STEP_MAX = 20.0
 
 @dataclass
 class TraceProposal:
@@ -31,6 +33,8 @@ class TraceProposal:
 
 
 def samples_from_guides(guides, *, step=2.0):
+    if not math.isfinite(step) or not ASSIST_STEP_MIN <= step <= ASSIST_STEP_MAX:
+        raise ValueError(f"Step must be {ASSIST_STEP_MIN:g}..{ASSIST_STEP_MAX:g} original-image pixels.")
     if len(guides) < 2:
         raise ValueError('At least two guide points are required.')
     result = []
@@ -44,6 +48,44 @@ def samples_from_guides(guides, *, step=2.0):
             result.append((float(a[0]*(1-t)+b[0]*t),float(a[1]*(1-t)+b[1]*t)))
     result.append(tuple(map(float,guides[-1])))
     return result
+
+
+def guide_curve_reference(guides, *, step=2.0):
+    """C1 shape-preserving raster guide reference, with exact fixed knots.
+
+    The former reference was a polyline: every correction split the route
+    into independent chords and could leave visible trapezoids. Use chord
+    length and PCHIP/Hermite tangents shared across all guide intervals.
+    The number and ordering of raster samples are unchanged, so optional
+    CORE Numeric reference/guide transport retains its existing contract.
+    No scientific data or accepted points are modified.
+    """
+    if len(guides) < 2:
+        raise ValueError("At least two guide points are required.")
+    if not math.isfinite(step) or not ASSIST_STEP_MIN <= step <= ASSIST_STEP_MAX:
+        raise ValueError(f"Step must be {ASSIST_STEP_MIN:g}..{ASSIST_STEP_MAX:g} original-image pixels.")
+    if len(guides) == 2:
+        return samples_from_guides(guides, step=step)
+    xy = np.asarray(guides, dtype=np.float64)
+    lengths = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+    if np.any(lengths < .5) or not np.isfinite(lengths).all():
+        raise ValueError("Guide points must be finite and at least 0.5 pixel apart.")
+    knots = np.concatenate(([0.0], np.cumsum(lengths)))
+    slopes = np.stack((_slopes(knots, xy[:, 0]), _slopes(knots, xy[:, 1])), axis=-1)
+    output = []
+    for i, length in enumerate(lengths):
+        n = max(1, int(math.ceil(length / step)))
+        u = np.arange(n, dtype=np.float64) / n
+        a, b = xy[i], xy[i + 1]
+        tangent_a, tangent_b = slopes[i], slopes[i + 1]
+        h00 = (2*u**3 - 3*u**2 + 1)[:, None]
+        h10 = (u**3 - 2*u**2 + u)[:, None]
+        h01 = (-2*u**3 + 3*u**2)[:, None]
+        h11 = (u**3-u**2)[:, None]
+        points = h00*a + h10*length*tangent_a + h01*b + h11*length*tangent_b
+        output.extend((float(x), float(y)) for x,y in points)
+    output.append((float(xy[-1,0]), float(xy[-1,1])))
+    return output
 
 
 def _feature_maps(image):
@@ -86,6 +128,37 @@ def _normal_contrast(gray,px,py,normals):
     return np.clip(np.maximum((side1+side2)*.5-center,center-(side1+side2)*.5)*2.0,0,1)
 
 
+def _guide_ink_anchor(gray, rgb, x, y):
+    """Estimate foreground ink near an operator guide in ORIGINAL image pixels.
+
+    A 3x3 RGB median usually returns white for a one-pixel stroke. Select
+    the most distinctive local colour against a robust neighbourhood
+    background, keeping a correctly clicked ink centre when one exists.
+    This is a search likelihood, not an automatic relocation of the guide.
+    """
+    h, w = gray.shape
+    cx = min(w - 1, max(0, int(round(x))))
+    cy = min(h - 1, max(0, int(round(y))))
+    x0, x1 = max(0, cx - 3), min(w, cx + 4)
+    y0, y1 = max(0, cy - 3), min(h, cy + 4)
+    patch = rgb[y0:y1, x0:x1]
+    background = np.median(patch.reshape(-1, 3), axis=0)
+    deviation = np.sqrt(np.mean((patch - background) ** 2, axis=2))
+    # Avoid switching a correctly clicked coloured stroke to a farther
+    # competing line; favor proximity when two candidates are similar.
+    ys, xs = np.mgrid[y0:y1, x0:x1]
+    distance = np.hypot(xs - x, ys - y)
+    score = deviation - .018 * distance
+    if float(np.max(deviation)) < .075:
+        px, py = cx, cy
+    elif float(deviation[cy - y0, cx - x0]) >= max(.10, .70 * float(np.max(deviation))):
+        px, py = cx, cy
+    else:
+        k = np.unravel_index(np.argmax(score), score.shape)
+        px, py = int(xs[k]), int(ys[k])
+    return float(gray[py, px]), np.asarray(rgb[py, px], dtype=float)
+
+
 def _segment(image_features, a:Point, b:Point, reference, radius:int, match_strength:float,
              smoothness='Off', avoid_cost=None):
     """Bounded dynamic programming with colour, oriented line and grid costs.
@@ -112,10 +185,9 @@ def _segment(image_features, a:Point, b:Point, reference, radius:int, match_stre
     base=gray[py,px]
     targets=[];rgb_targets=[]
     for x,y in (a,b):
-        ix=int(round(x));iy=int(round(y))
-        x0=max(0,ix-1);x1=min(w,ix+2);y0=max(0,iy-1);y1=min(h,iy+2)
-        targets.append(float(np.median(gray[y0:y1,x0:x1])))
-        rgb_targets.append(np.median(rgb[y0:y1,x0:x1].reshape(-1,3),axis=0))
+        target_gray, target_rgb = _guide_ink_anchor(gray, rgb, x, y)
+        targets.append(target_gray)
+        rgb_targets.append(target_rgb)
     t=np.linspace(0,1,n)[:,None]
     expected=(1-t)*targets[0]+t*targets[1]
     color_expected=((1-t[:,:,None])*rgb_targets[0]+t[:,:,None]*rgb_targets[1])
@@ -176,13 +248,17 @@ def compose_segments(segments):
 def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=None,
             smoothness='Off', exclusions=(), exclusion_width=6):
     if not 2<=len(guides)<=500:raise ValueError('Provide between 2 and 500 guide points.')
-    if not 1<=radius<=40 or not .5<=step<=10:raise ValueError('Invalid tracing radius/step.')
+    if not 1 <= radius <= 40:
+        raise ValueError("Corridor must be between 1 and 40 original-image pixels.")
+    if not math.isfinite(step) or not ASSIST_STEP_MIN <= step <= ASSIST_STEP_MAX:
+        raise ValueError(f"Step must be {ASSIST_STEP_MIN:g}..{ASSIST_STEP_MAX:g} original-image pixels.")
     points=[(float(x),float(y)) for x,y in guides]
     w,h=image.size
     for x,y in points:
         if not(math.isfinite(x) and math.isfinite(y)) or not(0<=x<w and 0<=y<h):
             raise ValueError('Guide point outside image bounds.')
     linear=samples_from_guides(points,step=step)
+    curved=guide_curve_reference(points,step=step)
     fitted=None
     if reference is not None:
         candidate=[tuple(map(float,p)) for p in reference]
@@ -194,7 +270,7 @@ def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=N
     pos=0
     for i,(a,b) in enumerate(zip(points,points[1:])):
         count=max(1,int(math.ceil(math.dist(a,b)/step)))
-        segment_ref=linear[pos:pos+count+1]
+        segment_ref=curved[pos:pos+count+1]
         if fitted:
             curve_ref=fitted[pos:pos+count+1]
             # Let the fit represent curved segments; only reject pathological
@@ -221,7 +297,10 @@ def repair(proposal, image, guides, changed_segment, *, radius=8,step=2.0,
     old=proposal.segments
     if len(old)!=len(guides)-1:raise ValueError('Proposal/guide topology mismatch.')
     a,b=guides[changed_segment:changed_segment+2]
-    ref=samples_from_guides([a,b],step=step)
+    first=sum(max(1, int(math.ceil(math.dist(u, v)/step)))
+              for u,v in zip(guides[:changed_segment],guides[1:changed_segment+1]))
+    count=max(1,int(math.ceil(math.dist(a,b)/step)))
+    ref=guide_curve_reference(guides,step=step)[first:first+count+1]
     path,cost,ambiguous=_segment(_feature_maps(image),a,b,ref,radius,1.0,
                                   smoothness=smoothness,
                                   avoid_cost=exclusion_penalty(image.size,exclusions,exclusion_width))
@@ -251,8 +330,14 @@ def insert_correction(proposal,image,guides,segment_index, point_index,point,*,r
     feats=_feature_maps(image)
     avoid=exclusion_penalty(image.size,exclusions,exclusion_width)
     paths=[];costs=[];amb=[]
+    full_ref=guide_curve_reference(guides,step=step)
+    cursor=sum(max(1,int(math.ceil(math.dist(u,v)/step)))
+               for u,v in zip(guides[:segment_index],guides[1:segment_index+1]))
     for s,(u,v) in enumerate([(a,b),(b,c)]):
-        path,cost,flag=_segment(feats,u,v,samples_from_guides([u,v],step=step),radius,1.,
+        samples=max(1,int(math.ceil(math.dist(u,v)/step)))
+        reference=full_ref[cursor:cursor+samples+1]
+        cursor+=samples
+        path,cost,flag=_segment(feats,u,v,reference,radius,1.,
                                 smoothness=smoothness,avoid_cost=avoid)
         paths.append(path);costs.append(cost)
         if flag:amb.append(segment_index+s)
@@ -276,13 +361,20 @@ def remove_guide(proposal,image,guides,guide_index,*,radius=8,step=2.0,
     if len(proposal.segments)!=len(guides)-1:
         raise ValueError('Proposal and guide count do not agree.')
     new_guides=guides[:guide_index]+guides[guide_index+1:]
-    merged=propose(image,[guides[guide_index-1],guides[guide_index+1]],radius=radius,step=step,
-                   smoothness=smoothness,exclusions=exclusions,exclusion_width=exclusion_width)
-    segs=proposal.segments[:guide_index-1]+merged.segments+proposal.segments[guide_index+1:]
-    costs=proposal.segment_costs[:guide_index-1]+merged.segment_costs+proposal.segment_costs[guide_index+1:]
+    full_ref=guide_curve_reference(new_guides,step=step)
+    first=sum(max(1,int(math.ceil(math.dist(u,v)/step)))
+              for u,v in zip(new_guides[:guide_index-1],new_guides[1:guide_index]))
+    u,v=new_guides[guide_index-1:guide_index+1]
+    samples=max(1,int(math.ceil(math.dist(u,v)/step)))
+    ref=full_ref[first:first+samples+1]
+    path,cost,flag=_segment(_feature_maps(image),u,v,ref,radius,1.,
+                            smoothness=smoothness,
+                            avoid_cost=exclusion_penalty(image.size,exclusions,exclusion_width))
+    segs=proposal.segments[:guide_index-1]+[path]+proposal.segments[guide_index+1:]
+    costs=proposal.segment_costs[:guide_index-1]+[cost]+proposal.segment_costs[guide_index+1:]
     ambiguous=[i if i<guide_index-1 else i-1 for i in proposal.ambiguous_segments
                if i not in (guide_index-1,guide_index)]
-    if merged.ambiguous_segments:ambiguous.append(guide_index-1)
+    if flag:ambiguous.append(guide_index-1)
     valid_costs=[v for v in costs if math.isfinite(v)]
     result=TraceProposal(compose_segments(segs),len(segs),'local_guide_removal',
                          float(np.mean(valid_costs)) if valid_costs else float('nan'),

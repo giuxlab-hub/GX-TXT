@@ -11,17 +11,19 @@ def records(*rows):
     return '\n'.join('\t'.join([key]+[b64e(str(x)) for x in values]) for key,values in rows)
 class RPC:
     def attach(self,root):pass
+    def begin(self,cmd,*args):return 'test_pending'
+    def poll_response(self,request):return None
     def call(self,cmd,*args):
         if cmd=='CONFIG_READ':return records(*(('SETTING',[key,v,'user']) for key,v in CORE_PREFS.items()))
         if cmd=='CONFIG_COMMIT':return records(*(('SETTING',[key,v,'session']) for key,v in CORE_PREFS.items()))
-        if cmd=='DOC_UPDATE':return args[0]+'\t'+'a'*64
+        if cmd=='DOC_UPDATE':return args[0]+'\t'+'a'*64+'\t'+'generation'+'\t'+'revision2'
         if cmd=='IMAGE_TOOL':return ''
         raise AssertionError((cmd,args))
 root=tk.Tk();root.geometry('1200x800')
 app=CurveDigitizerApp(root,RPC(),bootstrap_payload=records(('SESSION',['session'])))
 app.config=app.new_configuration('Assisted regression')
 app.config['source']={'dataset_id':'example','sha256':'a'*64,'width':220,'height':120}
-app.current_doc_id='test_doc';app.document_sha['test_doc']='a'*64
+app.current_doc_id='test_doc';app.document_sha['test_doc']='a'*64;app.document_receipts['test_doc']=('generation','revision1')
 img=Image.new('RGB',(220,120),'white');ImageDraw.Draw(img).line([(6,60),(70,30),(110,70),(200,45)],fill='black',width=3)
 app.set_image(img)
 app.notebook.select(app.curves_tab)

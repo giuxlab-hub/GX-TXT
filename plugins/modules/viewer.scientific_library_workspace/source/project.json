@@ -2,7 +2,7 @@
   "schema": "gxtxt.viewer_development_project.v1",
   "language": "cpp",
   "module_id": "viewer.scientific_library_workspace",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "profile": "document_view_v1",
   "source": "handlers.cpp",
   "design": "design.gxtxt-viewer",
@@ -22,7 +22,11 @@
         "removeLibrary",
         "registerLibrary",
         "unregisterLibrary",
-        "invokeLibraryAction"
+        "invokeLibraryAction",
+        "listLibraryTypes",
+        "libraryEntriesPage",
+        "searchLibraryEntries",
+        "getLibraryEntryInfo"
       ]
     },
     {
@@ -36,8 +40,8 @@
   "provenance": {
     "template": "restricted_cpp_viewer_v1",
     "scientific_source": null,
-    "purpose": "Step2 scientific library registry consultation; original CORE and provider ownership",
-    "development_scope": "No normalized scientific search/read/mutation/credentials or Steps3-7 implementation"
+    "purpose": "Scientific Libraries consultation and authorized management through the public CORE owner",
+    "development_scope": "One existing Scientific Libraries Viewer: original catalog/admin plus Builder-declared embedded records, sources and manual pages through CORE"
   },
   "tests": {
     "events": [
@@ -67,18 +71,18 @@
         "value": 0
       },
       {
-        "kind": 2,
-        "component": 31,
-        "value": 2
-      },
-      {
         "kind": 1,
-        "component": 33,
+        "component": 49,
         "value": 0
       },
       {
         "kind": 1,
-        "component": 27,
+        "component": 50,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 51,
         "value": 0
       }
     ],

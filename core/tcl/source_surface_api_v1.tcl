@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # One source view/edit adapter. Tk owns Unicode input and Undo; C++ owns lexing.
 namespace eval ::GX::SourceSurface {variable state;variable serial 0;variable pending {};variable configurationSubscription {};variable categories {comment string escape keyword definition builtin number constant bridge decorator tag attribute identifier}}
-proc ::GX::sourceSurfaceApiInfo {} {return [dict create api_id SOURCE_SURFACE_API_v1 api_version 1 modes {read_only editable} native_lexer gxtxt.native_source.v1 gui_adapter TkText operations {create set get ready scan configure themes palette fold breakpoints location function_at replace refresh find find_inspect find_replace} optional_controls {find_bar} language_families {javascript c python octave fortran xml html perl tcl tk markdown tex} source_mutation styling_never]}
+proc ::GX::sourceSurfaceApiInfo {} {return [dict create api_id SOURCE_SURFACE_API_v1 api_version 1 modes {read_only editable} native_lexer gxtxt.native_source.v1 gui_adapter TkText operations {create set get ready scan configure themes palette fold breakpoints location function_at replace refresh find find_inspect find_replace find_show status_inspect} optional_controls {find_bar find_bar_visible} language_families {javascript c python octave fortran xml html perl tcl tk markdown tex} source_mutation styling_never]}
 proc ::GX::sourceSurfaceConfigurationRegister {} {
     configurationRegister source.theme [dict create group Appearance label {Source color theme} type choice values {Automatic {Readable Light} {Rich Dark} {High Contrast Light} {High Contrast Dark} Custom} default {Readable Light} scope user]
     configurationRegister source.schemes [dict create group Appearance label {Saved source color schemes} type string default {} scope user]
@@ -31,8 +31,9 @@ proc ::GX::sourceSurfacePalette {{theme {}}} {
 proc ::GX::sourceSurfaceScan {language source} {documentNativeEnsure;return [::GX::NativeDocument::scan $language $source]}
 proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     variable ::GX::SourceSurface::state
-    set o [dict merge {mode read_only language python change_command {} theme {} notice {} find_bar 0} $options]
+    set o [dict merge {mode read_only language python change_command {} theme {} notice {} find_bar 0 find_bar_visible 1} $options]
     if {[dict get $o mode] ni {read_only editable}} {error {Source mode must be read_only or editable}}
+    foreach key {find_bar find_bar_visible} {if {![string is boolean -strict [dict get $o $key]]} {error {Find control visibility requires a boolean}}}
     ttk::frame $parent
     text $parent.text -undo [expr {[dict get $o mode] eq {editable}}] -autoseparators 1 -maxundo 1000 -wrap none -font TkFixedFont -tabs {32} -padx 6 -pady 4 -exportselection 0
     canvas $parent.lines -width 64 -highlightthickness 0 -takefocus 0
@@ -42,7 +43,12 @@ proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     grid $parent.lines -row 0 -column 0 -sticky ns;grid $parent.text -row 0 -column 1 -sticky nsew
     grid $parent.v -row 0 -column 2 -sticky ns;grid $parent.h -row 1 -column 1 -sticky ew
     set state($parent,status) {}
-    ttk::label $parent.status -textvariable ::GX::SourceSurface::state($parent,status) -wraplength 640
+    set state($parent,status_display) {}
+    ttk::label $parent.status -textvariable ::GX::SourceSurface::state($parent,status_display) -width 1 -wraplength 0 -anchor w
+    trace add variable ::GX::SourceSurface::state($parent,status) write [list ::GX::_sourceSurfaceStatusLayout $parent]
+    bind $parent.status <Configure> [list ::GX::_sourceSurfaceStatusLayout $parent]
+    foreach sequence {<Button-1> <Return> <KP_Enter> <space>} {bind $parent.status $sequence "[list ::GX::sourceSurfaceStatusInspect $parent];break"}
+    native2DViewportTooltip $parent.status {Source status. Click or press Enter to inspect and copy the complete message.}
     grid $parent.status -row 2 -column 0 -columnspan 3 -sticky ew
     grid rowconfigure $parent 0 -weight 1;grid columnconfigure $parent 1 -weight 1
     set state($parent,options) $o;set state($parent,revision) 0;set state($parent,timer) {};set state($parent,request) {};set state($parent,model) {tokens {} folds {}};set state($parent,modelReady) 0;set state($parent,modelSource) {};set state($parent,folded) {};set state($parent,breakpoints) {};set state($parent,disabled) {};set state($parent,hoverTimer) {};set state($parent,line) 0
@@ -54,16 +60,24 @@ proc ::GX::sourceSurfaceCreate {parent {options {}}} {
         ttk::entry $parent.find.query -textvariable ::GX::SourceSurface::state($parent,find) -width 24
         ttk::button $parent.find.previous -text Previous -command [list ::GX::sourceSurfaceFindCurrent $parent backward]
         ttk::button $parent.find.next -text Next -command [list ::GX::sourceSurfaceFindCurrent $parent forward]
-        pack $parent.find.label $parent.find.query $parent.find.previous $parent.find.next -side left -padx 3 -pady 3
+        set searchChildren {query previous next}
+        if {![dict get $o find_bar_visible]} {
+            ttk::button $parent.find.close -text {Close search} -command [list ::GX::sourceSurfaceFindShow $parent.text hidden]
+            lappend searchChildren close
+        }
+        foreach child $searchChildren {bind $parent.find.$child <Escape> "[list ::GX::sourceSurfaceFindShow $parent.text hidden]; break"}
+
         ttk::label $parent.find.result -textvariable ::GX::SourceSurface::state($parent,find_status) -wraplength 180
-        pack $parent.find.result -side left -fill x -expand 1 -padx 5
+        bind $parent.find <Configure> [list ::GX::_sourceSurfaceFindLayout $parent]
+        after idle [list ::GX::_sourceSurfaceFindLayout $parent]
         grid configure $parent.lines $parent.text $parent.v -row 1
         grid configure $parent.h -row 2
         grid configure $parent.status -row 3
         grid $parent.find -row 0 -column 0 -columnspan 3 -sticky ew
         grid rowconfigure $parent 0 -weight 0;grid rowconfigure $parent 1 -weight 1
         bind $parent.find.query <Return> [list ::GX::sourceSurfaceFindCurrent $parent forward]
-        bind $parent.text <Control-f> "[list focus $parent.find.query]; break"
+        bind $parent.text <Control-f> "[list ::GX::sourceSurfaceFindShow $parent.text find]; break"
+        bind $parent.text <Escape> [format {if {[::GX::_sourceSurfaceFindDismiss %s]} {break}} [list $parent.text]]
         bind $parent.text <F3> [list ::GX::sourceSurfaceFindCurrent $parent forward]
         bind $parent.text <Shift-F3> [list ::GX::sourceSurfaceFindCurrent $parent backward]
     }
@@ -78,14 +92,88 @@ proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     bind $parent <Destroy> [list ::GX::_sourceSurfaceDestroy $parent %W]
     sourceSurfaceConfigure $parent $o
     if {[dict get $o mode] eq {read_only}} {$parent.text configure -state disabled}
+    if {[dict get $o find_bar] && ![dict get $o find_bar_visible]} {grid remove $parent.find}
     uiTextEditingAttach [winfo toplevel $parent.text] [list $parent.text]
     return $parent.text
+}
+proc ::GX::_sourceSurfaceStatusLayout {p args} {
+    variable ::GX::SourceSurface::state
+    if {![winfo exists $p.status] || ![info exists state($p,status)]} return
+    set full $state($p,status)
+    set line [string trim [string map [list \n { } \r { } \t { }] $full]]
+    set font [$p.status cget -font];if {$font eq {}} {set font TkDefaultFont}
+    set width [expr {max(1,[winfo width $p.status]-4)}]
+    if {[font measure $font $line]>$width} {
+        set low 0;set high [string length $line]
+        while {$low<$high} {
+            set middle [expr {($low+$high+1)/2}]
+            if {[font measure $font "[string range $line 0 [expr {$middle-1}]]…"]<=$width} {set low $middle} else {set high [expr {$middle-1}]}
+        }
+        set line "[string range $line 0 [expr {$low-1}]]…"
+    }
+    set state($p,status_display) $line
+    $p.status configure -takefocus [expr {$full ne {}}] -cursor [expr {$full ne {}?{hand2}:{arrow}}]
+}
+proc ::GX::sourceSurfaceStatusInspect {widget} {
+    variable ::GX::SourceSurface::state
+    set p [sourceSurfaceParent $widget]
+    if {![winfo exists $p] || ![info exists state($p,status)] || $state($p,status) eq {}} return
+    set snapshot $state($p,status);set dialog $p.__statusDetails
+    if {[winfo exists $dialog]} {uiFieldDialogClose $dialog}
+    uiFieldDialogCreate $dialog $p {Source status snapshot} 760x420
+    text $dialog.text -wrap none -font TkFixedFont -width 1 -height 1 -undo 0 -exportselection 0
+    ttk::scrollbar $dialog.y -command [list $dialog.text yview]
+    ttk::scrollbar $dialog.x -orient horizontal -command [list $dialog.text xview]
+    $dialog.text configure -yscrollcommand [list $dialog.y set] -xscrollcommand [list $dialog.x set]
+    ttk::frame $dialog.actions
+    ttk::button $dialog.actions.copy -text {Copy complete message} -command [list ::GX::_sourceSurfaceStatusCopy $dialog]
+    ttk::button $dialog.actions.close -text Close -command [list ::GX::uiFieldDialogClose $dialog]
+    pack $dialog.actions.copy $dialog.actions.close -side left -padx 4 -pady 4
+    grid $dialog.text -row 0 -column 0 -sticky nsew;grid $dialog.y -row 0 -column 1 -sticky ns
+    grid $dialog.x -row 1 -column 0 -sticky ew;grid $dialog.actions -row 2 -column 0 -columnspan 2 -sticky ew
+    grid rowconfigure $dialog 0 -weight 1;grid columnconfigure $dialog 0 -weight 1
+    $dialog.text insert 1.0 $snapshot;$dialog.text configure -state disabled
+    uiTextEditingAttach $dialog [list $dialog.text]
+    uiFieldDialogPresent $dialog $dialog.text 0
+    after idle [list ::GX::uiFieldWindowFit $dialog]
+    return $dialog
+}
+proc ::GX::_sourceSurfaceStatusCopy {dialog} {
+    if {![winfo exists $dialog.text]} return
+    clipboard clear -displayof $dialog
+    clipboard append -displayof $dialog -- [$dialog.text get 1.0 end-1c]
 }
 proc ::GX::sourceSurfaceFindCurrent {widget {direction forward}} {
     set parent [sourceSurfaceParent $widget]
     if {![info exists ::GX::SourceSurface::state($parent,find)]} {error {This source surface has no declared Find bar}}
     return [sourceSurfaceFind $parent.text $::GX::SourceSurface::state($parent,find) $direction]
 }
+proc ::GX::_sourceSurfaceFindDismiss {widget} {
+    set p [sourceSurfaceParent $widget]
+    if {![winfo exists $p.find] || ![winfo ismapped $p.find]} {return 0}
+    sourceSurfaceFindShow $widget hidden
+    return 1
+}
+
+proc ::GX::sourceSurfaceFindShow {widget {mode find}} {
+    set p [sourceSurfaceParent $widget]
+    if {$mode ni {find replace hidden} || ![winfo exists $p.find]} {error {Choose this Source Surface's Find, Replace or hidden search controls}}
+    if {$mode eq {hidden}} {
+        set prior [focus];grid remove $p.find
+        if {[string first "$p.find." $prior]==0} {focus $p.text}
+        return
+    }
+    if {$mode eq {replace}} {
+        if {[dict get $::GX::SourceSurface::state($p,options) mode] ne {editable}} {error {Replace requires an editable Source Surface}}
+        _sourceSurfaceReplaceControls $p
+    }
+    set ::GX::SourceSurface::state($p,replace_visible) [expr {$mode eq {replace}}]
+    if {[winfo exists $p.find.replace] && $mode eq {find}} {pack forget $p.find.replace}
+    grid $p.find
+    _sourceSurfaceFindLayout $p 1
+    focus [expr {$mode eq {replace}?"$p.find.replace.value":"$p.find.query"}]
+}
+
 proc ::GX::_sourceSurfaceReplaceControls {p} {
     variable ::GX::SourceSurface::state
     if {![winfo exists $p.find] || [winfo exists $p.find.replace]} return
@@ -96,11 +184,60 @@ proc ::GX::_sourceSurfaceReplaceControls {p} {
     foreach {operation title} {current Replace all {Replace all}} {
         ttk::button $p.find.replace.$operation -text $title -command [list ::GX::_sourceSurfaceReplaceCurrent $p $operation]
     }
-    pack $p.find.replace.label $p.find.replace.value $p.find.replace.current $p.find.replace.all -side left -padx 3 -pady 3
-    # Keep controls on their own row, including surfaces made editable later.
-    pack $p.find.replace -side bottom -fill x -before $p.find.label
+    # Keep controls and search semantics; reflow within existing surface geometry.
+    pack $p.find.replace -side bottom -fill x
+    bind $p.find.replace <Configure> [list ::GX::_sourceSurfaceFindLayout $p]
+    _sourceSurfaceFindLayout $p 1
     # Focus transfer alone does not stop Tk Text's Control-h backspace binding.
-    bind $p.text <Control-h> "[list focus $p.find.replace.value]; break"
+    bind $p.text <Control-h> "[list ::GX::sourceSurfaceFindShow $p.text replace]; break"
+    foreach child {value current all} {bind $p.find.replace.$child <Escape> "[list ::GX::sourceSurfaceFindShow $p.text hidden]; break"}
+}
+# Existing Find controls keep their identity, bindings and values while rows wrap.
+# Packing into retained row frames avoids shared-column widths making narrow
+# source panes wider than their parent at larger configured text sizes.
+proc ::GX::_sourceSurfaceFindFlow {container widgets available} {
+    foreach widget $widgets {pack forget $widget}
+    for {set row 0} {$row<6} {incr row} {
+        if {![winfo exists $container.row$row]} {ttk::frame $container.row$row}
+        pack forget $container.row$row
+    }
+    set row 0;set used 0
+    foreach widget $widgets {
+        set needed [expr {[winfo reqwidth $widget]+6}]
+        if {$used && $used+$needed>$available} {incr row;set used 0}
+        set frame $container.row$row
+        if {![winfo ismapped $frame]} {pack $frame -side top -fill x}
+        set expand [expr {[winfo class $widget] eq {TEntry} || [string match *.result $widget]}]
+        pack $widget -in $frame -side left -padx 3 -pady 3 -fill x -expand $expand
+        raise $widget
+        incr used $needed
+    }
+}
+proc ::GX::_sourceSurfaceFindLayout {p {force 0}} {
+    variable ::GX::SourceSurface::state
+    if {![winfo exists $p.find]} return
+    set width [winfo width $p.find]
+    if {$width<80} return
+    set font [ttk::style lookup TEntry -font]
+    if {$font eq {}} {set font TkTextFont}
+    set signature [list $width [font actual $font] [winfo exists $p.find.replace] [expr {![info exists state($p,replace_visible)] || $state($p,replace_visible)}]]
+    if {!$force && [info exists state($p,find_layout)] && $state($p,find_layout) eq $signature} return
+    set state($p,find_layout) $signature
+    set priorFocus [focus]
+    set characters [expr {max(6,min(24,int(($width-36)/double(max(1,[font measure $font 0])))))}]
+    $p.find.query configure -width $characters
+    $p.find.result configure -wraplength [expr {max(80,$width-12)}]
+    set findWidgets [list $p.find.label $p.find.query $p.find.previous $p.find.next]
+    if {[winfo exists $p.find.close]} {lappend findWidgets $p.find.close}
+    lappend findWidgets $p.find.result
+    _sourceSurfaceFindFlow $p.find $findWidgets $width
+    if {[winfo exists $p.find.replace] && (![info exists state($p,replace_visible)] || $state($p,replace_visible))} {
+        $p.find.replace.value configure -width $characters
+        _sourceSurfaceFindFlow $p.find.replace [list $p.find.replace.label $p.find.replace.value $p.find.replace.current $p.find.replace.all] $width
+        # Search rows precede the existing replace-control container.
+        pack configure $p.find.replace -side bottom -fill x
+    }
+    if {[string first "$p.find." $priorFocus]==0 && [winfo exists $priorFocus]} {focus $priorFocus}
 }
 proc ::GX::_sourceSurfaceDestroy {p actual} {
     if {$p ne $actual} return
@@ -504,8 +641,30 @@ proc ::GX::_sourceSurfaceFindResult {p pattern direction status {index {}} {end 
     variable ::GX::SourceSurface::state
     set message [dict get {idle {} empty {Enter search text} not_found {No matches} found {Match found}} $status]
     if {$status eq {found}} {set message "Match at $index"}
+    set changed [expr {![info exists state($p,find_status)] || $state($p,find_status) ne $message}]
     set state($p,find_status) $message
     set state($p,find_result) [dict create status $status query [string range $pattern 0 1023] query_characters [string length $pattern] query_truncated [expr {[string length $pattern]>1024}] direction $direction index $index end $end message $message source_revision $state($p,revision)]
+    # Result text can grow after the width/font layout was cached. Reflow the
+    # existing controls after Tk measures it, preserving widgets and search state.
+    if {$changed && [winfo exists $p.find]} {after idle [list ::GX::_sourceSurfaceFindResultLayout $p [winfo id $p.text] $state($p,find_result)]}
+}
+proc ::GX::_sourceSurfaceFindResultLayout {p widgetId result {reveal 0}} {
+    variable ::GX::SourceSurface::state
+    if {![winfo exists $p.find] || ![winfo exists $p.text]
+        || [winfo id $p.text] ne $widgetId || ![info exists state($p,find_result)]
+        || $state($p,find_result) ne $result} return
+    if {!$reveal} {
+        _sourceSurfaceFindLayout $p 1
+        # Packing new status rows can shrink Text after the original Find see.
+        # Wait for that geometry, then reveal only the still-current match.
+        # Actual edits/reset replace find_result and clear search_hit; lexer-only
+        # model requests advance revision without invalidating this UI result.
+        if {[dict get $result status] eq {found}} {after idle [list ::GX::_sourceSurfaceFindResultLayout $p $widgetId $result 1]}
+    } elseif {[focus] eq "$p.text" && [$p.text tag ranges search_hit] eq [list [dict get $result index] [dict get $result end]]} {
+        if {$reveal<8 && [winfo height $p.find] != [winfo reqheight $p.find]} {
+            after idle [list ::GX::_sourceSurfaceFindResultLayout $p $widgetId $result [expr {$reveal+1}]]
+        } else {$p.text see [dict get $result index]}
+    }
 }
 proc ::GX::sourceSurfaceFindInspect {widget} {
     set p [sourceSurfaceParent $widget]

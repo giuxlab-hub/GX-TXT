@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Added deterministic 128 Hz harmonic-series teaching waveform.
 - Added ground-truth metadata and a student exercise for real-cepstrum analysis.

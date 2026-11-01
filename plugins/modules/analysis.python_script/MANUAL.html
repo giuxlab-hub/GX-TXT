@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>GX-TXT Python Script 1.1.0</title>
+  <title>analysis.python_script</title>
   <style>
     html {
       color: #1a1a1a;
@@ -166,27 +166,176 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
   </style>
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">GX-TXT Python Script 1.1.0</h1>
+<h1 class="title">analysis.python_script</h1>
 </header>
-<h1 id="python-script-1.1.0">Python Script 1.1.0</h1>
-<h2 id="python-script-workspace">Python Script Workspace</h2>
-<p>Open <strong>Viewers → Python Script Workspace</strong> in a Session.
-Choose <strong>New</strong>, select User or Session scope, enter a
-stable script ID, name, semantic version, description, required APIs,
-and optional typed parameters, then edit the Python source and
-<strong>Save</strong>. The Script Registry records revision and SHA-256.
-<strong>Save As</strong> creates another ID. The editor has line
-numbers, Python highlighting, undo/redo, search in both directions, go
-to line, UTF-8 <code>.py</code> import/export, and public
+<h1 id="python-script-workspace">Python Script Workspace</h1>
+<h2 id="script-projects-and-independent-source-tabs">Script Projects and
+independent source tabs</h2>
+<p>In <strong>Script Library</strong>, choose the intended
+scope/language, <strong>New Project</strong>, enter an ID/name and
+<strong>Save</strong>. <strong>Open Workspace</strong> opens its real
+entrypoint. The project file tree navigates the project. The
+<strong>Project</strong> menu opens/adds files, renames or moves paths,
+removes non-entrypoint files and selects the main entrypoint. Source
+subfolders are supported. Python projects import admitted
+helpers/packages; Octave helper functions use their actual matching
+<code>.m</code> filenames.</p>
+<p>Each file has its own source buffer, dirty star, Undo/Redo, caret,
+scroll and Find. The primary menu is <strong>File / Edit / Project /
+View / Run / Help</strong>. Use the <strong>Project</strong> menu for
+project file operations; the file tree navigates sources. F10 focuses
+the primary menu row; Left/Right choose a menu and Space/Down open it.
+Alt+F/E/P/V/R/H open File/Edit/Project/View/Run/Help directly. Escape
+returns to the source. The same arrows navigate adjacent open primary
+menus. <strong>File → Save</strong> saves the active Script or its
+complete Project transaction; <strong>File → Save All</strong>
+(Ctrl+Shift+S) saves every writable dirty Script/Project. Separate
+Scripts remain independent records, and a stale source or metadata
+revision refuses saving while preserving unsaved buffers.</p>
+<p>Click the <strong>×</strong> at the right of a source tab to close
+that exact file, including an inactive tab. Dirty sources offer Save /
+Don’t Save / Cancel. Cancel preserves the original active file and
+focus. <strong>File → Close tab</strong> (Ctrl+W) closes the active tab;
+<strong>File → Close</strong> closes the Workspace. Closing the final
+source tab creates a fresh unsaved draft. No extra toolbar or source
+selector is needed.</p>
+<p>Ctrl+Tab/Ctrl+Shift+Tab cycle all open files. When tabs exceed the
+available width, the tab strip’s <strong>…</strong> menu lists their
+complete qualified identities; Alt+Down on the notebook opens that same
+list. Selecting a hidden file brings its tab into view. Duplicate paths
+in separate Scripts show their distinct references. The project file
+tree remains available. On small screens or at large fonts, use
+<strong>View → Focus source / restore panes</strong> or hide optional
+side panes and script properties; these commands preserve their
+contents.</p>
+<p><strong>Assign to Session</strong> freezes every admitted source.
+<strong>Export</strong> writes one integrity-checked Project ZIP,
+including source and saved parameter/API metadata; <strong>Import
+Project ZIP</strong> creates a new reviewed identity. Run and Debug use
+the existing Runner/Job supervisor and freeze the entire tree again.
+Helper-file breakpoints and native stack navigation use physical
+file/line and the frozen whole-project SHA. Job details <strong>Open
+source files</strong> opens verified historical sources in read-only
+tabs, separate from today’s editable Registry record.</p>
+<figure>
+<img src="images/script-project-tabs.png"
+alt="Native P029 private-fixture Project tree and closable file tabs in Focus source mode; optional outer panes remain available through View." />
+<figcaption aria-hidden="true">Native P029 private-fixture Project tree
+and closable file tabs in Focus source mode; optional outer panes remain
+available through View.</figcaption>
+</figure>
+<h2 id="source-declarations-and-invocation-parameters">Source
+declarations and invocation parameters</h2>
+<p>Declare typed parameters directly in source using literal
+arguments:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gxtxt <span class="im">import</span> gxtxt_parameter_declare, gxtxt_context</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>gxtxt_parameter_declare(<span class="st">&#39;gain&#39;</span>, <span class="st">&#39;double&#39;</span>, default<span class="op">=</span><span class="fl">2.0</span>, <span class="bu">min</span><span class="op">=</span><span class="fl">0.0</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                        description<span class="op">=</span><span class="st">&#39;Signal multiplier&#39;</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>gain <span class="op">=</span> gxtxt_context()[<span class="st">&#39;parameters&#39;</span>][<span class="st">&#39;gain&#39;</span>]</span></code></pre></div>
+<p>Saving inspects declarations without running imports or scientific
+source, including every admitted project helper. Distinct source and
+editor metadata names combine; conflicts and nonliteral declarations
+refuse saving. Change a source-declared definition in its source. The
+runtime declaration has no side effects and does not assign the
+effective value to a language variable.</p>
+<p>The shared Runner always offers <strong>Add parameter</strong>,
+including an empty schema. Invocation-only rows have typed values,
+<strong>Edit</strong> and <strong>Remove</strong>, and do not change
+saved declarations. Optional <strong>Save parameters as Dataset</strong>
+/ <strong>Load parameters</strong> preserves mixed definitions and exact
+typed values; loaded values remain editable before Run. No declaration
+or Dataset is required merely to add an invocation parameter.
+Source/revision, effective schema, origins and values remain in the
+immutable Job provenance.</p>
+<p>See <a href="../../../docs/api/SCRIPT_PROJECTS_v1.md">Project
+contract</a> and <a
+href="../../../docs/api/SCRIPT_PARAMETER_DECLARATIONS_v1.md">source
+declaration contract</a> for exact path, type, constraint, runtime and
+host API rules.</p>
+<h2 id="python-script-workspace-1">Python Script Workspace</h2>
+<p>Open <strong>Viewers → Python Script Workspace</strong> with or
+without a Session. Choose <strong>New</strong>, select User or Session
+scope, enter a stable script ID, name, semantic version, description,
+required APIs, and optional typed parameters, then edit the Python
+source and <strong>Save</strong>. The Script Registry records revision
+and SHA-256. <strong>Save As</strong> creates another ID. The editor has
+line numbers, Python highlighting, undo/redo, search in both directions,
+go to line, UTF-8 <code>.py</code> import/export, and public
 <code>gxtxt</code> bridge help. Closing an unsaved edit prompts to save
 or discard it.</p>
 <p>Select a registered Python script in the left list to reopen it.
-<strong>Run registered…</strong> opens the existing CORE Script
-Execution dialog with typed parameters. Session scripts also appear in
+<strong>Run → Open Script Runner…</strong> opens the existing CORE
+dialog with the exact registered identity, saved revision, SHA and typed
+parameters; it does not submit a Job. Session scripts also appear in
 Session Script Explorer and the <code>analysis.python_script</code>
 selector; User scripts appear in Script Library and can be assigned to a
 Session. Deletion uses the common resource lifecycle and refuses active
@@ -214,6 +363,824 @@ guide</a>, <a href="../../../docs/api/PYTHON_SCRIPT_CLIENT_v1.md">the
 client reference</a>, and the <a
 href="../../../docs/api/PARALLEL_EXECUTION_API_v1.md">parallel
 policy</a>.</p>
-<section><h2>Combined stabilization API additions (dev-051)</h2><p>Use gxtxt_api_call for graph presentation (equal aspect and transparent background), annotations, Graph Notes, Graph Metadata, explicit Dataset publish_series / completed-file publish_auto, and Numerical curve_model_fit/evaluate/project. Runnable Python and Octave examples are in examples/scripts/combined_stabilization.*. Portable Resource ZIP operations are host-only. Namespaced metadata keys are preserved; Octave uses dynamic field access.</p><p>See docs/api/OCTAVE_SCRIPT_BRIDGE_API_v1.md and SCRIPT_BRIDGE_COVERAGE_v1.json for operation contracts.</p></section>
+<h2 id="editing-menus-and-saved-revisions">Editing menus and saved
+revisions</h2>
+<p>File, Edit, View, Run and Help share one compact menu row. Ctrl+A and
+Edit → Select All select the focused editable control, including
+multiline UTF-8 source and metadata. Ctrl+C/X/V keep that focus. Pasting
+over selected source replaces it as one local undo transaction; Ctrl+Z
+undoes it and Ctrl+Y redoes it. Selection and copying do not mark the
+document modified or write a Script Registry revision. Ctrl+S saves;
+Ctrl+F, F3/Shift+F3 and Ctrl+G retain find and go-to-line; Escape in
+Find returns to the source. Disabled line numbers and Bridge reference
+text are not editable.</p>
+<p>Run → Open Script Runner opens the existing CORE Runner without
+submitting a Job. A dirty registered buffer prompts: Yes saves it and
+opens the Runner, No opens the last saved revision while retaining
+edits, and Cancel returns to editing. The Runner shows its actual scope,
+ID, version and SHA, and requires its own Run command to execute. A
+source changed elsewhere is explicitly identified; stale saves remain
+rejected. Run also opens the existing Script Library and Jobs
+Manager.</p>
+<p>An unregistered buffer must first be saved. Obsolete Interactive
+Document Workspaces cannot be converted by these editors. Historical
+execution snapshots retain their identities. An editor bound to another
+or subsequently closed Session cannot perform Session-scope save,
+delete, register or Runner operations there: export any unsaved source
+if needed, close it, and reopen the workspace in the intended
+Session.</p>
+<h2 id="authoring-without-a-session">Authoring without a Session</h2>
+<p><a href="#workspace-panes-and-layout">Layout</a> · <a
+href="#source-gutter-folding-and-breakpoints">Breakpoints</a> · <a
+href="#start-and-inspect-a-real-debug-job">Debugging</a> · <a
+href="#worked-examples">Worked examples</a></p>
+<p>Open <strong>Viewers → Python Script Workspace</strong> even when no
+Session is open. New scripts default to <strong>User</strong> scope.
+Edit, import, export and Save work in the User library without creating
+a Session. Session registration, scientific execution and Debug require
+a real open Session. Use Script Library to assign a User script to that
+Session; this creates a distinct Session identity.</p>
+<h2 id="workspace-panes-and-layout">Workspace panes and layout</h2>
+<p>The menu row is <strong>File, Edit, View, Run, Help</strong>.
+Explorer selects registered scripts on the left; the editable source is
+central; public Bridge snippets remain on the right.
+<strong>View</strong> independently controls Explorer, Snippets,
+Debugger, Call Stack, Variables, Debugger Output and Breakpoints.
+Opening Debug adds a lower assistant; it preserves both side panes. Drag
+the horizontal and vertical splitters to allocate space. Closing Debug
+restores the source area. Five repeated open/close cycles do not require
+rebuilding the editor.</p>
+<p><strong>View → Focus source</strong> is reversible; <strong>Reset
+layout</strong> restores the default proportions. Pane visibility and
+splitters are presentation settings saved in the user’s configuration.
+<strong>View → Script properties</strong> collapses the other metadata
+rows. <strong>View → Parameters</strong> independently hides/restores
+the parameter declarations panel without changing its values, source or
+dirty state. This is useful with a 900 × 560 window and a large GUI
+font. <strong>Show script properties</strong> expands it again.
+Appearance font settings apply when GX-TXT starts; restart after saving
+a different GUI font size.</p>
+<figure>
+<img src="images/debugger-paused.png"
+alt="Three-pane editor with the managed native debugger." />
+<figcaption aria-hidden="true">Three-pane editor with the managed native
+debugger.</figcaption>
+</figure>
+<h2 id="source-gutter-folding-and-breakpoints">Source gutter, folding
+and breakpoints</h2>
+<p>The narrow gutter has independent lanes for breakpoints, the current
+execution arrow and folding, followed by physical line numbers. A filled
+red dot is an enabled breakpoint; a hollow red dot is disabled. A yellow
+arrow marks the selected paused native frame. Small chevrons collapse a
+function or block; folding never edits the source. Clicking a fold
+chevron does not toggle a neighboring breakpoint. Digits widen as the
+file grows beyond 99, 999 or 9999 lines. Scrolling and folding retain
+physical line identities.</p>
+<p>Click the breakpoint lane on an executable line. <strong>F9</strong>
+toggles the current line; <strong>Ctrl+Shift+F9</strong> clears all
+breakpoints. The gutter context menu and Breakpoints tab offer Enable,
+Disable, Remove and Clear all. Blank lines, comments and non-executable
+targets are refused. Breakpoints are associated with the exact source
+identity/SHA; editing invalidates their old positions. Set them again
+after editing. Breakpoint changes are locked during a managed Debug Job
+so the display cannot pretend that the running snapshot changed.</p>
+<h2 id="start-and-inspect-a-real-debug-job">Start and inspect a real
+Debug Job</h2>
+<ol type="1">
+<li>Open a real Session. Save or assign a Session script and select it
+in Explorer.</li>
+<li>Save source edits. Debug always runs the immutable registered source
+and SHA.</li>
+<li>Choose <strong>View → Debugger</strong> or the Debug command in
+<strong>Run</strong>.</li>
+<li>Place a valid breakpoint, then click the <strong>Start
+Debug</strong> play icon.</li>
+<li>Inspect STARTING, RUNNING and PAUSED feedback. At PAUSED, compare
+the yellow source arrow with the selected Call Stack row, file, line and
+local values.</li>
+<li>Use <strong>Step Into</strong>, <strong>Step Over</strong> and
+<strong>Step Out</strong> for genuine interpreter stepping. Selecting a
+caller row requests that native frame and its locals; it does not move
+the interpreter’s actual execution frame.</li>
+<li><strong>Continue</strong> resumes the program.
+<strong>Pause</strong> uses Python native tracing while running. The
+managed GNU Octave CLI adapter does not support verified asynchronous
+Pause: its button is disabled with an explanation. An interrupt can
+terminate an Octave loop, so use native breakpoints and steps instead.
+<strong>Stop</strong> cancels the managed Job. Completion clears the
+arrow and active stack/variables before another run.</li>
+</ol>
+<figure>
+<img src="images/caller-frame.png"
+alt="Selected native caller and synchronized source location." />
+<figcaption aria-hidden="true">Selected native caller and synchronized
+source location.</figcaption>
+</figure>
+<p>Toolbar icons have pointer and keyboard-focus tooltips. At narrow
+widths their labels collapse to icons; the functions remain available.
+Disabled buttons reflect actual Job state. Locals / Globals are bounded
+read-only summaries with type, shape and value; this is not an
+expression Watch or arbitrary eval. An external stack frame shows its
+actual path/line, with no misleading arrow in unrelated source. Folded
+current source is revealed for inspection.</p>
+<p><strong>Debugger output</strong> contains bounded native
+command/status receipts. <strong>Program output / diagnostics</strong>
+opens the ordinary Script Job details with stdout, stderr and immutable
+execution provenance. These are distinct streams.</p>
+<h2 id="closing-source-revisions-and-session-changes">Closing, source
+revisions and Session changes</h2>
+<p>Hiding Debug through View preserves its managed Job. <strong>Close /
+cancel Debug</strong> asks before cancelling an active Job; Cancel keeps
+it open. Closing the editor also protects unsaved edits and an active
+owned Job. A closed or changed Session blocks stale scientific
+operations; export an unsaved buffer before reopening in the intended
+Session. Debug refuses unsaved, unregistered or externally changed
+source. Editing while paused does not alter the running snapshot: source
+stepping controls are disabled until the saved identity agrees.</p>
+<h2 id="worked-examples">Worked examples</h2>
+<p><code>examples/debug_temperature.py</code> uses only public
+<code>NUMERIC_API_v1</code> calls for conversion and reduction. Input
+temperatures are 18, 20, 22, 21 and 19 °C. Add the exact
+Celsius-to-kelvin offset 273.15 K. Expected output is 291.15, 293.15,
+295.15, 294.15 and 292.15 K; mean 293.15 K. Declare
+<code>NUMERIC_API_v1@1:math.numeric</code> in required APIs. Import the
+example, save it as a Session script, and place a breakpoint on the
+first output line after the reduction. Inspect <code>celsius</code>,
+<code>kelvin</code> and <code>average</code>.</p>
+<p><code>examples/debug_nested.py</code> deliberately uses ordinary
+language arithmetic for stepping practice. The five adjusted values are
+1, 2, 3, 4 and 5; the final total is 15. Break on the call to
+<code>adjust</code>, Step Into, inspect <code>value</code>, Step Out,
+then Step Over the addition. Select the caller to compare its
+<code>sample</code> and <code>total</code>. Continue to completion, then
+run the saved script normally through Script Runner. No example
+publishes a Dataset or modifies scientific source data.</p>
+<h2 id="integrated-help-and-troubleshooting">Integrated help and
+troubleshooting</h2>
+<p><strong>Help → Viewer manual / Debugger guide…</strong> and
+<strong>F1</strong> open this independent rendered guide with embedded
+real GUI images. Use Find / Find next, the section links and Back /
+Forward. The manual remains available without a Session and after
+closing the editor. Source example links are supplied in the module’s
+<code>examples/</code> folder; import them through File rather than
+executing a documentation hyperlink.</p>
+<p>If Start is disabled, read the IDLE explanation: check Session,
+Session scope, saved source and registered SHA. If panels seem missing,
+inspect View checkmarks and Reset layout. If values seem stale, compare
+the selected native frame and the Job source identity before
+interpreting them. Missing required APIs fail preflight; use the public
+API documentation rather than a private fallback.</p>
+<h2 id="complete-workspace-control-reference">Complete workspace control
+reference</h2>
+<p>The Workspace writes source independently of any scientific Session.
+A <strong>User</strong> script belongs to your Script Library; a
+<strong>Session</strong> script is a separate saved identity owned by
+the currently open Session. Assigning a User script to a Session
+snapshots its source and metadata. Editing the User copy later does not
+change the saved Session revision. A loose imported file is an editor
+buffer, not automatically a registered script or a runnable Job.</p>
+<h3 id="file-and-document-identity">File and document identity</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>Operation and result</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>New / Ctrl+N</td>
+<td>Protect unsaved work, then start an unregistered source buffer.
+Choose User scope when no Session is open.</td>
+</tr>
+<tr class="even">
+<td>Import .py / Ctrl+O</td>
+<td>Open the native file chooser and load language source. Review it
+before Save. Import does not execute the file.</td>
+</tr>
+<tr class="odd">
+<td>Save / Ctrl+S</td>
+<td>Validate the language-specific metadata below, then save a Registry
+revision/SHA. An external revision change is refused; reopen before
+editing it.</td>
+</tr>
+<tr class="even">
+<td>Save As</td>
+<td>Create a new Registry identity/copy while retaining the original.
+Check the resulting ID, scope and name before running it.</td>
+</tr>
+<tr class="odd">
+<td>Export .py</td>
+<td>Write the current source buffer through the native save chooser.
+This is source export, not a Registry assignment or result
+publication.</td>
+</tr>
+<tr class="even">
+<td>Delete</td>
+<td>Delete the selected registered script through the common lifecycle.
+Active dependencies can prevent deletion. This does not delete an
+unrelated imported file or scientific Dataset.</td>
+</tr>
+<tr class="odd">
+<td>Copy ID</td>
+<td>Copy the exact registered reference for Runner/Analysis/Library use.
+Unsaved anonymous source has no execution identity.</td>
+</tr>
+<tr class="even">
+<td>Close</td>
+<td>Protect unsaved source and confirm cancellation of an owned active
+Debug Job. Cancel returns to the editor.</td>
+</tr>
+</tbody>
+</table>
+<p>Source files use UTF-8. GX-TXT preserves imported source identity,
+BOM/newline information where represented by the source import/export
+contract; changing the text intentionally creates a new SHA. Do not
+infer equality from what is visible on screen: compare the saved
+source/Registry revision. Unsupported encodings, malformed source or
+invalid metadata require correction before execution. Export a copy
+before resolving a stale or changed-Session buffer.</p>
+<p>The Python metadata panel contains Scope, Script ID, Name, Version,
+Additional APIs, Description and Typed parameters. A stable ID is
+separate from the display name; version describes the script,
+revision/SHA identifies its saved source. Additional APIs use identities
+such as <code>NUMERIC_API_v1@1:math.numeric</code>. Each nonblank
+parameter line is
+<code>name | type | required (0/1) | default | description</code>.
+Registry validation owns supported types/defaults. Runner presents
+parameters; the script reads them from <code>gxtxt_context()</code>.
+Metadata edits do not submit Jobs.</p>
+<p>The left <strong>Registered scripts / Explorer</strong> list opens
+existing identities. The right <strong>GX-TXT Bridge Snippets</strong>
+selector and <strong>Insert</strong> button insert the chosen public
+client example at the editor insertion point. Review inserted code and
+requirements. Snippets are not hidden private APIs and do not execute on
+insert.</p>
+<h3 id="edit-source-surface-and-clipboard">Edit, source surface and
+clipboard</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control / shortcut</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Undo Ctrl+Z / Redo Ctrl+Y</td>
+<td>Local edit history for editable source/multiline Text controls;
+independent of scientific Session History. Single-line Entry fields have
+no Undo/Redo history and these commands are disabled when an Entry has
+focus.</td>
+</tr>
+<tr class="even">
+<td>Cut Ctrl+X / Copy Ctrl+C / Paste Ctrl+V / Select all Ctrl+A</td>
+<td>Operate on the focused source or metadata control. Copying a
+read-only value does not mark source dirty.</td>
+</tr>
+<tr class="odd">
+<td>Find Ctrl+F</td>
+<td>Focus the source Find entry. Enter a literal search string.</td>
+</tr>
+<tr class="even">
+<td>Find next F3 / Find previous Shift+F3</td>
+<td>Search forward/backward using the same entry; the Previous/Next
+buttons provide identical directions.</td>
+</tr>
+<tr class="odd">
+<td>Go to line Ctrl+G</td>
+<td>Select a physical source line, including lines presently inside a
+fold.</td>
+</tr>
+<tr class="even">
+<td>Fold current / Fold all / Unfold all</td>
+<td>Hide or reveal source presentation. Folding changes neither text nor
+scientific source identity.</td>
+</tr>
+<tr class="odd">
+<td>F9 / Ctrl+Shift+F9</td>
+<td>Toggle the current executable breakpoint / clear all breakpoints
+while not locked by an active Debug Job.</td>
+</tr>
+</tbody>
+</table>
+<p>Manage imports opens the Python import assistant: review/add ordinary
+import declarations, preview the insertion/deduplication and explicitly
+Apply. Remove an import by editing the source; the assistant has no
+Remove control. It is a source-editing tool, not a package installer or
+dependency authorization.</p>
+<p>The assistant’s Search entry filters its module-name/origin catalog.
+Select a catalog row or edit the import-statement entry, then
+<strong>Add choice</strong> stages that statement. <strong>Preview
+source changes</strong> displays the proposed insertion and
+deduplication in its read-only source pane; <strong>Apply</strong>
+explicitly edits the current buffer after the Session/interpreter guard.
+Review the resulting dirty source and Save through the Registry when
+intended. <strong>Cancel</strong> closes the assistant without applying
+a source change. The catalog is static availability information, not
+proof an import initializes successfully. Source organization neither
+runs the edited script nor installs or authorizes any package. Source
+removal is an ordinary manual edit; there is no assistant Remove
+operation.</p>
+<p>Line numbers are physical source lines. Separate gutter lanes hold a
+filled red enabled breakpoint, hollow disabled breakpoint, yellow
+native-frame arrow and fold chevrons. Use the gutter context menu or
+Breakpoints panel to Enable/Disable/Remove/Clear. Blank, comment and
+unsupported executable targets are rejected. A source edit invalidates
+previous revision-bound breakpoints; set them on the new source.
+Appearance uses shared Source Surface themes and configuration;
+highlighting, selection, scroll and fold never rewrite source.</p>
+<h3 id="every-view-action">Every View action</h3>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>View item</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Script Explorer / Registered scripts</td>
+<td>Independently show or hide the saved-script list.</td>
+</tr>
+<tr class="even">
+<td>GX-TXT Bridge Snippets</td>
+<td>Independently show or hide the public client assistant.</td>
+</tr>
+<tr class="odd">
+<td>Debugger</td>
+<td>Show/hide its assistant; hiding retains the managed active Job.</td>
+</tr>
+<tr class="even">
+<td>Call Stack</td>
+<td>Show actual native frames; select one to inspect that frame’s
+line/locals without changing program execution.</td>
+</tr>
+<tr class="odd">
+<td>Variables / Locals</td>
+<td>Bounded typed values/shapes for the selected native frame. This is
+not an arbitrary expression Watch/eval console.</td>
+</tr>
+<tr class="even">
+<td>Debug Output / Console</td>
+<td>Native debugger status/command receipts; separate from program
+stdout.</td>
+</tr>
+<tr class="odd">
+<td>Breakpoints</td>
+<td>Show saved line, enablement, function, source and exact revision
+information.</td>
+</tr>
+<tr class="even">
+<td>Focus source / restore panes</td>
+<td>Temporarily prioritize source, then restore the previous side
+panes.</td>
+</tr>
+<tr class="odd">
+<td>Reset editor layout</td>
+<td>Restore the standard visible panes/proportions.</td>
+</tr>
+<tr class="even">
+<td>Script properties</td>
+<td>Collapse/restore other metadata without changing field values.</td>
+</tr>
+<tr class="odd">
+<td>Parameters</td>
+<td>Independently hide/show declarations without changing values, source
+or debugger state.</td>
+</tr>
+</tbody>
+</table>
+<p>Drag horizontal/vertical splitter sashes to size panels. Visibility
+and proportions are user presentation preferences. Reopen to restore
+them; use Reset if a pane became too small. Font-size changes follow the
+framework’s restart policy. Narrow windows retain the compact menu row;
+debugger buttons may show icons with tooltips. Keyboard Tab/Shift+Tab
+moves focus, and Space/Return invokes the focused enabled native
+control.</p>
+<h3 id="run-debug-and-job-lifetime">Run, Debug and Job lifetime</h3>
+<p><strong>Run → Open Script Runner</strong> opens the ordinary reviewed
+execution dialog for the saved identity; opening it does not run source.
+Check parameters, source SHA, input/output request and required APIs,
+then use Runner’s own Run action. The <strong>Script Library</strong>
+organizes User scripts and assignments; <strong>Script Jobs
+Manager</strong> tracks actual durable Jobs/logs and cancellation. A
+lost Viewer window does not convert a completed Job into an unsaved
+execution. This ordinary Runner submits a local Script Job and has no
+destination selector. Registered remote destinations belong to the
+separate Scientific Execution workflow; opening an ordinary Runner is
+not remote execution evidence.</p>
+<p><strong>Debug Session script</strong> needs an open Session and clean
+saved Session source. <strong>Start Debug</strong> creates the actual
+native interpreter Debug Job. <strong>Continue</strong> resumes;
+<strong>Step Into</strong> enters a called language function,
+<strong>Step Over</strong> completes the current statement without
+entering it, and <strong>Step Out</strong> returns to a caller. The
+current source arrow and selected stack frame can differ from the
+program’s top execution frame after inspection. <strong>Pause</strong>
+is real native Python tracing; GNU Octave asynchronous Pause remains
+unsupported and is visibly disabled. <strong>Stop</strong> requests
+owned-Job cancellation. <strong>Breakpoint</strong> toggles the current
+source line; <strong>Clear all</strong> removes editable breakpoints
+before a new run.</p>
+<p>The script Workspaces do not bind F5/F10/F11 to stepping: use their
+actual named toolbar controls (keyboard Tab/Space is supported). F1
+opens this manual; F3/Shift+F3 search and F9 manipulates breakpoints.
+C++ Workspace shortcuts belong to its separate manual; do not assume
+they apply to a language interpreter.</p>
+<p>At a native pause inspect bounded locals/globals, types, shapes,
+function and physical file/line. A not-yet-assigned local can be
+unavailable; external frames are shown truthfully rather than
+highlighted in unrelated source. Output panels allow selection/copy of
+their displayed bounded text. <strong>Program output /
+diagnostics</strong> opens ordinary Job details with
+stdout/stderr/provenance; Debug Output is the control log. Truncated
+summaries are not complete arrays or full program output. Read the
+actual Job logs when diagnosing failures.</p>
+<p>Session switch/close, changed Registry source, unsaved source or
+stale debug snapshot blocks unsafe stepping or Session operations.
+Export unsaved source, select/reopen the intended Session identity, and
+start a fresh Debug Job. Use Jobs Manager to inspect durable status
+after reconnect; do not resubmit a Job merely because its old window
+closed. Failed API requirements are errors to resolve through installed
+public documentation, never a private fallback.</p>
+<h3 id="help-about-and-a-complete-worked-path">Help, About and a
+complete worked path</h3>
+<p><strong>Script Bridge help</strong> explains public client discovery
+and execution context. <strong>Viewer manual / Debugger guide /
+F1</strong> opens the integrated searchable manual with Back/Forward,
+local figures and full-size screenshot links. <strong>About</strong>
+calls the common Documentation Browser About owner, showing the current
+installed module/provider/version/license/API references read from its
+descriptor. The publishing-only WordPress article is delivered
+separately from the runtime.</p>
+<figure>
+<img src="images/dev108-about.png"
+alt="Actual Help/About from the Debian workspace, using the shared descriptor owner." />
+<figcaption aria-hidden="true">Actual Help/About from the Debian
+workspace, using the shared descriptor owner.</figcaption>
+</figure>
+<ol type="1">
+<li>With no Session open, choose New and User scope. Enter
+<code>temperature_reference</code> as ID, an explanatory name/version,
+and Additional APIs <code>NUMERIC_API_v1@1:math.numeric</code>. Copy the
+complete public CORE example below and Save.</li>
+<li>Export a UTF-8 <code>.py</code> copy. Reopen its registered User
+identity from Explorer and check the unchanged source/metadata. Use
+Script Library to assign it to a new synthetic Session; choose the
+resulting <code>session:</code> identity.</li>
+<li>Open Runner, review its exact revision/SHA and required API, then
+explicitly Run. Open its actual output/details. The example prints five
+kelvin values and a public Numeric mean; it does not create a
+Dataset.</li>
+<li>Reopen the same Session script, set a breakpoint before the final
+output, open Debug and Start. Inspect <code>celsius</code>,
+<code>kelvin</code> and <code>average</code>, step and Continue. Compare
+debugger values with the normal Job’s output, then Stop or finish.
+Save/close/reopen and verify the same registered revision remains.</li>
+<li>In the completed normal Job’s details select <strong>Program
+output</strong>. Choose <strong>Copy entire source</strong> to copy its
+complete stdout, or <strong>Save source to file…</strong> to export that
+selected stream to a new <code>.log</code> file. These actions operate
+on execution output, not the editor’s source code. Compare the saved
+stdout with the Debug Job’s stdout; both contain the five kelvin values
+and mean.</li>
+<li>With the synthetic Session open, choose <strong>Publish source as
+Dataset…</strong>, review a new Dataset ID, then <strong>Publish as
+canonical text Dataset</strong>. This preserves the selected stream and
+original Job provenance as TEXT. It does not turn the five printed
+values into a typed numerical table or assign physical column units. For
+numerical result tables use the separate public Dataset/ File
+Publication APIs with explicit schema/units and completed-result
+guards.</li>
+<li>Copy the original Job ID, close its details and reopen the Session
+and Jobs Manager. Select that same durable Job (use Session scope/filter
+if needed) and double-click it; Program output must still show the same
+stdout. Open the published text Dataset from Results and verify its
+retained output/Job identity. This reads existing results; do not press
+Run to reopen them. Reopen the registered script from Explorer
+separately to inspect its saved revision. Source Save/export and result
+publication are separate operations.</li>
+</ol>
+<p><img src="images/dev108-worked-numeric-pause.png"
+alt="Actual shipped public Numeric example paused before printing; native debugger values and source identity remain visible." />
+<img src="images/dev108-worked-output-publication.png"
+alt="Actual completed example stdout and canonical TEXT Dataset publication status in execution details; this is retained output, not a numerical table." /></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Synthetic temperature measurements; no Dataset is published.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="an">SPDX-License-Identifier:</span><span class="co"> GPL-3.0-or-later</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gxtxt <span class="im">import</span> gxtxt_api_require, gxtxt_api_call</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>gxtxt_api_require(<span class="st">&quot;NUMERIC_API_v1@1:math.numeric&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>celsius <span class="op">=</span> [<span class="fl">18.0</span>, <span class="fl">20.0</span>, <span class="fl">22.0</span>, <span class="fl">21.0</span>, <span class="fl">19.0</span>]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>measurements <span class="op">=</span> {<span class="st">&quot;kind&quot;</span>: <span class="st">&quot;vector&quot;</span>, <span class="st">&quot;value&quot;</span>: celsius}</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>offset <span class="op">=</span> {<span class="st">&quot;kind&quot;</span>: <span class="st">&quot;scalar&quot;</span>, <span class="st">&quot;value&quot;</span>: <span class="fl">273.15</span>}</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>converted <span class="op">=</span> gxtxt_api_call(<span class="st">&quot;NUMERIC_API_v1&quot;</span>, <span class="st">&quot;array_binary&quot;</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>                           [<span class="st">&quot;add&quot;</span>, measurements, offset])</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>kelvin <span class="op">=</span> converted[<span class="st">&quot;values&quot;</span>]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>average <span class="op">=</span> gxtxt_api_call(<span class="st">&quot;NUMERIC_API_v1&quot;</span>, <span class="st">&quot;array_reduce&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                         [<span class="st">&quot;mean&quot;</span>, {<span class="st">&quot;kind&quot;</span>: <span class="st">&quot;vector&quot;</span>, <span class="st">&quot;value&quot;</span>: kelvin}])</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;KELVIN&quot;</span>, kelvin)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;MEAN_K&quot;</span>, average[<span class="st">&quot;values&quot;</span>])</span></code></pre></div>
+<p>If Import or Export fails, check the chosen path/encoding/permissions
+and retain the current buffer. If Save fails, correct the precise
+Registry metadata error. If Debug Start is disabled, check Session
+scope, clean saved source and immutable revision. If Stop is pending,
+inspect the owned Job instead of assuming it has already ended. If a
+pane is lost, restore its View checkmark/Reset layout. A visible error
+or an untested remote endpoint is never a successful remote run.</p>
+<h3 id="runner-inputs-outputs-history-and-resource-policy">Runner
+inputs, outputs, history and resource policy</h3>
+<p>Open Run → Open Script Runner for the saved identity. Check its
+revision/SHA, named parameter values and any saved default argument
+text. Review typed invocation values and saved inert argument text. Each
+<strong>Add input Dataset</strong> row has its own
+<strong>Namespace</strong> and <strong>Dataset ID</strong> selectors, a
+unique semantic alias and optional display label. Namespace changes
+clear only that row; Session Current and other rows stay unchanged.
+Selection captures the Dataset revision; changed or moved inputs require
+explicit reselection. <strong>Remove input</strong> removes only that
+request. Parameter-only scripts need no Dataset.</p>
+<p><strong>Parameter Dataset</strong> accepts a canonical preset ID in
+this Session. <strong>Save parameters as Dataset</strong> creates a new
+typed canonical Dataset; <strong>Load parameters</strong> checks
+Script/schema/source/revision and payload integrity before applying all
+values. Numeric, string, boolean and choice types and stable Variable
+IDs are preserved. Loaded values remain editable. Neither action changes
+Registry metadata or executes a Job. A changed preset or Script requires
+fresh review.</p>
+<p><strong>Output request</strong> declares an optional ID/label and
+deliberate owned replacement. Publication defaults to the script
+producer’s private namespace; input namespaces grant no write rights.
+Only an actual Publication commit creates output. <strong>Validate
+review</strong> checks without execution; <strong>Run Job</strong>
+submits the immutable Script/input/parameter snapshot.
+<strong>Close</strong> dismisses review and does not cancel an admitted
+Job. The actions/status remain visible while the form scrolls;
+Tab/Shift+Tab reaches fields, Ctrl+Return submits and Escape closes
+review. Script Jobs reports actual completion, cancellation and
+committed outputs.</p>
+<p><img src="images/script-runner.png"
+alt="Shared Script Runner invocation review." /> <img
+src="images/dev108-library-metadata.png"
+alt="Actual Script Library metadata and typed parameter editor shared by the two languages." /></p>
+<p>Script Library lists stable User/Session identities. Select the
+intended row before changing metadata, assigning/copying to a Session,
+opening an editor or Runner, or removing an entry. Assignment creates a
+separate Session copy; keep the original User identity for reusable
+source. Saving a Session copy does not modify the User record. Library
+parameters and API requirements are canonical metadata, not text added
+invisibly to researcher source.</p>
+<p>The Jobs Manager exposes these ordinary menus and controls:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Menu</th>
+<th>Operation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Jobs</td>
+<td>Refresh/reconnect durable records; open execution details; cancel
+selected running Jobs; recover interrupted state through the existing
+owner; rerun only after explicit review. Rerun creates a new Job with
+the current registered source and reviewed inputs, preserving the
+historical execution.</td>
+</tr>
+<tr class="even">
+<td>History</td>
+<td>Hide finished selected executions; restore selected hidden
+executions; Include hidden makes reversible hidden rows visible. Hiding
+changes the user’s presentation, not scripts, logs, Datasets or output
+files.</td>
+</tr>
+<tr class="odd">
+<td>View</td>
+<td>Choose all/current/specific Session scope, filters, previous/next
+page and visible columns. Each page contains at most500 Jobs; counts
+cover full stored history.</td>
+</tr>
+<tr class="even">
+<td>Workspace</td>
+<td>New/Open/Save/Save As or Duplicate/Rename/Manager/Close save and
+restore this Manager’s filters, scope and layout. They do not change Job
+state, scripts, logs, outputs or resource policy.</td>
+</tr>
+<tr class="odd">
+<td>Settings</td>
+<td>Concurrency and resource policy opens the existing shared admission
+controls below.</td>
+</tr>
+<tr class="even">
+<td>Help</td>
+<td>History and Workspace help explains reversible hiding and
+presentation-only Workspaces.</td>
+</tr>
+</tbody>
+</table>
+<p>Double-click an execution for details. Read actual source/Job
+identity, runtime, stdout/stderr, resource usage, diagnostics and
+committed publications. A bounded preview can be incomplete: open its
+full log/details before drawing conclusions. Cancellation is
+asynchronous; wait for terminal state and cleanup. Reconnect reads the
+same durable Job instead of submitting a replacement.</p>
+<h3 id="execution-details-every-output-control">Execution details: every
+output control</h3>
+<p>The upper pane shows exact execution identity, source revision,
+runtime, parameters, input bindings, resource policy/usage, diagnostics
+and committed publication IDs. The lower pane displays the selected
+execution stream. Here <strong>source</strong> means that output stream,
+not the editor’s script source.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>Actual behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Copy Script ID / Copy Job ID</td>
+<td>Copy the registered script reference or this exact durable execution
+ID.</td>
+</tr>
+<tr class="even">
+<td>Copy details</td>
+<td>Copy the complete displayed upper execution-details text.</td>
+</tr>
+<tr class="odd">
+<td>Copy selection</td>
+<td>Copy selected text from the focused details/log pane. Native Ctrl+C
+and the text context menu also copy selections.</td>
+</tr>
+<tr class="even">
+<td>Select visible page</td>
+<td>Select only the current lower log page; it also suspends output
+following.</td>
+</tr>
+<tr class="odd">
+<td>Copy entire source</td>
+<td>Read the selected stream across pages into the clipboard, up
+to32MiB. Use Save for a larger stream.</td>
+</tr>
+<tr class="even">
+<td>Save source to file…</td>
+<td>Choose a normal destination and atomically export the selected
+complete retained stream. It does not save or alter the script.</td>
+</tr>
+<tr class="odd">
+<td>Program output</td>
+<td>Select stdout from this exact execution.</td>
+</tr>
+<tr class="even">
+<td>Program stderr</td>
+<td>Select the separate stderr stream when available.</td>
+</tr>
+<tr class="odd">
+<td>Diagnostic log</td>
+<td>Select trusted execution/runtime diagnostics.</td>
+</tr>
+<tr class="even">
+<td>Legacy combined stream</td>
+<td>Read an older execution’s combined log; unavailable streams have
+explicit diagnostics.</td>
+</tr>
+<tr class="odd">
+<td>First / Previous / Next / Latest page</td>
+<td>Navigate64KiB byte pages; status shows the actual byte range and
+total. Disabled Previous/Next indicates a boundary.</td>
+</tr>
+<tr class="even">
+<td>Follow latest output</td>
+<td>Follow new output in an active execution; pointer selection, manual
+scrolling/navigation suspend following so selected text remains
+stable.</td>
+</tr>
+<tr class="odd">
+<td>Publish source as Dataset…</td>
+<td>Review a new Dataset ID, then explicitly publish the selected stream
+as a canonical TEXT Dataset with original execution provenance. It
+creates no typed numerical columns.</td>
+</tr>
+<tr class="even">
+<td>Close</td>
+<td>Close this inspection window and its owned readers/transfers; the
+durable Job and retained output remain available in Jobs Manager.</td>
+</tr>
+</tbody>
+</table>
+<p>Copy/save use the original stream identity; replacement or shrinkage
+interrupts transfer with a useful error. A stopped transfer is not a
+complete export. The visible64KiB page is a bounded view, while
+complete-stream transfer reads the retained output through the existing
+Job owner. Closing and reopening details does not submit an execution.
+Splitter positions affect presentation only.</p>
+<p>Settings → Concurrency and resource policy has seven requested
+limits: <strong>Concurrent jobs</strong>, <strong>Admission limit
+(active + queued)</strong>, <strong>Threads per job</strong>,
+<strong>Memory per job (MiB)</strong>, <strong>Temporary disk per job
+(MiB)</strong>, <strong>Processes per job</strong> and <strong>Time per
+job (seconds)</strong>. Review effective detected limits; save only an
+intentional policy. These settings apply to newly admitted Jobs and do
+not retroactively change a running execution. Queued Jobs, owned
+children and supervisor enforcement remain the existing CORE execution
+services.</p>
+<figure>
+<img src="images/dev108-resource-policy.png"
+alt="Actual shared resource-policy controls; the QA walkthrough did not change policy." />
+<figcaption aria-hidden="true">Actual shared resource-policy controls;
+the QA walkthrough did not change policy.</figcaption>
+</figure>
+<h3 id="changed-session-recovery-and-terminal-debugger-states">Changed
+Session recovery and terminal debugger states</h3>
+<p>New and Import record the current Session lifetime. A Session-scoped
+buffer from A cannot Save, Save copy, Delete or Run into B. Returning to
+A’s same path creates a new lifetime and still refuses that old buffer.
+First Export the unsaved source if needed, then open the intended
+Session and <strong>New/Import</strong> or reopen its registered
+identity from the refreshed list. Review metadata/scope and Save a
+current revision. Choosing a different scope on a stale anonymous buffer
+is not implicit adoption into another Session. User-scoped authoring
+remains independent of a Session.</p>
+<figure>
+<img src="images/dev108-session-lifetime.png"
+alt="Actual stale Session buffer refusal; recover by exporting and reopening the intended identity." />
+<figcaption aria-hidden="true">Actual stale Session buffer refusal;
+recover by exporting and reopening the intended identity.</figcaption>
+</figure>
+<p>Normal Debug completion is <strong>COMPLETED</strong>; an explicit
+Stop is <strong>CANCELLED</strong>; interpreter/source errors are
+<strong>FAILED</strong>. The Python and Octave native debug adapters
+have a600-second inspection lease; expiry/Job supervision may stop an
+execution. Read the actual terminal state and diagnostic, rather than
+assuming every failure means a time limit. Stack, locals and
+current-line arrow clear after terminal completion/cancellation.
+Debugger control output and program stdout/stderr are different views.
+Close or source/Session changes require the owner’s cancellation/stale
+checks before another run.</p>
+<h2 id="per-file-markdown-notes-dev111-p030">Per-file Markdown Notes —
+DEV111-P030</h2>
+<p>Use the primary <strong>Edit → Edit Notes</strong> command for the
+selected source file. <strong>View → Show Notes</strong> hides or shows
+the same adjacent note page; it retains the draft and its Undo/search
+state. Notes use the shared Markdown editor with Source, Rendered,
+Outline, Properties and Resources views. Insert images through its
+existing image command. Source and Rendered have independent selection
+and copy. Find and Focus Source act on the selected note. Python/Octave
+temporarily give Notes the source region and restore the prior code
+panels when returning to code.</p>
+<p>Explicit Save publishes the note as a canonical Markdown Dataset in
+the current Session. Without a Session, Save retains an explicit local
+note; attach it when a Session is available. Save All and portable
+Project export preserve per-file notes and their PNG resources through
+the existing source-owner snapshot. Save As/Save Copy create fresh
+source/note identities and preserve the original. Notes do not change
+source code, build inputs or scientific execution hashes. If another
+editor changes the source or note, saving refuses and retains the draft;
+review the current revision or use Publish New to preserve a separate
+copy.</p>
+<p>Opening an associated note from the Dataset Browser returns to that
+exact file’s Notes page when its source remains available. Otherwise
+Documents opens the same canonical Dataset. Associated Source is
+read-only and shows only the exact matching source, with an explicit
+diagnostic if it has changed or disappeared.</p>
+<figure>
+<img src="images/p030-notes.png"
+alt="Python per-file Notes with Source, Rendered and the primary menus at font18." />
+<figcaption aria-hidden="true">Python per-file Notes with Source,
+Rendered and the primary menus at font18.</figcaption>
+</figure>
+<p>Python per-file Notes with Source, Rendered and the primary menus at
+font18.</p>
+<p>Formatting is in <strong>Edit → Note format</strong>, including
+headings, emphasis, code, lists, tables, links, quotes, rules and text
+color. <strong>Edit → Note images</strong> opens the shared PNG chooser
+and provides Replace/Remove for the selected managed resource.
+<strong>View → Note panes and zoom</strong> controls Source, Rendered
+preview, Outline, Properties and Resources independently, with zoom and
+layout reset. These groups act on the currently selected note and are
+unavailable on code pages. Portable images remain read-only until
+explicit Session attachment.</p>
 </body>
 </html>

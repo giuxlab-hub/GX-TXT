@@ -17,6 +17,9 @@ from tkinter import messagebox, simpledialog, ttk
 
 from PIL import Image, ImageTk, UnidentifiedImageError
 
+sys.path.insert(0, sys.argv[2] if len(sys.argv)>2 and sys.argv[1]=="--core-python" else str(Path(__file__).resolve().parents[4] / "core" / "python"))
+from gxtxt_workspace_rpc_v1 import JsonWorkspaceLifecycle, WorkspaceRpcClient
+
 from table_extractor_model import (
     HANDLES,
     Rect,
@@ -113,32 +116,8 @@ class RpcError(RuntimeError):
     pass
 
 
-class RpcClient:
-    def __init__(self):
-        self.counter = 0
-        self.focus_callback = None
-
-    def call(self, command: str, *args: str) -> str:
-        self.counter += 1
-        request_id = str(self.counter)
-        sys.stdout.write("\t".join(["REQ", request_id, command] + [b64e(str(a)) for a in args]) + "\n")
-        sys.stdout.flush()
-        while True:
-            response = sys.stdin.readline()
-            if response == "":
-                raise RpcError("The GX-TXT host connection closed.")
-            response = response.rstrip("\n")
-            if response == "CONTROL\tFOCUS":
-                if self.focus_callback:
-                    self.focus_callback()
-                continue
-            fields = response.split("\t")
-            if len(fields) != 4 or fields[0] != "RES" or fields[1] != request_id:
-                continue
-            payload = b64d(fields[3])
-            if fields[2] == "ERR":
-                raise RpcError(payload)
-            return payload
+class RpcClient(WorkspaceRpcClient):
+    pass
 
 
 class SourceCanvas(ttk.Frame):
@@ -308,7 +287,7 @@ class SourceCanvas(ttk.Frame):
         self.canvas.tag_raise("table_boundary")
 
 
-class TableExtractorApp:
+class TableExtractorApp(JsonWorkspaceLifecycle):
     def __init__(self, root: tk.Tk, rpc: RpcClient):
         self.root = root
         self.rpc = rpc
@@ -321,6 +300,7 @@ class TableExtractorApp:
         self.session_token = ""
         self.datasets: dict[str, dict] = {}
         self.documents: dict[str, dict] = {}
+        self.document_receipts: dict[str, tuple[str, str]] = {}
         self.current_doc_id: str | None = None
         self.current_source_id = ""
         self.source_info: dict = {}
@@ -359,11 +339,15 @@ class TableExtractorApp:
         self.refresh_workspace_selector()
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
-        if self.documents:
+        requested = sys.argv[sys.argv.index("--workspace") + 1] if "--workspace" in sys.argv else ""
+        if requested:
+            self.open_workspace(requested)
+        elif self.documents:
             self.open_workspace(next(iter(self.documents)))
         elif self.datasets:
             self.source_var.set(next(iter(self.datasets)))
             self.load_source()
+        self.workspace_lifecycle_start()
 
         autoclose = os.environ.get("GX_TABLE_EXTRACTOR_TEST_AUTOCLOSE_MS", "").strip()
         if autoclose.isdigit() and int(autoclose) > 0:
@@ -383,14 +367,10 @@ class TableExtractorApp:
             elif kind == "DATASET":
                 did, contract, fmt_, media, sha, title = fields
                 self.datasets[did] = {"contract": contract, "format": fmt_, "media_type": media, "sha256": sha, "title": title}
-            elif kind == "DOCUMENT":
-                doc_id, text, _updated = fields
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    continue
-                if data.get("format") == WORKSPACE_FORMAT:
-                    self.documents[doc_id] = data
+            elif kind == "DOCUMENT_INFO":
+                doc_id, name, _updated, generation, revision = fields
+                self.documents[doc_id] = {"name": name}
+                self.document_receipts[doc_id] = (generation, revision)
         if not self.session_token:
             raise RpcError("GX-TXT did not provide a Session token.")
 
@@ -897,6 +877,8 @@ class TableExtractorApp:
         return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
 
     def new_workspace(self):
+        if not self.workspace_review("creating a new Workspace"):
+            return
         name = simpledialog.askstring(APP_NAME, "Workspace name:", initialvalue="Table extraction workspace", parent=self.root)
         if not name:
             return
@@ -908,20 +890,26 @@ class TableExtractorApp:
         self.last_boundaries = []
         self.refresh_table_preview()
         self.status.set("New workspace")
+        self.workspace_mark_saved()
 
     def save_workspace(self):
         try:
             payload = self.workspace_payload()
             if self.current_doc_id:
-                doc_id = self.rpc.call("DOC_UPDATE", self.current_doc_id, payload, self.session_token)
+                response = self.rpc.call("DOC_UPDATE", self.current_doc_id, payload, self.session_token, *self.document_receipts[self.current_doc_id])
             else:
-                doc_id = self.rpc.call("DOC_CREATE", payload)
-                self.current_doc_id = doc_id
+                response = self.rpc.call("DOC_CREATE", payload)
+            doc_id, generation, revision = response.split("\t")
+            self.current_doc_id = doc_id
+            self.document_receipts[doc_id] = (generation, revision)
             self.documents[doc_id] = json.loads(payload)
             self.refresh_workspace_selector()
             self.status.set(f"Workspace saved: {doc_id}")
+            self.workspace_mark_saved()
+            return True
         except Exception as exc:
             messagebox.showerror(APP_NAME, str(exc), parent=self.root)
+            return False
 
     def delete_workspace(self):
         if not self.current_doc_id:
@@ -929,12 +917,14 @@ class TableExtractorApp:
         if not messagebox.askyesno(APP_NAME, "Delete this saved Table Extractor workspace? Published Datasets are not deleted.", parent=self.root):
             return
         try:
-            self.rpc.call("DOC_DELETE", self.current_doc_id, self.session_token)
+            self.rpc.call("DOC_DELETE", self.current_doc_id, self.session_token, *self.document_receipts[self.current_doc_id])
             self.documents.pop(self.current_doc_id, None)
+            self.document_receipts.pop(self.current_doc_id, None)
             self.current_doc_id = None
             self.workspace_var.set("")
             self.refresh_workspace_selector()
             self.status.set("Workspace deleted")
+            self.workspace_mark_saved()
         except Exception as exc:
             messagebox.showerror(APP_NAME, str(exc), parent=self.root)
 
@@ -960,9 +950,19 @@ class TableExtractorApp:
             self.open_workspace(doc_id)
 
     def open_workspace(self, doc_id: str):
-        data = self.documents.get(doc_id)
-        if not data:
-            return
+        if not self.workspace_review("opening another Workspace"):
+            return False
+        records = parse_records(self.rpc.call("DOC_READ", doc_id))
+        if len(records) != 1 or records[0][0] != "DOCUMENT":
+            raise RpcError("The host did not return the requested native Workspace")
+        returned_id, text, _updated, generation, revision = records[0][1]
+        if returned_id != doc_id:
+            raise RpcError("Workspace identity changed while opening")
+        data = json.loads(text)
+        if data.get("format") != WORKSPACE_FORMAT or data.get("version") != WORKSPACE_VERSION:
+            raise RpcError("Incompatible native Table Extractor Workspace")
+        self.documents[doc_id] = data
+        self.document_receipts[doc_id] = (generation, revision)
         self.loading_state = True
         try:
             self.current_doc_id = doc_id
@@ -998,8 +998,15 @@ class TableExtractorApp:
         finally:
             self.loading_state = False
             self.refresh_workspace_selector()
+        self.workspace_mark_saved()
+        return True
 
     def close(self):
+        if not self.workspace_review("closing"):
+            return
+        self.dispose()
+
+    def dispose(self):
         try:
             shutil.rmtree(self.tempdir, ignore_errors=True)
         finally:

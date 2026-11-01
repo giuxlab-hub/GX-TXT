@@ -89,7 +89,7 @@ unchanged.
 
 The public v1 API and complete default results are retained. Large arrays use
 scoped binary buffers and a per-job Octave context through the existing provider
-bindings. The public Script Bridge and Dataset API contracts specify shape, dtype,
+bindings. See `docs/api/SCIENTIFIC_BINARY_TRANSPORT_dev093.md` for shape, dtype,
 resource limits, optional Signal uniform grids/result projection and output bindings.
 
 ## Descriptive signal summary

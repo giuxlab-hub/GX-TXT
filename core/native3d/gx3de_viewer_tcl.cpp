@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Application bridge: Viewer Provider dictionaries -> public GX3DE C ABI.
 #include <tcl.h>
+#include <png.h>
 #include "native_3d_engine_api_v1.h"
 #include "native_3d_scientific_figure_api_v1.h"
 #include "native_3d_field_api_v1.h"
@@ -17,6 +18,7 @@
 #include <iostream>
 #ifdef _WIN32
 #include <io.h>
+#include <process.h>
 #else
 #include <unistd.h>
 #endif
@@ -99,9 +101,21 @@ Tcl_Obj *matrixObj(const gx3de_mat4 &matrix) {
     return list;
 }
 struct State;
+struct SketchResource {
+    Tcl_Obj* layers=nullptr;
+    std::string revision;
+    bool visible=true;
+    uint64_t points=0,bytes=0;
+    std::vector<gx3de_object*> objects;
+    ~SketchResource(){if(layers)Tcl_DecrRefCount(layers);}
+};
+void restoreSketchResources(Tcl_Interp*,State&);
 struct FrameSource {State* state=nullptr;Tcl_Interp* interp=nullptr;Tcl_Obj* layer=nullptr;
                     std::string layerId;};
 struct State {
+    bool fastPresentationPng=false;
+    bool projectionEnabled=false;
+    uint64_t projectionRevision=0;
     std::map<std::string,std::unique_ptr<State>> cadScopes;
     gx3de_engine *cadEngine=nullptr;
     gx3de_scene *cadScene=nullptr;
@@ -126,7 +140,12 @@ struct State {
     gx3de_scientific_figure captureOriginalFigure{};
     gx3de_object *gizmoObject=nullptr;
     std::string gizmoLayer;
+    gx3de_object* selectionObject=nullptr;
     std::vector<std::pair<gx3de_object*,std::string>> objects;
+    // Derived display resources only. Exact Native2D / Document / History data
+    // never enter this table. Camera changes leave these actors untouched.
+    std::map<std::string,std::unique_ptr<SketchResource>> sketchResources;
+    uint64_t sketchUpdates=0,sketchReuses=0,sketchReplays=0;
     std::vector<std::unique_ptr<FrameSource>> frameSources;
     std::vector<std::pair<std::string,gx3de_animation_layer*>> timelineLayers;
     std::vector<std::pair<std::string,gx3de_anchor*>> annotationAnchors;
@@ -139,6 +158,8 @@ struct State {
         frameSources.clear();timelineLayers.clear();
         captureFigureSaved=false;captureOriginalFigure={};
         objects.clear();
+        selectionObject=nullptr;
+        for(auto& item:sketchResources)item.second->objects.clear();
         annotationAnchors.clear();
         autoFitted=false;
         if (target) {gx3de_target_destroy(target);target=nullptr;viewport=nullptr;}
@@ -152,7 +173,7 @@ struct State {
         if(cadScene){gx3de_scene_destroy(cadScene);cadScene=nullptr;}
         if(cadEngine){gx3de_engine_destroy(cadEngine);cadEngine=nullptr;}
     }
-    void clear(){clearRender();clearCad();}
+    void clear(){clearRender();sketchResources.clear();clearCad();}
     ~State(){clear();}
     void add(Tcl_Interp *ip,gx3de_object *object,const std::string &id,Tcl_Obj *layer,bool visible,double opacity) {
         check(gx3de_object_set_visible(object,visible?1u:0u),"set visibility");
@@ -199,6 +220,61 @@ struct State {
         objects.emplace_back(object,id);
     }
 };
+// Lossless GUI transport over the existing public RGBA readback. Scientific
+// export remains gx3de_target_write_png / supersampled export. The renderer,
+// sampling, color transfer and alpha bytes are unchanged; only compression work
+// for the repeatedly replaced intermediate GUI frame is reduced.
+bool encodePresentationPng(FILE* file,uint32_t width,uint32_t height,const uint8_t* rgba) {
+    auto* png=png_create_write_struct(PNG_LIBPNG_VER_STRING,nullptr,nullptr,nullptr);
+    if(!png)return false;
+    auto* info=png_create_info_struct(png);
+    if(!info){png_destroy_write_struct(&png,nullptr);return false;}
+    if(setjmp(png_jmpbuf(png))){png_destroy_write_struct(&png,&info);return false;}
+    png_init_io(png,file);
+    png_set_IHDR(png,info,width,height,8,PNG_COLOR_TYPE_RGBA,PNG_INTERLACE_NONE,PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
+    png_set_compression_level(png,1);png_set_filter(png,PNG_FILTER_TYPE_BASE,PNG_FILTER_NONE);
+    // Match Native3D's untagged PNG contract: no implicit gAMA/sRGB conversion.
+    png_write_info(png,info);
+    for(uint32_t y=0;y<height;++y)png_write_row(png,const_cast<png_bytep>(rgba+uint64_t(y)*width*4));
+    png_write_end(png,info);png_destroy_write_struct(&png,&info);return true;
+}
+gx3de_result presentationPng(State& state,const char* filename) {
+    if(!state.fastPresentationPng)return gx3de_target_write_png(state.target,filename);
+    try {
+        gx3de_target_geometry geometry{};geometry.struct_size=sizeof geometry;
+        auto code=gx3de_target_geometry_get(state.target,&geometry);if(code!=GX3DE_OK)return code;
+        uint64_t required=0;code=gx3de_target_read_rgba(state.target,nullptr,0,&required);if(code!=GX3DE_OK)return code;
+        if(required>268435456 || required!=uint64_t(geometry.physical_width)*geometry.physical_height*4)return GX3DE_RANGE;
+        std::vector<uint8_t> pixels(required);
+        code=gx3de_target_read_rgba(state.target,pixels.data(),pixels.size(),&required);if(code!=GX3DE_OK)return code;
+        const auto output=std::filesystem::u8path(filename);
+        auto temp=output;temp+=".gx3de-frame-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count())+".tmp";
+#ifdef _WIN32
+        FILE* file=_wfopen(temp.c_str(),L"wb");
+#else
+        FILE* file=std::fopen(temp.c_str(),"wb");
+#endif
+        if(!file)return GX3DE_NOT_FOUND;
+        bool ok=encodePresentationPng(file,geometry.physical_width,geometry.physical_height,pixels.data());
+        if(std::fclose(file)!=0)ok=false;
+        std::error_code ec;
+        if(ok){std::filesystem::rename(temp,output,ec);ok=!ec;}
+        if(!ok){std::filesystem::remove(temp,ec);return GX3DE_DEGENERATE;}
+        return GX3DE_OK;
+    }catch(const std::bad_alloc&){return GX3DE_OUT_OF_MEMORY;}catch(const std::exception&){return GX3DE_DEGENERATE;}
+}
+int frameTransport(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
+    if(argc<2||argc>3){Tcl_WrongNumArgs(ip,1,args,"png|fast_png ?write_current_frame_path?");return TCL_ERROR;}
+    auto& state=*static_cast<State*>(data);
+    const std::string mode=str(args[1]);
+    if(mode!="png"&&mode!="fast_png"){Tcl_SetObjResult(ip,Tcl_NewStringObj("Frame transport must be png or fast_png",-1));return TCL_ERROR;}
+    state.fastPresentationPng=mode=="fast_png";
+    try {
+        if(argc==3)check(presentationPng(state,str(args[2]).c_str()),"write current presentation frame");
+        Tcl_Obj* result=Tcl_NewDictObj();put(ip,result,"frame_transport",Tcl_NewStringObj(mode.c_str(),-1));put(ip,result,"lossless",Tcl_NewBooleanObj(1));
+        Tcl_SetObjResult(ip,result);return TCL_OK;
+    }catch(const std::exception& e){Tcl_SetObjResult(ip,Tcl_NewStringObj(e.what(),-1));return TCL_ERROR;}
+}
 void applyPresentation(Tcl_Interp *ip,gx3de_object *object,Tcl_Obj *layer,bool hasVectors) {
     gx3de_scientific_presentation presentation{};presentation.struct_size=sizeof presentation;
     std::string map=field(ip,layer,"colormap");
@@ -790,6 +866,28 @@ gx3de_object *cellFieldObject(Tcl_Interp *ip,gx3de_scene *scene,Tcl_Obj *layer) 
     gx3de_object *object=nullptr;check(gx3de_scientific_create_polydata(scene,&spec,&object),"create exact planar cell field");
     applyScientificRoles(ip,object,layer);return object;
 }
+gx3de_object* memoryLines(Tcl_Interp* ip,gx3de_scene* scene,Tcl_Obj* layer) {
+    int count=0;Tcl_Obj** rows=nullptr;
+    if(!get(ip,layer,"vertices")||Tcl_ListObjGetElements(ip,get(ip,layer,"vertices"),&count,&rows)!=TCL_OK||count<1||count>65536)
+        throw std::runtime_error("Sketch display requires 1..65536 native-projected XYZ vertices");
+    std::vector<gx3de_vec3> points;points.reserve(count);
+    for(int i=0;i<count;++i){int n=0;Tcl_Obj** xyz=nullptr;if(Tcl_ListObjGetElements(ip,rows[i],&n,&xyz)!=TCL_OK||n!=3)throw std::runtime_error("Sketch display vertex requires XYZ");points.push_back({number(str(xyz[0]),"X"),number(str(xyz[1]),"Y"),number(str(xyz[2]),"Z")});}
+    int paths=0;Tcl_Obj** lines=nullptr;
+    if(get(ip,layer,"polylines")&&(Tcl_ListObjGetElements(ip,get(ip,layer,"polylines"),&paths,&lines)!=TCL_OK||paths>65536))throw std::runtime_error("Too many Sketch display paths");
+    std::vector<std::vector<uint64_t>> indices;indices.reserve(paths?paths:count);
+    for(int i=0;i<paths;++i){int n=0;Tcl_Obj** ids=nullptr;if(Tcl_ListObjGetElements(ip,lines[i],&n,&ids)!=TCL_OK||n<2||n>65536)throw std::runtime_error("Sketch display path needs 2..65536 indices");std::vector<uint64_t> row;row.reserve(n);for(int j=0;j<n;++j){auto index=integer(str(ids[j]),"Sketch display index");if(index>=points.size())throw std::runtime_error("Sketch display index outside vertices");row.push_back(index);}indices.push_back(std::move(row));}
+    int vertices=0;Tcl_Obj** vertexIds=nullptr;
+    if(get(ip,layer,"points")) {
+        if(Tcl_ListObjGetElements(ip,get(ip,layer,"points"),&vertices,&vertexIds)!=TCL_OK||vertices>65536)throw std::runtime_error("Too many Sketch display point cells");
+        for(int i=0;i<vertices;++i){auto index=integer(str(vertexIds[i]),"Sketch point index");if(index>=points.size())throw std::runtime_error("Sketch point outside vertices");indices.push_back({index});}
+    }
+    if(indices.empty()){for(uint64_t i=0;i<points.size();++i)indices.push_back({i});}
+    std::vector<gx3de_scientific_cell_input> cells;cells.reserve(indices.size());
+    for(const auto& row:indices){gx3de_scientific_cell_input cell{};cell.struct_size=sizeof cell;cell.type=row.size()==1?GX3DE_SCI_CELL_VERTEX:GX3DE_SCI_CELL_POLYLINE;cell.point_ids=row.data();cell.point_count=row.size();cells.push_back(cell);}
+    gx3de_scientific_polydata_spec spec{};spec.struct_size=sizeof spec;spec.points=points.data();spec.point_count=points.size();spec.cells=cells.data();spec.cell_count=cells.size();
+    gx3de_object* object=nullptr;check(gx3de_scientific_create_polydata(scene,&spec,&object),"create native Sketch display");return object;
+}
+#include "gx3de_sketch_resources_exp01.inc"
 void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
     Tcl_Obj *layers=get(ip,scene,"layers"),*view=get(ip,scene,"view");
     if(!layers||!view) throw std::runtime_error("Viewer scene is incomplete");
@@ -807,6 +905,12 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
                 gx3de_object *object=cellFieldObject(ip,state.scene,layer.value);
                 state.add(ip,object,layer.id,layer.value,visible,opacity);
             } else if(field(ip,layer.value,"source_mode")=="memory_geometry") {
+                if(get(ip,layer.value,"polylines")||get(ip,layer.value,"points")) {
+                    // Authoritative definitions stay in Native2D. This bounded
+                    // native projection is presentation, never replacement CAD.
+                    auto* object=memoryLines(ip,state.scene,layer.value);
+                    state.add(ip,object,layer.id,layer.value,visible,opacity);continue;
+                }
                 // Display-only geometry enters the same public native mesh ABI.
                 // It has no Dataset identity, path, publication or CAD authority.
                 Tcl_Obj *vertices=get(ip,layer.value,"vertices"),*triangles=get(ip,layer.value,"triangles");
@@ -939,6 +1043,7 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
         check(gx3de_view_axes_set(state.view,&axes),"set reference axes");
     }
     sceneCurves(ip,state,view);
+    restoreSketchResources(ip,state);
 }
 void error(Tcl_Interp *ip,const std::exception &e) {Tcl_SetObjResult(ip,Tcl_NewStringObj(e.what(),-1));}
 uint32_t graphicsLod(const std::string& value) {
@@ -993,9 +1098,28 @@ void putRendererInfo(Tcl_Interp* ip,Tcl_Obj* result,gx3de_target* target) {
     put(ip,result,"driver",Tcl_NewStringObj(device.driver,-1));
     put(ip,result,"fallback_reason",Tcl_NewStringObj(device.fallback_reason,-1));
 }
+// Bounded frame receipts only: no trace stream, polling or renderer changes.
+// Native render is a wall-clock API span; PNG includes readback and encoding.
+struct FrameTiming {
+    using Clock=std::chrono::steady_clock;
+    Clock::time_point previous=Clock::now();
+    double stages[3]{};
+    void split(unsigned stage) {
+        const auto now=Clock::now();
+        stages[stage]=std::chrono::duration<double,std::milli>(now-previous).count();
+        previous=now;
+    }
+    void append(Tcl_Interp* ip,Tcl_Obj* result) const {
+        auto* timings=Tcl_NewDictObj();
+        const char* keys[]={"prepare","native_render","png_write"};
+        for(unsigned i=0;i<3;++i)put(ip,timings,keys[i],Tcl_NewDoubleObj(stages[i]));
+        put(ip,result,"timings_ms",timings);
+    }
+};
 #include "native3d_scientific_figure_tcl_v1.inc"
 int render(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     if(argc!=6){Tcl_WrongNumArgs(ip,1,args,"scene png width height preview|full");return TCL_ERROR;}
+    FrameTiming timing;
     auto &state=*static_cast<State*>(data);state.clearRender();
     try {
         std::string path=str(args[2]);uint64_t width=integer(str(args[3]),"width"),height=integer(str(args[4]),"height");
@@ -1023,8 +1147,11 @@ int render(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         fillScene(ip,state,args[1],stage=="preview");
         if(get(ip,args[1],"logical_focus"))logicalFocus(ip,state,get(ip,args[1],"logical_focus"));
         scientificFigure(ip,state,get(ip,args[1],"scientific_figure"));
-        checkRender(state.target,gx3de_target_render(state.target),"render scene");check(gx3de_target_write_png(state.target,path.c_str()),"write PNG");
+        timing.split(0);
+        checkRender(state.target,gx3de_target_render(state.target),"render scene");timing.split(1);
+        check(presentationPng(state,path.c_str()),"write PNG");timing.split(2);
         Tcl_Obj *result=Tcl_NewDictObj();put(ip,result,"object_count",Tcl_NewWideIntObj(static_cast<Tcl_WideInt>(state.objects.size())));put(ip,result,"path",Tcl_NewStringObj(path.c_str(),-1));
+        timing.append(ip,result);
         put(ip,result,"auto_fitted",Tcl_NewIntObj(state.autoFitted?1:0));
         put(ip,result,"stage",Tcl_NewStringObj(stage.c_str(),-1));
         put(ip,result,"navcube_size_pixels",Tcl_NewIntObj(cube.size_pixels));
@@ -1080,7 +1207,7 @@ int render(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
 }
 int capabilities(ClientData,Tcl_Interp*ip,int argc,Tcl_Obj*const args[]){
     if(argc!=1){Tcl_WrongNumArgs(ip,1,args,"");return TCL_ERROR;}
-    Tcl_SetObjResult(ip,Tcl_NewStringObj("managed_planar_texture exact_planar_cell_field pick_frame",-1));return TCL_OK;
+    Tcl_SetObjResult(ip,Tcl_NewStringObj("managed_planar_texture exact_planar_cell_field pick_frame cad_sketch_memory_polylines cad_projection_snapshot_v1 batched_camera_navigation fast_png_frames",-1));return TCL_OK;
 }
 int graphicsProbe(ClientData,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
     if(argc!=2){Tcl_WrongNumArgs(ip,1,args,"graphics policy");return TCL_ERROR;}
@@ -1122,7 +1249,7 @@ int presentationUpdate(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const ar
    auto opacity=get(ip,fields,"opacity")?number(field(ip,fields,"opacity"),"opacity"):previous.opacity;
    check(gx3de_target_object_presentation_set(state.target,previous.object,&style,visible,opacity),"selective object presentation");
   }
-  checkRender(state.target,gx3de_target_render(state.target),"render selective presentation");check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write selective presentation");
+  checkRender(state.target,gx3de_target_render(state.target),"render selective presentation");check(presentationPng(state,str(args[3]).c_str()),"write selective presentation");
   auto* result=Tcl_NewDictObj();put(ip,result,"updated_objects",Tcl_NewWideIntObj(saved.size()));put(ip,result,"geometry_rebuilt",Tcl_NewIntObj(0));Tcl_SetObjResult(ip,result);return TCL_OK;
  }catch(const std::exception& e){for(auto& previous:saved){gx3de_object_style_set(previous.object,&previous.style);gx3de_object_set_visible(previous.object,previous.visible);gx3de_object_set_opacity(previous.object,previous.opacity);}error(ip,e);return TCL_ERROR;}
 }
@@ -1130,7 +1257,7 @@ int presentationUpdate(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const ar
 int focusLogical(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
  if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"reference PNG");return TCL_ERROR;}
  auto& state=*static_cast<State*>(data);
- try {if(!state.view||!state.target)throw std::runtime_error("Render before logical focus");logicalFocus(ip,state,args[1]);checkRender(state.target,gx3de_target_render(state.target),"render logical focus");check(gx3de_target_write_png(state.target,str(args[2]).c_str()),"write logical focus");Tcl_SetObjResult(ip,args[1]);return TCL_OK;}catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
+ try {if(!state.view||!state.target)throw std::runtime_error("Render before logical focus");logicalFocus(ip,state,args[1]);checkRender(state.target,gx3de_target_render(state.target),"render logical focus");check(presentationPng(state,str(args[2]).c_str()),"write logical focus");Tcl_SetObjResult(ip,args[1]);return TCL_OK;}catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
 }
 int textureAnchor(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     if(argc!=6){Tcl_WrongNumArgs(ip,1,args,"x y verified_managed_png width height");return TCL_ERROR;}
@@ -1164,11 +1291,11 @@ int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         auto present=[&]() {
             if(argc==4) {
                 checkRender(state.target,gx3de_target_render(state.target),"render picked selection");
-                check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write picked selection PNG");
+                check(presentationPng(state,str(args[3]).c_str()),"write picked selection PNG");
             }
         };
         if(result==GX3DE_NOT_FOUND) {
-            if(argc==4)check(gx3de_view_set_selection(state.view,nullptr),"clear missed selection");
+            if(argc==4){check(gx3de_view_set_selection(state.view,nullptr),"clear missed selection");state.selectionObject=nullptr;}
             present();put(ip,reply,"hit",Tcl_NewIntObj(0));Tcl_SetObjResult(ip,reply);return TCL_OK;
         }
         check(result,"pick viewport");
@@ -1187,6 +1314,7 @@ int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         if(hit.point_index!=UINT64_MAX&&gx3de_scientific_logical_id(hit.object,GX3DE_SCI_ASSOC_POINT,hit.point_index,&logical)==GX3DE_OK)put(ip,reply,"logical_point_id",Tcl_NewWideIntObj(logical));
         gx3de_anchor *anchor=nullptr;check(gx3de_pick_make_anchor(state.viewport,&hit,&anchor),"create selection anchor");
         check(gx3de_view_set_selection(state.view,anchor),"set view selection");
+        state.selectionObject=hit.object;
         // The scene owns anchors. The view holds this pointer until the next
         // render resets the scene; destroying it here would clear selection.
         present();
@@ -1215,7 +1343,7 @@ int preset(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         }
         check(gx3de_view_camera_preset(state.view,selected,object),"camera preset");
         checkRender(state.target,gx3de_target_render(state.target),"render camera preset");
-        std::string path=str(args[3]);check(gx3de_target_write_png(state.target,path.c_str()),"write preset PNG");
+        std::string path=str(args[3]);check(presentationPng(state,path.c_str()),"write preset PNG");
         gx3de_camera camera{};camera.struct_size=sizeof camera;check(gx3de_view_get_camera(state.view,&camera),"query preset camera");
         Tcl_Obj *result=Tcl_NewDictObj();
         put(ip,result,"camera_position",vecObj(camera.position));put(ip,result,"camera_target",vecObj(camera.target));put(ip,result,"camera_up",vecObj(camera.up));
@@ -1236,9 +1364,13 @@ int cameraRestore(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[])
         camera.vertical_fov_degrees=number(field(ip,args[1],"vertical_fov_degrees"),"camera FOV");
         camera.near_clip=number(field(ip,args[1],"near_clip"),"near clip");
         camera.far_clip=number(field(ip,args[1],"far_clip"),"far clip");
+        const auto heightText=field(ip,args[1],"orthographic_height");
+        const double height=heightText.empty()?0:number(heightText,"orthographic height");
+        if(!heightText.empty()&&height<=0)throw std::runtime_error("Orthographic height must be positive");
         check(gx3de_view_set_camera(state.view,&camera),"restore camera");
+        if(!heightText.empty())check(gx3de_view_orthographic_height_set(state.view,height),"restore orthographic height");
         checkRender(state.target,gx3de_target_render(state.target),"render restored camera");
-        check(gx3de_target_write_png(state.target,str(args[2]).c_str()),"write restored camera PNG");
+        check(presentationPng(state,str(args[2]).c_str()),"write restored camera PNG");
         Tcl_SetObjResult(ip,args[1]);return TCL_OK;
     } catch(const std::exception &e){Tcl_SetObjResult(ip,Tcl_NewStringObj(e.what(),-1));return TCL_ERROR;}
 }
@@ -1266,7 +1398,7 @@ int navcubeClick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) 
             static_cast<uint32_t>(integer(str(args[2]),"y")),&region),"select Navigation Cube region");
         if(!region)throw std::runtime_error("Navigation Cube click missed");
         checkRender(state.target,gx3de_target_render(state.target),"render Navigation Cube orientation");
-        check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write Navigation Cube PNG");
+        check(presentationPng(state,str(args[3]).c_str()),"write Navigation Cube PNG");
         gx3de_camera camera{};camera.struct_size=sizeof camera;
         check(gx3de_view_get_camera(state.view,&camera),"query Navigation Cube camera");
         Tcl_Obj *result=Tcl_NewDictObj();
@@ -1277,32 +1409,59 @@ int navcubeClick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) 
         Tcl_SetObjResult(ip,result);return TCL_OK;
     }catch(const std::exception &e){error(ip,e);return TCL_ERROR;}
 }
-int navigate(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
-    if(argc!=5){Tcl_WrongNumArgs(ip,1,args,"orbit|pan|zoom delta_x delta_y png");return TCL_ERROR;}
-    auto &state=*static_cast<State*>(data);
+struct NavigationStep {std::string mode;double x,y;};
+void applyNavigation(State& state,const NavigationStep& step) {
+    if(step.mode=="orbit")check(gx3de_view_camera_orbit(state.view,step.x*0.005,step.y*0.005,nullptr),"orbit camera");
+    else if(step.mode=="roll")check(gx3de_view_camera_roll(state.view,step.x*0.005),"roll camera");
+    else if(step.mode=="pan")check(gx3de_view_camera_pan(state.viewport,step.x,step.y),"pan camera");
+    else {
+        gx3de_camera current{};current.struct_size=sizeof current;
+        if(state.projectionEnabled)check(gx3de_view_get_camera(state.view,&current),"query opt-in projection zoom mode");
+        if(state.projectionEnabled&&current.orthographic)check(gx3de_view_camera_zoom(state.view,std::exp(0.12*step.x)),"zoom orthographic CAD projection");
+        else check(gx3de_view_camera_dolly(state.view,std::exp(0.12*step.x)),"dolly camera");
+    }
+}
+NavigationStep navigationStep(Tcl_Interp* ip,Tcl_Obj* mode,Tcl_Obj* x,Tcl_Obj* y) {
+    NavigationStep step{str(mode),number(str(x),"camera navigation delta x"),number(str(y),"camera navigation delta y")};
+    if(step.mode!="orbit"&&step.mode!="roll"&&step.mode!="pan"&&step.mode!="zoom")throw std::runtime_error("Unknown camera navigation mode: "+step.mode);
+    return step;
+}
+int navigationDispatch(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[],bool batch) {
+    if(argc!=(batch?3:5)){Tcl_WrongNumArgs(ip,1,args,batch?"ordered_navigation_rows png":"orbit|pan|zoom delta_x delta_y png");return TCL_ERROR;}
+    auto &state=*static_cast<State*>(data);FrameTiming timing;
     try {
-        if(!state.view||!state.viewport||!state.target)
-            throw std::runtime_error("Render a scene before camera navigation");
-        const std::string mode=str(args[1]);
-        const double x=number(str(args[2]),"camera navigation delta x");
-        const double y=number(str(args[3]),"camera navigation delta y");
-        if(mode=="orbit")check(gx3de_view_camera_orbit(state.view,x*0.005,y*0.005,nullptr),"orbit camera");
-        else if(mode=="roll")check(gx3de_view_camera_roll(state.view,x*0.005),"roll camera");
-        else if(mode=="pan")check(gx3de_view_camera_pan(state.viewport,x,y),"pan camera");
-        else if(mode=="zoom")check(gx3de_view_camera_dolly(state.view,std::exp(0.12*x)),"dolly camera");
-        else throw std::runtime_error("Unknown camera navigation mode: "+mode);
-        checkRender(state.target,gx3de_target_render(state.target),"render navigated camera");
-        const std::string path=str(args[4]);
-        check(gx3de_target_write_png(state.target,path.c_str()),"write navigated camera PNG");
+        if(!state.view||!state.viewport||!state.target)throw std::runtime_error("Render a scene before camera navigation");
+        std::vector<NavigationStep> steps;
+        if(batch) {
+            int count=0;Tcl_Obj** rows=nullptr;
+            if(Tcl_ListObjGetElements(ip,args[1],&count,&rows)!=TCL_OK||count<1||count>4096)throw std::runtime_error("Camera batch requires1..4096 ordered steps");
+            steps.reserve(count);
+            for(int i=0;i<count;++i){
+                int columns=0;Tcl_Obj** values=nullptr;
+                if(Tcl_ListObjGetElements(ip,rows[i],&columns,&values)!=TCL_OK||columns!=3)throw std::runtime_error("Camera step requires mode, delta x and delta y");
+                steps.push_back(navigationStep(ip,values[0],values[1],values[2]));
+            }
+        } else steps.push_back(navigationStep(ip,args[1],args[2],args[3]));
+        // Validate every row before mutation. Preserve ordered native camera
+        // semantics: orbit/pan/roll are not commutatively added or approximated.
+        gx3de_camera original{};original.struct_size=sizeof original;
+        check(gx3de_view_get_camera(state.view,&original),"capture camera before navigation");
+        double originalHeight=0;check(gx3de_view_orthographic_height_get(state.view,&originalHeight),"capture orthographic height before navigation");
+        try {for(const auto& step:steps)applyNavigation(state,step);}
+        catch(...) {gx3de_view_set_camera(state.view,&original);gx3de_view_orthographic_height_set(state.view,originalHeight);throw;}
+        timing.split(0);
+        checkRender(state.target,gx3de_target_render(state.target),"render navigated camera");timing.split(1);
+        check(presentationPng(state,str(args[batch?2:4]).c_str()),"write navigated camera PNG");timing.split(2);
         gx3de_camera camera{};camera.struct_size=sizeof camera;
         check(gx3de_view_get_camera(state.view,&camera),"query navigated camera");
-        Tcl_Obj *result=Tcl_NewDictObj();
-        put(ip,result,"camera_position",vecObj(camera.position));
-        put(ip,result,"camera_target",vecObj(camera.target));
-        put(ip,result,"camera_up",vecObj(camera.up));
+        Tcl_Obj *result=Tcl_NewDictObj();timing.append(ip,result);
+        put(ip,result,"navigation_operations",Tcl_NewWideIntObj(steps.size()));
+        put(ip,result,"camera_position",vecObj(camera.position));put(ip,result,"camera_target",vecObj(camera.target));put(ip,result,"camera_up",vecObj(camera.up));
         Tcl_SetObjResult(ip,result);return TCL_OK;
     } catch(const std::exception &e) {error(ip,e);return TCL_ERROR;}
 }
+int navigate(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {return navigationDispatch(data,ip,argc,args,false);}
+int navigateBatch(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {return navigationDispatch(data,ip,argc,args,true);}
 int gizmoSelect(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     if(argc!=8){Tcl_WrongNumArgs(ip,1,args,"layer_id world|local families pivot_xyz pivot_marker size_pixels png");return TCL_ERROR;}
     auto &state=*static_cast<State*>(data);
@@ -1339,7 +1498,7 @@ int gizmoSelect(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         check(gx3de_gizmo_create(state.view,&spec,&state.gizmo),"create object manipulator");
         state.gizmoObject=object;state.gizmoLayer=layer;
         checkRender(state.target,gx3de_target_render(state.target),"render manipulator");
-        check(gx3de_target_write_png(state.target,str(args[7]).c_str()),"write manipulator PNG");
+        check(presentationPng(state,str(args[7]).c_str()),"write manipulator PNG");
         Tcl_Obj *reply=Tcl_NewDictObj();put(ip,reply,"layer_id",Tcl_NewStringObj(layer.c_str(),-1));
         Tcl_SetObjResult(ip,reply);return TCL_OK;
     } catch(const std::exception &e) {error(ip,e);return TCL_ERROR;}
@@ -1385,7 +1544,7 @@ int gizmoUpdate(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         gx3de_gizmo_result moved{};moved.struct_size=sizeof moved;
         check(gx3de_gizmo_update_screen(state.gizmo,state.viewport,x,y,&moved),"update manipulator drag");
         checkRender(state.target,gx3de_target_render(state.target),"render manipulator drag");
-        check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write manipulator drag PNG");
+        check(presentationPng(state,str(args[3]).c_str()),"write manipulator drag PNG");
         Tcl_Obj *reply=Tcl_NewDictObj();put(ip,reply,"handle",Tcl_NewIntObj(static_cast<int>(moved.active_handle)));
         put(ip,reply,"matrix",matrixObj(moved.proposed_local_transform));
         put(ip,reply,"translation_world",vecObj(moved.translation_world));
@@ -1460,7 +1619,7 @@ int planeUpdate(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]){
             static_cast<uint32_t>(integer(str(args[1]),"x")),
             static_cast<uint32_t>(integer(str(args[2]),"y")),&result),"update plane drag");
         checkRender(state.target,gx3de_target_render(state.target),"render plane drag");
-        check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write plane drag PNG");
+        check(presentationPng(state,str(args[3]).c_str()),"write plane drag PNG");
         Tcl_Obj* reply=Tcl_NewDictObj();put(ip,reply,"origin",vecObj(result.origin));
         put(ip,reply,"normal",vecObj(result.normal));
         Tcl_SetObjResult(ip,reply);return TCL_OK;
@@ -1521,7 +1680,7 @@ int timelineControl(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[
         else throw std::runtime_error("Unknown timeline action");
         check(rc,"control timeline");refreshTimelineObjects(state);
         checkRender(state.target,gx3de_target_render(state.target),"render timeline");
-        check(gx3de_target_write_png(state.target,path.c_str()),"write timeline PNG");
+        check(presentationPng(state,path.c_str()),"write timeline PNG");
         gx3de_animation_info info{};info.struct_size=sizeof(info);
         check(gx3de_animation_info_get(state.timeline,&info),"query timeline");
         Tcl_Obj* reply=Tcl_NewDictObj();
@@ -1657,40 +1816,168 @@ int close(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     static_cast<State*>(data)->clear();return TCL_OK;
 }
 void release(ClientData data,Tcl_Interp*) {delete static_cast<State*>(data);}
+
+// Opt-in bounded adapter metadata. All projection numbers come from the mature
+// public C ABI in this renderer's actual current viewport. Unrelated consumers
+// retain their original replies and perform no projection sampling work.
+Tcl_Obj* projectionSnapshot(Tcl_Interp* ip,State& state,bool advance) {
+    if(!state.view||!state.viewport||!state.target)throw std::runtime_error("Render before requesting a projection snapshot");
+    if(advance||!state.projectionRevision)++state.projectionRevision;
+    gx3de_target_geometry geometry{};geometry.struct_size=sizeof geometry;
+    check(gx3de_target_geometry_get(state.target,&geometry),"query projection target geometry");
+    gx3de_camera camera{};camera.struct_size=sizeof camera;check(gx3de_view_get_camera(state.view,&camera),"query projection camera");
+    auto sample=[&](double x,double y,double depth){gx3de_vec3 p{};check(gx3de_viewport_screen_to_world(state.viewport,x,y,depth,&p),"sample public native unprojection");if(!std::isfinite(p.x)||!std::isfinite(p.y)||!std::isfinite(p.z))throw std::runtime_error("Native projection sample is not finite");return p;};
+    auto difference=[](gx3de_vec3 a,gx3de_vec3 b,double scale){return gx3de_vec3{(a.x-b.x)/scale,(a.y-b.y)/scale,(a.z-b.z)/scale};};
+    const double sx=std::max(1u,geometry.physical_width-1),sy=std::max(1u,geometry.physical_height-1);
+    const auto a=sample(0,0,1),b=sample(0,0,2);
+    Tcl_Obj* result=Tcl_NewDictObj();
+    put(ip,result,"schema",Tcl_NewStringObj("gxtxt.native3d.projection.v1",-1));
+#ifdef _WIN32
+    const auto process=static_cast<unsigned long>(_getpid());
+#else
+    const auto process=static_cast<unsigned long>(getpid());
+#endif
+    const auto id="native3d-frame:"+std::to_string(process)+":"+state.cadPrefix+std::to_string(state.projectionRevision);
+    put(ip,result,"frame_id",Tcl_NewStringObj(id.c_str(),-1));put(ip,result,"revision",Tcl_NewWideIntObj(state.projectionRevision));
+    put(ip,result,"width",Tcl_NewWideIntObj(geometry.physical_width));put(ip,result,"height",Tcl_NewWideIntObj(geometry.physical_height));
+    put(ip,result,"logical_width",Tcl_NewWideIntObj(geometry.logical_width));put(ip,result,"logical_height",Tcl_NewWideIntObj(geometry.logical_height));
+    put(ip,result,"device_pixel_ratio_x",Tcl_NewDoubleObj(geometry.device_pixel_ratio_x));put(ip,result,"device_pixel_ratio_y",Tcl_NewDoubleObj(geometry.device_pixel_ratio_y));
+    put(ip,result,"orthographic",Tcl_NewBooleanObj(camera.orthographic));put(ip,result,"camera_origin",vecObj(camera.position));
+    double orthoHeight=0;check(gx3de_view_orthographic_height_get(state.view,&orthoHeight),"query actual orthographic height");
+    put(ip,result,"orthographic_height",Tcl_NewDoubleObj(orthoHeight));put(ip,result,"near_clip",Tcl_NewDoubleObj(camera.near_clip));put(ip,result,"far_clip",Tcl_NewDoubleObj(camera.far_clip));
+    put(ip,result,"depth1_origin",vecObj(a));put(ip,result,"depth2_origin",vecObj(b));
+    put(ip,result,"depth1_dx",vecObj(difference(sample(sx,0,1),a,sx)));put(ip,result,"depth1_dy",vecObj(difference(sample(0,sy,1),a,sy)));
+    put(ip,result,"depth2_dx",vecObj(difference(sample(sx,0,2),b,sx)));put(ip,result,"depth2_dy",vecObj(difference(sample(0,sy,2),b,sy)));
+    gx3de_plane* plane=nullptr;
+    if(gx3de_view_get_working_plane(state.view,&plane)==GX3DE_OK&&plane){
+        gx3de_vec3 origin{},normal{},u{},v{};check(gx3de_plane_get(plane,&origin,&normal,&u),"query normalized working plane");
+        check(gx3de_plane_world(plane,{0,1,0},&v),"query normalized plane V axis");v=difference(v,origin,1);
+        auto* frame=Tcl_NewDictObj();put(ip,frame,"origin",vecObj(origin));put(ip,frame,"normal",vecObj(normal));put(ip,frame,"u_axis",vecObj(u));put(ip,frame,"v_axis",vecObj(v));put(ip,result,"working_plane",frame);
+    }
+    gx3de_navcube_state cube{};cube.struct_size=sizeof cube;
+    if(gx3de_view_navcube_get(state.view,&cube)==GX3DE_OK){auto* nav=Tcl_NewDictObj();put(ip,nav,"visible",Tcl_NewBooleanObj(cube.visible));put(ip,nav,"corner",Tcl_NewIntObj(cube.corner));put(ip,nav,"size_pixels",Tcl_NewIntObj(cube.size_pixels));put(ip,nav,"margin_pixels",Tcl_NewIntObj(cube.margin_pixels));put(ip,result,"navigation_cube",nav);}
+    return result;
+}
+gx3de_vec3 projectionVector(Tcl_Interp* ip,Tcl_Obj* value,const char* name){
+    int count=0;Tcl_Obj** values=nullptr;if(!value||Tcl_ListObjGetElements(ip,value,&count,&values)!=TCL_OK||count!=3)throw std::runtime_error(std::string(name)+" requires three coordinates");
+    return {number(str(values[0]),name),number(str(values[1]),name),number(str(values[2]),name)};
+}
+Tcl_Obj* projectionFitPlane(Tcl_Interp* ip,State& state,Tcl_Obj* frame,Tcl_Obj* localBounds,const std::string& png){
+    if(!state.projectionEnabled||!state.view||!state.viewport||!state.target)throw std::runtime_error("Enable projection on a rendered viewport before fitting a CAD plane");
+    int count=0;Tcl_Obj** values=nullptr;if(Tcl_ListObjGetElements(ip,localBounds,&count,&values)!=TCL_OK||count!=4)throw std::runtime_error("Plane fit requires xmin ymin xmax ymax");
+    double bounds[4];for(int i=0;i<4;++i)bounds[i]=number(str(values[i]),"plane fit bound");
+    if(bounds[0]>bounds[2]||bounds[1]>bounds[3])throw std::runtime_error("Plane fit bounds are reversed");
+    gx3de_camera oldCamera{};oldCamera.struct_size=sizeof oldCamera;check(gx3de_view_get_camera(state.view,&oldCamera),"capture camera before plane fit");
+    double oldHeight=0;check(gx3de_view_orthographic_height_get(state.view,&oldHeight),"capture orthographic height before plane fit");
+    gx3de_plane* plane=nullptr;gx3de_object* object=nullptr;gx3de_view* temporaryView=nullptr;bool changed=false;
+    auto cleanup=[&](){if(temporaryView){gx3de_view_destroy(temporaryView);temporaryView=nullptr;}if(object){gx3de_object_destroy(object);object=nullptr;}if(plane){gx3de_plane_destroy(plane);plane=nullptr;}};
+    try {
+        check(gx3de_plane_create(state.scene,projectionVector(ip,get(ip,frame,"origin"),"fit plane origin"),projectionVector(ip,get(ip,frame,"normal"),"fit plane normal"),projectionVector(ip,get(ip,frame,"u_axis"),"fit plane U"),&plane),"create bounded fit plane");
+        gx3de_vec3 points[4]{};const gx3de_vec3 local[]={{bounds[0],bounds[1],0},{bounds[2],bounds[1],0},{bounds[2],bounds[3],0},{bounds[0],bounds[3],0}};
+        uint64_t ids[]={0,1,2,3};gx3de_scientific_cell_input cells[4]{};
+        for(int i=0;i<4;++i){check(gx3de_plane_world(plane,local[i],&points[i]),"map fit corner through native plane authority");cells[i].struct_size=sizeof(cells[i]);cells[i].type=GX3DE_SCI_CELL_VERTEX;cells[i].point_ids=&ids[i];cells[i].point_count=1;}
+        gx3de_scientific_polydata_spec spec{};spec.struct_size=sizeof spec;spec.points=points;spec.point_count=4;spec.cells=cells;spec.cell_count=4;
+        check(gx3de_scientific_create_polydata(state.scene,&spec,&object),"create bounded temporary fit extent");
+        check(gx3de_view_camera_preset(state.view,GX3DE_CAMERA_FIT_OBJECT,object),"fit planar extent through existing native camera authority");changed=true;
+        gx3de_camera fitted{};fitted.struct_size=sizeof fitted;check(gx3de_view_get_camera(state.view,&fitted),"query fitted plane camera");
+        if(fitted.orthographic){
+            check(gx3de_view_create(state.scene,&temporaryView),"create bounded fit projection view");
+            check(gx3de_view_set_camera(temporaryView,&fitted),"set native fitted camera on temporary projection view");
+            double fittedHeight=0;check(gx3de_view_orthographic_height_get(temporaryView,&fittedHeight),"obtain native fitted orthographic height");
+            check(gx3de_view_orthographic_height_set(state.view,fittedHeight),"apply native fitted orthographic height");
+        }
+        cleanup(); // No temporary object/view/plane enters the rendered scene.
+        checkRender(state.target,gx3de_target_render(state.target),"render fitted CAD projection");
+        check(presentationPng(state,png.c_str()),"write fitted CAD projection PNG");
+        auto* reply=Tcl_NewDictObj();put(ip,reply,"camera_position",vecObj(fitted.position));put(ip,reply,"camera_target",vecObj(fitted.target));put(ip,reply,"camera_up",vecObj(fitted.up));put(ip,reply,"projection",Tcl_NewStringObj(fitted.orthographic?"orthographic":"perspective",-1));
+        put(ip,reply,"vertical_fov_degrees",Tcl_NewDoubleObj(fitted.vertical_fov_degrees));put(ip,reply,"near_clip",Tcl_NewDoubleObj(fitted.near_clip));put(ip,reply,"far_clip",Tcl_NewDoubleObj(fitted.far_clip));
+        double height=0;check(gx3de_view_orthographic_height_get(state.view,&height),"query fitted projection height");put(ip,reply,"orthographic_height",Tcl_NewDoubleObj(height));
+        put(ip,reply,"projection_snapshot",projectionSnapshot(ip,state,true));put(ip,reply,"temporary_extent_vertices",Tcl_NewIntObj(4));put(ip,reply,"retained_extent_objects",Tcl_NewIntObj(0));return reply;
+    }catch(...){cleanup();if(changed){gx3de_view_set_camera(state.view,&oldCamera);if(oldCamera.orthographic)gx3de_view_orthographic_height_set(state.view,oldHeight);}throw;}
+}
+int projectionCommand(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
+    auto& state=*static_cast<State*>(data);
+    try {
+        if(argc<2)throw std::runtime_error("Use projection enable|disable|snapshot|world_to_screen|screen_to_world");
+        const std::string op=str(args[1]);
+        if(op=="fit_plane"&&argc==5){Tcl_SetObjResult(ip,projectionFitPlane(ip,state,args[2],args[3],str(args[4])));return TCL_OK;}
+        if((op=="enable"&&argc==3)||(op=="disable"&&argc==2)|| (op=="snapshot"&&argc==2)){
+            bool advance=false;
+            if(op=="enable"){int enabled=0;if(Tcl_GetBooleanFromObj(ip,args[2],&enabled)!=TCL_OK)throw std::runtime_error("Projection enable must be boolean");advance=enabled&&!state.projectionEnabled;state.projectionEnabled=enabled;}
+            else if(op=="disable")state.projectionEnabled=false;
+            auto* reply=Tcl_NewDictObj();put(ip,reply,"enabled",Tcl_NewBooleanObj(state.projectionEnabled));put(ip,reply,"ready",Tcl_NewBooleanObj(state.viewport&&state.view&&state.target));
+            if(op!="disable"&&state.viewport&&state.view&&state.target)put(ip,reply,"projection_snapshot",projectionSnapshot(ip,state,advance));
+            Tcl_SetObjResult(ip,reply);return TCL_OK;
+        }
+        if(argc!=3|| (op!="world_to_screen"&&op!="screen_to_world"))throw std::runtime_error("Projection batch expects its direction and bounded XYZ rows");
+        if(!state.viewport)throw std::runtime_error("Render before projecting points");
+        int count=0;Tcl_Obj** rows=nullptr;if(Tcl_ListObjGetElements(ip,args[2],&count,&rows)!=TCL_OK||count>262144)throw std::runtime_error("Projection batch exceeds262144 points");
+        auto* result=Tcl_NewListObj(0,nullptr);
+        for(int i=0;i<count;++i){int n=0;Tcl_Obj** row=nullptr;if(Tcl_ListObjGetElements(ip,rows[i],&n,&row)!=TCL_OK||n!=3)throw std::runtime_error("Projection XYZ/depth rows require three numbers");
+            double values[3];for(int j=0;j<3;++j)values[j]=number(str(row[j]),"projection coordinate");auto* item=Tcl_NewDictObj();gx3de_vec3 p{values[0],values[1],values[2]};double x=0,y=0,depth=0;gx3de_result rc;
+            if(op=="world_to_screen")rc=gx3de_viewport_world_to_screen(state.viewport,p,&x,&y,&depth);else rc=gx3de_viewport_screen_to_world(state.viewport,values[0],values[1],values[2],&p);
+            put(ip,item,"valid",Tcl_NewBooleanObj(rc==GX3DE_OK));if(rc==GX3DE_OK){if(op=="world_to_screen")put(ip,item,"point",vecObj({x,y,depth}));else put(ip,item,"point",vecObj(p));}else put(ip,item,"reason",Tcl_NewStringObj(gx3de_result_name(rc),-1));Tcl_ListObjAppendElement(ip,result,item);
+        }
+        Tcl_SetObjResult(ip,result);return TCL_OK;
+    }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
+}
+struct ProjectionFrameCommand {State* state;Tcl_ObjCmdProc* command;bool optionalPng;};
+void projectionFrameRelease(ClientData data){delete static_cast<ProjectionFrameCommand*>(data);}
+int projectionFrameDispatch(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]){
+    const auto& command=*static_cast<ProjectionFrameCommand*>(data);
+    const int code=command.command(command.state,ip,argc,args);
+    if(code!=TCL_OK||!command.state->projectionEnabled||(command.optionalPng&&argc!=4))return code;
+    auto* original=Tcl_GetObjResult(ip);Tcl_IncrRefCount(original);
+    auto* reply=Tcl_DuplicateObj(original);Tcl_IncrRefCount(reply);int count=0;
+    if(Tcl_DictObjSize(ip,reply,&count)==TCL_OK){
+        try {put(ip,reply,"projection_snapshot",projectionSnapshot(ip,*command.state,true));}
+        catch(const std::exception& e){put(ip,reply,"projection_error",Tcl_NewStringObj(e.what(),-1));}
+        Tcl_SetObjResult(ip,reply);
+    }else Tcl_SetObjResult(ip,original);
+    Tcl_DecrRefCount(reply);Tcl_DecrRefCount(original);return code;
+}
+void projectionFrameRegister(Tcl_Interp* ip,const char* name,Tcl_ObjCmdProc* command,State* state,bool optionalPng=false){
+    Tcl_CreateObjCommand(ip,name,projectionFrameDispatch,new ProjectionFrameCommand{state,command,optionalPng},projectionFrameRelease);
+}
 } // namespace
 
 extern "C" int Gx3deviewer_Init(Tcl_Interp *ip) {
     if(Tcl_InitStubs(ip,"8.6",0)==nullptr)return TCL_ERROR;
     auto *state=new State();
     Tcl_SetAssocData(ip,"GX3DEViewer",release,state);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::presentation",presentationUpdate,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::presentation",presentationUpdate,state);
     Tcl_CreateNamespace(ip,"::GX3DEViewer",nullptr,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::capabilities",capabilities,state,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::frame_transport",frameTransport,state,nullptr);
+    // Actor updates do not change the camera/projection generation.
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::sketch_resources",sketchResources,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::texture_anchor",textureAnchor,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::render",render,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::render",render,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::cad",cadDispatch,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::graphics_probe",graphicsProbe,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::pick",pick,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::focus_logical",focusLogical,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::preset",preset,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::camera",cameraRestore,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::viewport",viewportResize,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::scientific_axes",scientificAxes,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::pick",pick,state,true);
+    projectionFrameRegister(ip,"::GX3DEViewer::focus_logical",focusLogical,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::preset",preset,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::camera",cameraRestore,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::viewport",viewportResize,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::scientific_axes",scientificAxes,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::navcube_pick",navcubePick,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::navcube_click",navcubeClick,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::navigate",navigate,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_select",gizmoSelect,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::navcube_click",navcubeClick,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::navigate",navigate,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::navigate_batch",navigateBatch,state);
+    projectionFrameRegister(ip,"::GX3DEViewer::gizmo_select",gizmoSelect,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_pick",gizmoPick,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_begin",gizmoBegin,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_update",gizmoUpdate,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::gizmo_update",gizmoUpdate,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_end",gizmoEnd,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_png",exportPng,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_vector",exportVector,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::timeline",timelineControl,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::timeline",timelineControl,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::timeline_capture",timelineCapture,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_begin",planeBegin,state,nullptr);
-    Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_update",planeUpdate,state,nullptr);
+    projectionFrameRegister(ip,"::GX3DEViewer::plane_update",planeUpdate,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_end",planeEnd,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::close",close,state,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::projection",projectionCommand,state,nullptr);
     Tcl_PkgProvide(ip,"Gx3deviewer","0.1.0");return TCL_OK;
 }

@@ -10,7 +10,7 @@ namespace eval ::GX {
 }
 namespace eval ::GX::DocumentSessionScope {variable identity {};variable epoch 0;variable token ""}
 proc ::GX::interactiveDocumentApiInfo {} {
-    return [dict create api_id INTERACTIVE_DOCUMENT_API_v1 api_version 1 operations {interactiveDocumentCreate interactiveDocumentExists interactiveDocumentList interactiveDocumentRead interactiveDocumentUpdate interactiveDocumentDelete interactiveDocumentSessionToken interactiveDocumentLifecycleSubscribe interactiveDocumentLifecycleUnsubscribe} document_owner CORE source_encoding UTF-8 session_scoped 1 profiles [dict create tex_project [interactiveDocumentTeXApiInfo]]]
+    return [dict create api_id INTERACTIVE_DOCUMENT_API_v1 api_version 1 operations {interactiveDocumentCreate interactiveDocumentExists interactiveDocumentList interactiveDocumentRead interactiveDocumentReadCached interactiveDocumentMetadataBatch interactiveDocumentSourceIdentities interactiveDocumentCacheStatus interactiveDocumentCacheConfigure interactiveDocumentCacheClear interactiveDocumentUpdate interactiveDocumentDelete interactiveDocumentSessionToken interactiveDocumentLifecycleSubscribe interactiveDocumentLifecycleUnsubscribe} document_owner CORE source_encoding UTF-8 session_scoped 1 profiles [dict create tex_project [interactiveDocumentTeXApiInfo]]]
 }
 proc ::GX::_interactiveDocumentSessionChanged {args} {
     variable ::GX::DocumentSessionScope::identity
@@ -62,8 +62,13 @@ proc ::GX::_interactiveDocumentValidateOwner {moduleId providerId} {
 
 proc ::GX::_interactiveDocumentRegistryRead {session} {
     set path [_interactiveDocumentRegistryPath $session]
-    if {![file exists $path]} { return [dict create] }
+    if {![file exists $path]} {return [_nativeWorkspaceRegistryProjection $session {}]}
     if {![file isfile $path]} { error "Interactive Document registry is not a regular file." }
+    set captured {}
+    if {[llength [info commands ::GX::_interactiveDocumentRegistryCacheProbe]]} {
+        set captured [_interactiveDocumentRegistryCacheProbe $path]
+        if {[dict exists $captured registry]} {return [_nativeWorkspaceRegistryProjection $session [dict get $captured registry]]}
+    }
     if {[catch {set ini [parseIni $path]} err opts]} {
         return -options $opts "Interactive Document registry is corrupt: $err"
     }
@@ -107,10 +112,19 @@ proc ::GX::_interactiveDocumentRegistryRead {session} {
         }
         dict set registry $id $item
     }
-    return $registry
+    if {$captured ne {}} {_interactiveDocumentRegistryCacheAdmit $path $captured $registry}
+    return [_nativeWorkspaceRegistryProjection $session $registry]
 }
 
 proc ::GX::_interactiveDocumentRegistryWrite {session registry} {
+    # Native records are projections, never entries in the obsolete writer.
+    # Refuse a private caller trying to edit that projection through this path.
+    dict for {id item} $registry {
+        if {[datasetPublicationV2DictDefault $item native_workspace 0]} {
+            if {[file normalize $session] ne [file normalize $::GX::currentSession] || $item ne [dict merge [nativeWorkspaceMetadata $id] {native_workspace 1}]} {error {Native Workspace metadata requires the native transaction API}}
+            dict unset registry $id
+        }
+    }
     set path [_interactiveDocumentRegistryPath $session]
     file mkdir [file dirname $path]
     set tmp "$path.tmp.[pid].[clock clicks]"
@@ -210,6 +224,17 @@ proc ::GX::_interactiveDocumentPayloadPath {session item} {
     return $path
 }
 
+proc ::GX::_interactiveDocumentWorkspaceWriteAdmission {module provider format} {
+    # Scientific Documents retain their existing authority. Only identified
+    # migrated/retired Workspace formats are denied by this legacy writer.
+    if {[info exists ::GX::NativeWorkspace::providers] && [dict exists $::GX::NativeWorkspace::providers $provider]} {
+        set descriptor [dict get $::GX::NativeWorkspace::providers $provider]
+        if {$module eq [dict get $descriptor module_id] && $format eq [dict get $descriptor schema]} {error {Obsolete Workspace persistence is unsupported; use the native typed Workspace API}}
+    }
+    if {$module eq {viewer.scientific_worksheet} && $provider eq {scientific_worksheet} && $format eq {scientific_worksheet.v1}} {error {Obsolete Worksheet Workspace persistence is unsupported}}
+    if {$module eq {plot.dataset} && $provider eq {native_3d} && $format in {gxtxt.plot_dataset.interactive_scene gxtxt.plot_dataset.native_v4_scene}} {error {Obsolete Plot3D Workspace persistence is unsupported; use the typed native representation provider}}
+    if {$module eq {analysis.octave_script} && $provider eq {octave_script_editor} && $format eq {gxtxt.octave_script.document}} {error {Obsolete Octave Workspace creation/update/conversion is unsupported}}
+}
 proc ::GX::interactiveDocumentCreate {moduleId providerId format formatVersion payload {documentId ""}} {
     return [_interactiveDocumentCreateWithOrigin $moduleId $providerId $format $formatVersion $payload $documentId {}]
 }
@@ -220,6 +245,7 @@ proc ::GX::_interactiveDocumentCreateWithOrigin {moduleId providerId format form
     lassign [_interactiveDocumentValidateOwner $moduleId $providerId] moduleId providerId
     set format [_interactiveDocumentValidateSingleLine $format "Document format"]
     set formatVersion [_interactiveDocumentValidateSingleLine $formatVersion "Document format version"]
+    _interactiveDocumentWorkspaceWriteAdmission $moduleId $providerId $format
     set registry [_interactiveDocumentRegistryRead $session]
     if {$documentId eq ""} {
         set documentId [_interactiveDocumentNextId $registry]
@@ -244,6 +270,8 @@ proc ::GX::_interactiveDocumentCreateWithOrigin {moduleId providerId format form
         catch {file delete -force -- [file join [_interactiveDocumentStorageDir $session] [dict get $stored storage_name]]}
         return -options $opts $err
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
+    _interactiveDocumentDerivedAfterWrite $item $payload
     return [_interactiveDocumentPublicMetadata $item]
 }
 
@@ -269,12 +297,16 @@ proc ::GX::interactiveDocumentList {{moduleId ""} {providerId ""}} {
     return $out
 }
 
-proc ::GX::interactiveDocumentRead {documentId} {
+proc ::GX::interactiveDocumentRead {documentId {historyPolicy stored}} {
+    if {$historyPolicy ni {current stored}} {error {Unknown Document History read policy}}
+    if {$historyPolicy eq {current} && [llength [info commands _historyDocumentBarrier]]} {_historyDocumentBarrier $documentId}
+    if {[_nativeWorkspaceExists $documentId]} {return [_nativeWorkspaceDocumentRead $documentId]}
     if {![interactiveDocumentIdValid $documentId]} { error "Invalid Interactive Document ID '$documentId'." }
     set session [_interactiveDocumentRequireSession]
     set registry [_interactiveDocumentRegistryRead $session]
     if {![dict exists $registry $documentId]} { error "Interactive Document '$documentId' does not exist in the current Session." }
     set item [dict get $registry $documentId]
+    if {[_sessionWorkspaceKnownObsolete $item]} {error {Obsolete Workspace bodies cannot be read, restored or converted; use metadata inspection or confirmed Delete}}
     set path [_interactiveDocumentPayloadPath $session $item]
     set actual [string tolower [sha256File $path]]
     if {$actual ne [string tolower [dict get $item sha256]]} {
@@ -289,12 +321,14 @@ proc ::GX::interactiveDocumentRead {documentId} {
         catch {close $fd}
         return -options $opts "Interactive Document '$documentId' is unreadable: $err"
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
     set out [_interactiveDocumentPublicMetadata $item]
     dict set out payload $payload
     return $out
 }
 
 proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVersion ""}} {
+    if {[_nativeWorkspaceExists $documentId]} {error {Native Workspace updates require a typed provider and expected generation/revision receipt}}
     if {![interactiveDocumentIdValid $documentId]} { error "Invalid Interactive Document ID '$documentId'." }
     set session [_interactiveDocumentRequireSession]
     set registry [_interactiveDocumentRegistryRead $session]
@@ -303,12 +337,14 @@ proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVers
     set prior $item
     if {$format ne ""} { dict set item format [_interactiveDocumentValidateSingleLine $format "Document format"] }
     if {$formatVersion ne ""} { dict set item format_version [_interactiveDocumentValidateSingleLine $formatVersion "Document format version"] }
+    _interactiveDocumentWorkspaceWriteAdmission [dict get $prior module_id] [dict get $prior provider_id] [dict get $prior format]
+    _interactiveDocumentWorkspaceWriteAdmission [dict get $item module_id] [dict get $item provider_id] [dict get $item format]
     if {([dict get $item format] ne [dict get $prior format] || [dict get $item format_version] ne [dict get $prior format_version]) && [llength [info commands ::GX::_experimentDuplicationDocumentTransition]]} {
         set item [_experimentDuplicationDocumentTransition $prior $item]
     }
     set oldStorage [dict get $item storage_name]
     set stored [_interactiveDocumentWritePayload $session $documentId $payload]
-    if {[dict get $stored sha256] eq [dict get $prior sha256] && [dict get $item format] eq [dict get $prior format] && [dict get $item format_version] eq [dict get $prior format_version]} {return [_interactiveDocumentPublicMetadata $item]}
+    if {[dict get $stored sha256] eq [dict get $prior sha256] && [dict get $item format] eq [dict get $prior format] && [dict get $item format_version] eq [dict get $prior format_version]} {if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload};return [_interactiveDocumentPublicMetadata $item]}
     dict incr item revision
     dict set item sha256 [dict get $stored sha256]
     dict set item storage_name [dict get $stored storage_name]
@@ -323,10 +359,14 @@ proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVers
     if {$oldStorage ne [dict get $stored storage_name]} {
         catch {file delete -force -- [file join [_interactiveDocumentStorageDir $session] $oldStorage]}
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
+    _interactiveDocumentDerivedAfterWrite $item $payload
     return [_interactiveDocumentPublicMetadata $item]
 }
 
 proc ::GX::interactiveDocumentDelete {documentId} {
+    if {[_nativeWorkspaceExists $documentId]} {error {Native Workspace Delete requires explicit confirmation through its native lifecycle API}}
+    if {[llength [info commands _historyDocumentBarrier]]} {_historyDocumentBarrier $documentId}
     if {![interactiveDocumentIdValid $documentId]} { error "Invalid Interactive Document ID '$documentId'." }
     set session [_interactiveDocumentRequireSession]
     set registry [_interactiveDocumentRegistryRead $session]
@@ -360,4 +400,28 @@ proc ::GX::interactiveDocumentSessionToken {} {
     _interactiveDocumentRequireSession
     _interactiveDocumentSessionChanged
     return $::GX::DocumentSessionScope::token
+}
+
+# Ownership checks need registry metadata, not a hash of the full scientific
+# payload. Explicit payload reads continue to verify SHA-256 every time.
+proc ::GX::interactiveDocumentMetadata {documentId} {
+    if {![interactiveDocumentIdValid $documentId]} {error {Invalid Document ID}}
+    set registry [_interactiveDocumentRegistryRead [_interactiveDocumentRequireSession]]
+    if {![dict exists $registry $documentId]} {error {Document owner is unavailable}}
+    return [_interactiveDocumentPublicMetadata [dict get $registry $documentId]]
+}
+
+source [file join [file dirname [info script]] interactive_document_cache_v1.tcl]
+
+# Non-authoritative derived resources are published only after canonical commit.
+proc ::GX::_interactiveDocumentDerivedAfterWrite {item payload} {
+    if {[dict get $item format] ne {gxtxt.native_cad_sketch.v1}} return
+    if {![llength [info commands ::GX::nativeCadSketchQuickOpenPublish]]} {
+        source [file join $::GX::scriptDir core tcl native_cad_sketch_quick_open_exp01.tcl]
+    }
+    if {[catch {nativeCadSketchQuickOpenPublish [dict get $item id] $payload} message]} {
+        set ::GX::NativeCadQuickOpen::lastError $message
+        # Saved science remains authoritative. A stale descriptor fails its
+        # source identity check and is rebuilt on the next requested display.
+    }
 }

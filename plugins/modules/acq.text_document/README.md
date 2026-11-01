@@ -1,14 +1,15 @@
 # Text and Source Code Import
 
-**Plugin:** `acq.text_document` 1.1.0  
-**Framework baseline:** GX-TXT 0.9.8.10-dev  
+**Plugin:** `acq.text_document` 1.2.0  
+**Framework baseline:** GX-TXT DEV111-P031 for UML  
 **Runtime:** framework-configured Python 3.10+, standard library only.  
 **License:** GPL-3.0-or-later.
 
 Install the ZIP with **Modules → Install plugin...**, then select **Text and
 Source Code Import** in Acquisition. Add files in the ordinary source-batch
-table, adjust Dataset IDs and import. Each source becomes one independent
-Dataset; no numerical Variables mapping or primary Dataset is required.
+table, adjust Dataset IDs and import. Choose Destination = Dataset for one preserved canonical file per source.
+Auto routes Python to the Session Script Registry; ambiguous .m files require
+an explicit choice. No numerical Variables mapping is required.
 Choose **Import as** Auto, Text document or Source code independently from
 **Language**. A Python `.py` file can be preserved as either `document.text`
 or `code.source` while retaining its detected Python language. The acquisition
@@ -35,11 +36,20 @@ overrides work the same way. Restore both settings to `auto` for normal mixed
 batches. The pre-import Preview uses the same current Encoding and Language
 settings as import.
 
-See `MANUAL.html` for the supported workflow, language catalog, metadata schema,
-encoding and preview limits. `docs/ARCHITECTURE.md` explains the current
-portable-inspector and framework-adapter responsibilities.
+See `MANUAL.html` for the complete workflow, language catalog, metadata schema,
+encoding and preview limits. `docs/CORE_EXTRACTION.md` describes the separated,
+commented components suitable for future CORE migration. the framework P031 release handoff
+records independent acceptance; author checks have their own scoped receipts.
 
 No CORE procedure is replaced. The imported Dataset preview receives the
 Session path through the public Acquisition Handler callback and reads its
 persisted fields with Dataset Metadata and Session Inspection APIs. No viewer
 or other module is required.
+
+P031 adds normal `.puml` / `.plantuml` acquisition as `document.uml`, parent
+`document.text`. The shared CORE bounded `gxtxt.plantuml.v1` class/sequence parser
+validates the entire exact UTF-8 source (4 MiB maximum). Original bytes/SHA, BOM,
+line endings and RAW remain unchanged; no dummy table, Group or executable
+source is created. Invalid syntax/encoding and Session-script destination refuse.
+Other file suffixes keep their normal detection/import behavior. See the manual
+and framework `UML_DOCUMENT_API_v1` for the exact supported subset and limits.

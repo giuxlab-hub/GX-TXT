@@ -4,7 +4,7 @@ Open any .gxtxt-viewer in Viewer Interface Builder. These are full validated
 public designs with stable IDs, presentation properties and API requirements.
 
 - toolbar_inspector: existing command toolbar and synthetic inspector. Commands
-  remain unconnected in ordinary Preview; no public general icon property exists.
+  remain unconnected in ordinary Preview; admitted project icons use the shared icon owner.
 - table_selection: read-only table plus synthetic inspector. Gallery mounts its
   deterministic rows; the ordinary saved design does not persist those rows.
 - native2d_interaction: an ordinary native source slot plus inspector. Use Gallery
@@ -24,3 +24,13 @@ C++ code. Close the example to release its owned widgets/native workers. No Sess
 Dataset, science Job or Workspace is created. For ordinary installable generation,
 use File → Generate installable Viewer and the normal Plugin Manager. Only the
 explicit Native3D demo property travels into its generated runtime declaration.
+
+`preview_tools.gxtxt-viewer` uses the explicit Preview Module target. Its Fit
+control includes a shared project icon; the navigation panel places Zoom in over
+the existing Plot viewport. The Dataset identity label is bound by the real
+Preview host, while the integer field is a transient authoring sample. The
+Builder window is a layout simulation. Use Generate installable module, install
+and enable the generated package normally, then open a `table.generic` Dataset
+in Dataset Preview. The normal display remains available alongside its GUI tab;
+the panel appears on Plot. Source/Session changes or disabling the module dispose
+its controls. This example performs no science and publishes no Dataset.

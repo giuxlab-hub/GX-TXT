@@ -326,10 +326,9 @@ proc ::GX::CurveWorkbench::_coordinateMetricPolicy {w} {
     set metrics [expr {$geometric?{length span_x span_y signed_area length_span_ratio signed_y_residual}:{signed_y_residual span_x span_y}}]
     if {$st($w,metric) ni $metrics} {set st($w,metric) [lindex $metrics 0]}
     set st($w,metricAllowed) $metrics;set st($w,metricLabel) [_coordinateMetricLabel $st($w,metric)]
-    if {[winfo exists $w.validation.metric]} {$w.validation.metric configure -values [lmap id $metrics {_coordinateMetricLabel $id}]}
-    set methods [expr {$geometric?{x path geometry}:{x}}]
-    if {$st($w,compareMethod) ni $methods} {set st($w,compareMethod) x}
-    if {[winfo exists $w.validation.method]} {$w.validation.method configure -values $methods}
+    set p [_comparisonControls $w]
+    if {[winfo exists $p.measures.metric]} {$p.measures.metric configure -values [lmap id $metrics {_coordinateMetricLabel $id}]}
+    # Comparison method belongs to its explicit pair, never the active metric path.
 }
 proc ::GX::CurveWorkbench::_coordinateComparisonOptions {w reference target method} {
     foreach id [list $reference $target] {if {[_coordinateSourceRelations [_record $w $id]] ne {}} {error {Variable-specific coordinate relations require explicit Dataset Transform normalization before physical comparison}}}

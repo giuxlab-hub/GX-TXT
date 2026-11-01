@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 proc ::GX::usage {} {
-    puts "GX-TXT Pipeline v$::GX::version"
+    puts "GX-TXT Pipeline v[::GX::frameworkDisplayVersion]"
     puts ""
     puts "GUI:"
     puts "  wish gxtxt_pipeline.tcl"
@@ -10,6 +10,7 @@ proc ::GX::usage {} {
     puts ""
     puts "Options:"
     puts "  --help                 show this help"
+    puts "  --version              show installed framework version and patch"
     puts "  --manifest FILE --run  run the pipeline from a manifest"
 }
 

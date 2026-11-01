@@ -1,0 +1,23 @@
+{
+  "source_manifest": [
+    {
+      "bytes": 470,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7"
+    },
+    {
+      "bytes": 266,
+      "path": "include/ir_viewer_client.hpp",
+      "role": "header",
+      "sha256": "a77b6a89f3f21baefe9540928f1d1b451bdad8a4f33dadf1819179fe1f64009b"
+    },
+    {
+      "bytes": 4553,
+      "path": "src/ir_viewer_client.cpp",
+      "role": "translation_unit",
+      "sha256": "cb3f8abd3243ae63e917f4f4d0e756de9f0b81cb0939baf507aacededb787e50"
+    }
+  ],
+  "source_tree_sha256": "5006af1a70d2b0c453800e5186edb425be5d8434d7168e351cde7f45a97426f2"
+}

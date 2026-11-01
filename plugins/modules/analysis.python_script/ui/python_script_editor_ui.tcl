@@ -104,33 +104,10 @@ proc ::GX::PythonScriptEditorUI::_confirmAbandon {} {
 proc ::GX::PythonScriptEditorUI::_loadDocument {documentId} {
     variable ui
     if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) [lindex [split $documentId :] 0]]} {return 0}
-    if {![_confirmAbandon]} { return 0 }
-    if {[catch {set full [::GX::PythonScriptEditor::workspaceRead $documentId]} failure]} {
-        tk_messageBox -parent $ui(window) -icon error -title "Open failed" -message $failure
-        return 0
-    }
-    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
-    set ui(currentId) $documentId
-    set ui(currentSha) [dict get $full sha256]
-    set ui(revision) [dict get $full revision]
-    set ui(scope) [dict get $full scope]
-    set ui(scriptId) [dict get $full id]
-    set ui(name) [dict get $full name]
-    set ui(version) [dict get $full version]
-    set ui(requiredApis) [dict get $full explicit_apis]
-    set ui(description) [dict get $full description]
-    $ui(parameters) delete 1.0 end
-    dict for {param descriptor} [dict get $full parameters] {
-        $ui(parameters) insert end "$param | [dict get $descriptor type] | [dict get $descriptor required] | [dict get $descriptor default] | [dict get $descriptor description]\n"
-    }
-    $ui(parameters) edit reset
-    $ui(parameters) edit modified 0
-    $ui(text) delete 1.0 end
-    $ui(text) insert 1.0 [dict get $full code]
-    $ui(text) edit reset
-    $ui(text) edit modified 0
-    _acceptBaseline
-    _refreshEditor
+    if {[catch {
+        set full [::GX::PythonScriptEditor::workspaceRead $documentId]
+        ::GX::scriptSourceTabsOpen $ui(tabs) $documentId $full
+    } failure]} {tk_messageBox -parent $ui(window) -icon error -title {Open failed} -message $failure;return 0}
     _selectTreeId $documentId
     return 1
 }
@@ -167,50 +144,24 @@ proc ::GX::PythonScriptEditorUI::_refreshDocuments {} {
 
 proc ::GX::PythonScriptEditorUI::_new {} {
     variable ui
-    if {![_confirmAbandon]} return
-    set ui(currentId) ""
-    set ui(currentSha) ""
-    set ui(revision) ""
-    set ui(revision) ""
-    set ui(scope) [::GX::scriptWorkspaceDefaultScope]
-    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
-    set ui(scriptId) ""
-    set ui(name) "Untitled script"
-    set ui(version) "1.0.0"
-    set ui(requiredApis) ""
-    set ui(description) ""
-    $ui(parameters) delete 1.0 end
-    $ui(parameters) edit reset
-    $ui(parameters) edit modified 0
-    $ui(text) delete 1.0 end
-    $ui(text) insert 1.0 [::GX::PythonScriptEditor::defaultCode]
-    $ui(text) edit reset
-    $ui(text) edit modified 0
-    _acceptBaseline
-    $ui(tree) selection remove [$ui(tree) selection]
+    if {[info exists ui(window)]} {::GX::scriptProjectCanvasReturn $ui(window)}
+    set doc [dict merge [::GX::scriptRegistryDefaults] [dict create language Python scope [::GX::scriptWorkspaceDefaultScope] name {Untitled script} source_path untitled.py code [::GX::PythonScriptEditor::defaultCode]]]
+    ::GX::scriptSourceTabsOpen $ui(tabs) {} $doc
     _refreshEditor
-    focus $ui(text)
 }
 
 proc ::GX::PythonScriptEditorUI::_parametersFromEditor {} {
     variable ui
-    set parameters [dict create]
-    foreach line [split [$ui(parameters) get 1.0 end-1c] "\n"] {
-        if {[string trim $line] eq ""} continue
-        set fields [split $line |]
-        if {[llength $fields] < 2 || [llength $fields] > 5} {
-            error "Each parameter needs name | type | required | default | description."
-        }
-        while {[llength $fields] < 5} {lappend fields ""}
-        lassign [lmap field $fields {string trim $field}] name type required default description
-        if {$required eq ""} {set required 0}
-        dict set parameters $name [dict create type $type required $required default $default description $description]
-    }
-    return $parameters
+    set text [$ui(parameters) get 1.0 end-1c]
+    if {$text eq [::GX::scriptParameterDefinitionsFormat $ui(parameterDefinitions)]} {return $ui(parameterDefinitions)}
+    return [::GX::scriptParameterDefinitionsParse $text $ui(parameterDefinitions)]
 }
 
 proc ::GX::PythonScriptEditorUI::_save {} {
     variable ui
+    if {![::GX::scriptSourceTabsRequireOwner $ui(tabs)]} {return 0}
+    if {[::GX::scriptSourceNotesActive $ui(tabs)]} {return [::GX::scriptSourceNotesSave $ui(tabs)]}
+    if {![::GX::scriptSourceTabsWritable $ui(tabs)]} {tk_messageBox -parent $ui(window) -icon info -message {Historical source tabs are read-only.};return 0}
     if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) $ui(scope)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} {
@@ -220,8 +171,14 @@ proc ::GX::PythonScriptEditorUI::_save {} {
     set code [$ui(text) get 1.0 "end-1c"]
     if {[catch {
         set parameters [_parametersFromEditor]
+        set doc [::GX::scriptSourceTabsCurrent $ui(tabs)]
+        if {[dict get $doc kind] eq {project}} {
+            set result [::GX::scriptRegistryProjectUpdate $ui(scope) $ui(scriptId) $ui(currentSha) [dict create name $name version $ui(version) description $ui(description) required_apis $ui(requiredApis) parameters $parameters expected_revision $ui(revision)] [dict get $doc entrypoint] [::GX::scriptSourceTabsFiles $ui(tabs)]]
+            dict set result reference $ui(currentId)
+        } else {
         set result [::GX::PythonScriptEditor::workspaceSave $ui(currentId) $ui(currentSha) \
-            $ui(scope) $ui(scriptId) $name $ui(version) $ui(description) $ui(requiredApis) $parameters $code]
+            $ui(scope) $ui(scriptId) $name $ui(version) $ui(description) $ui(requiredApis) $parameters $code $ui(revision)]
+        }
     } failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save failed" -message $failure
         return 0
@@ -229,6 +186,8 @@ proc ::GX::PythonScriptEditorUI::_save {} {
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
     set ui(revision) [dict get $result revision]
+    set ui(parameterDefinitions) [dict get $result parameters]
+    ::GX::scriptSourceTabsSaved $ui(tabs) $result
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -238,6 +197,8 @@ proc ::GX::PythonScriptEditorUI::_save {} {
 
 proc ::GX::PythonScriptEditorUI::_saveAs {} {
     variable ui
+    if {![::GX::scriptSourceTabsRequireOwner $ui(tabs)]} {return 0}
+    if {[::GX::scriptSourceNotesActive $ui(tabs)]} {return [::GX::scriptSourceNotesPublishCopy $ui(tabs)]}
     if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) $ui(scope)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} { set name "Untitled script" }
@@ -248,18 +209,26 @@ proc ::GX::PythonScriptEditorUI::_saveAs {} {
     while {[lsearch -exact [lmap script [::GX::scriptRegistryList $ui(scope)] {dict get $script id}] "${base}_$suffix"] >= 0} {incr suffix}
     set newId "${base}_$suffix"
     if {[catch {
+        set prepared [::GX::scriptSourceNotesCopyPrepare $ui(tabs)]
+        set relative $ui(activeFile)
         set parameters [_parametersFromEditor]
+        set doc [::GX::scriptSourceTabsCurrent $ui(tabs)]
+        if {[dict get $doc kind] eq {project}} {
+            set result [::GX::scriptRegistryProjectSave $ui(scope) $newId $copyName Python [dict get $doc entrypoint] [::GX::scriptSourceTabsFiles $ui(tabs)] [dict create version $ui(version) description $ui(description) required_apis $ui(requiredApis) parameters $parameters]]
+            dict set result reference "$ui(scope):$newId"
+        } else {
         set result [::GX::PythonScriptEditor::workspaceSave "" "" $ui(scope) $newId $copyName \
             $ui(version) $ui(description) $ui(requiredApis) $parameters $code]
+        }
+        set result [::GX::scriptSourceNotesCopyCommit $prepared $result]
+        set result [::GX::PythonScriptEditor::workspaceRead [dict get $result reference]]
     } failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save As failed" -message $failure
         return 0
     }
-    set ui(currentId) [dict get $result reference]
-    set ui(currentSha) [dict get $result sha256]
-    set ui(revision) [dict get $result revision]
-    set ui(scriptId) $newId
-    set ui(name) $copyName
+    # Preserve original source/note buffers and identity; the new copy gets a
+    # distinct normal source tab rather than retargeting an existing note.
+    ::GX::scriptSourceTabsOpen $ui(tabs) [dict get $result reference] $result [expr {[dict get $result kind] eq {project}?$relative:[file tail [dict get $result source_path]]}]
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -269,6 +238,7 @@ proc ::GX::PythonScriptEditorUI::_saveAs {} {
 
 proc ::GX::PythonScriptEditorUI::_delete {} {
     variable ui
+    if {![::GX::scriptSourceTabsRequireOwner $ui(tabs)]} {return 0}
     if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) [lindex [split $ui(currentId) :] 0]]} {return 0}
     if {$ui(currentId) eq ""} return
     set answer [tk_messageBox -parent $ui(window) -icon warning -type yesno -default no -title "Delete script" -message "Delete '$ui(name)' ($ui(currentId))? The Script Registry source will be removed. Historical execution snapshots remain."]
@@ -294,7 +264,7 @@ proc ::GX::PythonScriptEditorUI::_decodeUtf8Bytes {bytes} {
 
 proc ::GX::PythonScriptEditorUI::_import {} {
     variable ui
-    if {![_confirmAbandon]} return
+    if {[info exists ui(window)]} {::GX::scriptProjectCanvasReturn $ui(window)}
     set path [tk_getOpenFile -parent $ui(window) -title "Import Python script" -filetypes {{{Python scripts} {.py}} {{All files} {*}}}]
     if {$path eq ""} return
     if {[string tolower [file extension $path]] ne ".py"} {
@@ -311,6 +281,7 @@ proc ::GX::PythonScriptEditorUI::_import {} {
         tk_messageBox -parent $ui(window) -icon error -title "Import failed" -message $failure
         return
     }
+    _new
     set ui(currentId) ""
     set ui(currentSha) ""
     set ui(revision) ""
@@ -318,6 +289,7 @@ proc ::GX::PythonScriptEditorUI::_import {} {
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(name) [file tail [file rootname $path]]
+    set ui(parameterDefinitions) {}
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
     set ui(description) "Imported from [file tail $path]. The registered script is independent of the original file."
@@ -369,6 +341,7 @@ proc ::GX::PythonScriptEditorUI::_copyId {} {
 
 proc ::GX::PythonScriptEditorUI::_run {} {
     variable ui
+    if {![::GX::scriptSourceTabsRequireOwner $ui(tabs)]} {return 0}
     ::GX::scriptWorkspaceOpenEditorRunner $ui(window) $ui(currentId) $ui(modified) ::GX::PythonScriptEditorUI::_save $ui(currentSha) $ui(sessionToken)
 }
 proc ::GX::PythonScriptEditorUI::_undo {} {variable ui; ::GX::uiTextEdit $ui(window) undo}
@@ -376,8 +349,13 @@ proc ::GX::PythonScriptEditorUI::_redo {} {variable ui; ::GX::uiTextEdit $ui(win
 proc ::GX::PythonScriptEditorUI::_copy {} {variable ui; ::GX::uiTextEdit $ui(window) copy}
 proc ::GX::PythonScriptEditorUI::_paste {} {variable ui; ::GX::uiTextEdit $ui(window) paste}
 
+proc ::GX::PythonScriptEditorUI::_focusFind {} {
+    variable ui
+    if {![::GX::scriptSourceNotesFind $ui(tabs) focus]} {focus $ui(window).p.center.find.e}
+}
 proc ::GX::PythonScriptEditorUI::_find {{direction forward}} {
     variable ui
+    if {[::GX::scriptSourceNotesFind $ui(tabs) $direction]} {return}
     if {[::GX::sourceSurfaceFind $ui(text) $ui(find) $direction] eq {}} {bell}
     _updateStatus
 }
@@ -482,8 +460,10 @@ The bridge is not a sandbox. Ordinary Python filesystem/process capabilities rem
 
 proc ::GX::PythonScriptEditorUI::_close {} {
     variable ui
-    if {![_confirmAbandon]} return
+    if {![info exists ui(window)] || ![winfo exists $ui(window)]} return
+    if {[info exists ui(window)]} {::GX::scriptProjectCanvasReturn $ui(window)}
     if {![::GX::scriptDebugPrepareEditorClose $ui(window)]} return
+    if {![::GX::scriptSourceTabsClose $ui(tabs) 1]} return
     ::GX::scriptWorkspaceLayoutRemember $ui(window)
     catch {destroy $ui(window)}
 }
@@ -491,14 +471,14 @@ proc ::GX::PythonScriptEditorUI::_close {} {
 proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     ttk::frame $w.toolbar -padding {8 4}
     pack $w.toolbar -side top -fill x
-    foreach {key label} {file File edit Edit view View run Run help Help} {
-        ttk::menubutton $w.toolbar.$key -text $label -menu $w.toolbar.$key.menu
+    foreach {key label} {file File edit Edit project Project view View run Run help Help} {
+        ttk::menubutton $w.toolbar.$key -text $label -width 0 -menu $w.toolbar.$key.menu
         menu $w.toolbar.$key.menu -tearoff 0 -postcommand [list ::GX::PythonScriptEditorUI::_menuState $key]
     }
     ::GX::scriptWorkspaceViewMenu $w $w.toolbar.view.menu Python
     set m $w.toolbar.file.menu
     foreach {label shortcut command} {
-        New Ctrl+N _new
+        {New Script} Ctrl+N _new
         {Import .py...} Ctrl+O _import
         Save Ctrl+S _save
         {Save As...} {} _saveAs
@@ -506,6 +486,10 @@ proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
         Delete {} _delete
         {Copy ID} {} _copyId
     } {$m add command -label $label -accelerator $shortcut -command ::GX::PythonScriptEditorUI::$command}
+    $m insert 3 command -label {Save All} -accelerator Ctrl+Shift+S -command [list ::GX::scriptSourceTabsEditorAction ::GX::PythonScriptEditorUI save]
+    ::GX::scriptSourceTabsProjectMenu $w.toolbar.project.menu ::GX::PythonScriptEditorUI
+    ::GX::scriptProjectCanvasMenus ::GX::PythonScriptEditorUI Python
+    $m add command -label {Close tab} -accelerator Ctrl+W -command [list ::GX::scriptSourceTabsEditorAction ::GX::PythonScriptEditorUI close]
 
     $m add separator
     $m add command -label Close -command ::GX::PythonScriptEditorUI::_close
@@ -515,11 +499,11 @@ proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     }
     $m add separator
     $m add command -label {Manage imports…} -command [list ::GX::pythonImportsOpen $w]
-    $m add command -label Find -accelerator Ctrl+F -command [list focus $w.p.center.find.e]
+    $m add command -label Find -accelerator Ctrl+F -command ::GX::PythonScriptEditorUI::_focusFind
     $m add command -label {Find next} -accelerator F3 -command {::GX::PythonScriptEditorUI::_find forward}
     $m add command -label {Find previous} -accelerator Shift+F3 -command {::GX::PythonScriptEditorUI::_find backward}
     $m add command -label {Go to line...} -accelerator Ctrl+G -command ::GX::PythonScriptEditorUI::_gotoLineDialog
-    foreach {label operation} {{Fold current block} toggle {Fold all} fold_all {Unfold all} unfold_all} {$m add command -label $label -command [list ::GX::sourceSurfaceFold $w.p.center.edit $operation]}
+    foreach {label operation} {{Fold current block} toggle {Fold all} fold_all {Unfold all} unfold_all} {$m add command -label $label -command [list ::GX::PythonScriptEditorUI::_fold $operation]}
     set m $w.toolbar.run.menu
     $m add command -label {Debug Session script…} -command [list ::GX::scriptDebugOpen $w Python]
     $m add command -label {Open Script Runner...} -command ::GX::PythonScriptEditorUI::_run
@@ -529,7 +513,11 @@ proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     $w.toolbar.help.menu add command -label {Viewer manual / Debugger guide…} -accelerator F1 -command [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
     $w.toolbar.help.menu add command -label {About…} -command [list ::GX::documentationBrowserAboutModule analysis.python_script python_script_editor $w]
     bind $w <F1> [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
-    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.view $w.toolbar.run $w.toolbar.help]
+    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.project $w.toolbar.view $w.toolbar.run $w.toolbar.help]
+    ::GX::scriptSourceNotesMenu $w.p.center.edit $w.toolbar.edit.menu edit
+    ::GX::scriptSourceNotesMenu $w.p.center.edit $w.toolbar.view.menu view
+    ::GX::sourceNoteEditorMenusAttach $w.toolbar.edit.menu $w.toolbar.view.menu [list ::GX::scriptSourceNotesMenuHandle $w.p.center.edit]
+    ::GX::scriptSourceTabsMenusAttach $w
 }
 proc ::GX::PythonScriptEditorUI::_menuState {group} {
     variable ui
@@ -541,8 +529,11 @@ proc ::GX::PythonScriptEditorUI::_menuState {group} {
             incr index
         }
     } elseif {$group eq "file"} {
-        foreach index {5 6} {$m entryconfigure $index -state [expr {$ui(currentId) eq {} ? "disabled" : "normal"}]}
+        foreach label {Delete {Copy ID}} {$m entryconfigure $label -state [expr {$ui(currentId) eq {} ? "disabled" : "normal"}]}
+        ::GX::scriptSourceTabsMenuState $ui(tabs) $group $m
 
+    } elseif {$group eq {project}} {
+        ::GX::scriptSourceTabsMenuState $ui(tabs) $group $m
     }
 }
 
@@ -560,6 +551,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
+    set ui(parameterDefinitions) {}
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
     set ui(description) ""
@@ -612,13 +604,19 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     grid $w.p.center.props.sl $w.p.center.props.se $w.p.center.props.il $w.p.center.props.ie -sticky ew -padx {0 6}
     ttk::label $w.p.center.props.nl -text "Name:"
     ttk::entry $w.p.center.props.ne -textvariable ::GX::PythonScriptEditorUI::ui(name) -width 30
-    ttk::label $w.p.center.props.vl -text "Version:"
-    ttk::entry $w.p.center.props.ve -textvariable ::GX::PythonScriptEditorUI::ui(version) -width 15
-    grid $w.p.center.props.nl $w.p.center.props.ne $w.p.center.props.vl $w.p.center.props.ve -sticky ew -padx {0 6}
-    ttk::label $w.p.center.props.rl -text "Additional APIs:"
-    ttk::entry $w.p.center.props.re -textvariable ::GX::PythonScriptEditorUI::ui(requiredApis)
-    grid $w.p.center.props.rl -row 2 -column 0 -sticky e -padx {0 6}
-    grid $w.p.center.props.re -row 2 -column 1 -columnspan 3 -sticky ew -padx {0 6}
+    grid $w.p.center.props.nl $w.p.center.props.ne -columnspan 1 -sticky ew -padx {0 6}
+    ttk::frame $w.p.center.version
+    pack $w.p.center.version -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.version.l -text "Version:"
+    ttk::entry $w.p.center.version.e -textvariable ::GX::PythonScriptEditorUI::ui(version) -width 15
+    pack $w.p.center.version.l -side left -padx {0 6}
+    pack $w.p.center.version.e -side left -fill x -expand 1
+    ttk::frame $w.p.center.requiredApis
+    pack $w.p.center.requiredApis -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.requiredApis.l -text "Additional required APIs:"
+    ttk::entry $w.p.center.requiredApis.e -textvariable ::GX::PythonScriptEditorUI::ui(requiredApis)
+    pack $w.p.center.requiredApis.l -side left -padx {0 6}
+    pack $w.p.center.requiredApis.e -side left -fill x -expand 1
     grid columnconfigure $w.p.center.props 1 -weight 1
     grid columnconfigure $w.p.center.props 3 -weight 1
 
@@ -631,19 +629,17 @@ proc ::GX::PythonScriptEditorUI::_build {} {
 
     ttk::frame $w.p.center.params
     pack $w.p.center.params -side top -fill x -pady {0 5}
-    ttk::label $w.p.center.params.l -text "Typed parameters: name | type | required (0/1) | default | description"
+    ttk::label $w.p.center.params.l -text "Typed parameters: name | type | required (0/1) | default | description" -wraplength 440
     pack $w.p.center.params.l -side top -anchor w
     text $w.p.center.params.t -height 3 -wrap none -undo 1 -font TkFixedFont
     set ui(parameters) $w.p.center.params.t
     pack $ui(parameters) -side top -fill x
     bind $ui(parameters) <<Modified>> ::GX::PythonScriptEditorUI::_parametersModified
 
-    set ui(text) [::GX::sourceSurfaceCreate $w.p.center.edit [dict create mode editable language python change_command ::GX::PythonScriptEditorUI::_sourceChanged]]
+    set ui(tabs) [::GX::scriptSourceTabsCreate $w.p.center.edit ::GX::PythonScriptEditorUI Python]
     pack $w.p.center.edit -side top -fill both -expand 1
-    set ui(lines) $w.p.center.edit.lines
-    set ui(vscroll) $w.p.center.edit.v
-    bind $ui(text) <KeyRelease> ::GX::PythonScriptEditorUI::_updateStatus
-    bind $ui(text) <ButtonRelease-1> ::GX::PythonScriptEditorUI::_updateStatus
+    _new
+    set ui(initialDraftTab) [$ui(tabs).book select]
 
     ttk::frame $w.p.center.find
     pack $w.p.center.find -side bottom -fill x -pady {5 0}
@@ -654,7 +650,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     pack $w.p.center.find.l $w.p.center.find.e $w.p.center.find.prev $w.p.center.find.next -side left -padx {0 5}
     bind $w.p.center.find.e <Return> {::GX::PythonScriptEditorUI::_find forward}
 
-    ttk::label $w.p.right.title -text "GX-TXT bridge snippets"
+    ttk::label $w.p.right.title -text "GX-TXT bridge snippets" -wraplength 140
     pack $w.p.right.title -side top -anchor w -pady {0 5}
     ttk::combobox $w.p.right.snip -state readonly -values {Context {Discover APIs} {Require API} {Describe API} {Call API}} -textvariable ::GX::PythonScriptEditorUI::ui(snippet)
     ttk::button $w.p.right.insert -text "Insert" -command ::GX::PythonScriptEditorUI::_insertSnippet
@@ -695,12 +691,12 @@ The bridge is not a sandbox.}
     bind $w <Control-s> {::GX::PythonScriptEditorUI::_save; break}
     bind $w <Control-n> {::GX::PythonScriptEditorUI::_new; break}
     bind $w <Control-o> {::GX::PythonScriptEditorUI::_import; break}
-    bind $w <Control-f> {focus $::GX::PythonScriptEditorUI::ui(window).p.center.find.e; break}
+    bind $w <Control-f> {::GX::PythonScriptEditorUI::_focusFind; break}
     bind $w <Control-g> {::GX::PythonScriptEditorUI::_gotoLineDialog; break}
     bind $w <F3> {::GX::PythonScriptEditorUI::_find forward; break}
     bind $w <Shift-F3> {::GX::PythonScriptEditorUI::_find backward; break}
 
-    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ve $w.p.center.props.re $w.p.center.params.t]
+    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.version.e $w.p.center.requiredApis.e $w.p.center.params.t]
     bind $w.p.center.find.e <Escape> [list focus $ui(text)]
     ::GX::scriptWorkspaceLayoutInit $w
     _watchProperties
@@ -708,7 +704,7 @@ The bridge is not a sandbox.}
     _acceptBaseline
     _refreshDocuments
     set docs [$ui(tree) children {}]
-    if {[llength $docs]} { _loadDocument [lindex $docs 0] } else { _new }
+    if {[llength $docs]} { _loadDocument [lindex $docs 0] } else { _acceptBaseline }
     focus $ui(text)
 }
 
@@ -731,6 +727,8 @@ proc ::GX::PythonScriptEditorUI::_snapshot {} {
     foreach key {text parameters} {if {[info exists ui($key)] && [winfo exists $ui($key)]} {dict set out $key [$ui($key) get 1.0 end-1c]}}
     return $out
 }
-proc ::GX::PythonScriptEditorUI::_acceptBaseline {} {variable ui;set ui(importDraft) 0;set ui(baseline) [_snapshot];set ui(modified) 0;::GX::sourceSurfaceDocumentIdentity $ui(text) [list $ui(currentId) $ui(currentSha) [zlib crc32 [$ui(text) get 1.0 end-1c]]]}
-proc ::GX::PythonScriptEditorUI::_recomputeDirty {} {variable ui;if {![info exists ui(baseline)]} {return};set ui(modified) [expr {([info exists ui(importDraft)] && $ui(importDraft)) || [_snapshot] ne $ui(baseline)}]}
+proc ::GX::PythonScriptEditorUI::_acceptBaseline {} {variable ui;set ui(importDraft) 0;set ui(baseline) [_snapshot];set ui(modified) 0;::GX::sourceSurfaceDocumentIdentity $ui(text) [list $ui(currentId) $ui(currentSha) [expr {[info exists ui(activeFile)] ? $ui(activeFile) : {}}]]}
+proc ::GX::PythonScriptEditorUI::_recomputeDirty {} {variable ui;if {![info exists ui(baseline)]} {return};set ui(modified) [expr {([info exists ui(importDraft)] && $ui(importDraft)) || [_snapshot] ne $ui(baseline) || ([info exists ui(tabs)] && [::GX::scriptSourceTabsDirty $ui(tabs)])}]}
 proc ::GX::PythonScriptEditorUI::_sourceChanged {} {_recomputeDirty;_scheduleRefresh}
+
+proc ::GX::PythonScriptEditorUI::_fold {operation} {variable ui;::GX::sourceSurfaceFold $ui(text) $operation}

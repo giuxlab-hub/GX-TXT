@@ -1,0 +1,283 @@
+{
+  "schema": "gxtxt.p035.acceptance.v1",
+  "lane": "A",
+  "status": "PASS",
+  "independent": true,
+  "source_commit": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+  "archive_sha256": "8848e8e3f7ada48d7d2b8b34780a398dc83a8829424f64e2dc63c60487b2447d",
+  "module_archives": {
+    "plot.dataset": "ef4434b3d4b367b74f50549691c366ecce117197ff05a9031459afc71050c529",
+    "viewer.interface_builder": "ccbf65948ccc543c10a6ea57662525a5dc1e9963ee979cb7d3308624aacab181",
+    "analysis.spectroscopy.ir": "03350045212f36de075d0141084728ee679e1770920d03e68771bfa31b316a80",
+    "library.spectroscopy.ir.reference": "3e1701cf9cfd10bfd512ffbe0288cde591281219127633c38084f6d5913ad904",
+    "viewer.ir_spectroscopy": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+    "preview.curve_digitizer": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2"
+  },
+  "generator_archives": {
+    "ir_library_explorer_lab": "67db684511b8064789bf334748134bc3b0a1e7959f3de77910b36ecb1b4ee778",
+    "ir_spectral_contracts_lab": "2d7e57fb2b21a353554e774e33a2aba7ab20b8dfce49d4aacf2767a27f9499f5",
+    "ir_viewer_integrated_study_lab": "b88eefffdd7dc4a345747cd9f4beb254b690018005a240541f9aabe001e5c9a3",
+    "refimp_full_training_ir": "7e5ff019daa71919a034bb49bb75881401f927ea5bbbe1c58a046c61a7c977a0",
+    "nist_pnnl_ir_faculty": "ef1b72fd89e3224c4a0f802a48f46346cb11bd909aef5a344005f65f48287146",
+    "org.giuxlab.gxtxt.ir_teaching_labs": "71338764583a5b644ce19101d7a923f9042bf0eeefb7e2c9adc8e4aceb08ed41"
+  },
+  "original_input_archives": {},
+  "owner_supplied_qualifications": {
+    "preview.curve_digitizer": "OWNER_SUPPLIED_UNMODIFIED; NOT_TESTED_BY_OWNER_REQUEST"
+  },
+  "scope": "Independent laneA exactRC08 scientific/API/guardedartifact/normalManager/cleanBuilder/finalteachingdelivery acceptance, with reviewed finalindependentB32/domain/source/mode/drainseals. MAIN alone accepts/deposits; canonicalreadback andactivation are separate.",
+  "actual_final_checks": {
+    "mechanics": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/artifact_rc08_a01/REPORT.json",
+      "sha256": "e717ecfd3cd06a80421c1d526943576d8a062f7ada836064ae1b8bf941552b3b",
+      "bytes": 4816,
+      "assertions": 35,
+      "payload_paths": 74,
+      "baseline_guards": 2541,
+      "actual_P034_physical_postimages": 4483
+    },
+    "cold_public_reference": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/artifact_rc08_a01/cold_reference_a102/REPORT.tcldict",
+      "sha256": "7708ec1b4b28d4506ce129a4e226f544281a4e9254138d9cfbf28f470fff2dab",
+      "bytes": 344,
+      "assertions": 12,
+      "catalog_records": 2799,
+      "fingerprint": "c921062c02f52b182f0e1dba0877b5ec467dbf3d52fb2ed21fe6b2999df3e26a",
+      "native_backend_sha256": "0201c8d6e44649b06c5baaac6f3f860a16cb42c1d0cddb4f6ccd35e054360ef8"
+    },
+    "source_applicability": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/RC08_SOURCE_IDENTITY_APPLICABILITY_A103.json",
+      "sha256": "e4c3ca7f0b525edd795a6880d752aa00b7a26393f7a62de618949db8526e4ef0",
+      "bytes": 5407
+    },
+    "prior_scientific_owner_applicability": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/FINAL_SOURCE_APPLICABILITY_A100.json",
+      "sha256": "f4f6b4d08be46c21c0309173d71694c924a025e71c07f39d36b3511631a403f1",
+      "bytes": 30784
+    },
+    "clean_IR_source_rebuild_install": {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/GENUINE_IR_CLEAN_REBUILD_INSTALL_A30.json",
+      "sha256": "f0cab30c4af2a5cb246c999d1fa7ec868aace4c8913e247a2a51390304f89bc6",
+      "bytes": 7903
+    },
+    "five_final_delivery_science": [
+      {
+        "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FINAL_REFIMP_NIST_DELIVERY_READBACK_A33.json",
+        "sha256": "345421c0707c7cd2b1de02380aea235fde68570242455e3e1c1fba493ae8b7a2",
+        "bytes": 5228
+      },
+      {
+        "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FINAL_EXPLORER_CONTRACTS_INTEGRATED_READBACK_A35.json",
+        "sha256": "5b620632cdd8282f511e854ad3ca950ca612d0f06007aaa7581c896413c50c6c",
+        "bytes": 8787
+      }
+    ],
+    "nondefault_integrated_processing": {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/INTEGRATED_NONDEFAULT_PROCESSING_ORACLE_A34.json",
+      "sha256": "753dd717c79093fb5cad8bb0840bbc76c03b1a64d7da514959fd26dd8d6da1cc",
+      "bytes": 3686
+    },
+    "B_available_seals_review": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/B_FINAL_AVAILABLE_SEALS_REVIEW_A106.json",
+      "sha256": "ca15bd61ebf63273c87be16f4c8a50f5b89746bdfa23158c109e0f0a452d9f19",
+      "bytes": 34497
+    },
+    "B_final_source_data_PID_union_review": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/B12_FINAL_UNION_REVIEW_A107.json",
+      "sha256": "1b0bf5b4f255a9888c9b3e34bbe63984220e7219c012078945450ba030d7203c",
+      "bytes": 113536
+    },
+    "B_actual_applied_CORE_wrapper_review": {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/B_ACTUAL_RC08_WRAPPER_REVIEW_A108.json",
+      "sha256": "e4675a720b199cd07bb89b227d0d903da1159c8c20e48a65056d83021fc0cdf9",
+      "bytes": 872
+    }
+  },
+  "core_and_normal_ownership": {
+    "core_overlay_modules": [
+      "plot.dataset",
+      "viewer.interface_builder",
+      "analysis.spectroscopy.ir"
+    ],
+    "ordinary_managed_order": [
+      "library.spectroscopy.ir.reference",
+      "viewer.ir_spectroscopy",
+      "preview.curve_digitizer"
+    ],
+    "ordinary_actual_execution": "A22provider1.1\u21921.2Update/A6absentInstall/010\u2192original012Update+disable/remove/reinstall; finalInstaller/executedSDK/admission owners unchanged; A30separate genuine rebuiltA6normalInstall/nativecallback. Not sixnewnormalInstalls or container-onlyparity.",
+    "mutable_Manager_registry": "Entireplugins/.registryexcluded fromCOREpayload/guard afterfullP034verification; actualnormal-Manager-mutatedstate survivedapply/check/preflight/rollback A25. No registryrepair/restore/adoption."
+  },
+  "final_teaching_summary": {
+    "domains": [
+      "refimp_full_training_ir",
+      "nist_pnnl_ir_faculty",
+      "ir_library_explorer_lab",
+      "ir_spectral_contracts_lab",
+      "ir_viewer_integrated_study_lab"
+    ],
+    "public_cold_Datasets": 37,
+    "canonical_rows": 109038,
+    "saved_Workspaces_validated": 8,
+    "native_current_Workspaces_reviewed_by_B": 5,
+    "no_Analysis_rerun_by_A": true,
+    "scientific_workcount_qualification": "RefIMP9537bulk/30exact are completedproducer/report/provenanceobservations; independentliteralprocessing+tenpublishedscores verified, notglobal9537exactreranking. Other15/3scans retaindeclaredscopes."
+  },
+  "available_B_seals": {
+    "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_DETAILS_2944_CORRECTIVE_NATIVE_B11.json": "f3df034567033f2174638db95494a863eff19efda947eac243f576705ae1a89a",
+    "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/teaching01/FIVE_FINAL_TEACHING_COLD_GUI_B01.json": "1486851c4d2e975456892111cb53cb58eaa71d266db63dd7c1247ccda19e9f3b",
+    "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/rc06_union_review01/FONT10_AND_UNION32_OFFLINE_REVIEW_B01.json": "a7aa5a5b6dfbe49e7d2a840acd07e41d00e5eae41818e6fe2c2bff1b96c218e8",
+    "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_GIT_SOURCE_STAGE_MODE_QUALIFICATION_B02.json": "71d759bb6f92409639700f2e6349bdc9503e9f8bacef335c2fd94905bd62c5dc",
+    "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-B/gui_audit_teaching01/MODULE_INPUT_ERRATUM02.json": "391b1ebb18d5222c254b4b428685f455d0b6329a5e539f05c2e886e50570fdc5"
+  },
+  "pending": [],
+  "component_receipts": [
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/CORE022_PROVISIONAL_ACCEPTANCE_AND_APPLICABILITY_A14b.json",
+      "sha256": "c53d7af880821189eb5113f42914432a129ac45ce201140f12f5c76c4ec2a5cf",
+      "bytes": 16850
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/OWNER012_NORMAL_MANAGER_LIFECYCLE_A15.json",
+      "sha256": "b0825e742c6c3ff0b6b4a322150946a3215c75076fff5e2c1867a4817acca8e2",
+      "bytes": 4236
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/OWNER012_FOCUSED_CORE022_INTEGRATION_A16.json",
+      "sha256": "2e03e49f4568bb1e79e481091bbd22084d8177e59c1a685d2b03a757bf1471d6",
+      "bytes": 7318
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/GENERIC_IR_DISPATCH_CORRECTIVE_A18.json",
+      "sha256": "0bf26c03cd427771e47a4e3d34d740e5667b33d4ad04be386a65f2241b01ac50",
+      "bytes": 1745
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/GENERATOR_LIBRARY_INTAKE_AND_SOURCE_ORACLES_A19.json",
+      "sha256": "a368b3ed437a470ccdfb7987754bdcc5343611af4a2c9cf476cdec06cf6c4477",
+      "bytes": 9495
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/SPECTRUM_SESSION_PUBLIC_OWNERSHIP_CORRECTIVE_A20.json",
+      "sha256": "f65b656ca948709464d7280384e1fa69eaae2bc58b9f381284bb79b07bb697a5",
+      "bytes": 3257
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FIVE_GENERATOR_CANONICAL_WARM_COLD_A21.json",
+      "sha256": "b3d866043a0566b07ed9e0ab1dd615cb8282bc8b38e2e08f3374f3fc3c3d0172",
+      "bytes": 6906
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/RC03_ARTIFACT_LIFECYCLE_APPLICABILITY_A22.json",
+      "sha256": "d6aafe471219a48195c2c113d9761dd51a62a70761eef9f469e4c5190d04a7d4",
+      "bytes": 8622
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FIELD_COMPARISON_NOSESSION_CORRECTIVE_A23.json",
+      "sha256": "d60d983b4691b6638b66874ff1f29b9031cd7588ee04d059e5e1fee85246dc8c",
+      "bytes": 7394
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/RC05_ARTIFACT_REGISTRY_CORRECTIVE_A25.json",
+      "sha256": "86ec5dbed7247d5ff5902a4f744daeb24b94edc1448d6c683f430d56e1ee6c08",
+      "bytes": 6858
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/NOSESSION_PREPARED_BINDING_ADDENDUM_A26.json",
+      "sha256": "efc068d9e39ad737f2ba21980ddfb17e83265ee2fc98c106a3b727f14f216b11",
+      "bytes": 2602
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/COMPLETED_NATIVE_ANALYSIS_INDEPENDENT_ORACLE_A27.json",
+      "sha256": "7b4051ec81acbb418b7d11c2584aa1582c105bc77570c8c55a4f23278ecbd110",
+      "bytes": 5862
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/PORTABLE_ORIGIN_AXIS_INDEPENDENT_A28.json",
+      "sha256": "357bdfc82f5d34918e75cedef90f882d75aeec970fa239cc0e4fe87fafc472a4",
+      "bytes": 3893
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/GENUINE_IR_CLEAN_REBUILD_INSTALL_A30.json",
+      "sha256": "f0cab30c4af2a5cb246c999d1fa7ec868aace4c8913e247a2a51390304f89bc6",
+      "bytes": 7903
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FINAL_REFIMP_NIST_DELIVERY_READBACK_A33.json",
+      "sha256": "345421c0707c7cd2b1de02380aea235fde68570242455e3e1c1fba493ae8b7a2",
+      "bytes": 5228
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/INTEGRATED_NONDEFAULT_PROCESSING_ORACLE_A34.json",
+      "sha256": "753dd717c79093fb5cad8bb0840bbc76c03b1a64d7da514959fd26dd8d6da1cc",
+      "bytes": 3686
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FINAL_EXPLORER_CONTRACTS_INTEGRATED_READBACK_A35.json",
+      "sha256": "5b620632cdd8282f511e854ad3ca950ca612d0f06007aaa7581c896413c50c6c",
+      "bytes": 8787
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/FINAL_REQUIREMENTS_EVIDENCE_MATRIX_A36.json",
+      "sha256": "aefb4b654ca1e3447609268c5eed5e17812836c97546a1b4f56731a35ba111be",
+      "bytes": 12051
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_a/P035/RC08_ARTIFACT_COLD_SOURCE_RETARGET_A37.json",
+      "sha256": "ecd9332d9561fa9fce75b191f39d1f0204f69ada38970c1f26316ac70f7df340",
+      "bytes": 4931
+    }
+  ],
+  "inherited_owner": {
+    "module": "viewer.curve_digitizer",
+    "version": "2.0.26",
+    "archive_sha256": "ded07ad9a85c79f68fa53866edef9a4a186ef06546882940526b56d9894a1198",
+    "qualification": "OWNER_SUPPLIED_UNMODIFIED; NOT_TESTED_BY_OWNER_REQUEST",
+    "new_module_operation": false
+  },
+  "owner012_focused_exception": "Original012unmodified23members/all0664; no11existing suites, no TEST_LEGACY. Separatelyauthorized NEWCORE bridge/page/model warm+freshprocess reuse and normalManager lifecycle only. Inertformatmarker doesnotproveViewer26authorship; actualproduceranalysis.python_script retained.",
+  "limitations": [
+    "No MAINwhole-releaseacceptance/deposition/activation/canonical/TODOclosure is claimed by laneAalone; MAIN requiresbothformalexactreceipts andcanonicalreadback.",
+    "No fullowner012/Y2-log/raster/uncertainty/calibration suite orViewer26features; no universal32/256subscriber/error-timeoutstress claim. Sharedunchangedscientificpreparationowners are sourcequalified, notfreshfeatureexecutions.",
+    "A14b96/84/753 executions andA15/A16source753 retainoriginalpins; finalcodeapplicability explicit, notrelabelledfreshRC08runs.",
+    "NISTk absorption_index isnotabsorbance; standardFIRST/LAST/N grid andhistoricalnominalDELTAX remain distinct.",
+    "NISTequalmaxplateaupeakpositions are nonunique; exactallowedsourceknots andprominence/widths verified, noarbitraryXtolerance orchemicalcalibrationclaim.",
+    "Small15Libraryppreference isnotfull9537Item13; actualdifferentgrids/tenpublishedscores independentlycomputed; nofakecrosslibraryselfidentity.",
+    "Integratednondefault635processing independentLS/shrink9/actualXgradient/meanL2 error4.72e-16; final67exact8scientificmembers beforeclosed51A34reuse.",
+    "FinalB32union=16font18+8+8font10;160modeframes not160fullsizeglyphreviews. Font10offline20fullsizemode+8endpointoriginals; receipt/contactcoverage broader.",
+    "NIST44.5999secondcoldreadonlyobservation after30secondfixturedeadline isnotfaststartup/performancePASS. FirstRefIMPFit earlymenurepaintframe notusedasFit/rangeproof.",
+    "FiveWorkspacegate usespublicnormalsetup plusnativePlot/Sources/Method/Fit; noexplicitVariantLoad fromthatgate, noallsourcecolumns simultaneouscontainmentclaim.",
+    "Actualall25A6bytes+0644inthreeleadfixtures; childGit0664preinstallbaseline separate; sourceStagephysicalmodes notfinalartifactmodeproof.",
+    "A6initialcount77, activechild79\u201381, INI93, peak88, overlay97, reviewer104\u2013105classification stops preserved; no productcorrectionclaimedwhereoracleswerewrong.",
+    "Foregroundactorsfinished normally/scopedownedworkerreapobserved; no universalzeroidleSupervisorclaim.",
+    "SourceRights/citations/sourceassets preserved, notblanketlegal/chemicalapproval. Allunselectedcatalogversionpairs remain executionNOT_VERIFIED; approvedfiveworkflowsactual.",
+    "B12late550: only3provenprivateDBus/AT-SPI processes withrecordedbirth/ownXAUTHORITY/DISPLAY/directparentage receivedSIGTERMafterGUIapp0; two cleanupwatchertoolsessions143 andWM-15exits are infrastructurequalifications, notapplicationfailuresoruniversalnormalzeroexits.",
+    "BnativeNoSessionRunnegative reacheddisabled-moduleadmission, nottheSessionguard. AcomplementarypublicSession/sourceguardscopesare notrelabeledasthat exactnativeguardexecution.",
+    "BactualCOREappliedreadback2543postimageunion isdistinctfromwholeoptionalmodule/data/normalinstallproof; AowncompletephysicalclosureandseparatenormalManager/source/scienceevidence retain declaredscopes."
+  ],
+  "sealed_at_utc": "2026-11-01T01:13:19.681717+00:00",
+  "actual_applied_root": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/artifact_rc08_a01/gui_applied_runtime",
+  "final_B_acceptance_reviewed": {
+    "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/P035_ACCEPTANCE_B_RC08.json",
+    "sha256": "aa572552cc8504b908d549a538bd8af87759f3d116f2bd08e932b162ad71a68a",
+    "bytes": 13917
+  },
+  "final_B_matrix_union": {
+    "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR32_FINAL_NATIVE_SOURCE_UNION_B12.json",
+    "sha256": "89e5d21f4c34f0b70829c761bfeb0739ca80c0bff977b884a7a94c5c5fd98568",
+    "bytes": 181937
+  },
+  "pending_draft_preserved": {
+    "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-A/P035_ACCEPTANCE_A_RC08_PENDING_DRAFT.json",
+    "sha256": "b2fa6b9e9e8b07b3bd328d555efb8d2da6d79ac6fb4649f139c01330c57c7695",
+    "bytes": 15181
+  },
+  "requirements_dispositions": {
+    "native_IR_Builder_and_clean_portability": "PASS_SCOPED: deliverednormalA6actualofficialBuilder/SDKoriginal andindependentpublicimport/Validate/actualBuild/Export/normalInstall/nativecallback, exactoriginalnativebinaryequality; nofromscratchindependentGUIauthorshipclaim.",
+    "shared_Comparison_and_source_guards": "PASS_SCOPED: unchangedP034numerical/SDKguardproof plus actualP035receipt/source/NoSession/Origin/axis/coldWorkspace checks; Bnativefive_modes32conditions160frames withretainedphysicalinspectionlimits.",
+    "two_upgraded_three_new_Generators_and_DEMO_migration": "PASS_SCOPED: normal713collectiondiscovery/install/allfiveGenerate/publicwarmcoldscientificgold; currentfivegenuineAnalysisruns completed, allfivefinalnamedportable/HTMLoriginalsand37Dataset/109038row/8Workspacepublicreadback, independentnondefaultIntegratedoracle; unselectedcatalogversionpairs executionNOT_VERIFIED.",
+    "CORE022_original012_integration": "PASS_FOCUSED_NEW_CORE_ONLY: source/typedcache/model/page/lifetime/revision/ABA/coalescing/cancel/invalidation andactualoriginal012callback+diskcoldreuse/normalManagerlifecycle; owner11suitesnotrun, nolegacybypass, nofullY2-log/raster/calibrationfeaturesuite oruniversalboundstressclaim.",
+    "legacy_readability_and_dispatch": "QUALIFIED_REUSE: actualRefIMPcanonicalCSVcontrols; currentunchangedP033NMRsynthetic2D/3Dspecializedowner/literalHzproof byexact68namedfilemap (NOT68catalogcases ornewFFT/vendorqualification), constrainedIRdispatchpositive/conflict/missing/wavelengthnegatives actualA18.",
+    "rights_and_provenance": "PASS_QUALIFIED: exactpublishedsource/rights/citations/RAW/provenance/version/contenthashpreserved; relative-transmissionsignal/k/syntheticsemantics explicit, similaritynotprobability/chemicalID, noblanketlegalapproval.",
+    "final_archive_and_publication_prerequisites": "PASS_A_EXACT_RC08:74payload/2541COREguards/fullP034physicalbaseline/sourcepostimages/modes/six+sixoriginals/normalmanagedordering/current2799Catalog andnative0201; finalBexactPASSreviewed. MAINacceptance/deposition andindependentcanonicalreadback remainseparate."
+  }
+}

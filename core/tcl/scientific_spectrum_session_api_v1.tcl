@@ -24,10 +24,17 @@ proc ::GX::SpectrumSessionAPIv1::publishExperimental {session datasetId spectrum
         y_representation [dict get $spectrum y_representation] \
         metadata [dict get $spectrum metadata] \
         provenance [dict get $spectrum provenance]]
+    # Attribute the actual admitted module, or the existing registered service
+    # for trusted CORE publication. The historical acq.spectrum string is not a
+    # registered metadata contributor and must not bypass contributor admission.
+    set publisher core.scientific_execution
+    if {$::GX::DatasetPrivate::activeContext ne {}} {set publisher [dict get $::GX::DatasetPrivate::activeContext module_id]}
+    set version [::GX::moduleField $publisher version {}]
+    if {$version eq {}} {error {Scientific Spectrum publication requires a registered actual producer}}
     set definition [dict create dataset_id $datasetId contract spectrum.scientific \
-        storage auto producer_version 1.0.0 source [dict get $spectrum source_identity] \
+        storage auto producer_version $version source [dict get $spectrum source_identity] \
         provenance $provenance notes {Experimental spectrum imported through CORE Scientific Spectrum API v1; original source preserved.}]
-    set plan [::GX::datasetPublicationV2Prepare $session acq.spectrum $definition]
+    set plan [::GX::datasetPublicationV2Prepare $session $publisher $definition]
     set writer [::GX::datasetPublicationV2OpenWriter $plan]
     try {
         ::GX::datasetPublicationV2DeclareDimension $writer spectral_point 0 [dict create extendible 1]

@@ -100,7 +100,7 @@ displayed 2D points with exact canonical source-row identities. The caller
 owns the destination and cleanup. An existing valid render cache is required
 for capture and point indexing.
 
-## Transient scientific curve previews
+## Transient scientific curve previews (3.11.0)
 
 `renderTransientOverlay artifact xValues yValues label destinationDir` captures an existing 2-D Plot Dataset graph, adds one unpublished XY curve through the same Octave renderer, and returns a PNG artifact path. `renderTransientCurve3D xValues yValues zValues label destinationDir` renders an unpublished ordered XYZ curve through the 3-D Plot Dataset renderer. Coordinates must be finite, vectors equal length and at least two samples. The caller owns the destination directory. These calls do not create a Graph Series, Dataset, PlotSpec or Session object; the Curve Builder uses them before explicit Publish.
 
@@ -114,7 +114,7 @@ must align with the same finite X vector. The call accepts 2–200,000 rows and
 caller-owned destination. It creates no persistent graph, Dataset, or Variant.
 Source units remain visible; the renderer applies no implicit conversion.
 
-## Script Bridge operations
+## Script Bridge operations (GX-TXT dev-037)
 
 Octave/MATLAB and Python call the following positional operations through `gxtxt_api_call('PLOT_DATASET_API_v3', operation, arguments)`. `create_plot` uses the normal `createPlotFromSpec` path and accepts a PlotSpec, `base` or `variant`, and optional source Variant; it does not require producer identity. `upsert_plot` remains producer-owned and prefixes its provider key with the current script module ID. Plot/Variant creation, deletion, enabled state, Graph Series presentation, and `apply_spec` persist through the public framework lifecycle. `save_spec`, panel edits, and series placement save the existing PlotSpec; they do not implement a second layout engine.
 
@@ -173,7 +173,7 @@ result = gxtxt_api_call('PLOT_DATASET_API_v3', 'render', {ref});
 ```
 
 
-## Read-only Native3D preview export
+## dev087 ordinary preview export
 
 `previewExportCommand plotRef temporaryDirectory`
 
@@ -184,7 +184,7 @@ source validation, bounded common lifecycle and transient cleanup. Existing
 `buildScene`, `openInteractive` and explicit Sync retain their persistent semantics.
 
 
-## Native3D preview and scientific figure publication
+## Dev087 manual-acceptance scientific figure correction
 
 `native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
 RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;

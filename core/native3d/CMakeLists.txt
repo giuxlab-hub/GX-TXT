@@ -212,11 +212,19 @@ endif()
 option(GX3DE_BUILD_TCL_VIEWER "Build CORE Tcl viewer transport" OFF)
 if(GX3DE_BUILD_TCL_VIEWER)
   find_package(TCL REQUIRED)
+  find_package(PNG REQUIRED)
   add_library(gx3de_viewer_tcl SHARED gx3de_viewer_tcl.cpp)
   target_include_directories(gx3de_viewer_tcl PRIVATE ${TCL_INCLUDE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(gx3de_viewer_tcl PRIVATE gx3de ${TCL_LIBRARY})
+  target_link_libraries(gx3de_viewer_tcl PRIVATE gx3de ${TCL_LIBRARY} PNG::PNG)
   set_target_properties(gx3de_viewer_tcl PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "$ORIGIN/../lib")
   install(TARGETS gx3de_viewer_tcl LIBRARY DESTINATION core/native3d/bin)
+  # Opt-in GUI-side evaluation of native-sampled projection snapshots. This
+  # small host module deliberately has no VTK or native engine dependency.
+  add_library(gx3de_projection_tcl_v1 MODULE gx3de_projection_tcl_v1.cpp)
+  target_include_directories(gx3de_projection_tcl_v1 PRIVATE ${TCL_INCLUDE_PATH})
+  target_link_libraries(gx3de_projection_tcl_v1 PRIVATE ${TCL_LIBRARY})
+  set_target_properties(gx3de_projection_tcl_v1 PROPERTIES PREFIX "")
+  install(TARGETS gx3de_projection_tcl_v1 LIBRARY DESTINATION core/native3d/bin)
 endif()
 
 # Plot Dataset v4 adds native scientific geometry without changing legacy APIs.

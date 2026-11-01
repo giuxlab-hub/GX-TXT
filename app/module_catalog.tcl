@@ -218,7 +218,7 @@ proc ::GX::loadManifest_v048 {path} {
         foreach gk [split [dict get $d "plot.axis.overrides.keys"] ","] {
             set gk [string trim $gk]
             if {$gk eq ""} continue
-            foreach {field def} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color "" layout_auto 1 layout_margin_left "" layout_margin_right "" layout_margin_top "" layout_margin_bottom "" layout_gap "" layout_ylabel_dist ""} {
+            foreach {field def} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color "" layout_auto 1 layout_ylabel_allow_negative 0 layout_margin_left "" layout_margin_right "" layout_margin_top "" layout_margin_bottom "" layout_gap "" layout_ylabel_dist ""} {
                 set dk "plot.axis.$gk.$field"
                 set axisOverride($gk,$field) [expr {[dict exists $d $dk] ? [dict get $d $dk] : $def}]
             }

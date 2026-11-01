@@ -14,7 +14,7 @@ import tkinter
 
 def review(project, request):
     from gxtxt_viewer_development import (DevelopmentError, core, dictionary,
-        validate, workspace_callback_contract, workspace_callback_semantics)
+        validate, workspace_callback_contract, workspace_callback_semantics, project_sources, digest)
     def deny(message):raise DevelopmentError(message,'WORKSPACE_UPGRADE_DENIED')
     if not isinstance(request,dict) or set(request)!={'saved_design','saved_snapshot','callback_contract'}:
         deny('Review requires exactly the saved inert design, snapshot and callback contract')
@@ -22,11 +22,16 @@ def review(project, request):
         deny('Saved review fields must be inert bounded text')
     if len(request['saved_design'].encode())>4194304:deny('Saved design exceeds4MiB')
     snapshot=dictionary(request['saved_snapshot']);contract=request['callback_contract']
+    source_files=snapshot.pop('source_file_sha256',None)
     if set(snapshot)!={'source_sha256','design_sha256','project_sha256'} or not all(re.fullmatch(r'[0-9a-f]{64}',x) for x in snapshot.values()) or not re.fullmatch(r'[0-9a-f]{64}',contract):
         deny('Saved source identity or callback contract is missing or malformed')
     meta,report,new,requested=validate(project)
     if report['status']!='PASS':deny('Current project source is not admitted')
     if report['source_sha256']!=snapshot['source_sha256']:deny('C++ source changed; automatic state migration is unavailable')
+    files=project_sources(project)
+    if len(files)>1 and (source_files is None or dictionary(source_files)!={name:digest(content) for name,content in files.items()}):
+        deny('C++ project source tree changed; automatic state migration is unavailable')
+    if source_files is not None:snapshot['source_file_sha256']=source_files
     with tempfile.NamedTemporaryFile(dir=project/'derived/tmp',suffix='.gxtxt-viewer',delete=False) as f:
         f.write(request['saved_design'].encode());path=Path(f.name)
     try:old=dictionary(core(project,'validate_design',path))
@@ -36,7 +41,7 @@ def review(project, request):
     # The prior digest proves the complete old metadata/profile/grants using
     # NEW admitted metadata and the exact SAVED declaration. No old project
     # file or author-supplied grant manifest is trusted or read here.
-    if workspace_callback_contract(meta,old,report['source_sha256'])!=contract:
+    if workspace_callback_contract(meta,old,report['source_sha256'],report.get('source_tree_sha256'))!=contract:
         deny('Saved contract cannot prove unchanged profile, grants and original callback semantics')
     before=workspace_callback_semantics(old);after=workspace_callback_semantics(new)
     root_changes=[]
@@ -59,6 +64,7 @@ def review(project, request):
             if c['type']=='action' and 'component_visibility' in p:result[p['action']]=('visibility',p['component_visibility'])
             if 'scientific_netlist_action' in p:result[p['scientific_netlist_action']]=('netlist',c['id'])
             for action,operation in dictionary(p.get('plot_series_commands','')).items():result[action]=('series',c['id'],operation)
+            for action,operation in dictionary(p.get('comparison_commands','')).items():result[action]=('comparison',c['id'],operation)
         return result
     old_trusted=trusted_bindings(old_components);new_trusted=trusted_bindings(new_components)
     for action,binding in new_trusted.items():
@@ -235,8 +241,12 @@ def review(project, request):
         p=c['properties']
         if c['type'] in {'toggle','checkbutton'} and 'component_visibility' in p and p['component_visibility'] in new_visibility:new_visibility[p['component_visibility']]=str(int(t.getboolean(p['default'])))
     if not changes and not additions:deny('No supported explicit additive presentation upgrade was found')
+    result_snapshot={key:report[key] for key in ('source_sha256','design_sha256','project_sha256')}
+    if len(files)>1:
+        from gxtxt_job_supervisor import tcl_result
+        result_snapshot['source_file_sha256']=tcl_result({name:digest(content) for name,content in files.items()})
     return dict(status='REVIEWED_INERT_ADDITIVE_UPGRADE',source_sha256=report['source_sha256'],
         prior_callback_contract=contract,new_callback_contract=report['workspace_callback_contract_sha256'],
         preserved_component_count=len(old_components),appended_components=additions,new_defaults=defaults,new_visibility_defaults=new_visibility,new_netlist_forms=new_netlist_forms,new_workbench_selection_forms=workbench_pairs,approved_presentation_changes=changes,
-        approved_probe_references=probe_refs,source_snapshot={key:report[key] for key in ('source_sha256','design_sha256','project_sha256')},
+        approved_probe_references=probe_refs,source_snapshot=result_snapshot,
         policy='Explicit canonical duplicate only; original Workspace/source/Jobs/Datasets unchanged. Host must recheck Session/source/Workspace stamps, transform every retained History state and copy resources through existing owners. This report is not an applied migration.')

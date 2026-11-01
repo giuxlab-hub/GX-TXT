@@ -25,7 +25,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::datasetWriterCapabilityNames {} {
-    return {complete_variable range_write append_write hyperslab_write multidimensional groups implicit_axis typed_numeric managed_binary_write sequential_chunks human_readable}
+    return {complete_variable range_write append_write hyperslab_write multidimensional groups implicit_axis typed_numeric managed_binary_write deferred_resource_write sequential_chunks human_readable}
 }
 
 proc ::GX::datasetWriterProviderRegister {provider commandPrefix capabilities version} {
@@ -266,16 +266,17 @@ proc ::GX::datasetPublicationV2OpenWriter {plan} {
     return $writer
 }
 
-proc ::GX::datasetPublicationV2RequireWriter {writer} {
+proc ::GX::datasetPublicationV2RequireWriter {writer {allowPending 0}} {
     variable datasetPublicationWriter
     if {![info exists datasetPublicationWriter($writer,status)]} { error "Unknown publication writer: $writer" }
     if {$datasetPublicationWriter($writer,status) ne "open"} { error "Publication writer is $datasetPublicationWriter($writer,status)" }
+    if {!$allowPending && [info exists datasetPublicationWriter($writer,pending_resource)]} {error {Publication writer has an outstanding managed resource write; collect it first}}
 }
 
 proc ::GX::datasetPublicationV2ProviderCall {writer operation args} {
     variable datasetPublicationWriter
     variable datasetWriterProviderCommand
-    datasetPublicationV2RequireWriter $writer
+    datasetPublicationV2RequireWriter $writer [expr {$operation eq {write_variable_collect}}]
     set provider $datasetPublicationWriter($writer,provider)
     if {[catch {set result [uplevel #0 [list {*}$datasetWriterProviderCommand($provider) $operation $datasetPublicationWriter($writer,provider_token) {*}$args]]} failure options]} {
         set datasetPublicationWriter($writer,status) failed
@@ -477,7 +478,8 @@ proc ::GX::datasetPublicationV2ValidateTypedValues {variable values} {
     }
 }
 
-proc ::GX::datasetPublicationV2MaterializeBinaryBlock {variable values} {
+proc ::GX::datasetPublicationV2MaterializeBinaryBlock {variable values {formatFloating 1}} {
+    if {![string is boolean -strict $formatFloating]} {error {Floating presentation option must be boolean}}
     datasetPublicationV2ValidateBinaryBlock $variable $values
     set raw [binary decode base64 [dict get $values base64]]
     set dtype [dict get $values dtype]; set endian [dict get $values endian]
@@ -498,7 +500,7 @@ proc ::GX::datasetPublicationV2MaterializeBinaryBlock {variable values} {
     }
     datasetPublicationV2ValidateTypedValues $variable $out
     set targetDtype [dict get $variable dtype]
-    if {$targetDtype in {float32 float64}} {
+    if {$formatFloating && $targetDtype in {float32 float64}} {
         set precision [expr {$targetDtype eq "float32" ? 9 : 17}]
         set formatted {}
         foreach value $out {
@@ -536,6 +538,35 @@ proc ::GX::datasetPublicationV2WriteVariable {writer variableId values {shape ""
     set payload [datasetPublicationV2ValuesPayload $shape $values]
     datasetPublicationV2ValidateTypedValues $variable $values
     return [datasetPublicationV2ProviderCall $writer write_variable $variableId $payload]
+}
+
+# Additive bounded pipelining on existing HDF5 contexts. The caller retains
+# the delegated immutable resource until Collect; no alternate writer or Job.
+proc ::GX::datasetPublicationV2WriteVariableSubmit {writer variableId values {shape {}}} {
+    variable datasetPublicationWriter
+    datasetPublicationV2RequireWriter $writer
+    if {$datasetPublicationWriter($writer,provider) ne {hdf5} || ![datasetPublicationV2IsResource $values]} {error {Deferred write requires an existing HDF5 managed resource writer}}
+    if {$variableId ni $datasetPublicationWriter($writer,variable_ids)} {error "Unknown variable_id $variableId"}
+    set variable $datasetPublicationWriter($writer,variable,$variableId)
+    if {[dict get $variable axis_kind] eq {uniform}} {error {Implicit uniform coordinates do not accept stored values}}
+    set declared [datasetPublicationV2Shape [dict get $variable shape]]
+    if {$shape eq {}} {set shape $declared} else {set shape [datasetPublicationV2Shape $shape]}
+    if {$shape ne $declared} {error "Complete variable shape mismatch for $variableId"}
+    set payload [datasetPublicationV2ValuesPayload $shape $values]
+    datasetPublicationV2ValidateTypedValues $variable $values
+    datasetPublicationV2ProviderCall $writer write_variable_submit $variableId $payload
+    set datasetPublicationWriter($writer,pending_resource) [list $variable $values]
+    return [dict create writer $writer variable_id $variableId state pending]
+}
+proc ::GX::datasetPublicationV2WriteVariableCollect {writer} {
+    variable datasetPublicationWriter
+    datasetPublicationV2RequireWriter $writer 1
+    if {![info exists datasetPublicationWriter($writer,pending_resource)]} {error {Publication writer has no pending resource write}}
+    lassign $datasetPublicationWriter($writer,pending_resource) variable values
+    datasetPublicationV2ValidateTypedValues $variable $values
+    set result [datasetPublicationV2ProviderCall $writer write_variable_collect]
+    unset datasetPublicationWriter($writer,pending_resource)
+    return $result
 }
 
 proc ::GX::datasetPublicationV2WriteRange {writer variableId start values} {
@@ -880,7 +911,25 @@ proc ::GX::hdf5DatasetWriter {operation token args} {
     variable hdf5WriterState
     variable hdf5WriterCounter
     variable scriptDir
+    if {$operation ne {open} && [info exists hdf5WriterState($token,pending)] && $operation ni {write_variable_collect abort}} {error {HDF5 writer has an outstanding resource write}}
     switch -- $operation {
+        write_variable_submit {
+            lassign $args variableId payload
+            set values [dict get $payload values]
+            if {![datasetPublicationV2IsResource $values]} {error {Deferred HDF5 write requires a managed resource}}
+            set channel $hdf5WriterState($token,channel)
+            set prefix "[datasetB64Encode $hdf5WriterState($token,locator,$variableId)]\t[datasetB64Encode [join [dict get $payload shape] {;}]]"
+            puts $channel "RWRITE\t$prefix\t[datasetPublicationV2ResourceFields $values]"
+            flush $channel
+            set hdf5WriterState($token,pending) 1
+            return
+        }
+        write_variable_collect {
+            if {![info exists hdf5WriterState($token,pending)]} {error {HDF5 writer has no pending resource write}}
+            set result [datasetPublicationV2Hdf5Read $hdf5WriterState($token,channel)]
+            unset hdf5WriterState($token,pending)
+            return $result
+        }
         open {
             set context [lindex $args 0]; set helper [file join $scriptDir core python gxtxt_hdf5_writer.py]
             if {![file isfile $helper]} { error "HDF5 writer helper is missing" }
@@ -944,7 +993,11 @@ proc ::GX::hdf5DatasetWriter {operation token args} {
             return $result
         }
         abort {
-            if {[info exists hdf5WriterState($token,channel)]} { set channel $hdf5WriterState($token,channel); catch {puts $channel CLOSE; flush $channel; datasetPublicationV2Hdf5Read $channel}; catch {close $channel} }
+            if {[info exists hdf5WriterState($token,channel)]} {
+                set channel $hdf5WriterState($token,channel)
+                if {[info exists hdf5WriterState($token,pending)]} {catch {datasetPublicationV2Hdf5Read $channel};unset hdf5WriterState($token,pending)}
+                catch {puts $channel CLOSE; flush $channel; datasetPublicationV2Hdf5Read $channel};catch {close $channel}
+            }
             foreach name [array names hdf5WriterState "$token,*"] { unset hdf5WriterState($name) }
             return
         }
@@ -953,7 +1006,7 @@ proc ::GX::hdf5DatasetWriter {operation token args} {
 }
 
 ::GX::datasetWriterProviderRegister csv ::GX::csvDatasetWriter [dict create complete_variable 1 range_write 0 append_write 1 hyperslab_write 0 multidimensional 0 groups 0 implicit_axis 1 typed_numeric 0 sequential_chunks 1 human_readable 1] 1
-::GX::datasetWriterProviderRegister hdf5 ::GX::hdf5DatasetWriter [dict create complete_variable 1 range_write 1 append_write 1 hyperslab_write 1 multidimensional 1 groups 1 implicit_axis 1 typed_numeric 1 managed_binary_write 1 sequential_chunks 1 human_readable 0] 1
+::GX::datasetWriterProviderRegister hdf5 ::GX::hdf5DatasetWriter [dict create complete_variable 1 range_write 1 append_write 1 hyperslab_write 1 multidimensional 1 groups 1 implicit_axis 1 typed_numeric 1 managed_binary_write 1 deferred_resource_write 1 sequential_chunks 1 human_readable 0] 1
 
 # Additive runtime discovery; the v1 section and contract remain unchanged.
 proc ::GX::datasetPublicationRuntimeAppend {runtime moduleId} {
@@ -1034,6 +1087,40 @@ proc ::GX::_datasetPublicationV2BatchExecute {session moduleId requests command}
 proc ::GX::datasetPublicationV2PublishBatch {session moduleId requests {command ::GX::datasetPublicationV2PublishSeries}} {
     datasetPublicationV2BatchPreflight $session $moduleId $requests
     return [datasetCatalogTransaction ::GX::_datasetPublicationV2BatchExecute [file normalize $session] $moduleId $requests $command]
+}
+
+# Additive producer-bound facade. The existing Publication v2 batch remains the
+# sole publication engine; its journal also commits (or aborts) the optional Group.
+proc ::GX::datasetProducerPublishBatchV1 {capability session request} {
+    set producer [_datasetGroupProducer $capability $session]
+    set session [file normalize $session]
+    if {[catch {dict size $request}]} {error {Producer publication requires a request dictionary}}
+    foreach key [dict keys $request] {if {$key ni {session_token outputs dataset_group}} {error "Unsupported producer publication field '$key'"}}
+    foreach key {session_token outputs} {if {![dict exists $request $key]} {error "Producer publication requires '$key'"}}
+    if {[dict get $request session_token] ne [interactiveDocumentSessionToken]} {error {Publication Session changed since producer review}}
+    if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::datasetProducerPublishBatchV1 $capability $session $request]}
+    return [datasetCatalogTransaction ::GX::_datasetProducerPublishBatchV1 $capability $session $request]
+}
+proc ::GX::_datasetProducerPublishBatchV1 {capability session request} {
+    set producer [_datasetGroupProducer $capability $session]
+    set outputs [dict get $request outputs]
+    set ids {}
+    foreach output $outputs {
+        if {[dict exists $output publication_module] && [dict get $output publication_module] ne $producer} {error {Producer cannot select a different publication identity}}
+        set id [dict get $output dataset_id]
+        if {[datasetPublicationV2ValidateId dataset $id] ne $id || [string length $id]>256} {error {Malformed producer output Dataset identity}}
+        lappend ids $id
+    }
+    if {[dict exists $request dataset_group]} {
+        set groupIds [_datasetGroupDefinitionIds [dict get $request dataset_group]]
+        if {[lsort $ids] ne [lsort $groupIds]} {error {Optional Dataset Group must consist exactly of this batch's genuine outputs}}
+    }
+    set result [datasetPublicationV2PublishBatch $session $producer $outputs]
+    if {[dict exists $request dataset_group]} {
+        set review [datasetGroupProducerReviewV1 $capability $session $ids]
+        dict set result dataset_group [datasetGroupProducerCreateV1 $capability $session [dict get $request dataset_group] $review]
+    }
+    return $result
 }
 
 source [file join [file dirname [info script]] dataset_publication_managed_columns_v2.tcl]

@@ -1,0 +1,390 @@
+{
+  "record_type": "author_owned_additive_audio001_audio002_provenance",
+  "content_id": "tutorial.occhi_sul_molo_audio_chain",
+  "content_version": "0.1.0",
+  "status": "DRAFT_PARTIAL_AUDIO001_FAILURE_PRESERVED_AUDIO002_DECODE_PASS_PLOT_INTERRUPTED",
+  "draft": true,
+  "content_quality_owner": "GX210-TUTORIAL1",
+  "html_authoring_child": "GX210-TUTORIAL1-SUB1",
+  "child_thread_id": "01a163f9-e518-7553-ba8e-cfa5f768f5ff",
+  "scientific_prose_basis": {
+    "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/AUDIO_WORKFLOW_DRAFT.md",
+    "sha256": "2c19a4a500d7b16087c2fe1249293ab8d76886824bd3264a80f44102df7856fc",
+    "committed_parent_revision": "89026e3c7d16452cb4d3844e0bb03fb5cc9e5fbe",
+    "treatment": "All eight committed stages preserved as HTML paragraphs, including precise module enablement/Run selection; added source-only reading aids and evidence notices"
+  },
+  "source_intake": {
+    "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/DEV110_AUDIO_WORKFLOW_INTAKE.md",
+    "pins_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/DEV110_AUDIO_WORKFLOW_SOURCE_PINS.json"
+  },
+  "phase_authority": {
+    "main_notice": "1b1ddae6-8c3d-4504-a9fe-c17c702dc88f",
+    "interpretation": "Formal dev111 authoring after actual dev110 deposit; no installed/active/stable/full-foundation acceptance"
+  },
+  "declared_source_baseline": {
+    "framework_version": "0.9.8.10-dev-110",
+    "framework_source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "library_id": "org.giuxlab.gxtxt.accepted_generators",
+    "library_source_version": "1.0.0",
+    "generator_id": "occhi_sul_molo_audio_chain",
+    "generator_source_version": "1.0.1",
+    "module_id": "analysis.audio_decode",
+    "module_source_versions": {
+      "analysis.audio_decode": "2.0.1",
+      "plot.dataset": "4.2.4",
+      "analysis.fft_spectrum": "2.3.0",
+      "analysis.spectral_features": "1.2.0",
+      "analysis.time_dependent_fft": "1.3.3"
+    },
+    "recording_sha256": "09d2235cb618fd65d834124f7c0af1fa023d6ef3b579de60b45e0d538b26cdcc",
+    "source_recording_header_historical": {
+      "format": "PCM16 stereo",
+      "sample_rate_Hz": 48000,
+      "frames": 13651200,
+      "duration_s": 284.4,
+      "actual_decode_readback": false
+    }
+  },
+  "discovery": {
+    "staged": false,
+    "reserved_future_framework_relative_root": "docs/tutorials/task210/occhi_sul_molo_audio_chain/",
+    "stage_contents_at_exact_two_level_root": true,
+    "no_extra_version_directory": true,
+    "host_manifest_contract": "DOCUMENTATION_BROWSER_API_v1 documentation_package v1",
+    "public_content_id": "content:tutorial.occhi_sul_molo_audio_chain",
+    "native_generator_action": "Open Generate Session…",
+    "page_uri_callback_or_generator_bridge": false,
+    "page_auto_generation": false,
+    "authored_at_owned_product_source_root": true,
+    "common_host_admitted": false,
+    "proposal_only_root": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/drafts/audio_product02",
+    "proposal_only_root_qualification": "Preserved original author proposal; current product source adoption is separate and not host staging/admission"
+  },
+  "structural_reference": {
+    "root": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/tutorials/task210/surface3d_thermal_field",
+    "reuse": "CSS and local reading-aid JS source structure only; no thermal observations, captures, results or coverage rows copied",
+    "html_rendered": false
+  },
+  "license": {
+    "spdx": "GPL-3.0-or-later",
+    "scope": "Project-authored prose/layout/local reading-aid JavaScript only; no audio payload supplied or relicensed",
+    "license_text_source": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/LICENSE",
+    "license_text_source_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+    "recording_rights": "Author permission for this exact GX-TXT demonstration; no general third-party music licence asserted"
+  },
+  "review": {
+    "scientific": "Actual002 metadata/Series settings only; source/log readback not independent numerical accuracy; detailedaxis/dtype/fullprovenance and waveform/FFT remain unfinished",
+    "visual": "Principal viewed all48 actual002 raws; originalsafe018019040045 included unchanged; SUB1sixframequalification14cb. HTML/CSSJS/nativehost/fullvisual/parity acceptance NOT_TESTED",
+    "host": "NOT_TESTED",
+    "main_acceptance": null,
+    "historical_audio001_review": "See separate preserved historical_audio001_review object; original observations.json bytes unchanged",
+    "audio002_capture_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/AUDIO002_SIXFRAME_SCIENCE_REVIEW.md",
+      "sha256": "14cbaf81d5a5992abd028f7fa2acf6e6d0e890107f397090c9fc97695d93f7a2",
+      "scope": "SUB1 viewed six safe018/019/036/037/040/045; package adds only018/019/040/045 unchanged; this authoring does not expand visual review"
+    },
+    "source_proposal_report": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/AUDIO_PRODUCT02_SOURCE_PROPOSAL_READBACK.md",
+      "sha256": "cb1bdafd354fabddc5994766cff9ee33aa1afeabefa6fa88de4f11976d854965"
+    },
+    "principal_adoption": {
+      "utc": "2026-10-23T00:20:38.129107+00:00",
+      "full_read": [
+        "HTML",
+        "README",
+        "audio002 record",
+        "provenance newfields",
+        "coverage",
+        "childproposalreport",
+        "SUB1sixframereport"
+      ],
+      "parent_edits": "Adoptionstatus/README/explicitnormalsetupcorrections/currenthashes/additiveaudit; original001record and9PNGbytes preserved",
+      "new_runtime_or_scientific_computation": false,
+      "complete_tutorial": false,
+      "full_matrix_complete": false,
+      "current_entry_sha256": "8a5338916c57e673b952e61aa6453f4cea3e8758b8680ea0cfb6fb37f8425d13"
+    }
+  },
+  "limitations": [
+    "Partial product source, not native host admission/activation/release or final ZIP",
+    "Historical001 observation record and five original safe PNGs preserved byte-identically",
+    "Separate002 normal Decode PASS and published metadata; no independent samples/detailed axis/dtype/full lineage acceptance",
+    "One002 waveform Plot attempted/lastRUNNING before signal15 of unknown origin; no terminal waveform, FFT, normalSaveClose/reopen or retry",
+    "Nine safe original captures total; all private Run-log frames and scientific payloads excluded",
+    "Full matrix incomplete, unknown denominator, zero actual coverage rows; host/performance/scientific/visual/final quality unfinished"
+  ],
+  "historical_audio001_actuals": {
+    "build": {
+      "version": "0.9.8.10-dev-111",
+      "candidate": "df799e0c24459ee3d0548e8337722a0e80da3074",
+      "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED"
+    },
+    "display": ":211, closed normally; 1920x1080; initial root1280x840+20+20; no after-close input/capture/relaunch",
+    "session_identity": {
+      "name": "task210-audio-001",
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/session/actor/Sessions/task210-audio-001"
+    },
+    "catalog_identity": {
+      "library_id": "org.giuxlab.gxtxt.accepted_generators",
+      "library_version": null,
+      "generator_id": "occhi_sul_molo_audio_chain",
+      "generator_title": "Occhi sul Molo — complete audio chain",
+      "generator_version": "1.0.1",
+      "normal_location": "Standalone Session",
+      "copy_previous_Experiment_documentation": "off/disabled in freshblank context",
+      "library_id_evidence": "ActualGUI007",
+      "library_version_status": "NOT_READ_BACK",
+      "generator_id_basis": "Source-pinned; GUI006 shows corresponding title/version1.0.1, not a separate exact-ID readback"
+    },
+    "dataset_ids": [
+      "occhi_sul_molo_lavoro"
+    ],
+    "variable_ids": [],
+    "graph_refs": [],
+    "job_ids": [],
+    "numeric_results": null,
+    "gui_executed": true,
+    "screenshots": [
+      {
+        "package_path": "assets/006_audio_registered_generator_selected.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/manual_evidence/006_audio_registered_generator_selected.png",
+        "sha256": "279f54ba9ba30f2b78bfe2ac54f2b058812586be260ac92ef97e3f42300e140e",
+        "bytes": 85470,
+        "capture_mtime_utc": "2026-10-22T22:50:03.149799+00:00",
+        "unchanged_byte_copy": true,
+        "principal_viewed": true
+      },
+      {
+        "package_path": "assets/011_binary_audio_actual_info.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/manual_evidence/011_binary_audio_actual_info.png",
+        "sha256": "f1ceb725eb7345a7603e6f2e5679fcb38894e0372e9ffbfb59e6940d63119461",
+        "bytes": 61898,
+        "capture_mtime_utc": "2026-10-22T22:50:48.591368+00:00",
+        "unchanged_byte_copy": true,
+        "principal_viewed": true
+      },
+      {
+        "package_path": "assets/012_binary_preview_guidance.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/manual_evidence/012_binary_preview_guidance.png",
+        "sha256": "822f55091921de1f394c1a3f886a8bb8ebd6cf32d37262f423432f4d7c8b9e3d",
+        "bytes": 56253,
+        "capture_mtime_utc": "2026-10-22T22:50:58.003691+00:00",
+        "unchanged_byte_copy": true,
+        "principal_viewed": true
+      },
+      {
+        "package_path": "assets/014_audio_decode_settings.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/manual_evidence/014_audio_decode_settings.png",
+        "sha256": "831f35792847c01d255460aa51dbb6aefe1313460e81d9ca5ee7182d9d63dff5",
+        "bytes": 67847,
+        "capture_mtime_utc": "2026-10-22T22:51:17.344353+00:00",
+        "unchanged_byte_copy": true,
+        "principal_viewed": true
+      },
+      {
+        "package_path": "assets/021_audio_results_after_failure.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio001_manual01/manual_evidence/021_audio_results_after_failure.png",
+        "sha256": "7e531d98f586c612742c364ebe120f6b4182968c9de8d2293b94b572fcdb0cd6",
+        "bytes": 36643,
+        "capture_mtime_utc": "2026-10-22T22:53:20.000504+00:00",
+        "unchanged_byte_copy": true,
+        "principal_viewed": true
+      }
+    ],
+    "timing": {
+      "scope": "Chronology including operator/tool/capture settles; not first-useful latency, p95, redraw, responsiveness or original/candidate comparison",
+      "generate_dispatch_utc": "2026-10-22T22:50:21Z",
+      "decode_dispatch_utc": "2026-10-22T22:51:35Z",
+      "first_error_observed_utc": "2026-10-22T22:52:05Z",
+      "save_confirmation_capture_utc": "2026-10-22T22:54:19.850501+00:00",
+      "normal_close_dispatch_utc": "2026-10-22T22:54:30Z",
+      "measured_comparable_latency": null
+    },
+    "persistence": {
+      "normal_Save_confirmation": "024 actual Session/metadata/manifest.ini",
+      "normal_root_close": "MANUAL_ROOT_CLOSE_OBSERVED, actor/wrapper/outer exit0",
+      "reopen": "NOT_TESTED",
+      "all_private_descendant_cleanup": "NOT_ESTABLISHED_OUTSIDE_RECORDED_COVERAGE"
+    },
+    "html_rendering": null,
+    "host_action": null,
+    "decode_run_status": "FAILED_BUG",
+    "decoded_schema": null
+  },
+  "historical_audio001_audit_receipts": {
+    "result_receipt": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO001_GUI_RESULT_052.json",
+    "first_failure_receipt": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO001_FIRST_FAILURE_051.json",
+    "all_original_capture_inventory": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO001_CAPTURE_INVENTORY_052.json",
+    "original_capture_count": 24,
+    "private_log_frames_excluded_from_product": [
+      "017",
+      "018",
+      "019"
+    ],
+    "post_source_prebuilt_pins": "37/37 match; byte integrity only",
+    "raw_canonical_WAV_payloads": "2/2 exact SHA and size54604972; no decode/header/sample extraction"
+  },
+  "actuals": {
+    "record": "evidence/audio002.json",
+    "candidate": "afcf94214a11b7d4eab62eb6d65997a8077605b0",
+    "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+    "normal_Open_new_MAIN_copy": true,
+    "Decode_normal_Run_count": 1,
+    "Decode_status": "PASS_PUBLICATION_METADATA_OBSERVED",
+    "decoded_dataset_id": "occhi_sul_molo_lavoro.decoded",
+    "Plot_normal_Run_count": 1,
+    "Plot_terminal": "NOT_ESTABLISHED_LAST_RUNNING_BEFORE_SIGNAL15",
+    "signal_origin": "NOT_ESTABLISHED",
+    "FFT_Run_count": 0,
+    "normal_Save_Close": false,
+    "GUI_during_this_authoring": false,
+    "quality_acceptance": false,
+    "host_acceptance": false
+  },
+  "source_proposal": {
+    "author": "GX210-TUTORIAL1-SUB3",
+    "thread_id": "01a163fa-44b3-7020-a510-0e789b287fed",
+    "root": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/drafts/audio_product02",
+    "scientific_quality_owner": "GX210-TUTORIAL1",
+    "integration_owner": "MAIN",
+    "parent_product_mutated": true,
+    "old_draftZIP_candidate01_mutated": false,
+    "basis_commit": "92e4fcd8",
+    "basis_result_path": "docs/development/task210/tutorial1/dev111/AUDIO_GUI_PACKET_002_RESULT.md",
+    "basis_result_sha256": "4a03ddfa0ad12f3cf5bea58190b0abe55a86e04d1616c86e016a1ab90451ad25",
+    "historical_observations_file": "evidence/observations.json",
+    "historical_observations_sha256": "0b20ea80d9df5d9063dc2476072df4b9783e008214845ce49d8bdd0716cc55ec",
+    "historical_observations_unchanged": true,
+    "original001_PNGs_unchanged": [
+      {
+        "path": "assets/006_audio_registered_generator_selected.png",
+        "sha256": "279f54ba9ba30f2b78bfe2ac54f2b058812586be260ac92ef97e3f42300e140e",
+        "same_as_parent": true
+      },
+      {
+        "path": "assets/011_binary_audio_actual_info.png",
+        "sha256": "f1ceb725eb7345a7603e6f2e5679fcb38894e0372e9ffbfb59e6940d63119461",
+        "same_as_parent": true
+      },
+      {
+        "path": "assets/012_binary_preview_guidance.png",
+        "sha256": "822f55091921de1f394c1a3f886a8bb8ebd6cf32d37262f423432f4d7c8b9e3d",
+        "same_as_parent": true
+      },
+      {
+        "path": "assets/014_audio_decode_settings.png",
+        "sha256": "831f35792847c01d255460aa51dbb6aefe1313460e81d9ca5ee7182d9d63dff5",
+        "same_as_parent": true
+      },
+      {
+        "path": "assets/021_audio_results_after_failure.png",
+        "sha256": "7e531d98f586c612742c364ebe120f6b4182968c9de8d2293b94b572fcdb0cd6",
+        "same_as_parent": true
+      }
+    ],
+    "added002_captures": [
+      {
+        "package_path": "assets/audio002_018_decoded_technical_details.png",
+        "original_capture": "018_decoded_technical_details.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/018_decoded_technical_details.png",
+        "sha256": "6daa91e3436bedae22da21bd5d673049b1c75d91f0b815da1a6d15166b466510",
+        "bytes": 95992,
+        "unchanged_byte_copy": true,
+        "caption": "Audio002 actual decoded numerical Dataset occhi_sul_molo_lavoro.decoded: timeseries.table, HDF5, 13,651,200 displayed rows/samples. Canonical digest is displayed; producer-version, provenance and source-ID rows are blank in this view. This is metadata readback, not independent sample validation.",
+        "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+        "capture_timestamp_utc": null,
+        "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+      },
+      {
+        "package_path": "assets/audio002_019_decoded_variables.png",
+        "original_capture": "019_decoded_variables.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/019_decoded_variables.png",
+        "sha256": "7356a66bb456a383336a84431989e5f9ffcacb529d9acacf3658e8fc9e98b849",
+        "bytes": 41972,
+        "unchanged_byte_copy": true,
+        "caption": "Audio002 Variables page: time_s [s], ch1 [FS] and ch2 [FS], all enabled. Stable IDs time/channel_1/channel_2 were read through the selectors and accepted Series separately. Detailed axis origin/step, dtype, dimensions and numerical fidelity are not established by this frame.",
+        "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+        "capture_timestamp_utc": null,
+        "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+      },
+      {
+        "package_path": "assets/audio002_040_waveform_series_id_corrected.png",
+        "original_capture": "040_waveform_series_id_corrected.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/040_waveform_series_id_corrected.png",
+        "sha256": "df366e0e817e5340436ecebdf0a41fe5bd0eabe55d69acf96289ebb2c453336a",
+        "bytes": 76500,
+        "unchanged_byte_copy": true,
+        "caption": "Audio002 accepted audio_ch1 Series uses the actual decoded Dataset, X=time and Y=channel_1, enabled, left axis, main panel and no filters. This is source-bound configuration, not a completed waveform or verified plot range.",
+        "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+        "capture_timestamp_utc": null,
+        "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+      },
+      {
+        "package_path": "assets/audio002_045_waveform_target_2000_verified.png",
+        "original_capture": "045_waveform_target_2000_verified.png",
+        "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/045_waveform_target_2000_verified.png",
+        "sha256": "9aea977f1545ba93d52b65d22cd05b70f2d9f2ee7c78cef50796039ee0867c0c",
+        "bytes": 79128,
+        "unchanged_byte_copy": true,
+        "caption": "Audio002 minmax reduction and approximate display target 2,000 were verified before the single Plot attempt; XY was selected, rectangle/3D off. This is not an actual rendered count, hard upper bound or performance result. The later Plot remained RUNNING before interruption.",
+        "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+        "capture_timestamp_utc": null,
+        "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+      }
+    ],
+    "execution_scope": "Ordinary documentation copy/authoring and byte hashing only; no GUI/browser/renderer/runtime/API/helper/test/scientific-payload access",
+    "final_quality_accepted": false,
+    "full_matrix_complete": false,
+    "actual_denominator": null,
+    "final_ZIP": false,
+    "current_entry_sha256": "8a5338916c57e673b952e61aa6453f4cea3e8758b8680ea0cfb6fb37f8425d13",
+    "separate_audio002_record_sha256": "6d82b5995c5ff2d868e0b12218f454c8989d8d2a153c05ad7ab5958e84c192b6",
+    "current_entry_sha256_qualification": "Principal final adopted source; original child entry34a65a... remains in immutable child report",
+    "parent_product_mutation_qualification": "Principal adopted proposal and made source-only wording/correction/provenance updates after review; child did not edit parent"
+  },
+  "historical_audio001_review": {
+    "scientific": "Principal actual24capture review and SUB1 five-frame static qualification: source registration and binary PNG only, actual Decode failure; no downstream numerical-science acceptance",
+    "visual": "Actual product GUI captures reviewed at original resolution for scoped fields; tutorial HTML/CSS/JS rendering, full visual/accessibility quality and GUI parity NOT_TESTED",
+    "host": "NOT_TESTED",
+    "main_acceptance": null,
+    "principal_source_review": {
+      "timestamp_utc": "2026-10-22T21:00:01.501302+00:00",
+      "scope": "Read full HTML, provenance, observations, coverage,README,manifest and local reading JS; no browser/host/science execution",
+      "status": "SOURCE_REVIEWED_PARTIAL_DRAFT; ACTUAL_GUI_NOT_TESTED"
+    },
+    "source_transfer": {
+      "from": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/drafts/audio_product01",
+      "child_original_index_sha256": "a83d60f695610d86ba01194972e8c02b428e1e9364b1c65150c4d8dbc8c6de22",
+      "parent_edits": "Number/unit spacing and reader wording; audio actual menu count remains unobserved"
+    },
+    "static_capture_subset_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/AUDIO001_CAPTURE_SCIENCE_QUALIFICATION_REVIEW.md",
+      "sha256": "0fcde09f81a360513784c00ddb0783b8d6e157f51ad517d48b82c8288006ed83",
+      "captures": [
+        "006",
+        "011",
+        "012",
+        "014",
+        "021"
+      ],
+      "scope": "No new execution; five existing frames only; not private Run logs, cause diagnosis, full tutorial or host acceptance"
+    },
+    "principal_partial_evidence_revision": {
+      "timestamp_utc": "2026-10-22T23:04:03.735509+00:00",
+      "scope": "Preserved actual001 first-failure/result receipts; unchanged five original PNG byte copies; no new GUI/analysis/API/helper/science run",
+      "status": "PARTIAL_ACTUAL_GUI_DRAFT; DECODE_FAILED; FULL_ACCEPTANCE_UNFINISHED"
+    },
+    "qualified_partial_product_source_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/AUDIO_PRODUCT_PARTIAL_GUI_SOURCE_REVIEW.md",
+      "sha256": "bf7a49b41b63f4bd8b6156b8d85417a5ff911974eab02027f7946c2dd09267aa",
+      "scope": "Source documentation comparison with immutable052 and SUB1 five-frame review only; no new image/runtime/private-data inspection or test; final manifest/checksum refreshed afterward by principal",
+      "disposition": "No substantive new content correction required; full host/workflow/science/visual/performance/matrix unfinished"
+    },
+    "historical_review_scope": "Existing001 review fields above describe their original epoch; current002 evidence is separately attributed below.",
+    "audio002_sixframe_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/AUDIO002_SIXFRAME_SCIENCE_REVIEW.md",
+      "sha256": "14cbaf81d5a5992abd028f7fa2acf6e6d0e890107f397090c9fc97695d93f7a2",
+      "scope": "SUB1 viewed six safe018/019/036/037/040/045; package adds only018/019/040/045 unchanged; this authoring does not expand visual review"
+    }
+  }
+}

@@ -15,6 +15,8 @@ function out = gxtxt_numeric_v1(operation, varargin)
     error('GXTXT:Numeric:Influence','Exact linear influence is supported only by least_squares, linear_regression and polynomial_fit');
   endif
   switch (op)
+    case 'comparison_curves'
+      require_nargs(op,varargin,5,6);out=gxtxt_numeric_comparison_curves_v1(varargin{1},varargin{2},varargin{3},varargin{4},varargin{5},arg_opts(varargin,6));
     case 'expression_evaluate'
       require_nargs(op,varargin,3,4);out=gxtxt_numeric_expression_v1('evaluate',varargin{:});
     case 'expression_analyze'

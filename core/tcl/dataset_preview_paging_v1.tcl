@@ -215,6 +215,11 @@ proc ::GX::datasetPreviewCreateTable {parent session datasetId {variableIds {}}}
     ttk::frame $parent
     ttk::label $parent.status -wraplength 650
     ttk::treeview $parent.tree -show {tree headings} -selectmode extended
+    # Body rows follow the active font without resizing the user's columns.
+    _uiFieldTreeFontRows $parent.tree GXDatasetPreviewBody.Treeview
+    foreach event {<Map> <Configure> <<ThemeChanged>>} {
+        bind $parent.tree $event +[list ::GX::_uiFieldTreeFontRows $parent.tree GXDatasetPreviewBody.Treeview]
+    }
     bind $parent.tree <Control-c> "[list ::GX::datasetPreviewTableCopy $parent];break"
     bind $parent.tree <Control-C> "[list ::GX::datasetPreviewTableCopy $parent];break"
     ttk::scrollbar $parent.vertical -orient vertical -command [list $parent.tree yview]

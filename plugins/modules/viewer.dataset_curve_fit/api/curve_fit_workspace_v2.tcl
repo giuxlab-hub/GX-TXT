@@ -358,7 +358,7 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
     if {$state($key,sessionToken) ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen Curve Fit"}
     if {[dict exists $::GX::ScientificHistory::viewers $key]} {
         if {![::GX::scientificHistoryViewerEditable $key]} return
-        return [::GX::scientificHistoryViewerChanged $key [expr {[info exists state($key,historyDescription)] ? $state($key,historyDescription) : {Update Viewer state}}]]
+        return [::GX::scientificHistoryViewerRecordOperation $key [expr {[info exists state($key,historyDescription)] ? $state($key,historyDescription) : {Update Viewer state}}]]
     }
     _writePayload $key [_payload $key]
 }
@@ -411,20 +411,18 @@ proc ::GX::DatasetCurveFit::_writePayload {key payload} {
         set workspace [::GX::sessionWorkspaceCreate dataset_curve_fit $name $payload]
         set state($key,documentId) [dict get $workspace workspace_id]
     } else {
-        set current [::GX::interactiveDocumentRead $state($key,documentId)]
+        set current [::GX::interactiveDocumentMetadata $state($key,documentId)]
         if {[dict get $current module_id] ne "viewer.dataset_curve_fit"} {error {Document belongs to another Viewer}}
         if {[info exists state($key,documentGeneration)] && [dict get $current generation] ne $state($key,documentGeneration)} {error {Workspace owner was replaced}}
-        if {[info exists state($key,documentRevision)] && [dict get $current revision] ne $state($key,documentRevision) && [dict remove [dict get $current payload] workspace_metadata] ne $state($key,savedPayload)} {error {Workspace changed in another editor; reopen before saving}}
-        if {[dict get $current format_version] ne "2.0"} {
-            if {[dict exists $current payload workspace_metadata]} {dict set payload workspace_metadata [dict get $current payload workspace_metadata]}
-            ::GX::interactiveDocumentUpdate $state($key,documentId) $payload {} 2.0
+        if {[info exists state($key,documentRevision)] && [dict get $current revision] ne $state($key,documentRevision)} {
+            set saved [::GX::interactiveDocumentRead $state($key,documentId)]
+            if {[dict remove [dict get $saved payload] workspace_metadata] ne $state($key,savedPayload)} {error {Workspace changed in another editor; reopen before saving}}
         }
-        ::GX::sessionWorkspacePromote $state($key,documentId)
-        ::GX::sessionWorkspaceUpdate $state($key,documentId) $payload
+        if {[dict get $current format_version] ne {2.0}} {error {Obsolete Fitter Workspaces cannot be restored or converted}}
+        set workspace [::GX::sessionWorkspaceUpdate $state($key,documentId) $payload $current]
     }
-    set doc [::GX::interactiveDocumentRead $state($key,documentId)]
-    set state($key,documentGeneration) [dict get $doc generation];set state($key,documentRevision) [dict get $doc revision]
-    set state($key,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
+    set state($key,documentGeneration) [dict get $workspace generation];set state($key,documentRevision) [dict get $workspace revision]
+    set state($key,savedPayload) [dict get $workspace payload]
     if {[llength [info commands winfo]] && [winfo exists $key]} {set state($key,hostBaseline) [_workspaceFingerprint $key]}
     if {[llength [info commands winfo]] && [winfo exists $key]} {::GX::sessionWorkspaceViewerTitlesRefresh}
 }
@@ -436,8 +434,12 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
         if {[info exists state($w,openingWorkspace)] && $state($w,openingWorkspace) eq "new"} return
         set exact [expr {[info exists state($w,openingWorkspace)] ? $state($w,openingWorkspace) : {}}]
         set documents [::GX::interactiveDocumentList viewer.dataset_curve_fit dataset_curve_fit]
-        if {$exact ne {}} {set documents [list [::GX::interactiveDocumentRead $exact]];set requested {}}
+        if {$exact ne {}} {
+            if {![::GX::_nativeWorkspaceExists $exact]} {error {The requested Fitter Workspace is incompatible or unavailable; no conversion is performed}}
+            set documents [list [::GX::interactiveDocumentMetadata $exact]];set requested {}
+        }
         foreach item $documents {
+            if {![::GX::datasetPublicationV2DictDefault $item native_workspace 0]} continue
             set candidate [::GX::interactiveDocumentRead [dict get $item id]];set payload [dict get $candidate payload]
             if {![dict exists $payload version] || [dict get $payload version]!=2} continue
             set matches [expr {$requested eq ""}]
@@ -450,7 +452,7 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
             if {$matches} {set document $candidate;break}
         }
         if {$document eq {}} {
-            return [_restoreLegacyState $w $requested $exact]
+            return
         }
         set state($w,documentId) [dict get $document id]
         set state($w,documentRevision) [dict get $document revision];set state($w,documentGeneration) [dict get $document generation]
@@ -589,4 +591,5 @@ proc ::GX::DatasetCurveFit::_workspaceSave {w} {
         # saves its one scientific History step. Do not invoke Save a second time.
         try {_uiBoundSetting $w $field} finally {if {[winfo exists $w]} {set state($w,hostReview) $was}}
     } else {_saveState $w}
+    if {[dict exists $::GX::ScientificHistory::viewers $w]} {::GX::scientificHistoryViewerFlush $w}
 }

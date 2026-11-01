@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 namespace eval ::GX::CurveDigitizer {
-    variable version 2.0.9
+    variable version 2.0.25
     variable moduleId viewer.curve_digitizer
     variable providerId curve_digitizer
     variable processChannel ""
@@ -18,6 +18,7 @@ namespace eval ::GX::CurveDigitizer {
     variable hostLogPath ""
     variable pythonLogPath ""
     variable imageStages [dict create]
+    variable groupProducerCapability {}  ;# Retained CORE-issued context, never minted here.
     variable moduleRoot [file normalize [file join [file dirname [info script]] ..]]
 }
 
@@ -129,11 +130,8 @@ proc ::GX::CurveDigitizer::_bootstrap {} {
         set info [_sourceInfo $id]
         lappend lines [_record DATASET $id [dict get $info contract] [dict get $info format] [dict get $info media_type] [dict get $info sha256]]
     }
-    foreach item [::GX::interactiveDocumentList viewer.curve_digitizer curve_digitizer] {
-        set id [dict get $item id]
-        _log "Bootstrap: reading configuration $id"
-        set full [::GX::interactiveDocumentRead $id]
-        lappend lines [_record DOCUMENT $id [dict get $full payload] [dict get $full updated_at] [dict get $full sha256]]
+    foreach item [::GX::nativeWorkspaceQuery curve_digitizer] {
+        lappend lines [_record DOCUMENT_INFO [dict get $item id] [dict get $item name] [dict get $item updated_at] [dict get $item generation] [dict get $item revision]]
     }
     return [join $lines "\n"]
 }
@@ -184,33 +182,102 @@ proc ::GX::CurveDigitizer::_sourcePayload {datasetId} {
     dict for {key value} [dict get $info metadata] { lappend lines [_record METADATA $key $value] }
     return [join $lines "\n"]
 }
+proc ::GX::CurveDigitizer::_ownedDocumentRead {id} {
+    set full [::GX::sessionWorkspaceGet $id]
+    if {[dict get $full module_id] ne {viewer.curve_digitizer} || [dict get $full provider_id] ne {curve_digitizer}} {error {Workspace belongs to another provider}}
+    set json [dict get $full payload json]
+    set properties [lindex [dict get $full typed_properties] 1]
+    if {![dict exists $properties configuration_sha256]} {error {Native digitizer configuration receipt is absent}}
+    dict set full sha256 [lindex [dict get $properties configuration_sha256] 1]
+    dict set full payload $json
+    return $full
+}
+proc ::GX::CurveDigitizer::_documentResult {result} {
+    return [join [list [dict get $result id] [lindex [dict get [lindex [dict get $result typed_properties] 1] configuration_sha256] 1] [dict get $result generation] [dict get $result revision]] \t]
+}
 proc ::GX::CurveDigitizer::_documentCreate {payload} {
-    set result [::GX::interactiveDocumentCreate viewer.curve_digitizer curve_digitizer gxtxt.curve_digitizer.configuration 1.0 $payload]
-    return "[dict get $result id]	[dict get $result sha256]"
+    set typed [::GX::nativeWorkspaceJsonDecode $payload]
+    set name [lindex [dict get [lindex $typed 1] name] 1]
+    set canonical [dict get [workspaceDecode $typed] json]
+    set sha [::GX::datasetStorageSha256Text [_requireSession] $canonical]
+    set properties [list object [dict create configuration_sha256 [list text $sha]]]
+    set result [::GX::sessionWorkspaceCreate curve_digitizer [::GX::sessionWorkspaceAvailableName $name] [dict create json $payload] 0 $properties]
+    return [_documentResult $result]
 }
-proc ::GX::CurveDigitizer::_documentUpdate {documentId payload sessionToken {expectedSha ""}} {
-    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; this Curve Digitalizer window is stale." }
-    if {[string trim $expectedSha] ne ""} {
-        set current [::GX::interactiveDocumentRead $documentId]
-        if {[string tolower [dict get $current sha256]] ne [string tolower [string trim $expectedSha]]} {
-            error "This Curve Digitalizer configuration changed outside this window. Reload it before saving to avoid overwriting newer scientific state."
-        }
+proc ::GX::CurveDigitizer::_documentUpdate {documentId payload sessionToken expectedSha generation revision} {
+    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} {error {The GX-TXT Session changed; this Curve Digitalizer window is stale}}
+    set current [_ownedDocumentRead $documentId]
+    if {$expectedSha eq {} || [dict get $current sha256] ne $expectedSha} {error {Configuration changed; reopen before saving}}
+    set properties [lindex [dict get $current typed_properties] 1]
+    set canonical [dict get [workspaceDecode [::GX::nativeWorkspaceJsonDecode $payload]] json]
+    dict set properties configuration_sha256 [list text [::GX::datasetStorageSha256Text [_requireSession] $canonical]]
+    set expected [dict create id $documentId generation $generation revision $revision]
+    set result [::GX::sessionWorkspaceUpdate $documentId [dict create json $payload] $expected 0 [list object $properties]]
+    return [_documentResult $result]
+}
+proc ::GX::CurveDigitizer::_documentRename {documentId name sessionToken expectedSha generation revision} {
+    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} {
+        error {The GX-TXT Session changed; configuration rename was not attempted}
     }
-    set result [::GX::interactiveDocumentUpdate $documentId $payload gxtxt.curve_digitizer.configuration 1.0]
-    return "[dict get $result id]	[dict get $result sha256]"
+    set current [_ownedDocumentRead $documentId]
+    if {$expectedSha eq {} || [dict get $current sha256] ne $expectedSha ||
+        [dict get $current generation] ne $generation ||
+        [dict get $current revision] ne $revision} {
+        error {Configuration changed before Rename; reopen the current configuration}
+    }
+    if {[dict get $current name] ne $name} {
+        ::GX::sessionWorkspaceRename $documentId $name
+    }
+    return [_documentResult [_ownedDocumentRead $documentId]]
 }
-proc ::GX::CurveDigitizer::_documentDelete {documentId sessionToken} {
-    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; this Curve Digitalizer window is stale." }
-    set full [::GX::interactiveDocumentRead $documentId]
-    if {[dict get $full module_id] ne "viewer.curve_digitizer" || [dict get $full provider_id] ne "curve_digitizer"} { error "Interactive Document '$documentId' is not owned by Curve Digitalizer." }
-    return [::GX::interactiveDocumentDelete $documentId]
+proc ::GX::CurveDigitizer::_documentDelete {documentId sessionToken generation revision} {
+    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} {error {The GX-TXT Session changed; this Curve Digitalizer window is stale}}
+    set metadata [::GX::nativeWorkspaceMetadata $documentId]
+    if {[dict get $metadata provider_id] ne {curve_digitizer}} {error {Workspace belongs to another provider}}
+    return [::GX::sessionWorkspaceDelete $documentId 1 [dict create id $documentId generation $generation revision $revision]]
+}
+proc ::GX::CurveDigitizer::_documentRead {id} {
+    set full [_ownedDocumentRead $id]
+    return [_record DOCUMENT $id [dict get $full payload] [dict get $full updated_at] [dict get $full sha256] [dict get $full generation] [dict get $full revision]]
 }
 proc ::GX::CurveDigitizer::_cleanSingleLine {value label} {
     set value [string trim $value]
     if {[string first "\n" $value] >= 0 || [string first "\r" $value] >= 0} { error "$label must be a single line." }
     return $value
 }
-proc ::GX::CurveDigitizer::_parseRows {text familyMode} {
+proc ::GX::CurveDigitizer::_parseRows {text familyMode {dualY 0}} {
+    # v2 rows carry their logical y1/y2 identity AFTER the stable point ID.
+    # Strip only that explicit suffix, then delegate all established raster,
+    # point, family and calibration checks to the already validated v1 parser.
+    if {$dualY} {
+        set plain {}; set axisIds {};set memberships [dict create]
+        foreach line [split $text "
+"] {
+            if {$line eq {}} continue
+            set fields [split $line "	"]
+            if {[llength $fields] ni {10 12}} {
+                error {Y2 publication requires point identity and an explicit axis column for every row.}
+            }
+            set axis [lindex $fields end]
+            if {$axis ni {y1 y2}} {error {Y2 publication row has an unknown logical axis.}}
+            set curveId [_b64d [lindex $fields 0]]
+            if {[dict exists $memberships $curveId] &&
+                [dict get $memberships $curveId] ne $axis} {
+                error {One curve cannot change its logical Y axis between Dataset rows.}
+            }
+            dict set memberships $curveId $axis
+            lappend plain [join [lrange $fields 0 end-1] "	"]
+            lappend axisIds $axis
+        }
+        set parsed [_parseRows [join $plain "
+"] $familyMode 0]
+        if {[dict get $parsed count] != [llength $axisIds]} {
+            error {Y2 row axis count is inconsistent with point rows.}
+        }
+        dict set parsed axis_available 1
+        dict set parsed y_axis_id $axisIds
+        return $parsed
+    }
     set curveIds {}; set curveLabels {}; set indices {}; set xs {}; set ys {}; set families {}
     set rasterXs {}; set rasterYs {}; set calibrationKeys {}; set calibrationLabels {};set pointIds {}; set rowFormat {}
     set count 0
@@ -271,7 +338,7 @@ proc ::GX::CurveDigitizer::_uncertaintyRows {text rows} {
     set factors [_b64d [lindex $lines 1]]
     if {[string length $report] > 20000 || [string length $factors] > 1150000 ||
         ![string match {*"gxtxt.curve_digitizer.uncertainty.v2"*} $report] ||
-        ![string match {*"zlib-base64-float64-le-v1"*} $factors]} {
+        ![regexp {"format"\s*:\s*"zlib-base64-float64-le-v[12]"} $factors]} {
         error {Invalid or oversized uncertainty declaration/binding.}
     }
     set cids {};set pids {};set mids {};set sigx {};set sigy {};set covxy {}
@@ -421,8 +488,13 @@ proc ::GX::CurveDigitizer::_publicationNotesResult {datasetId documentId configN
 
 source [file join [file dirname [info script]] curve_digitizer_numeric_core.tcl]
 proc ::GX::CurveDigitizer::_publish {args} {
-    if {[llength $args] ni {23 24 25 26}} { error "Invalid Curve Digitalizer publication request." }
-    lassign $args sessionToken documentId datasetId displayName mode xLabel xUnit xRole yLabel yUnit yRole familyLabel familyUnit familyRole sourceDataset sourceSha calibrationType xScale yScale configName rowsText calibrationRecords layout configurationNotes uncertaintyText coreInline
+    if {[llength $args] ni {23 24 25 26 27}} { error "Invalid Curve Digitalizer publication request." }
+    lassign $args sessionToken documentId datasetId displayName mode xLabel xUnit xRole yLabel yUnit yRole familyLabel familyUnit familyRole sourceDataset sourceSha calibrationType xScale yScale configName rowsText calibrationRecords layout configurationNotes uncertaintyText coreInline axisSchema
+    if {$axisSchema ni {{} 2}} {error {Unknown Curve Digitalizer axis publication schema.}}
+    set dualY [expr {$axisSchema eq {2}}]
+    if {$dualY && $uncertaintyText ne {} && $coreInline eq {}} {
+        error {Y2 uncertainty requires exact reviewed CORE Numeric 14-input linearization.}
+    }
     if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; publication was not performed." }
     set session [_requireSession]
     set datasetId [_cleanSingleLine $datasetId "Output Dataset ID"]
@@ -434,14 +506,66 @@ proc ::GX::CurveDigitizer::_publish {args} {
     set sourceInfo [_sourceInfo $sourceDataset]
     if {[string tolower [dict get $sourceInfo sha256]] ne [string tolower $sourceSha]} { error "The source image payload changed after this configuration was calibrated. Create a new configuration or explicitly reset it before publication." }
     if {$layout ni {separate combined}} {error {Unsupported calibration publication layout.}}
-    set rows [_parseRows $rowsText $familyMode]
+    set rows [_parseRows $rowsText $familyMode $dualY]
     if {[dict get $rows calibration_available] != ($layout eq "combined")} {
         error {Publication layout and row calibration-key schema disagree.}
     }
     set uncertainty [_uncertaintyRows $uncertaintyText $rows]
+    if {$uncertainty ne {} && $dualY} {
+        if {![regexp {"format"\s*:\s*"zlib-base64-float64-le-v2"} [dict get $uncertainty factors]]} {
+            error {Y2 uncertainty must retain all 14 shared calibration inputs.}
+        }
+        if {![string match {*"calibration_input_count":14*} [dict get $uncertainty report]]} {
+            error {Y2 reviewed report is missing the declared 14 calibration inputs.}
+        }
+    }
     set contract [expr {$familyMode ? "curve_family.table" : "table.generic"}]
     set provenance "Curve Digitalizer configuration $documentId; source Dataset $sourceDataset; source SHA-256 $sourceSha; calibration $calibrationType; X scale $xScale; Y scale $yScale"
     set calibrationMetadata [_publicationCalibrationFields $calibrationRecords $sourceDataset $sourceSha]
+    if {$dualY} {
+        foreach field {axis_schema_version curve_schema_version axis_mode axis_units_y1 axis_units_y2 axis_definitions_json curves_json publication_set_id} {
+            if {![dict exists $calibrationMetadata curve_digitizer.$field]} {
+                error "Missing versioned Y2 metadata field '$field'."
+            }
+        }
+        if {[dict get $calibrationMetadata curve_digitizer.axis_schema_version] ne {1} ||
+            [dict get $calibrationMetadata curve_digitizer.curve_schema_version] ne {2}} {
+            error {Unsupported Y2 axis/curve metadata schema.}
+        }
+        set axisMode [dict get $calibrationMetadata curve_digitizer.axis_mode]
+        if {$axisMode ni {mixed y1 y2}} {error {Invalid Y2 publication axis mode.}}
+        set unitY1 [dict get $calibrationMetadata curve_digitizer.axis_units_y1]
+        set unitY2 [dict get $calibrationMetadata curve_digitizer.axis_units_y2]
+        set distinct [lsort -unique [dict get $rows y_axis_id]]
+        if {$axisMode eq {mixed}} {
+            if {$distinct ne {y1 y2} || $unitY1 ne $unitY2 || $yUnit ne $unitY1} {
+                error {Mixed Y1/Y2 rows must both occur and share the declared scientific unit.}
+            }
+        } elseif {$distinct ne [list $axisMode] ||
+                  $yUnit ne [expr {$axisMode eq {y1} ? $unitY1 : $unitY2}]} {
+            error {Split Y1/Y2 publication rows or unit disagree with the declared axis.}
+        }
+        foreach curveId [dict get $rows curve_id] axis [dict get $rows y_axis_id] {
+            set key "curve_digitizer.curve_axis.$curveId"
+            if {![dict exists $calibrationMetadata $key] ||
+                [dict get $calibrationMetadata $key] ne $axis} {
+                error {Published curve/axis binding disagrees with authoritative metadata.}
+            }
+        }
+        foreach field {axis_definitions_json curves_json} {
+            set value [dict get $calibrationMetadata curve_digitizer.$field]
+            if {[string length $value]<2 || [string length $value]>1000000 ||
+                [string index $value 0] ne {[} ||
+                [string index $value end] ne {]}} {
+                error "Y2 $field must be a bounded structured JSON array."
+            }
+        }
+        if {![regexp {^[A-Za-z0-9_.-]{1,160}$} [dict get $calibrationMetadata curve_digitizer.publication_set_id]]} {
+            error {Invalid Y2 publication-set identity.}
+        }
+    } elseif {[dict exists $calibrationMetadata curve_digitizer.axis_schema_version]} {
+        error {Unversioned rows cannot claim a Y2 axis manifest.}
+    }
     # Calibration types are part of one authoritative manifest, not separately
     # user-editable publication hints. Reject mismatched caller parameters.
     foreach field {publication_calibration_mode publication_calibration_ids publication_measurement_id} {
@@ -531,14 +655,21 @@ proc ::GX::CurveDigitizer::_publish {args} {
         }
     }
     set expectedClass [dict get $calibrationMetadata curve_digitizer.calibration_type]
-    set oldClass [expr {$calibrationType eq "full_image_scale_bar" ? "scale_bar" : $calibrationType eq "full_image_pixels" ? "pixel" : ""}]
-    if {$oldClass ne "" && $oldClass ne $expectedClass} {
+    # Native manifest classes are pixel/scale_bar/affine/projective. Preserve
+    # the legacy alias transport but never infer 'pixel' from the fact that
+    # corner markers cover the complete raster (physical axes may be affine).
+    set aliases [dict create         full_image_pixels pixel full_image_scale_bar scale_bar         pixel pixel scale_bar scale_bar affine affine projective projective         four_point_homography {}]
+    if {![dict exists $aliases $calibrationType]} {
+        error "Unsupported caller calibration classification."
+    }
+    set reportedClass [dict get $aliases $calibrationType]
+    if {$reportedClass ne "" && $reportedClass ne $expectedClass} {
         error "Calibration classification changed during publication."
     }
     set metadata [dict create \
         dataset.display_name $displayName \
         curve_digitizer.plugin_id viewer.curve_digitizer \
-        curve_digitizer.plugin_version 2.0.9 \
+        curve_digitizer.plugin_version 2.0.25 \
         curve_digitizer.configuration_document_id $documentId \
         curve_digitizer.configuration_name $configName \
         curve_digitizer.source_dataset_id $sourceDataset \
@@ -559,7 +690,7 @@ proc ::GX::CurveDigitizer::_publish {args} {
     # Curve Dataset Schema v1: semantic roles are a public, versioned mapping
     # independent of variable ID, human label, CSV order, and plugin GUI state.
     # Publication V2 persists all mappings atomically with the payload.
-    dict set metadata curve_digitizer.curve_schema_version 1
+    dict set metadata curve_digitizer.curve_schema_version [expr {$dualY ? 2 : 1}]
     dict set metadata curve_digitizer.curve_mode [expr {$familyMode ? "numerical_family" : "independent"}]
     dict set metadata curve_digitizer.curve_grouping curve_key
     dict set metadata curve_digitizer.curve_row_dimension row
@@ -567,6 +698,9 @@ proc ::GX::CurveDigitizer::_publish {args} {
         dict set metadata curve_digitizer.curve_column.$role $variableId
     }
     if {$familyMode} { dict set metadata curve_digitizer.curve_column.family_parameter family_value }
+    if {$dualY} {
+        dict set metadata curve_digitizer.curve_column.y_axis_id y_axis_id
+    }
     if {[dict get $rows calibration_available]} {
         dict set metadata curve_digitizer.curve_column.calibration_key calibration_id
         dict set metadata curve_digitizer.curve_column.calibration_name calibration_label
@@ -610,7 +744,7 @@ proc ::GX::CurveDigitizer::_publish {args} {
         dict set metadata curve_digitizer.curve_column.sigma_y sigma_y
         dict set metadata curve_digitizer.curve_column.covariance_xy covariance_xy
     }
-    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 2.0.9 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset] structured_metadata $metadata]
+    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 2.0.25 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset] structured_metadata $metadata]
     set plan [::GX::datasetPublicationV2Prepare $session viewer.curve_digitizer $definition]
     set writer ""
     if {[catch {
@@ -623,6 +757,9 @@ proc ::GX::CurveDigitizer::_publish {args} {
         _publicationVariable $writer x $xLabel $xUnit $xRole float64 coordinate
         if {$familyMode} { _publicationVariable $writer family_value $familyLabel $familyUnit $familyRole float64 auxiliary }
         _publicationVariable $writer y $yLabel $yUnit $yRole float64 data
+        if {$dualY} {
+            _publicationVariable $writer y_axis_id "Logical Y axis" "" curve_y_axis_identifier string auxiliary
+        }
         _publicationVariable $writer curve_id "Curve ID" "" curve_series_identifier string auxiliary
         _publicationVariable $writer curve_label "Curve label" "" curve_series_label string auxiliary
         _publicationVariable $writer point_index "Point index" "" curve_point_index int64 auxiliary
@@ -643,6 +780,9 @@ proc ::GX::CurveDigitizer::_publish {args} {
             _publicationVariable $writer covariance_xy "Within-point XY covariance" $covarianceUnit uncertainty_covariance_xy float64 auxiliary
         }
         set appendData [dict create x [dict get $rows x] y [dict get $rows y] curve_id [dict get $rows curve_id] curve_label [dict get $rows curve_label] point_index [dict get $rows point_index]]
+        if {$dualY} {
+            dict set appendData y_axis_id [dict get $rows y_axis_id]
+        }
         if {[dict get $rows raster_available]} {
             dict set appendData pixel_x [dict get $rows raster_x]
             dict set appendData pixel_y [dict get $rows raster_y]
@@ -673,6 +813,9 @@ proc ::GX::CurveDigitizer::_publish {args} {
         curve_id [dict create label "Curve ID" unit ""] \
         curve_label [dict create label "Curve label" unit ""] \
         point_index [dict create label "Point index" unit ""]]
+    if {$dualY} {
+        dict set schemaFields y_axis_id [dict create label "Logical Y axis (Y1 / Y2)" unit ""]
+    }
     if {[dict get $rows point_available]} {
         dict set schemaFields point_id [dict create label "Original point ID" unit ""]
     }
@@ -914,7 +1057,7 @@ proc ::GX::CurveDigitizer::_imagePublish {sessionToken documentId sourceDataset 
     # Every attempted publication releases the only temporary image file.
     try {
         set session [_requireSession]
-        set doc [::GX::interactiveDocumentRead $documentId]
+        set doc [_ownedDocumentRead $documentId]
         if {[dict get $doc module_id] ne {viewer.curve_digitizer} ||
             [dict get $doc provider_id] ne {curve_digitizer}} {
             error {The Interactive Document does not belong to Curve Digitalizer.}
@@ -982,7 +1125,7 @@ proc ::GX::CurveDigitizer::_imagePublish {sessionToken documentId sourceDataset 
         set result [::GX::datasetFilePublicationPublish $session viewer.curve_digitizer [dict create \
             dataset_id [_cleanSingleLine $datasetId {Image Dataset ID}] contract image.raster \
             format png source_file $stage storage_kind binary media_type image/png \
-            producer_version 2.0.9 source_dataset_ids [list $sourceDataset] \
+            producer_version 2.0.25 source_dataset_ids [list $sourceDataset] \
             provenance "Curve Digitalizer non-geometric ImageMagick enhancement of $sourceDataset; configuration $documentId" \
             notes "Processed image: $display" structured_metadata $fields]]
         set receipt "[dict get $result dataset_id]\t[dict get $result sha256]"
@@ -1026,7 +1169,65 @@ proc ::GX::CurveDigitizer::_assistNumericFit {tText xText yText queryText} {
     return "\[[join $entries ,]\]"
 }
 
+proc ::GX::CurveDigitizer::_groupAvailable {sessionToken} {
+    variable groupProducerCapability
+    if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} {
+        error {Dataset Group request belongs to a stale Session.}
+    }
+    if {$groupProducerCapability eq {} ||
+        ![llength [info commands ::GX::datasetGroupProducerReviewV1]] ||
+        ![llength [info commands ::GX::datasetGroupProducerCreateV1]]} {
+        return 0
+    }
+    return 1
+}
+
+proc ::GX::CurveDigitizer::_groupCreate {sessionToken groupId label idsText} {
+    variable groupProducerCapability
+    if {![_groupAvailable $sessionToken]} {
+        error {CORE did not grant an authorized producer Dataset Group capability.}
+    }
+    set ids [split [string trim $idsText] "\n"]
+    if {[llength $ids]<2 || [llength $ids]>64 ||
+        [llength [lsort -unique $ids]] != [llength $ids]} {
+        error {Dataset Group requires 2..64 distinct canonical output IDs.}
+    }
+    if {[string length $label]<1 || [string length $label]>512} {
+        error {Dataset Group display name must contain 1..512 characters.}
+    }
+    if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{1,127}$} $groupId]} {
+        error {Malformed Dataset Group ID.}
+    }
+    set session [_requireSession]
+    set capability $groupProducerCapability
+    set members {}
+    foreach id $ids {
+        # Each new member's association is derived from authoritative
+        # persisted producer metadata, never from GUI-supplied axis names.
+        set md [::GX::datasetMetadataRead $session $id]
+        if {![dict exists $md curve_digitizer.plugin_id] ||
+            [dict get $md curve_digitizer.plugin_id] ne {viewer.curve_digitizer}} {
+            error {Group member was not published by Curve Digitalizer.}
+        }
+        set axis [expr {[dict exists $md curve_digitizer.publication_axis_id] ?
+                        [dict get $md curve_digitizer.publication_axis_id] : {y1}}]
+        if {$axis ni {y1 y2 mixed}} {
+            error {Unknown scientific axis role in Group member metadata.}
+        }
+        lappend members [dict create dataset_id $id role "curve_digitizer.axis.$axis" required 1]
+    }
+    set review [::GX::datasetGroupProducerReviewV1 $capability $session $ids]
+    set definition [dict create group_id $groupId display_name $label \
+        group_contract curve_digitizer.publication primary_dataset_id [lindex $ids 0] members $members]
+    set created [::GX::datasetGroupProducerCreateV1 $capability $session $definition $review]
+    if {[dict get $created status] ne {COMPLETE}} {
+        error {CORE created an incomplete Dataset Group.}
+    }
+    return [dict get $created group_id]
+}
+
 proc ::GX::CurveDigitizer::_handleRequest {channel line} {
+    ::GX::workspaceExternalHostCheck viewer.curve_digitizer $channel
     set fields [split $line "\t"]
     if {[llength $fields] < 3 || [lindex $fields 0] ne "REQ"} { error "Malformed Curve Digitalizer backend request." }
     set requestId [lindex $fields 1]
@@ -1065,14 +1266,21 @@ proc ::GX::CurveDigitizer::_handleRequest {channel line} {
             if {[llength $args] != 1} { error "DOC_CREATE requires one payload." }
             set payload [_documentCreate [lindex $args 0]]
         }
+        DOC_READ {
+            if {[llength $args]!=1} {error {DOC_READ requires one Workspace identity}}
+            set payload [_documentRead [lindex $args 0]]
+        }
         DOC_UPDATE {
-            if {[llength $args] ni {3 4}} { error "DOC_UPDATE requires document ID, payload, Session token and optional expected document SHA-256." }
-            set expectedSha [expr {[llength $args] == 4 ? [lindex $args 3] : ""}]
-            set payload [_documentUpdate [lindex $args 0] [lindex $args 1] [lindex $args 2] $expectedSha]
+            if {[llength $args]!=6} {error {DOC_UPDATE requires identity, JSON, Session token, configuration SHA and native generation/revision}}
+            set payload [_documentUpdate {*}$args]
+        }
+        DOC_RENAME {
+            if {[llength $args]!=6} {error {DOC_RENAME requires identity, new name, Session token, SHA and native generation/revision}}
+            set payload [_documentRename {*}$args]
         }
         DOC_DELETE {
-            if {[llength $args] != 2} { error "DOC_DELETE requires document ID and Session token." }
-            set payload [_documentDelete [lindex $args 0] [lindex $args 1]]
+            if {[llength $args]!=4} {error {DOC_DELETE requires identity, Session token and native generation/revision}}
+            set payload [_documentDelete {*}$args]
         }
         IMAGE_TOOL {
             if {[llength $args]} {error {IMAGE_TOOL takes no arguments.}}
@@ -1095,6 +1303,14 @@ proc ::GX::CurveDigitizer::_handleRequest {channel line} {
             set payload [_assistNumericFit {*}$args]
         }
         PUBLISH { set payload [_publish {*}$args] }
+        GROUP_CAPABLE {
+            if {[llength $args]!=1} {error {GROUP_CAPABLE requires the current Session token.}}
+            set payload [_groupAvailable [lindex $args 0]]
+        }
+        GROUP_CREATE {
+            if {[llength $args]!=4} {error {GROUP_CREATE requires Session token, Group ID, label and member IDs.}}
+            set payload [_groupCreate {*}$args]
+        }
         HELP_OPEN {
             if {[llength $args] != 0} { error "HELP_OPEN does not accept arguments." }
             set payload [_helpWindow]
@@ -1132,6 +1348,7 @@ proc ::GX::CurveDigitizer::_showFailure {message} {
     }
 }
 proc ::GX::CurveDigitizer::_disconnect {channel} {
+    ::GX::workspaceExternalHostClosed $channel
     variable processChannel
     variable processPid
     variable processReady
@@ -1169,6 +1386,7 @@ proc ::GX::CurveDigitizer::_drain {channel} {
         # Only remove a frame terminator, never whitespace inside arguments.
         set line [string trimright $line "\r"]
         if {$line eq ""} { continue }
+        if {[::GX::workspaceExternalHostReply $channel $line]} continue
         set fields [split $line "\t"]
         if {[lindex $fields 0] eq "EVT"} {
             set event [lindex $fields 1]
@@ -1253,7 +1471,7 @@ proc ::GX::CurveDigitizer::_pythonDependenciesCheck {python} {
     _log "Python dependency check: $result"
     return 1
 }
-proc ::GX::CurveDigitizer::_launch {} {
+proc ::GX::CurveDigitizer::_launch {{workspaceId {}}} {
     variable processChannel
     variable processPid
     variable moduleRoot
@@ -1266,6 +1484,7 @@ proc ::GX::CurveDigitizer::_launch {} {
     variable startupTimer
     if {$processChannel ne ""} {
         if {![catch {puts $processChannel "CONTROL\tFOCUS"; flush $processChannel}]} {
+            if {$workspaceId ne {}} {::GX::workspaceExternalHostOpen viewer.curve_digitizer $workspaceId}
             _log "FOCUS requested for existing child (ready=$processReady)."
             return [dict create status focused pid $processPid]
         }
@@ -1277,7 +1496,7 @@ proc ::GX::CurveDigitizer::_launch {} {
     set hostLogPath [file join $logDir curve_digitizer_host.log]
     set pythonLogPath [file join $logDir curve_digitizer_python.log]
     set diagnosticShown 0; set processReady 0; set processExitReported 0
-    _log "--- Curve Digitalizer 2.0.9; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
+    _log "--- Curve Digitalizer 2.0.25; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
     set python [_pythonExecutable]
     _log "Python command: $python"
     _pythonDependenciesCheck $python
@@ -1290,7 +1509,9 @@ proc ::GX::CurveDigitizer::_launch {} {
         flush $err
         # stderr is separate from the protocol: retain import errors, Tk errors
         # and tracebacks even when GX-TXT was launched without a console.
-        set pipeline "|[list {*}$python -u $script 2>@ $err]"
+        set command [list {*}$python -u $script]
+        if {$workspaceId ne {}} {lappend command --workspace $workspaceId}
+        set pipeline "|[list {*}$command 2>@ $err]"
         if {[catch {set channel [open $pipeline r+]} failure options]} {
             return -options $options "Unable to start Curve Digitalizer desktop adapter: $failure"
         }
@@ -1298,6 +1519,7 @@ proc ::GX::CurveDigitizer::_launch {} {
     # CRLF from Windows and LF from Unix must decode to the same request.
     fconfigure $channel -encoding utf-8 -translation {auto lf} -buffering line -blocking 0
     set processChannel $channel
+    ::GX::workspaceExternalHostRegister viewer.curve_digitizer curve_digitizer $channel
     set processPid [pid $channel]
     _log "Child created pid=$processPid; waiting for GUI READY."
     fileevent $channel readable [list ::GX::CurveDigitizer::_readable $channel]
@@ -1308,6 +1530,15 @@ proc ::GX::CurveDigitizer::_launch {} {
     return [dict create status opened pid $processPid]
 }
 proc ::GX::CurveDigitizer::viewerDispatch {action scene} {
+    # Viewer dispatch runs under CORE's actual module context. Retain its
+    # opaque capability; never use the private issuer or manufacture tokens.
+    variable groupProducerCapability
+    if {![catch {set context [::GX::datasetPrivateMetadataContext]}] &&
+        [dict get $context module_id] eq {viewer.curve_digitizer}} {
+        set groupProducerCapability [dict get $context capability]
+    } else {
+        set groupProducerCapability {}
+    }
     switch -- $action {
         open - rerender { return [_launch] }
         default { error "Unsupported Curve Digitalizer viewer action '$action'." }

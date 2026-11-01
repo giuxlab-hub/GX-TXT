@@ -1,0 +1,7 @@
+# Restricted author provenance
+
+Distinct developer `/root/restricted_spice_author` used the approved public Builder/Development GUI/CLI and allowlisted fixed C++ SDK. The supported process tree takes the actual Linux Landlock ABI6 project-write grant. This is process-tree confinement under a shared Unix account, not an account-wide hostile-native-code security guarantee. The primary alone changed CORE; no direct author CORE/SDK/policy/module/Session writes, raw Tcl/GDB/compiler/solver or unrestricted public API calls were authorized.
+
+Exact final source/project/design/package and all86members appear in `DEV108_INSTALLED_CANDIDATE_IDENTITY.json`; approved source transfer/export, AST/build/test and immutable request provenance remain in the accompanying evidence. Eight declared compiled cases pass; these are not substituted for actual native/scientific tests.75finalpackage payloads are byte-identical to192;11manual/version/generatedidentity files changed through approved tools.
+
+The author received practical structured `debug`, `debug_status`, `debug_control` instructions directly. Real breakpoints/stepping/state/stack/locals are available as an optional productivity tool. Ordinary C++ debugging requires neither graphical QA nor artificial demonstrations. A reproducible CPP_DEBUGGER_BUG returns to the primary existing owner and the same author retries after correction. No author debugger-use receipt is invented. Independent graphical debugger campaigns remain separate.

@@ -83,6 +83,15 @@ proc ::GX::ExperimentClone::documentsValidate {} {
                     set state [::GX::_workbenchRecoveryRead $id]
                     foreach which {saved latest} {documentPayloadValidate [dict get $state $which payload] $doc $policy}
                 }
+                foreach history [::GX::scientificHistoryPortableRecords $source $id $::GX::ExperimentClone::nativeDrainedPaths] {
+                    if {[dict get $policy payload_kind] eq {author_code}} {
+                        # Author code remains inert preparation; only declared
+                        # metadata owns dependencies, as in the current payload.
+                        foreach value [concat [list [dict get $history base]] [lmap step [dict get $history steps] {dict get $step patch}]] {
+                            if {[dict exists $value metadata]} {dependencies [dict get $value metadata] $doc 0}
+                        }
+                    } else {dependencies $history $doc 0}
+                }
             } reason]} {excludeDocument $id $item $reason;set changed 1}
         }
         if {!$changed} break
@@ -142,6 +151,9 @@ proc ::GX::ExperimentClone::documentsCopy {stage} {
         iniWrite [file join $stage metadata interactive_documents.ini] [dict create interactive_documents.api_version 1 interactive_documents.count 0 interactive_documents.high_water_id $counter]
         ::GX::_interactiveDocumentRegistryWrite $stage $documents
     }
+    # Only policy-authorized, dependency-validated Document families cross the
+    # new Session boundary. Unknown/orphan History is excluded by generic copy.
+    ::GX::scientificHistoryPortableCopyDocuments $source $stage [dict keys $documents] $::GX::ExperimentClone::nativeDrainedPaths $::GX::ExperimentClone::target
 }
 proc ::GX::ExperimentClone::graphKey {key} {
     return [regexp {^(module_plot\.|module_plot_region\.|plot\.|plot_variant\.|plot_variant_counter\.|plot_variant_region\.|plot_annotation\.|graph_series\.|graph_use\.|graph_notes\.|graph_metadata\.|level_scale\.)} $key]

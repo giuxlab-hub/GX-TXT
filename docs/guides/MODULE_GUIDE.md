@@ -17,7 +17,7 @@ A module that needs new framework capability should extend the API deliberately;
 
 ## Mandatory rule for scientific/numerical modules
 
-Before adding mathematical code to an analysis or other scientific module, read **[GX-TXT architecture overview](../../ARCHITECTURE.md)**. Reusable mathematical primitives belong to the public `math.numeric` / `NUMERIC_API` service. Missing generic capability must be added there first; consumer modules keep domain-specific workflow and semantics.
+Before adding mathematical code to an analysis or other scientific module, read **[Mandatory Architecture Rule: `math.numeric` vs `analysis.*`](../architecture/NUMERIC_ANALYSIS_BOUNDARY_RULE.md)**. Reusable mathematical primitives belong to the public `math.numeric` / `NUMERIC_API` service. Missing generic capability must be added there first; consumer modules keep domain-specific workflow and semantics.
 
 ## Persistent state and derived runtime
 
@@ -97,7 +97,7 @@ The minimal policy authorizes no custom configuration copies. Only explicitly cl
 
 Do not implement private filesystem copying or ask CORE to recognize a module by name. Use capability/version discovery and the public `EXPERIMENT_DUPLICATION_POLICY_API_v1` validation contract. Generic scientific field types and declared bindings are excluded even when named `input`. Unlisted configuration resets; selectors and paths start empty. Module execution is explicitly reconfigured on fresh data.
 
-See [Experiment Duplication Policy API](../api/EXPERIMENT_DUPLICATION_POLICY_API_v1.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.
+See [the policy author guide](../developer/EXPERIMENT_DUPLICATION_POLICY.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.
 
 ## dev086 module selection controls
 

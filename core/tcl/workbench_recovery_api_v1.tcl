@@ -72,6 +72,7 @@ proc ::GX::_workbenchRecoverySnapshot {document} {
     return [dict remove [interactiveDocumentRead $document] id module_id provider_id generation created_at updated_at]
 }
 proc ::GX::workbenchRecoveryBegin {document} {
+    if {[_nativeWorkspaceExists $document]} {return [_nativeWorkspaceRecoveryStatus $document]}
     set state [_workbenchRecoveryRead $document]
     if {$state eq {}} {
         set owner [interactiveDocumentRead $document];set snapshot [_workbenchRecoverySnapshot $document]
@@ -80,6 +81,7 @@ proc ::GX::workbenchRecoveryBegin {document} {
     return [_workbenchRecoveryWrite $document $state]
 }
 proc ::GX::workbenchRecoveryCheckpoint {document {receipt {}}} {
+    if {[_nativeWorkspaceExists $document]} {return [_nativeWorkspaceRecoveryStatus $document]}
     variable ::GX::WorkbenchRecovery::maximumReceipts
     set state [_workbenchRecoveryRead $document]
     if {$state eq {}} {workbenchRecoveryBegin $document;set state [_workbenchRecoveryRead $document]}
@@ -91,11 +93,13 @@ proc ::GX::workbenchRecoveryCheckpoint {document {receipt {}}} {
     return [_workbenchRecoveryWrite $document $state]
 }
 proc ::GX::workbenchRecoveryInspect {document} {
+    if {[_nativeWorkspaceExists $document]} {return [_nativeWorkspaceRecoveryStatus $document]}
     if {[catch {set state [_workbenchRecoveryRead $document]} message]} {return [dict create status corrupt document_id $document reason $message recoverable 0]}
     if {$state eq {}} {return [dict create status absent document_id $document recoverable 0]}
     return [dict create status [expr {[dict get $state clean] ? "clean" : "unclean"}] document_id $document recoverable [expr {![dict get $state clean]}] saved_revision [dict get $state saved revision] checkpoint_revision [dict get $state latest revision] saved_sha256 [dict get $state saved sha256] checkpoint_sha256 [dict get $state latest sha256] receipts [dict get $state receipts] module_id [dict get $state module_id] provider_id [dict get $state provider_id]]
 }
 proc ::GX::workbenchRecoveryResolve {document choice} {
+    if {[_nativeWorkspaceExists $document]} {error {Native Workspace recovery uses its committed database and the existing native History timeline. Obsolete Tcl recovery snapshots cannot be restored.}}
     if {$choice ni {recover saved}} {error "Choose recover or saved explicitly"}
     set state [_workbenchRecoveryRead $document]
     if {$state eq {}} {error "No recovery checkpoint exists"}
@@ -106,6 +110,7 @@ proc ::GX::workbenchRecoveryResolve {document choice} {
     return [dict merge $result [dict create status resolved recovery_choice $choice]]
 }
 proc ::GX::workbenchRecoveryMarkSaved {document} {
+    if {[_nativeWorkspaceExists $document]} {nativeWorkspaceFlush $document;return [_nativeWorkspaceRecoveryStatus $document]}
     if {[catch {set state [_workbenchRecoveryRead $document]} message]} {return [dict create status corrupt reason $message]}
     set snapshot [_workbenchRecoverySnapshot $document]
     if {$state eq {}} {
@@ -116,13 +121,20 @@ proc ::GX::workbenchRecoveryMarkSaved {document} {
     return [_workbenchRecoveryWrite $document $state]
 }
 proc ::GX::workbenchRecoveryClose {document} {workbenchRecoveryMarkSaved $document}
+proc ::GX::_nativeWorkspaceRecoveryStatus {document} {
+    set item [nativeWorkspaceMetadata $document]
+    set status [nativeWorkspaceStatus $document]
+    return [dict create status clean document_id $document recoverable 0 authority native_cpp saved_revision [dict get $status durable_revision] checkpoint_revision [dict get $item revision] saved_sha256 [dict get $item sha256] checkpoint_sha256 [dict get $item sha256] module_id [dict get $item module_id] provider_id [dict get $item provider_id] receipts {}]
+}
 proc ::GX::workbenchRecoveryForget {document} {
     set path [_workbenchRecoveryPath $document];if {[file exists $path]} {file delete -- $path};return $document
 }
 proc ::GX::_workbenchRecoveryResourceReferences {document {excludeOwner 0}} {
     set result {}
+    if {[llength [info commands _historyResourceReferences]]} {lappend result {*}[ _historyResourceReferences]}
     foreach owner [interactiveDocumentList] {
         if {$excludeOwner&&[dict get $owner id] eq $document} continue
+        if {[datasetPublicationV2DictDefault $owner native_workspace 0]} continue
         # Corruption is already visible via Inspect; an unusable checkpoint
         # cannot prevent normal Session open or ordinary resource collection.
         if {[catch {set state [_workbenchRecoveryRead [dict get $owner id]]}]} continue
@@ -173,6 +185,8 @@ proc ::GX::workbenchRecoveryPrompt {document {parent .}} {
 }
 rename ::GX::saveCurrentSessionConfig ::GX::saveCurrentSessionConfig_before_workbench_recovery
 proc ::GX::saveCurrentSessionConfig {} {
+    nativeWorkspaceFlushAll
+    if {[llength [info commands scientificHistoryFlushAll]]} {scientificHistoryFlushAll}
     set result [saveCurrentSessionConfig_before_workbench_recovery]
     if {$::GX::currentSession eq ""||![file isdirectory $::GX::currentSession]} {return $result}
     foreach owner [interactiveDocumentList] {

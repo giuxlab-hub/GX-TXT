@@ -9,7 +9,7 @@ namespace eval ::GX::DatasetPrivate {
 }
 proc ::GX::_datasetMetadataPublicationWrite {session id metadata module suppliedKeys} {
     variable ::GX::DatasetPrivate::publicationActors
-    if {$module in {core.native2d core.dataset_transform}&&[datasetField $id producer_module {}] eq $module} {
+    if {$module in {core.native2d core.native3d core.dataset_transform}&&[datasetField $id producer_module {}] eq $module} {
         # These explicit CORE services are not loadable modules. Keep their
         # canonical producer/provenance identities and use the existing System
         # actor only when the registered producer agrees with this publication.

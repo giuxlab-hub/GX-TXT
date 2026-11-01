@@ -7,6 +7,31 @@ proc ::GX::viewerGuiIconCatalog {} {
     if {![dict get $response ok]} {error [dict get $response error]}
     return [dict get $response result]
 }
+# Additive batching for the fixed CORE catalog; no arbitrary resource reader.
+# Same bounded admission, validation and raster pipeline as individual calls.
+proc ::GX::viewerGuiStockIcons {ids sizes} {
+    if {[llength $ids]<1 || [llength $ids]>64 || [llength [lsort -unique $ids]]!=[llength $ids]} {error {Stock batch requires1..64 distinct icon IDs}}
+    if {[llength $sizes]<1 || [llength $sizes]>4 || [llength [lsort -unique $sizes]]!=[llength $sizes]} {error {Stock batch requires1..4 distinct sizes}}
+    foreach size $sizes {if {![string is integer -strict $size] || $size<8 || $size>192} {error {Invalid icon display size}}}
+    set helper [file join $::GX::scriptDir core python gxtxt_viewer_icons.py]
+    set response [exec [runtimeToolRequired python] -I -B $helper stock_batch $ids $sizes [runtimeToolRequired magick]]
+    if {![dict get $response ok]} {error [dict get $response error]}
+    set assets {};set created {}
+    try {
+        dict for {id row} [dict get $response result] {
+            set asset [dict get $row asset];dict set assets $id $asset
+            dict for {size png} [dict get $row photos] {
+                set key [list [dict get $asset png_sha256] $size]
+                if {![dict exists $::GX::ViewerGui::iconPhotos $key] && ![dict exists $created $key]} {dict set created $key [image create photo -data $png -format png]}
+            }
+        }
+    } on error {message options} {
+        dict for {key photo} $created {image delete $photo}
+        return -options $options $message
+    }
+    dict for {key photo} $created {dict set ::GX::ViewerGui::iconPhotos $key $photo}
+    return $assets
+}
 proc ::GX::viewerGuiIconImport {path title category license} {
     set helper [file join $::GX::scriptDir core python gxtxt_viewer_icons.py]
     if {[catch {exec [runtimeToolRequired python] -I -B $helper import [file normalize $path] $title $category $license [runtimeToolRequired magick]} response]} {error "Icon import rejected: $response"}

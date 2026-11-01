@@ -37,6 +37,13 @@ proc ::GX::configurationModuleDiscover {module} {
             set value [moduleConfigField $module $key $option {}]
             if {$value ne {}} {dict set descriptor $option $value}
         }
+        if {$type eq {integer} && [moduleField $module kind {}] eq {acquisition} && [descriptorValue $data acquisition_handler runtime {}] eq {managed_cpp}} {
+            # The admitted native Acquisition schema is signed64 even when the
+            # author declares no narrower range. Keep the existing UI/default/
+            # Session owner from accepting a value the SDK cannot represent.
+            if {![dict exists $descriptor min]} {dict set descriptor min -9223372036854775808}
+            if {![dict exists $descriptor max]} {dict set descriptor max 9223372036854775807}
+        }
         if {$type eq "choice"} {dict set descriptor values [splitList [moduleConfigField $module $key values {}]]}
         configurationRegister $id $descriptor
         if {![info exists ::GX::moduleCfg($module,$key)]} {
@@ -71,19 +78,34 @@ proc ::GX::configurationChanged {id} {
 }
 proc ::GX::configurationResolve {id} {
     set descriptor [dict get [configurationFields] $id]
+    set factory [dict get $descriptor default]
+    if {[datasetPublicationV2DictDefault $descriptor module_type {}] eq {table}} {
+        # Defaults may be incomplete editing templates. Ask their owner for
+        # the typed snapshot without registering/committing that template.
+        set factory [repeatableConfigDefaultSnapshot [dict get $descriptor module_id] [dict get $descriptor module_key]]
+    }
     set user [configurationGet $id];set effective $user;set override {};set origin user
     set scopes [datasetPublicationV2DictDefault $descriptor scopes user]
     if {"user" ni $scopes} {set origin factory}
     if {[dict exists $descriptor module_id] && "session" in $scopes && $::GX::currentSession ne {}} {
         set module [dict get $descriptor module_id];set key [dict get $descriptor module_key]
-        if {[datasetPublicationV2DictDefault $descriptor module_type {}] eq "table"} {
+        if {[datasetPublicationV2DictDefault $descriptor module_type {}] eq "table" && ![datasetPublicationV2DictDefault $::GX::Configuration::inherited $id 0]} {
             set override [repeatableConfigSnapshot $module $key];set effective $override;set origin session
         } elseif {![datasetPublicationV2DictDefault $::GX::Configuration::inherited $id 0] && [info exists ::GX::moduleCfg($module,$key)]} {
             set override $::GX::moduleCfg($module,$key);set effective $override;set origin session
         }
     }
-    return [dict create field_id $id factory [dict get $descriptor default] user $user override $override \
-        effective $effective origin $origin scopes $scopes session_token [_configurationSessionToken]]
+    # Preserve the original layer-origin contract for existing editors. The
+    # additional provenance distinguishes factory values from saved/unsaved
+    # User defaults without making an inspector another Configuration owner.
+    set userOrigin factory
+    if {[dict exists $::GX::configurationSaved $id]} {
+        set userOrigin [expr {$user eq [dict get $::GX::configurationSaved $id] ? {user} : {user_unsaved}}]
+    } elseif {$user ne [dict get $descriptor default]} {set userOrigin user_unsaved}
+    set effectiveOrigin [expr {$origin eq {session} ? {session} : $userOrigin}]
+    if {[dict get $descriptor scope] in {framework runtime}} {set effectiveOrigin [dict get $descriptor scope]}
+    return [dict create field_id $id factory $factory user $user override $override \
+        effective $effective origin $origin user_origin $userOrigin effective_origin $effectiveOrigin scopes $scopes session_token [_configurationSessionToken]]
 }
 proc ::GX::configurationScopedValue {id scope} {
     set value [configurationResolve $id]
@@ -171,12 +193,23 @@ proc ::GX::configurationCommit {changes {persist 1}} {
             }
         }
         if {$persist && $userChanges && $sessionChanges} {error {Commit User defaults and Session overrides separately}}
-        if {$persist && $userChanges} {configurationSave}
+        if {$persist && $userChanges} {
+            # An unrelated scoped commit must not save unsaved global Preview
+            # choices. Keep the existing treatment of other defaults intact.
+            set savePreview 0
+            foreach change $normalized {if {[dict get $change id] eq {preview.module_enabled}} {set savePreview 1}}
+            set fields {}
+            dict for {id descriptor} [configurationFields] {
+                if {[dict get $descriptor scope] in {user module} && ($savePreview || $id ne {preview.module_enabled})} {lappend fields $id}
+            }
+            configurationSave $fields
+        }
         if {$persist && $sessionChanges} {set manifest [file join $::GX::currentSession metadata manifest.ini]
             set temporary ${manifest}.[pid].config.tmp
             try {writeManifest $temporary;file rename -force -- $temporary $manifest} finally {file delete -force -- $temporary}}
     } on error {message options} {
         set ::GX::configurationValues $prior;set ::GX::configurationSaved $oldSaved
+        catch {_modulePreviewSyncProjection}
         # Restore elements without removing their lifetime/validation traces.
         foreach {element value} $priorModule {set ::GX::moduleCfg($element) $value}
         set ::GX::Configuration::inherited $priorInherited
@@ -189,9 +222,11 @@ proc ::GX::configurationCommit {changes {persist 1}} {
 }
 
 proc ::GX::_configurationValidateBinding {descriptor value} {
-    if {![dict exists $descriptor module_id] || $value eq {}} {return $value}
+    if {![dict exists $descriptor module_id]} {return $value}
     set module [dict get $descriptor module_id];set key [dict get $descriptor module_key]
     set type [dict get $descriptor module_type];set choices {}
+    if {$type eq {table}} {return [repeatableConfigValidateSnapshot $module $key $value]}
+    if {$value eq {}} {return $value}
     switch -- $type {
         dataset {set choices [datasetRegistryIds]}
         variable {

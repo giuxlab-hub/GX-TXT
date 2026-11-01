@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Initial portable deterministic Peak Detection Session Generator for GX-TXT 0.9.7.82.
 

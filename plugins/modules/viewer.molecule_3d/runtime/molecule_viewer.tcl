@@ -2,6 +2,8 @@
 namespace eval ::GX::MoleculeViewer {
     variable window .gxMoleculeViewer
     variable selected ""
+    variable librarySource {}
+    variable libraryViewport {}
     variable style ball_and_stick
     variable frame 0
     variable labels 1
@@ -121,8 +123,13 @@ proc ::GX::MoleculeViewer::loadDataset {id} {
     variable source
     variable frames
     variable frame
-    if {$id ni [datasetIds]} {error "Molecular Dataset is not available: $id"}
-    set source [::GX::sessionInspectionDatasetPayload $id]
+    variable librarySource
+    if {$librarySource ne {}} {
+        if {$id ne [dict get $librarySource entry_id] || ![file isfile [dict get $source path]] || [::GX::sha256File [dict get $source path]] ne [dict get $source sha256]} {error {Pinned Library molecular source changed}}
+    } else {
+        if {$id ni [datasetIds]} {error "Molecular Dataset is not available: $id"}
+        set source [::GX::sessionInspectionDatasetPayload $id]
+    }
     set records [runHelper inspect [dict get $source path]]
     set parsed [dict create]
     foreach line [split $records "\n"] {
@@ -167,6 +174,8 @@ proc ::GX::MoleculeViewer::showFrame {} {
     set atoms [dict get $frames $frame atoms]
     set bonds [dict get $frames $frame bonds]
     refreshWidgets
+    variable librarySource;variable libraryViewport
+    if {$librarySource ne {} && $libraryViewport ne {}} {render3DLibrary}
 }
 proc ::GX::MoleculeViewer::point {index} {
     variable atoms
@@ -217,7 +226,8 @@ proc ::GX::MoleculeViewer::measure {kind indices} {
 }
 proc ::GX::MoleculeViewer::statePath {} {return [file join [session] metadata molecule_viewer.ini]}
 proc ::GX::MoleculeViewer::saveState {} {
-    variable selected; variable frame; variable style; variable labels
+    variable selected; variable frame; variable style; variable labels; variable librarySource
+    if {$librarySource ne {}} {return [dict create read_only_library 1 reference [dict get $librarySource reference]]}
     if {$selected eq ""} {error "Select a molecular Dataset first"}
     set path [statePath]
     set fd [::open $path w]
@@ -244,8 +254,9 @@ proc ::GX::MoleculeViewer::loadState {} {
     return $state
 }
 proc ::GX::MoleculeViewer::render3D {} {
-    variable selected; variable frame; variable style; variable atoms
-    if {$selected eq ""} {error "Select a molecular Dataset first"}
+    variable selected; variable frame; variable style; variable atoms; variable librarySource; variable source
+    if {$selected eq ""} {error "Select a molecular source first"}
+    if {$librarySource ne {}} {return [render3DLibrary]}
     set source [::GX::sessionInspectionDatasetPayload $selected]
     set relative [file join metadata molecule_viewer [format "%s_%s_%s_%s.vtp" \
         [string map {. _ - _} $selected] [string range [dict get $source sha256] 0 11] $frame $style]]
@@ -282,15 +293,56 @@ proc ::GX::MoleculeViewer::render3D {} {
     set up [expr {$axis == 1 ? {0;0;1} : {0;1;0}}]
     ::GX::viewerSceneSet viewer.native_3d native_3d [dict create scene_mode scientific \
         camera_position [join $position {;}] camera_target [join $center {;}] camera_up $up]
-    ::GX::viewerLayerSet viewer.native_3d native_3d molecule_main [dict create \
-        kind surface source_mode artifact resource_path $relative \
+    set layer [dict create kind surface source_mode artifact resource_path $relative \
         sha256 [dict get $artifact sha256] format vtp format_version 1 \
         scalar_array element source_dataset_id $selected \
         source_dataset_sha256 [dict get $source sha256] layer_order 10]
+    if {$librarySource ne {}} {dict unset layer source_dataset_id;dict unset layer source_dataset_sha256}
+    ::GX::viewerLayerSet viewer.native_3d native_3d molecule_main $layer
     set result [::GX::viewerOpen viewer.native_3d native_3d [dict create \
         scene_only 1 presentation_layer_ids {molecule_main}]]
     saveState
     return $result
+}
+proc ::GX::MoleculeViewer::render3DLibrary {} {
+    variable window;variable librarySource;variable libraryViewport;variable source;variable frame;variable style
+    if {[::GX::sha256File [dict get $source path]] ne [dict get $source sha256]} {error {Pinned Library geometry SHA changed}}
+    if {{managed_artifact} ni [dict get [::GX::native3DGuiHostApiInfoV2] source_kinds]} {error {This host requires the P028 managed Library Native3D capability}}
+    set allocation [dict get $librarySource allocation]
+    set output [file join [dict get $allocation path] "molecule_[string range [dict get $source sha256] 0 15]_${frame}_${style}.vtp"]
+    if {![file isfile $output]} {runHelper mesh [dict get $source path] $output --frame $frame --style $style}
+    if {![winfo exists $window.geometry3d]} {
+        ttk::frame $window.geometry3d -padding 8
+        $window.tabs add $window.geometry3d -text {3D source geometry}
+        ttk::label $window.geometry3d.identity -wraplength 920 -padding 4
+        pack $window.geometry3d.identity -fill x
+        set libraryViewport [::GX::native3DViewportCreate $window.geometry3d.viewport]
+        pack $window.geometry3d.viewport -fill both -expand 1
+        ::GX::native3DViewportSubscribe $libraryViewport selected ::GX::MoleculeViewer::libraryPick
+    }
+    set reference [dict get $librarySource reference]
+    set identity [dict create api_id SCIENTIFIC_LIBRARY_MANAGER_API_v1 reference [list [dict get $reference library_id] [dict get $reference entry_id]] sha256 [dict get $source sha256] revision [dict get $reference revision]]
+    set declaredConformer [::GX::datasetPublicationV2DictDefault [dict get $librarySource source_fields] conformer_id {not declared}]
+    $window.geometry3d.identity configure -text "Library [dict get $reference library_id] / [dict get $reference entry_id] • revision [dict get $reference revision] • conformer index $frame (source ID $declaredConformer) • $style
+[llength $::GX::MoleculeViewer::atoms] atoms / [llength $::GX::MoleculeViewer::bonds] bonds • original SHA256 [dict get $source sha256]"
+    set binding [dict create kind managed_artifact module viewer.native_3d provider native_3d allocation_id [dict get $allocation id] path $output sha256 [::GX::sha256File $output] format vtp source_identity $identity layer [dict create scalar_array element scalar_coloring 1]]
+    set result [::GX::native3DViewportBind $libraryViewport $binding]
+    $window.tabs select $window.geometry3d
+    return $result
+}
+proc ::GX::MoleculeViewer::libraryPick {handle event detail} {
+    if {![dict exists $detail native_pick]} return
+    set result [dict get $detail native_pick]
+    if {![dict exists $result hit] || ![dict get $result hit]} return
+    foreach key {world_point position point} {
+        if {[dict exists $result $key]} {pick [dict create event pick position [dict get $result $key]];return}
+    }
+}
+proc ::GX::MoleculeViewer::viewPreset {preset} {
+    variable librarySource;variable libraryViewport
+    if {$librarySource ne {}} {
+        if {$libraryViewport ne {}} {::GX::native3DViewportCommand $libraryViewport preset [expr {$preset eq {fit}?{fit_scene}:{isometric}}]}
+    } else {::GX::Native3D::cameraPreset $preset}
 }
 proc ::GX::MoleculeViewer::pick {event} {
     variable atoms; variable window
@@ -402,16 +454,25 @@ proc ::GX::MoleculeViewer::refreshWidgets {} {
     $t delete [$t children {}]
     foreach bond $bonds {$t insert {} end -values $bond}
     $window.structure.top.conformer configure -values [lsort -integer [dict keys $frames]]
-    set md [::GX::datasetMetadataRead [session] $selected]
-    set details "Dataset: $selected | atoms: [llength $atoms] | bonds: [llength $bonds]"
+    variable librarySource;variable source
+    set md {};set record {}
+    if {$librarySource ne {}} {
+        set md [dict create molecule.coordinates {Source coordinates in angstrom; read-only Library geometry} library.entry_id [dict get $librarySource entry_id]]
+        set details "Library entry: $selected | atoms: [llength $atoms] | bonds: [llength $bonds]"
+        dict for {key value} [dict get $librarySource source_fields] {dict set md library.field.$key $value}
+        dict for {key value} [dict get $librarySource provenance] {dict set md library.source.$key $value}
+    } else {
+        set md [::GX::datasetMetadataRead [session] $selected]
+        set record [::GX::sessionInspectionDataset $selected]
+        set details "Dataset: $selected | atoms: [llength $atoms] | bonds: [llength $bonds]"
+    }
     foreach {key label} {molecule.reference_name Name molecule.net_formal_charge {Formal charge} \
         molecule.coordinates Coordinates} {
         if {[dict exists $md $key]} {append details " | $label: [dict get $md $key]"}
     }
     $window.structure.summary configure -text $details
-    set info "Canonical source: [dict get [::GX::sessionInspectionDatasetPayload $selected] relative_path]\n"
-    append info "Canonical SHA-256: [dict get [::GX::sessionInspectionDatasetPayload $selected] sha256]\n"
-    set record [::GX::sessionInspectionDataset $selected]
+    set info "Original source: [dict get $source relative_path]\n"
+    append info "Original SHA-256: [dict get $source sha256]\n"
     foreach key {source_raw source_sha256 provenance created_at} {
         if {[dict exists $record $key]} {append info "$key: [dict get $record $key]\n"}
     }
@@ -423,8 +484,9 @@ proc ::GX::MoleculeViewer::refreshWidgets {} {
     drawProjection
 }
 proc ::GX::MoleculeViewer::refreshDatasets {} {
-    variable window; variable selected
+    variable window; variable selected;variable librarySource
     if {![winfo exists $window]} return
+    if {$librarySource ne {}} {return [loadDataset $selected]}
     set ids [datasetIds]
     $window.structure.top.dataset configure -values $ids
     if {$selected ni $ids && [llength $ids]} {set selected [lindex $ids 0]}
@@ -454,14 +516,38 @@ proc ::GX::MoleculeViewer::guiRender {} {
 proc ::GX::MoleculeViewer::guiSave {} {
     if {[catch {saveState} problem]} {showError {Save molecule view} $problem}
 }
+proc ::GX::MoleculeViewer::releaseLibrarySource {window actual allocation} {
+    if {$window ne $actual} return
+    variable libraryViewport
+    if {$libraryViewport ne {}} {catch {::GX::native3DViewportRelease $libraryViewport};set libraryViewport {}}
+    catch {::GX::resourceManagementRelease [dict get $allocation id]}
+    catch {::GX::resourceManagementCleanup [list [dict get $allocation id]]}
+}
 proc ::GX::MoleculeViewer::open {context} {
-    variable window; variable selected; variable frame; variable style; variable labels; variable libraryId
+    variable window; variable selected; variable frame; variable style; variable labels; variable libraryId;variable librarySource;variable source;variable libraryViewport
     package require Tk
-    set state [loadState]
+    catch {destroy $window}
+    set librarySource {};set libraryViewport {};set selected {};set state {}
+    set requested {}
+    if {[dict exists $context library_source]} {set requested [dict get $context library_source]}
+    if {[dict exists $context open_context library_source]} {set requested [dict get $context open_context library_source]}
+    if {$requested ne {}} {
+        set allocation [::GX::resourceManagementAllocate scientific_library_molecule [dict create kind directory lifetime viewer retention_seconds 0]]
+        if {[catch {
+            set staged [::GX::LibraryEntryAcquisitionDispatchAPIv1::_stage [dict create reference [dict get $requested reference] resource_index [dict get $requested resource_index]] $allocation]
+            set entryDetail [::GX::ScientificLibraryManagerAPIv1::domainRequest detail [format {{"reference":%s}} [::GX::LibraryEntryAcquisitionDispatchAPIv1::_strings [dict get $requested reference]]]]
+        } problem]} {
+            releaseLibrarySource {} {} $allocation
+            error $problem
+        }
+        set librarySource [dict merge $requested $staged [dict create allocation $allocation source_fields [dict get $entryDetail fields] provenance [dict get $entryDetail provenance]]]
+        set selected [dict get $staged entry_id]
+        set source [dict create path [dict get $staged source_path] sha256 [dict get $staged sha256] relative_path "Library [dict get $staged library_id]/[dict get $staged entry_id] revision [dict get $staged revision]"]
+    } elseif {$::GX::currentSession ne {}} {set state [loadState]}
     if {[dict exists $state style] && [dict get $state style] in {ball_and_stick space_filling}} {set style [dict get $state style]}
     if {[dict exists $state frame] && [string is integer -strict [dict get $state frame]]} {set frame [dict get $state frame]}
     if {[dict exists $state labels] && [dict get $state labels] in {0 1}} {set labels [dict get $state labels]}
-    set ids [datasetIds]
+    set ids [expr {$librarySource ne {} ? [list $selected] : ($::GX::currentSession ne {} ? [datasetIds] : {})}]
     if {[dict exists $state dataset_id] && [dict get $state dataset_id] in $ids} {
         set selected [dict get $state dataset_id]
         if {[dict exists $state source_sha256] && [dict get $state source_sha256] ne "" &&
@@ -472,9 +558,9 @@ proc ::GX::MoleculeViewer::open {context} {
     if {[dict exists $context open_context dataset_id] && [dict get $context open_context dataset_id] in $ids} {
         set selected [dict get $context open_context dataset_id]
     }
-    catch {destroy $window}
     toplevel $window
-    wm title $window {Molecule Viewer}
+    if {$librarySource ne {}} {bind $window <Destroy> [list ::GX::MoleculeViewer::releaseLibrarySource $window %W [dict get $librarySource allocation]]}
+    wm title $window [expr {$librarySource ne {}?{Molecule Viewer — read-only Library source}:{Molecule Viewer}}]
     wm geometry $window 1060x760+30+30
     ttk::notebook $window.tabs
     ttk::frame $window.structure -padding 10
@@ -496,8 +582,8 @@ proc ::GX::MoleculeViewer::open {context} {
         -variable ::GX::MoleculeViewer::labels -command ::GX::MoleculeViewer::drawProjection
     ttk::button $window.structure.top.render -text {Open 3D structure} -command ::GX::MoleculeViewer::guiRender
     ttk::button $window.structure.top.save -text {Save view} -command ::GX::MoleculeViewer::guiSave
-    ttk::button $window.structure.top.fit -text {Fit 3D view} -command {catch {::GX::Native3D::cameraPreset fit}}
-    ttk::button $window.structure.top.reset -text {Reset 3D view} -command {catch {::GX::Native3D::cameraPreset reset}}
+    ttk::button $window.structure.top.fit -text {Fit 3D view} -command {catch {::GX::MoleculeViewer::viewPreset fit}}
+    ttk::button $window.structure.top.reset -text {Reset 3D view} -command {catch {::GX::MoleculeViewer::viewPreset reset}}
     grid $window.structure.top.l -row 0 -column 0 -sticky w -padx 4 -pady 4
     grid $window.structure.top.dataset -row 0 -column 1 -sticky ew -padx 4 -pady 4
     grid $window.structure.top.f -row 0 -column 2 -sticky w -padx 4 -pady 4
@@ -588,11 +674,17 @@ proc ::GX::MoleculeViewer::open {context} {
     bind $window.library.listbox.list <<TreeviewSelect>> {set ::GX::MoleculeViewer::libraryId [lindex [%W selection] 0]}
     bind $window.structure.top.dataset <<ComboboxSelected>> {::GX::MoleculeViewer::loadDataset $::GX::MoleculeViewer::selected}
     bind $window.structure.top.conformer <<ComboboxSelected>> {::GX::MoleculeViewer::showFrame}
+    bind $window.structure.top.style <<ComboboxSelected>> {if {$::GX::MoleculeViewer::librarySource ne {} && $::GX::MoleculeViewer::libraryViewport ne {}} {::GX::MoleculeViewer::guiRender}}
     bind $window.structure.data.atoms <<TreeviewSelect>> {::GX::MoleculeViewer::showAtom}
     bind $window.structure.projbox.projection <Button-1> {::GX::MoleculeViewer::projectionClick %x %y}
     bind $window.structure.projbox.projection <Configure> {::GX::MoleculeViewer::drawProjection}
     ::GX::modulePublicApiActivate viewer.native_3d NATIVE_3D_VIEWER_API_v1
     ::GX::Native3D::subscribeInteraction ::GX::MoleculeViewer::pick
+    if {$librarySource ne {}} {
+        $window.tabs hide $window.library
+        $window.structure.top.l configure -text {Library molecular source}
+        $window.structure.top.save state disabled
+    }
     if {$selected ne ""} {loadDataset $selected} else {$window.tabs select $window.library}
     return $window
 }

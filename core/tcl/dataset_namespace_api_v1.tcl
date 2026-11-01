@@ -48,6 +48,14 @@ proc ::GX::_datasetNamespaceFromMetadata {session metadata} {
 }
 proc ::GX::datasetNamespaceSet {session datasetId value} {
     if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::datasetNamespaceSet $session $datasetId $value]}
+    if {[llength [info commands ::GX::datasetGroupForDataset]]} {
+        set groupId [datasetGroupForDataset $session $datasetId]
+        if {$groupId ne {}} {error "Dataset '$datasetId' belongs to group '$groupId'; move the whole group or explicitly detach this member first"}
+    }
+    return [_datasetNamespaceSetUngrouped $session $datasetId $value]
+}
+proc ::GX::_datasetNamespaceSetUngrouped {session datasetId value} {
+    if {![datasetAuthorityActive $session]} {error {Namespace placement requires the Dataset authority}}
     if {$::GX::DatasetPrivate::activeContext ne {}} {error {Only user/admin operations may move Datasets between namespaces.}}
     set value [datasetNamespaceNormalize $value]
     if {[lindex [split $value /] 0] eq "pending"} {error {Pending is reserved for unimported sources.}}

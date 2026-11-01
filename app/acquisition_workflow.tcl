@@ -145,8 +145,11 @@ proc ::GX::importerBuilderApplyToRow {id row} {
     variable genericCsvBatch
     variable genericCsvBatchVar
     variable genericCsvBatchVarCount
-    set d [importerBuilderGet $id]
+    set described [importerBuilderDescribe $id]
+    set snapshot [importerBuilderSnapshot [dict get $described definition]]
+    set d [dict get $snapshot definition]
     set genericCsvBatch($row,importer_definition) $id
+    set genericCsvBatch($row,importer_snapshot) [dict merge $snapshot [dict create file_sha256 [dict get $described file_sha256]]]
     set genericCsvBatch($row,delimiter) [dict get $d delimiter]
     set genericCsvBatch($row,header_rows) [dict get $d header_rows]
     genericCsvBatchSetContract $row [dict get $d contract]
@@ -181,18 +184,20 @@ proc ::GX::genericCsvBatchRemove {row} {
     set definitions [dict create]
     for {set i 1} {$i <= $genericCsvBatchCount} {incr i} {
         if {[info exists genericCsvBatch($i,importer_definition)]} {
-            dict set definitions $i $genericCsvBatch($i,importer_definition)
+            foreach key {importer_definition importer_snapshot} {
+                if {[info exists genericCsvBatch($i,$key)]} {dict set definitions $i $key $genericCsvBatch($i,$key)}
+            }
         }
     }
     ::GX::genericCsvBatchRemove_before_importer_builder $row
     for {set i 1} {$i <= $genericCsvBatchCount} {incr i} {
-        catch {unset genericCsvBatch($i,importer_definition)}
+        foreach key {importer_definition importer_snapshot} {unset -nocomplain genericCsvBatch($i,$key)}
         set old [expr {$i >= $row ? $i+1 : $i}]
         if {[dict exists $definitions $old]} {
-            set genericCsvBatch($i,importer_definition) [dict get $definitions $old]
+            dict for {key value} [dict get $definitions $old] {set genericCsvBatch($i,$key) $value}
         }
     }
-    catch {unset genericCsvBatch([expr {$genericCsvBatchCount+1}],importer_definition)}
+    foreach key {importer_definition importer_snapshot} {unset -nocomplain genericCsvBatch([expr {$genericCsvBatchCount+1}],$key)}
 }
 
 proc ::GX::refreshGenericCsvBatchVisibility {} {

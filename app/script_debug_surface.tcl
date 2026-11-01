@@ -124,6 +124,9 @@ proc ::GX::_scriptDebugSourceMatches {p} {
     if {[info exists state($p,observation)] && (![dict exists $state($p,observation) source_sha256] || [dict get $state($p,observation) source_sha256] ne $state($p,sha))} {return 0}
     if {$state($p,token) ne [scriptWorkspaceSessionToken] || ![winfo exists $state($p,source)] || [winfo id $state($p,source)] ne $state($p,sourceWidget)} {return 0}
     set ns [scriptDebugEditor $p];upvar #0 ${ns}::ui ui
+    if {[info exists ui(tabs)] && [dict get [scriptSourceTabsCurrent $ui(tabs)] kind] eq {project}} {
+        return [expr {!$ui(modified) && $ui(currentId) eq $state($p,reference) && $ui(currentSha) eq $state($p,sha)}]
+    }
     return [expr {!$ui(modified) && $ui(text) eq $state($p,source) && $ui(currentId) eq $state($p,reference) && $ui(currentSha) eq $state($p,sha)}]
 }
 proc ::GX::_scriptDebugEpoch {p} {
@@ -222,6 +225,7 @@ proc ::GX::scriptDebugAction {p operation} {
             foreach tree [list $state($p,stack) $state($p,variables)] {$tree delete [$tree children {}]}
             sourceSurfaceLocation $ui(text) 0
             set options [dict create session $::GX::currentSession debug_breakpoints [sourceSurfaceBreakpoints $ui(text)]]
+            if {[dict get $metadata kind] eq {project}} {dict set options debug_breakpoints [scriptSourceTabsBreakpoints $ui(tabs)]}
             scriptJobDebugSubmit $ui(currentId) {} $options [list ::GX::_scriptDebugCallback $p [_scriptDebugEpoch $p] submitted]
             set state($p,status) STARTING;set state($p,phase) STARTING;scriptDebugUiUpdate $p;scriptDebugLog $p {Submitting native managed Debug Job}
         } else {
@@ -279,6 +283,10 @@ proc ::GX::scriptDebugPolled {p response} {
             set snapshot [datasetPublicationV2DictDefault $debug source {}]
             if {$hasException} {append state($p,status) " — origin: $file:[dict get $frame line] — locals: last paused snapshot"}
             set ns [scriptDebugEditor $p];upvar #0 ${ns}::ui ui
+            if {[info exists ui(tabs)] && $file ne {} && [_scriptDebugSourceMatches $p]} {
+                set target [scriptSourceTabsDebugFile $ui(tabs) $file $state($p,sha)]
+                if {$target ne {}} {set state($p,source) $target;set state($p,sourceWidget) [winfo id $target];set snapshot $file}
+            }
             ${ns}::_recomputeDirty
             if {![_scriptDebugSourceMatches $p]} {sourceSurfaceLocation $state($p,source) 0;append state($p,status) { — editor shows a different or modified source; observation belongs to the original immutable Job snapshot}
             } elseif {$file ne {} && $snapshot ne {} && [file normalize $file] ne [file normalize $snapshot]} {

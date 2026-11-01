@@ -1,3 +1,143 @@
+## 2.21.20 — DEV111-P026
+
+- Clear an unsaved named draft through its existing native History journal;
+  preserve its draft identity without backup, and use the ordinary shared Host
+  Save/export path only for an explicitly requested protected backup.
+- Revalidate Session, window, History and native Workspace identity after Clear
+  dialogs; preserve science and stored named History workflows.
+- Present one shared Workspace menu while retaining the physical Configuration
+  creation form, provider actions, existing Save/Ctrl+s and History authorities.
+- Describe current behavior in the complete functional manual and README.
+
+## 2.21.18 — DEV111-P019
+
+- Preserve every active CAD gesture owner during target-flag synchronization;
+  redraw defers selection flags during Pan as well as native manipulation.
+- Restore draft Undo without implicitly materializing/flushing a Document during
+  native History restoration.
+- Adopt shared CORE advanced construction, exact topology, constraints,
+  dimensions/editor, defining-control and direction-marker coordination through
+  the same embedded CAD Canvas Host used by independent consumers.
+- Keep Dataset interpretation, source rows, units/parameters, logical records,
+  Workspace admission/adoption and P017 History with their existing owners.
+- Present the full dimension rejection/reference offer inside the existing
+  Canvas; preserve read-only rendering during an admitted import/publication.
+
+## 2.21.17 — DEV111-P018
+
+- Adopt the reusable public CORE embedded CAD Canvas Host for common native
+  selection, region/control editing, manipulation, cancellation and navigation.
+  Preserve the existing interface, native C geometry, C++ controller/presentation
+  and P017 History; domain callbacks retain source/units/Workspace ownership.
+- Enforce physical admission before metric manipulation on heterogeneous axes.
+- Prepare exact Dataset Transform plans before reviewed atomic separate-output
+  batches, preventing a worker/parent authority lock cycle while preserving
+  canonical source checks, output lineage, rollback and publication authorities.
+- Keep advanced construction/constraint/dimension tool workflows intact; see the
+  P018 real-GUI evidence and responsibility audit for supported boundaries.
+
+## 2.21.16 — DEV111-P017
+
+- Move scientific History, Undo/Redo, branching, recovery journals and timeline
+  controls to the shared native CORE History service. Keep the manual scientific
+  controllers, exact Native2D geometry and Dataset ownership contracts.
+- Record only affected logical records and current scientific workspace metadata;
+  ordinary transforms no longer replay, encode, hash or save the accumulated
+  History. RAM acceptance and verified asynchronous persistence are distinct.
+- Preserve non-timeline tool/view/selection recovery in CORE auxiliary state;
+  presentation autosaves do not create extra scientific Undo actions. Retain
+  pre-operation presentation metadata for exact Undo restoration.
+- Keep explicit Save/Close/export and extension interoperability barriers. Legacy
+  scientific Recipe steps and unknown metadata import without normalization or
+  truncation. Shared menus remain upward-posted within the application bounds.
+
+## 2.21.15 — DEV111-P016
+
+- Obtain retained sprite geometry directly from the authoritative C scene through
+  public CORE C++ synchronization, with exact change detection and managed lifetime.
+  Ordinary redraws no longer reconstruct every curve's Tcl snapshot/primitives.
+- Adopt the public CORE CAD context for semantic selection, native manipulation,
+  control/constraint coordination, retained components and topology operations.
+  Generic highlights and constituent picking move to CORE. Dataset/Session,
+  coordinate admission, History and publication remain with established owners.
+- Preserve Cairo, scientific C algorithms, native grid, scheduling and UI layout.
+  See the public API and responsibility audit for supported boundaries/limitations.
+
+## 2.21.14 — DEV111-P015
+
+- Use the shared retained C++/Cairo sprite scene for scientific paths, defining
+  controls, Dataset point markers and direction arrows. The native C scientific
+  model, selection/constraint/gizmo transactions, units, History and publication
+  owners are preserved; existing Tk interaction overlays remain above the scene.
+- Keep the accepted native grid, graphics profiles, menu/History and comparison
+  interface. No other production Viewer adopts this rendering layer.
+- CORE provides independent optional P009 tooltip presentation switches and
+  idempotent tooltip registration. See the CORE audit and focused validation.
+
+## 2.21.13 — DEV111-P014
+
+Use one retained CORE Cairo grid/axes item, preserving scientific axis/unit owners,
+with native batching/reuse of defining-handle Tk items. CORE Appearance settings
+supply Low5/Medium10/Fast20 intensive update limits (Low default) and optional
+additional16pixel grid suppression. Wheel/pan/resize/viewport callbacks adopt the
+shared scheduler; point/geometry transactions remain authoritative. Restore Help
+immediately after Workspace with User Manual/F1 and metadata-derived About.
+No geometry engine, grid-generation or snapping algorithm changes.
+
+## 2.21.12 — DEV111-P013
+
+Activate the matching CORE Native2D presentation batches through the existing
+shared grid and viewport clipping path. No Workbench rendering, scheduling,
+scientific, editing or publication callback is changed. CORE reduces redundant
+Canvas queries/clipping work and grid transfer/style preparation while preserving
+reference grid geometry, axes, labels, units and presentation. Measured local
+individual-redraw improvement; the reported3–4second user stall was not reproduced.
+
+## 2.21.11 — DEV111-P012
+
+Use the opt-in public CORE GUI update scheduler for wheel redraws only. Preserve
+immediate Native2D zoom and cursor anchoring, normal16ms scheduling and350ms view
+persistence. Rapid request activity can temporarily use100ms frame spacing;
+quiet recovery delivers the final state and restores normal scheduling. Transfer
+pending frame ownership when normal editing resumes, dispose on close/context
+invalidation. Preserve all P011 transaction fixes and comparison/scientific owners.
+
+## 2.21.10 — DEV111-P011
+
+Defer coordinate-frame visibility/view reconciliation while Native2D owns an
+active drag. Keep Translate/Rotate previews rendering without attempting a
+conflicting scene mutation. Cancel a rejected ordinary point-drag commit through
+the existing Native owner before refreshing the GUI, preserving exact geometry
+and avoiding an orphan transaction. Preserve gizmo/pivot/constraints, History,
+Undo/Redo, P010 comparison/deviation publication and all prior GUI corrections.
+No Native2D engine, public API, scientific algorithm or layout change.
+
+## 2.21.9 — DEV111-P010
+
+Embed comparison and geometric measurement controls in the existing scrollable
+Native2D compare panel. Remove the permanent upper row; keep the Plot v4 residual
+surface. Explicit Reference/Target path IDs replace implicit active targeting.
+Show current/stale/unavailable receipts and publication prerequisites without
+implicit comparison. Rename the numeric metric target Expected value. Reuse
+existing Native2D/Statistics/Publication services and Workspace/History payloads.
+P007–P009, Sketch palette and scientific algorithms remain unchanged.
+
+## 2.21.8 — DEV111-P008
+
+Connect the bottom Description/History selector to the existing Viewer-bounded
+UI Field selector. Retain the shared canvas tooltip lifecycle rather than
+destroying tooltip windows from Workbench bindings. The matching CORE correction
+distinguishes internal focus/harmless stacking from genuine tooltip dismissal.
+Preserve the P007 layout and menus; no scientific or performance change.
+
+## 2.21.7 — DEV111-P007
+
+Restore the accepted bottom Description/History strip and remove its upper row.
+Place Save workspace in Workspace, all Publish selection choices in Objects,
+and Publication settings in Settings. Remove the upper publication button group
+and its width allocation. Preserve 2.21.6 command, publication, native viewport,
+History, workspace and scientific behavior; no performance change is claimed.
+
 ## 2.21.4 — dev109
 
 Offer informed, default-No axis review before ordinary canonical Sketch Open
@@ -35,7 +175,7 @@ Numerical comparison display uses public Plot v4 while retaining original geomet
 
 Focused acceptance receipts remain separate from this version declaration; final integrated release acceptance/deposition is pending.
 
-## 2.21.1
+## 2.21.1 — 2026-10-17
 
 Use shared CORE dialog lifecycle for source selection and declare native-resolution scientific catalog artwork.
 
@@ -69,7 +209,7 @@ Accepted-model Workbench transfer retains exact supported Native2D primitives,
 independent axis units, original parameter mappings and immutable model resources.
 Unsupported representations are explicitly sampled; no refit or statistics are
 computed. Public Numeric/Fitter operations and CORE nested resource adoption
-serve both scripting languages.
+serve both scripting languages. Targeted evidence is recorded in checkpoint157.
 Workbench/current API manual chronology is moved to existing release history;
 compatibility contracts and literal document paths remain unchanged.
 

@@ -34,13 +34,13 @@ proc ::GX::resourceLifecycleScriptDependencies {reference} {
     return [lsort -unique $dependencies]
 }
 
-proc ::GX::resourceLifecycleDeleteScript {reference} {
+proc ::GX::resourceLifecycleDeleteScript {reference {expected {}}} {
     set metadata [scriptRegistryDescribe $reference]
     set dependencies [resourceLifecycleScriptDependencies $reference]
     if {[llength $dependencies]} {
         error "Cannot delete [dict get $metadata scope] script '[dict get $metadata name]' ($reference). Active dependencies:\n[join $dependencies \n]"
     }
-    scriptRegistryRemove $reference
+    _scriptRegistryRemoveGuarded $reference {} $expected 1
     return $reference
 }
 

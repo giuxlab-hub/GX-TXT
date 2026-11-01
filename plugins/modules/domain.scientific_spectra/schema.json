@@ -1,0 +1,289 @@
+{
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "domain.scientific_spectra",
+  "record_types": {
+    "scientific.spectrum": {
+      "label": "Scientific 1-D XY spectrum: numeric source or explicit description",
+      "library_type": "scientific.spectra",
+      "fields": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "csv",
+            "jcamp"
+          ],
+          "editor": "choice",
+          "choices": [
+            "csv",
+            "jcamp"
+          ],
+          "label": "Numeric-source format (clear for description)"
+        },
+        "parser_options": {
+          "type": "object",
+          "editor": "multiline",
+          "label": "Numeric-source parser options JSON (clear for description)"
+        },
+        "sample_count": {
+          "type": "integer",
+          "label": "Numeric-source sample count (optional; clear for description)"
+        },
+        "representation": {
+          "type": "string",
+          "enum": [
+            "numeric_source",
+            "description_only"
+          ],
+          "label": "Representation (description is not numeric validation)",
+          "editor": "choice",
+          "choices": [
+            "numeric_source",
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "content_contract": "spectrum.scientific",
+      "validator": "api/measurement_description.py",
+      "acquisition_context_fields": [
+        "parser_options",
+        "format"
+      ],
+      "resource_contracts": {
+        "text/csv": "spectrum.scientific",
+        "chemical/x-jcamp-dx": "spectrum.scientific"
+      },
+      "compatible_schema_sha256": [
+        "0904b93dbf9413708bd64825abbfe4201b8cf6e40cc53e1f3f3de177ea44025c"
+      ],
+      "content_contract_by_field": {
+        "field": "representation",
+        "default": "numeric_source",
+        "values": {
+          "numeric_source": "spectrum.scientific",
+          "description_only": ""
+        }
+      }
+    },
+    "scientific.scalar_measurement": {
+      "library_type": "scientific.spectra",
+      "label": "Scalar scientific measurement description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.complex_spectrum": {
+      "library_type": "scientific.spectra",
+      "label": "Complex/phase-sensitive spectroscopy description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.multidimensional_spectrum": {
+      "library_type": "scientific.spectra",
+      "label": "Multidimensional spectrum description (including explicit NMR)",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.spatial_measurement": {
+      "library_type": "scientific.spectra",
+      "label": "Spatial image/field/volume description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.frame_sequence": {
+      "library_type": "scientific.spectra",
+      "label": "Frame/measurement sequence description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.temporal_trace": {
+      "library_type": "scientific.spectra",
+      "label": "Temporal measurement/trace description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    },
+    "scientific.measurement_array": {
+      "library_type": "scientific.spectra",
+      "label": "General typed scientific measurement description",
+      "fields": {
+        "representation": {
+          "type": "string",
+          "required": true,
+          "enum": [
+            "description_only"
+          ],
+          "editor": "choice",
+          "choices": [
+            "description_only"
+          ]
+        },
+        "measurement": {
+          "type": "object",
+          "required": true,
+          "label": "Description-only measurement JSON",
+          "editor": "multiline"
+        }
+      },
+      "validator": "api/measurement_description.py"
+    }
+  },
+  "relations": {
+    "scientific.describes_dataset": {
+      "label": "Explicit pinned canonical Dataset described by this record (not equivalence)",
+      "from_types": [
+        "scientific.spectrum",
+        "scientific.scalar_measurement",
+        "scientific.complex_spectrum",
+        "scientific.multidimensional_spectrum",
+        "scientific.spatial_measurement",
+        "scientific.frame_sequence",
+        "scientific.temporal_trace",
+        "scientific.measurement_array"
+      ],
+      "to_types": [
+        "scientific.spectrum",
+        "scientific.scalar_measurement",
+        "scientific.complex_spectrum",
+        "scientific.multidimensional_spectrum",
+        "scientific.spatial_measurement",
+        "scientific.frame_sequence",
+        "scientific.temporal_trace",
+        "scientific.measurement_array"
+      ]
+    },
+    "scientific.related_measurement": {
+      "label": "Attributed measurement association (not numerical equivalence)",
+      "from_types": [
+        "scientific.spectrum",
+        "scientific.scalar_measurement",
+        "scientific.complex_spectrum",
+        "scientific.multidimensional_spectrum",
+        "scientific.spatial_measurement",
+        "scientific.frame_sequence",
+        "scientific.temporal_trace",
+        "scientific.measurement_array"
+      ],
+      "to_types": [
+        "scientific.spectrum",
+        "scientific.scalar_measurement",
+        "scientific.complex_spectrum",
+        "scientific.multidimensional_spectrum",
+        "scientific.spatial_measurement",
+        "scientific.frame_sequence",
+        "scientific.temporal_trace",
+        "scientific.measurement_array"
+      ]
+    }
+  }
+}

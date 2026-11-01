@@ -111,4 +111,4 @@ For invalid geometry/material/source/mesh values, correct the typed model and Va
 
 Full 3D physics, axisymmetric formulations, nonlinear B–H, transient EM, arbitrary CAD, terminal L/R/C and SPICE extraction are unavailable. Supported scope remains bounded linear static planar 2D.
 
-Programmatic scientific contracts are documented in [Electromagnetic Simulation API](../../../../docs/api/ELECTROMAGNETIC_SIMULATION_API_v1.md), [Plot Dataset v4](../../../../docs/api/PLOT_DATASET_API_v4.md) and [Native3D GUI Host v2](../../../../docs/api/NATIVE_3D_GUI_HOST_API_v2.md).
+Programmatic scientific contracts are documented in [Electromagnetic Simulation API](../../../docs/api/ELECTROMAGNETIC_SIMULATION_API_v1.md), [Plot Dataset v4](../../../docs/api/PLOT_DATASET_API_v4.md) and [Native3D GUI Host v2](../../../docs/api/NATIVE_3D_GUI_HOST_API_v2.md).

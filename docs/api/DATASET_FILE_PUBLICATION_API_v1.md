@@ -139,7 +139,7 @@ enlargement do not publish. Existing Dataset GUI/metadata/registry remain author
 File publication and edit grants participate in the shared per-Session Dataset
 transaction. Ownership, immutable protection, namespace and optional expected SHA
 are validated under the same lock as the recoverable payload/metadata/registry
-commit. The shared Dataset Publication authority provides recoverable transaction guarantees.
+commit. See [Dataset transactions](DATASET_TRANSACTIONS_dev093.md).
 
 
 ## Authorized external scientific sources

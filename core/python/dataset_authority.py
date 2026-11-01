@@ -170,16 +170,56 @@ class Authority:
         shutil.rmtree(directory)
         sync_dir(self.root)
 
-    def end(self, committed):
+    @staticmethod
+    def sync_file(path):
+        if path.exists():
+            with path.open('rb') as stream:
+                os.fsync(stream.fileno())
+
+    def end(self, committed, workers=1):
+        if type(workers) is not int or not 1 <= workers <= 8:
+            raise ValueError('Dataset commit I/O workers must be within1..8')
         if self.directory is None:
             return
         if committed:
+            directories = set()
+            files = []
             for item in self.record['files']:
                 path = self.path(item['path'])
-                if path.exists():
-                    with path.open('rb') as stream:
-                        os.fsync(stream.fileno())
-                self.sync_parents(path.parent)
+                files.append(path)
+                parent = path.parent
+                while parent == self.session or self.session in parent.parents:
+                    directories.add(parent)
+                    if parent == self.session:
+                        break
+                    parent = parent.parent
+            if workers == 1 or len(files) < 2:
+                for path in files:
+                    self.sync_file(path)
+            else:
+                # Only fsync of quiescent enlisted files is concurrent. The
+                # lock, undo journal, path validation and mutations stay on this
+                # owner thread. Keep at most workers futures in flight, and the
+                # executor joins ALL started calls even if any result fails.
+                from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+                paths = iter(files)
+                with ThreadPoolExecutor(max_workers=min(workers, len(files)), thread_name_prefix='dataset-fsync') as pool:
+                    pending = {pool.submit(self.sync_file, path) for path in (next(paths, None) for _ in range(min(workers, len(files)))) if path is not None}
+                    while pending:
+                        completed, pending = wait(pending, return_when=FIRST_COMPLETED)
+                        for future in completed:
+                            future.result()
+                        for _ in completed:
+                            path = next(paths, None)
+                            if path is not None:
+                                pending.add(pool.submit(self.sync_file, path))
+            # All data and every affected directory remain durable BEFORE the
+            # same committed marker. Flush each ancestor once, deepest first;
+            # pending journals still roll back a crash/failure at any point here.
+            # Recovery/abort and journal-marker durability are unchanged.
+            for parent in sorted(directories, key=lambda value: (len(value.parts), str(value)), reverse=True):
+                if parent.is_dir():
+                    sync_dir(parent)
             committed_record = dict(self.record, phase='committed')
             durable_json(self.directory / 'journal.json', committed_record)
             self.record = committed_record
@@ -207,7 +247,8 @@ def main():
                 elif command in ('STAGE', 'UNSTAGE'):
                     authority.staging(base64.b64decode(argument, validate=True).decode('utf-8'), command == 'UNSTAGE')
                 elif command in ('COMMIT', 'ABORT'):
-                    authority.end(command == 'COMMIT')
+                    workers = int(base64.b64decode(argument, validate=True).decode('ascii')) if command == 'COMMIT' and argument else 1
+                    authority.end(command == 'COMMIT', workers)
                 elif command == 'QUIT':
                     break
                 else:

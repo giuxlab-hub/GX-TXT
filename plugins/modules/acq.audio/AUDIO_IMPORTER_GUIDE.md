@@ -14,7 +14,7 @@ APIs:
 
 - Acquisition Handler Plugin API v1;
 - Audio Decode API v1 for FFprobe-backed recognition and metadata inspection;
-- Dataset Metadata API v1 through the acquisition `structured_metadata` transfer;
+- Dataset Metadata API v1 through the acquisition `structured_metadata` handoff;
 - Analysis Source Dataset Metadata Runtime Extension v1 for downstream runtime transport;
 - Preview Descriptor API v1;
 - Plugin Install API v1.
@@ -158,14 +158,14 @@ as `audio.waveform` merely to fit another module. Contract changes in downstream
 analysis modules are outside this acquisition integration.
 
 For headerless raw PCM, the import metadata contain the exact input hints used.
-GX-TXT exposes those fields to `standard_octave` Analysis
+GX-TXT 0.9.7.62+ already exposes those fields to `standard_octave` Analysis
 Sources through the public Dataset Metadata runtime bridge. A downstream module
 can therefore obtain, for example, `audio.raw_input_format`,
 `audio.raw_sample_rate_hz` and `audio.raw_channels` without opening
 `metadata/datasets/*.ini`. `acq.audio` itself never reads or writes that sidecar
 directly.
 
-## Module installation and runtime validation
+## GX-TXT 0.9.7.63 integration
 
 The bundled module is `CORE / OFF`: it is shipped with GX-TXT, remains disabled
 by default, and is protected from uninstall. Its `plugin-package.ini` remains a

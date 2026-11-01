@@ -1,14 +1,36 @@
 # Viewer GUI Integration Manifest v1
 
-TASK210 source proposal: a finite declared `transform_kind=baseline_correct`
-form routes explicit `discover/create_corrected/cancel/inspect` actions through
-existing Dataset Transform and Plot owners. Create has effect `mutating`; exact
-scientific profile/grants are checked even without authored C++ SDK calls.
-There is no new SDK method or implicit analysis on selection. The complete
-form/admission/lifetime contract and its unexecuted acceptance limits are in
-the baseline form proposal.
-Central metadata/wiring and independent CORE review remain MAIN's responsibility;
-this source proposal alone does not claim runtime or GUI acceptance.
+Editable Markdown components display their current canonical Dataset identity,
+document saved/modified state and applicable Save Existing/Publish New choice
+in a shared, noninteractive status label. Draft typing and presentation commands
+do not publish a Dataset. A document-only native client owns its explicitly
+declared presentation `zoom_in`/`zoom_out` callbacks; reserved navigation remains
+with existing Plot and native viewport components when they are present.
+
+The existing Workspace SDK `save_as` operation preserves native Workspace notes,
+named History archives and their retained resources by using the native
+duplication owner. It saves the current unsaved Viewer draft only into the new
+identity. The source generation/revision/SHA must still match the held receipt;
+the original Workspace and canonical Datasets remain unchanged. The Viewer
+adopts the new identity only after its live state is durably saved. A failed
+new-copy save reports its ID for review and keeps the live draft and original.
+The primary Workspace menu exposes this same live-state callback as **Save As**.
+It copies the current unsaved draft without saving or discarding the old
+Workspace. Hosts without this optional callback retain their saved-duplicate
+workflow. **Save History As** explicitly captures current editor state before
+archiving, including direct typing and image edits that have not emitted a
+semantic History step; an unchanged capture adds no duplicate step.
+Cold named-History restoration re-admits retained image references through the
+existing managed-resource identity/generation authority before native transition
+preparation, including valid retired image carriers. Foreign or stale references
+remain errors; a copied descriptor does not grant scientific ownership.
+
+A finite declared `transform_kind=baseline_correct` form routes explicit
+discover/create_corrected/cancel/inspect actions through the existing Dataset
+Transform and Plot owners. Create has effect mutating; exact scientific profile
+and grants are checked without authored SDK calls. Selection does not implicitly
+execute analysis. The [baseline form contract](../development/task210/ic_baseline_form/README.md)
+describes the form, admission and lifetime.
 
 Programmatic `viewerGuiDesignValueSet` on an integer field accepts an exact
 integral finite numeric value, including a C++ `Host.number` transport value
@@ -16,7 +38,7 @@ such as `1.0`, and normalizes it to an integer before the existing min/max
 validation. Fractional and nonfinite values are rejected before field mutation.
 Interactive UI Field integer text validation retains its existing contract.
 
-## Declared target for reserved Plot navigation (dev111 source preparation)
+## Declared target for reserved Plot navigation
 
 An `action` component may declare the optional identifier property
 `plot_navigation_target PLOT_COMPONENT_ID` only for its reserved `fit`,
@@ -52,7 +74,92 @@ retain the existing all-live-components navigation behavior, including their
 existing demo route. This additive source change is not runtime, original/
 candidate GUI parity, redraw/latency or performance acceptance.
 
-## Scientific Library catalog section (dev109 additive)
+## Scientific Library catalog section
+
+The existing Viewer design also supports the `library_browser` component. Declare
+three components with `page records`, `page sources`, and `page manual`, sharing
+one `group` identifier, within ordinary Builder-authored tabs/panels. Each group
+must contain exactly one of each page at build/runtime admission; a Viewer
+admits at most four groups. Normal Builder model edits may retain an incomplete
+group while its pages are being authored. Each intermediate component still
+requires a finite page/group and duplicate pages refuse immediately.
+The declaration requires `SCIENTIFIC_LIBRARY_MANAGER_API_v1 1`; restricted C++
+projects explicitly request its existing `libraryCatalogPage` and
+`getLibraryCapabilities` grants. GUI Host constructs all native frames, then
+mounts the existing CORE Browser controller once per group. No authored Tcl,
+widget paths, credential handling, Registry, scientific parser or storage owner
+is introduced. Builder layout demonstration shows inert page placeholders.
+
+A runtime design containing these pages keeps the existing shell footer visible
+for service diagnostics. Without a declared catalog status control, Browser
+messages use that existing status label and wrap to its allocated width. Minimal
+compatible designs need no additional footer component or per-Viewer code to
+display provider-change, empty-result and action-refusal guidance.
+When the group declares an existing catalog status label, that same service
+route also wraps to its allocated native width. This transient presentation
+policy preserves the authored component identity, properties and message text.
+
+The optional Builder-editable `scope` property is one Tcl dictionary shared by
+all three pages in a group. Its five optional keys are `library_types`,
+`record_types`, `library_ids`, `provider_ids`, and `source_ids`; each value is a
+list of at most64 unique stable identities. Empty lists are omitted, values and
+keys are normalized, and the UTF-8 canonical JSON equivalent is bounded to32 KiB.
+All identities except `source_ids` match `[A-Za-z0-9][A-Za-z0-9._-]*`.
+Source identities are exact nonempty Unicode strings of at most512 characters,
+without NUL, CR or LF. Unknown keys, duplicate IDs or mismatched group scopes
+refuse before model/runtime admission. Ordinary property edits propagate the
+scope to the whole group in one Undo step; explicit mismatched declarations
+remain invalid. Removing all scope restrictions restores unfiltered behavior.
+
+`provider_ids` names actual Domain Schema provider identities declared by
+`getDomainSchemas`, not display labels or Library Type Provider names.
+`source_ids` matches exact record `provenance.source_id` and source connector
+identities; `library_ids` names registered Libraries. Types are discovered from
+the installed schemas. Values are OR-ed within each dimension and dimensions
+are AND-ed. The existing Manager applies the scope before result counts and
+paging. Source connector eligibility follows its declared supported types;
+typed remote preview records and explicit imports are checked again. Outside
+scope links preserve the original assertion and explain unavailability.
+An unavailable provider/Library gives honest empty/unavailable results.
+
+This public component is reusable by **any compatible Viewer**, regardless of
+its module identity, category, purpose or scientific domain. No consumer
+allowlist, per-Viewer Tcl or new query/storage owner is involved. A scope selects
+presentation/query content and grants no permissions, source persistence rights
+or automatic Dataset publication. Absent/empty scope keeps existing behavior.
+
+`viewerGuiComponentInitialProperties type ?design?` returns public initial
+component properties. For `library_browser`, normal Add chooses the next missing
+page in an existing group and inherits its scope, or begins a fresh bounded
+group. Inert Builder previews permit incomplete authoring groups; genuine
+build/runtime admission still requires all three pages.
+
+Saved projects retain literal Unicode source identities across cold reopen.
+`viewerGuiDesignRead` keeps the existing4 MiB byte bound and design validation,
+decoding the complete UTF-8 buffer once to avoid Tcl8.6 text-channel corruption
+of supplementary characters at buffer boundaries. Existing CRLF/CR newline
+normalization remains compatible. It never repairs or changes corrupted IDs.
+
+An existing `catalog_owner scientific_libraries` section may declare
+`catalog_browser_group GROUP`. Its finite `catalog_actions` may additionally
+bind `browse_records`, `browse_sources`, and `browse_manual` to normal declared
+C++ handlers. The unchanged `Host::catalog_action(form, action)` SDK method and
+ABI deliver these presentation-only intents under `getLibraryCapabilities`;
+they neither perform a source lookup nor create a Dataset.
+
+`viewerGuiDesignLibraryPage window group page` reveals the declared page inside
+that Viewer and returns `{status focused group GROUP page PAGE component ID}`.
+Invalid groups/pages, closed or stale Viewers refuse. It never opens another
+Library workspace. The existing Library Manager, Graph, connectors, Resource,
+PDF reader and explicit Acquisition services retain their authority.
+
+`viewerGuiDesignClose window` uses the shared GUI Host close owner. Embedded
+controllers may ask the user to discard a dirty manual draft or cancel closing;
+Workspace close continues through its existing owner. Forced destruction keeps
+the Browser's captured Resource/PDF cleanup callbacks. Credentials, unsaved
+manual fields, source response bodies and process identities are not added to
+Workspace captures by this component. Existing ordinary Viewer designs without
+these components retain their previous lifecycle and capabilities.
 
 `viewerGuiDesignCatalogRefresh window form`, `viewerGuiDesignCatalogInspect
 window form`, `viewerGuiDesignCatalogAction window form action` and
@@ -67,7 +174,7 @@ known operational state uses status.* and unknown remains explicit.
 
 Exact section references, shapes, limits, provider hooks, action grants and
 three reviewed typed C++ methods are documented in the
-[Scientific Library Manager API](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md#step2-catalog-capability-declarations-and-provider-delegation-dev109).
+[Scientific Library Manager API](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md#catalog-capability-declarations-and-provider-delegation).
 Declare manager API version1. Validation checks control types/table columns,
 finite actions and declared command handlers. Host selection binds logical IDs;
 the author does not read registry paths or mutate private Tk state. Page/filter
@@ -160,7 +267,7 @@ missing Manual/About actions without another full-width row. About reads the
 current installed descriptor. Frozen Digitalizer attachment is unchanged, and
 legacy module-local Help adapters retain their existing ownership.
 
-Dev104 adds optional `command_catalog` (a logical catalog with the same installed
+The manifest supports optional `command_catalog` (a logical catalog with the same installed
 owner), `toolbar_mode` (`actions` or `declarative`) and boolean `help` (default
 true). Declarative mode mounts only deliberately selected components. Existing
 consumers retain their defaults. The additive design/component facade, inert
@@ -168,7 +275,7 @@ project format, generation and finite laboratory are documented in
 [Viewer GUI design](VIEWER_GUI_DESIGN_v1.md).
 
 
-## Canonical Plot axis presentation and bounded inspection (dev108; GAP021)
+## Canonical Plot axis presentation and bounded inspection
 
 A declared Plot form may optionally reference `plot_x_scale` and `plot_y_scale`:
 existing choice/combobox IDs whose values are exactly `linear` or `log`.
@@ -197,7 +304,7 @@ line representation. This makes an operating point visible without inventing
 another sample, interpolation, numerical transformation or renderer. Native
 point hits still resolve the exact original Dataset row and units.
 
-## Optional physical sweep in the existing Scientific section (dev108)
+## Optional physical sweep in the existing Scientific section
 
 The same Scientific Discover/Prepare/Submit/Status/Cancel/Reconnect/Log/Import
 methods accept an optional typed physical-sweep profile. Its section declares
@@ -267,7 +374,7 @@ generic C++ Parallel callback/process API or array return is exposed. Existing
 eight scientific SDK methods remain unchanged. This extension is under targeted
 scientific/GUI validation; its implementation alone is not an acceptance PASS.
 
-## Pointwise Numeric form profiles (dev108)
+## Pointwise Numeric form profiles
 
 The same declared section and five Numeric methods support optional
 `numeric_kind`: `expression` (unchanged default), `interpolation`, or
@@ -299,7 +406,7 @@ retains the complete source request/revisions, result identity and active
 statistical-result identity. Failure retains previous result/publication IDs.
 Plot binding remains explicit through the existing Plot form.
 
-### AC schematic probe selection (dev108; GAP040)
+### AC schematic probe selection
 
 The existing `viewerGuiDesignScientificProbe` keeps DC/transient real-Variable
 behavior. For an actual completed, source-identical AC publication it resolves
@@ -335,7 +442,7 @@ values and old result references, without evaluation/submission on restore.
 form-selection policy. Builder component capabilities expose the optional
 reference through their existing property inspector.
 
-## Declared scientific forms (dev108)
+## Declared scientific forms
 
 Design reparenting preserves declaration positions used by the restricted SDK;
 later-declared parents are composed in derived dependency order. See the
@@ -373,7 +480,7 @@ introduced. Plot and additional restricted scientific capabilities remain subjec
 to their own approved contracts and evidence.
 
 
-## Canonical Plot selection and probing (dev108)
+## Canonical Plot selection and probing
 
 A complete Scientific section may additionally declare all three identifier
 references `scientific_probe_diagram`, `scientific_probe_plot` and
@@ -415,7 +522,7 @@ manual Plot **Discover** is unnecessary: explicit Plot binding validates X/Y
 against the current Dataset's numeric Variable Schema, then updates the choices
 and selection after the native Plot accepts the binding, in one History entry.
 No cached dropdown contents establish scientific identity. Ordinary manual
-Discover/Bind remains available. This dev109 correction requires the installed
+Discover/Bind remains available. This binding requires the installed
 first-click regression evidence before functional acceptance.
 
 Restricted Development validation requires the already scoped grants
@@ -455,7 +562,7 @@ release automatically sends this receipt to the declared read-only probe control
 and existing trace. A chart/axis hit is distinguished from a source point. The
 existing Workspace capture preserves the PlotSpec, visibility and axes and
 restoration remounts the current live probe binding.
-# Declared Numeric forms (dev108, compatible v1 addition)
+# Declared Numeric forms
 
 A `section` may declare `numeric_expression` and the following existing control
 IDs: `numeric_dataset` (Dataset selector), `numeric_expression` (string field or
@@ -545,8 +652,8 @@ using changed controls. Use the existing Plot form to discover/bind this Dataset
 
 Separate interpolation/AC complex presentation/sweep controls and
 separate-author installed GUI acceptance remain additional
-requirements; these five methods alone do not close GAP004/005.
-# Shared original icon discovery (dev108; GAP035)
+requirements; these methods alone do not establish installed interaction or rendering quality.
+# Shared original icon discovery
 
 `viewerGuiIconCatalog` is a read-only extension of the existing icon resource
 owner. It returns `gxtxt.viewer_shared_icons.v1`, with `icons` indexed by stable
@@ -566,8 +673,7 @@ the owners; this adds no asset registry or renderer. The original library now
 also includes selection, remaining electrical devices/tools, Undo/Redo and
 Fit/Zoom actions under its existing GPL-3.0-or-later provenance.
 
-The compatible dev111 stock extension raises only the fixed CORE manifest row
-ceiling from 64 to 128. The five required row fields remain
+The fixed CORE stock manifest admits at most128 rows. The five required row fields remain
 `id,title,category,license,source`; old five-field rows remain valid. Optional
 `action` and `origin` are bounded, nonempty, single-line strings with the same
 200-character limit as existing provenance. Optional `sha256` is exactly 64
@@ -588,9 +694,9 @@ icons still have a separate 64-entry/2 MiB limit. Native menus keep their actual
 normal/disabled image contract; this adds no menu hover/selected-state promise.
 Source counts do not certify installed discovery, rendered legibility, GUI
 browse/filter/assignment/save/reopen or packaged install; those require actual
-release-scoped evidence. No new SDK method, grant, asset store or renderer exists.
+actual installed interaction evidence. No new SDK method, grant, asset store or renderer exists.
 
-GAP036 extends the same safe-SVG normalization for inherited paint. The admitted
+Safe-SVG normalization supports inherited paint. The admitted
 fill/stroke, width/cap/join/rule and paint-opacity attributes are materialized on
 shapes and removed from nonpainting svg/g containers to avoid decoder loss or
 double opacity. Group opacity and transforms remain decoder-owned. Original
@@ -599,7 +705,7 @@ blank resources explicitly. Group-versus-explicit stroke, nested override,
 fill-opacity and transform fixtures must render byte-identical PNGs, while
 explicit zero stroke opacity remains invisible. No path interpreter is added.
 
-# SVG stroke admission correction (dev108; GAP016)
+# SVG stroke admission correction
 
 The existing bounded icon import uses the configured ImageMagick owner. The
 installed MSVG decoder was independently shown to retain zero stroke opacity
@@ -612,21 +718,15 @@ new renderer, SVG engine, asset registry or external decoder dependency.
 
 Already persisted PNG bytes are not silently changed during rendering. Reimport
 through existing `icon_import`/`put` with the same logical ID to replace an
-affected owned resource, preserving component command IDs and bindings. Historical
-packages remain immutable. `icon-stroke01` verifies all11 visible original icons,
-distinct electrical renders and inherited/explicit-zero fixtures; real Debian
-`gui_history01/icons_native_state_preview.png` shows the actual corrected resistor
-in the shared Icon Library, normal and disabled native preview. Separate author
-reimported its7 referenced source assets through Builder in1.4.0; installed GUI
-appearance remains a distinct required acceptance step.
+affected owned resource, preserving component command IDs and bindings. Existing packages remain immutable.
 
-### Persistent canonical source cursors (dev108, GAP028)
+### Persistent canonical source cursors
 
 `viewerGuiDesignPlotCursor window plot device_x device_y` uses the same public native hit and canonical one-row table read as `viewerGuiDesignPlotProbe`. An actual source-row hit adds two existing PlotSpec `reference_line` annotations at the native displayed X/Y coordinates, on the selected series' actual left/right axis. No vector processing or scientific calculation is performed. The annotations use reserved IDs `__gx_source_cursor_x` and `__gx_source_cursor_y`; unrelated annotations/series/panels remain intact. The existing Plot renderer draws them, with no alternate overlay/graph model.
 
 Native release on a real computed point in a declared Plot form selects this persistent crosshair and exact source-row/unit readout. The current view is preserved. Wheel zoom, middle-button pan, Fit and resize retain canonical reference annotations. `viewerGuiDesignPlotCursorClear window plot` removes only those two reserved annotations; native Escape on the focused Plot performs the same clear. Normal Dataset/variable Bind clears the old source cursor as part of its new specification. An unavailable/non-source hit leaves the cursor unchanged. A valid edit is one ordinary History step; the canonical Plot binding stores it through Save/reopen/Undo/Redo. Restore deliberately clears stale point text until a new actual source point is selected. Existing three-argument Plot Bind and read-only Plot Probe remain compatible; restricted authors need no new SDK operation or scientific grant.
 
-### Declared checked pane visibility (dev108, GAP029)
+### Declared checked pane visibility
 
 A `toggle` or native `checkbutton` can declare `component_visibility TARGET_ID` with an explicit boolean `default`. It has no authored `change_action`: the existing host performs this presentation binding. An `action` can declare the same property with its existing distinct presentation handler. A `menu`, `context_menu` or `command_toolbar` can declare `visibility_commands {COMMAND_ID TARGET_ID ...}`; each ID must occur in its own actions and declare `effect presentation`. A command has one consistent target, cannot override reserved undo/redo/fit/zoom, and cannot target a foreign/undeclared component or the command/Workspace/History/Help surfaces. No widget paths or script callbacks are accepted.
 
@@ -634,16 +734,16 @@ Example through normal Builder properties: a panel `source_panel`, toggle proper
 
 `viewerGuiDesignComponentVisible window component boolean` reuses the existing grid/pack/notebook/split-pane owners, retaining widgets, native handles, bindings and source authority. Hiding moves focus out of hidden content; showing restores the retained content/order without stealing focus. `viewerGuiDesignComponentVisibleGet window component` returns declared presentation visibility, independent of whether an unselected notebook page happens to be mapped. Notebook tab hiding/showing and ttk split-pane membership are supported; no component is destroyed/recreated. The host saves only canonical component visibility and values in the existing Workspace/History. Each accepted menu/action or boolean input records one ordinary History step; programmatic restoration synchronizes field baselines without an authored callback. Workspace restore respects a hidden selected tab. Boolean defaults initialize a new presentation; saved visibility wins on restoration.
 
-The normal Module exporters require dev108 for these declarations even without icons. This is a compatible extension of existing GUI Host/Builder/Configuration/UI Field contracts: no C++ SDK method, runtime grant, scientific calculation, alternate layout framework or second Workspace registry is introduced.
+The normal Module exporters declare compatibility for these controls even without icons. This is a compatible extension of existing GUI Host/Builder/Configuration/UI Field contracts: no C++ SDK method, runtime grant, scientific calculation, alternate layout framework or second Workspace registry is introduced.
 
-### Separate guarded source/netlist pane (dev108, GAP029)
+### Separate guarded source/netlist pane
 
 A circuit Scientific `section` can declare all three references: `scientific_netlist` (a separate read-only `log`, distinct from scientific_log), `scientific_netlist_diagram` (the existing electrical.basic Native2D component) and `scientific_netlist_action` (its own declared presentation handler). Bind a normal action/menu command to that handler. The existing host intercepts it; no new C++ method or arbitrary widget/file access is required. Existing scientific/diagram profile grants remain necessary.
 
 `viewerGuiDesignScientificNetlist window form` explicitly inspects the source through public `scientificExecutionCircuitInspect`. With a saved/submitted Job or sweep, it uses the actual selected admitted case's parameters, original Job/Dataset association and source generation/revision/SHA; published Dataset provenance and canonical payload integrity must match. Without a Job, it uses current declared form parameters. The read-only pane labels which source, provider/version, parameters, Job and Dataset it represents. It is a validated canonical reconstruction by the same registered converter/version, not an unauthenticated remote artifact fetch or a new simulation. Current GUI edits do not silently replace a selected Job's parameters. Changed source/provider, foreign case/publication or invalid circuit rejects inspection and retains scientific state.
 
 The complete netlist is bounded to32KiB; oversize rejects rather than displaying a truncated deck. The existing bounded domain state stores its context/text in `scientific_netlists`, and the ordinary Workspace/History preserves it. On restore, the host checks the cached context against current canonical source/selected Job/parameters/Dataset, displays it only when they still match, and otherwise shows a stale/unavailable explanation. It never reconstructs, computes, submits, polls or contacts remote nodes during restore. Refresh is explicit. Presentation visibility can hide/show this declared pane independently of the Job log and Plot without recreating any scientific authority.
-# Declared canonical series and panel editing (dev108)
+# Declared canonical series and panel editing
 
 The existing Plot form accepts an optional complete series editor profile:
 `plot_series` (choice of current stable trace IDs), `plot_series_label` (string
@@ -684,7 +784,7 @@ Exact source-hit probes and persistent reference-line cursors continue to use th
 existing Plot owner. No calculation, new simulation, Script Job, remote contact,
 raw vectors, author Tcl or arbitrary editor script is admitted by these controls.
 
-## Read-only canonical document components (integrated next candidate)
+## Read-only canonical document components
 
 Builder component `document` accepts `kind` (`html`, `pdf`, `code`, `table`) and
 optional `title`. It starts empty. A `dataset_selector` may declare `content_kind`
@@ -728,7 +828,7 @@ Save is enabled. The sanctioned native author `gui_test` accepts
 `key` on this bound code component permits only navigation/find/select/copy keys;
 it cannot edit or execute. Existing diagram/Plot input keeps its distinct limits.
 
-## Declared TeX article form (dev109)
+## Declared TeX article form
 
 An editable TeX article composes existing owners through one `section` with all
 ten component references: `tex_source`, `tex_pdf`, `tex_projects`, `tex_assets`,
@@ -833,7 +933,7 @@ These contracts are implemented in shared CORE. Installed LaTeX Viewer GUI,
 build/export/lifecycle and scientific acceptance must still be recorded against
 the actual installed package; source admission alone is not acceptance.
 
-## dev109 typed electromagnetic model form (implementation under validation)
+## Typed electromagnetic model form
 
 `Host::em_command(form_ordinal, operation)` is additive SDK v1 operation31. It
 requires `VIEWER_GUI_HOST_API_v1/em_command` and explicit operation grants from
@@ -904,9 +1004,7 @@ requires a real selected identity when several exist. Publication stays explicit
 and source-guarded. Field display binds actual node/connectivity/cell roles via
 Plot v4, without a private graph or centroid-as-node substitution.
 
-The implementation remains **source-only** until official Builder author
-integration, installed GUI, scientific and lifecycle acceptance are recorded.
-This form does not itself close the required planar Native3D presentation gap.
+The declared form does not itself establish scientific correctness or operational availability of the external provider.
 
 ### Optional planar Native3D field target
 
@@ -952,7 +1050,7 @@ not retroactively rewritten; build the current source explicitly to obtain new
 location receipts.
 
 
-Dev109 editable geometry composition adds the `editable3d` component and the
+Editable geometry composition provides the `editable3d` component and the
 complete `workbench_*` section described in WORKBENCH_3D_API_v1. It embeds the
 existing editable Native3D v1 controller, preserving its single-host restriction
 and original Document/Geometry/History/Recovery owners. Restricted C++ uses only
@@ -961,7 +1059,7 @@ service grants; readonly `native3d` v2 components retain their current semantics
 The initial bridge exposes original primitive/lifecycle/selection/Undo/Redo
 commands; the remaining CAD parity forms and installed acceptance are pending.
 
-Dev109 `Host::workbench_command` additionally admits the finite purpose-form
+`Host::workbench_command` admits the finite purpose-form
 commands advertised by existing WORKBENCH_3D_API_v1 `apiInfo/guiFormCommands`.
 They require the same complete declared geometry section and explicit
 guiCommand/guiInspect grants. Trusted callbacks remain in the original Workbench
@@ -987,11 +1085,9 @@ native selection preserves pending candidates by canonical ID, including the
 ordinary refresh requested by a compiled Viewer's Open handler. Missing pending
 IDs are removed when rows change. A different Document generation or actual
 native selection change projects the real native selection; a single-object
-form retains its existing projection behavior. The first installed retest proved
-that restoring candidates after Mount alone was insufficient because the later
-Open refresh cleared them again. Both transitions require installed acceptance.
+form retains its existing projection behavior. Both mount and the subsequent Open refresh preserve this projection.
 
-## Canonical raster binding and shared tools (dev109)
+## Canonical raster binding and shared tools
 
 A `native2d` component may declare `source_kind raster`; its source selector is
 a `dataset_selector` with `content_kind raster`. The public host operation
@@ -1039,11 +1135,7 @@ without admitting another scientific request. If a current frame cannot be
 drawn, its transient preview is hidden and an inline source diagnostic appears.
 Hidden images/layers do not leave visible ROI handles or outlines.
 
-The basic local Fit/Delete/Finish context menu alone is not the complete declarative
-semantic-context facility requested in GUI03. Existing Tcl PanelTarget mapping
-alone does not complete GUI04 Builder/SDK editor exposure. The complete declarations below provide those facilities; independent installed
-generic-Viewer evidence is recorded in
-the acceptance report.
+The declarative semantic raster menus below complement local Fit/Delete/Finish controls.
 
 ### Declared semantic raster menus
 
@@ -1128,3 +1220,62 @@ IDs remain ordinary captured values; model and Job bindings, other choices,
 scientific view limits, domain drafts and durable History remain compared. An
 additional available model therefore does not mark an untouched interface dirty.
 Existing saved payloads and History are read without rewriting their source.
+
+## Preview modules
+
+Preview modules can use existing GUI/icon services through the optional
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md). This host-scoped
+operation set composes supported UI Field controls inside the existing host.
+Viewer Interface Builder authors a Preview Module target in the same design model;
+`viewerGuiDesignPreviewMount design host callback` is its trusted public adapter.
+It admits the same validated subset through these Preview operations and never
+creates a standalone Viewer shell or changes restricted native worker rights.
+See [the target contract](VIEWER_GUI_DESIGN_v1.md#preview-module-project-target).
+
+
+## Managed Sketch and diagnostic components
+
+See [typed Sketch and diagnostics integration](VIEWER_GUI_P020_ADDITIONS.md) for
+actual component properties, admitted C++ operations, grants, lifecycle and bounded
+event payloads. Existing v1 identities and non-opt-in consumers remain compatible.
+
+P030 adds a shared `document` component with `kind=markdown`,
+`mode=editable|read_only`, and read-only `pane=rendered|source|metadata|associated_source`.
+The existing Document Source owner owns the editor, renderer, managed assets,
+producer permissions and revision checks. The parent primary menus own general
+commands. `Host::document_command(index, operation)` uses additive SDK opcode41
+and an explicit GUI Host `document_command` capability. Only declared Markdown
+components admit the finite commands reported by `viewerGuiHostApiInfo`;
+read-only components refuse mutation. Menu-only actions retain component0 and
+carry their exact declared action ID through existing typed `Host::data()`.
+
+A Preview design with `preview.runtime=managed_cpp` declares one to four
+read-only Markdown document panes. Normal candidate export includes the genuine
+C++ binary, original source, SDK and build receipts, and an ordinary presentation
+Preview Module. Normal Plugin Install verifies its distributed binary. The
+standard Preview notebook owns the tabs. Each actual pane lifetime admits that
+binary in the existing separate worker, passes the declared pane ID as typed
+data and requires a matching compiled `document_command(index,"render")` intent
+before mounting the shared read-only pane. Source/Session/package changes and
+ordinary disposal invalidate the host and cancel its owned worker. No runtime
+compiler or nested notebook is involved. Associated Source appears only for a
+genuine source-note association; an unavailable original remains diagnosed.
+
+Editable Markdown drafts retain the shared4MiB UTF-8 per-document limit through native Render and typed Workspace restore. Their explicitly typed `markdown_drafts` domain has a separate16MiB envelope; ordinary Viewer domain fields keep the existing64KiB limit. Invalid oversized/malformed drafts refuse without replacing the existing context. During a compatible host replacement CORE temporarily retains both draft and baseline image maps in ordinary managed-resource carriers. The replacement adopts the same references before temporary carriers close; no second byte store, copied source authority or relaxation of resource-owner deletion is introduced.
+
+## Declared Comparison form (P034)
+
+Trusted host viewerGuiDesignComparisonCommand(window,form,operation) controls the
+reciprocal Builder Comparison profile. Native authors send finite
+Host::comparison_command intents and receive an immutable next-event status/error/
+sequence/form receipt. No Tcl strings, arrays, paths or administrative authority
+are passed through the SDK. The existing Workspace, History and Plot owners remain
+authoritative. Read-only Library content needs five separately admitted Manager
+operations and exact bounded source identity.
+See [COMPARISON_PLOT_API_v1](COMPARISON_PLOT_API_v1.md).
+
+The Comparison profile also declares a primary Plot menu for Fit, Zoom, cursor,
+Reverse X, properties, legend, display-series style, PNG copy/export and existing
+Graph variant Save/Load. These use the same finite comparison command admission;
+no additional SDK opcode, arbitrary path or sample access is granted. See the
+versioned presentation fields and stale-dialog rules in COMPARISON_PLOT_API_v1.

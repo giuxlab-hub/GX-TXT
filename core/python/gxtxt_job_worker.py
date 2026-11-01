@@ -12,6 +12,7 @@ import sys
 import time
 
 from gxtxt_job_supervisor import enable_subreaper, process_identity, process_tree
+from gxtxt_stderr_diagnostics import optional_producer, emit_chunks
 
 # FUTURE WINDOWS PORTING REQUIREMENT (implementation intentionally deferred):
 # This guardian belongs to the LOCAL supervisor's native Job Object, not Tk.
@@ -65,6 +66,7 @@ def drain():
 def run_child(command, role='program'):
     """Drain genuine stdout/stderr separately, retaining legacy combined reads."""
     directory=Path(os.environ['GXTXT_CAPTURE_DIR'])
+    diagnostic_producer=optional_producer()
     child=subprocess.Popen(command,close_fds=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     selector=selectors.DefaultSelector()
     for stream,name in ((child.stdout,'stdout'),(child.stderr,'stderr')):
@@ -77,11 +79,14 @@ def run_child(command, role='program'):
                 if not raw:selector.unregister(key.fileobj);key.fileobj.close();continue
                 (diagnostics if role=='preflight' else output if key.data=='stdout' else errors).write(raw)
                 sys.stdout.buffer.write(raw);sys.stdout.buffer.flush()
+                if key.data=='stderr' and diagnostic_producer is not None:
+                    emit_chunks(diagnostic_producer,raw,source='managed_process',component='ScriptJob',job_id=os.environ.get('GXTXT_JOB_ID','unknown'),api_id='SCRIPT_JOB_API_v1',operation=role,process_id=child.pid,stream='stderr')
             if stopping:
                 if stopped_at is None:signal_children(signal.SIGTERM);stopped_at=time.monotonic()
                 elif time.monotonic()-stopped_at>1:signal_children(signal.SIGKILL)
             reap(exclude=(child.pid,))
     selector.close()
+    if diagnostic_producer is not None:diagnostic_producer.close()
     return child.wait()
 
 

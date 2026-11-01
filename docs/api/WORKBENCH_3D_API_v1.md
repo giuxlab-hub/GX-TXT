@@ -469,7 +469,7 @@ Related authorities: [Native3D Geometry](NATIVE_3D_GEOMETRY_API_v1.md),
 [Dataset Publication](DATASET_PUBLICATION_API_v2.md), and the installed module's
 MANUAL.md.
 
-Existing-owner factor (documented source integration):
+Dev109 existing-owner factor (source integration; installed acceptance pending):
 `activateDocument ?context?` hydrates the original
 `viewer.3d_workbench/workbench_3d` / `workbench3d.document.v1` owner, Geometry
 scene, resources, History, allocation counters and Recovery without constructing
@@ -571,7 +571,7 @@ mesh, organization, measurement, constraint, comparison, export, recipe and
 3D–Curve operation groups. Those existing-owner form exposures and installed
 45-row GUI/scientific verification remain open.
 
-## Builder purpose forms (public scientific bindings)
+## Builder purpose forms (dev109, installed acceptance pending)
 
 The existing finite `guiCommand action ?values?` also admits the action names
 returned by `::GX::Workbench3D::guiFormCommands` and reported by `apiInfo`.
@@ -592,12 +592,12 @@ remain in their original services. Canonical commits and selection publish a
 widget presentation event; the shared Builder host refreshes its actual Document
 projection through guiInspect. Session/window guards retire obsolete callbacks.
 
-A successful planar transfer can transfer the shared editable host to Curve
+A successful planar handoff can transfer the shared editable host to Curve
 Workbench and leave the originating Builder form `unbound`. Its geometry trace
 reports that actual status and includes Document fields only when they exist;
 it does not convert the completed transition into a missing-`document_id` error
 or claim that the old embedded host still owns the active geometry.
-When an embedded Workbench starts that transfer, the owner retains only a
+When an embedded Workbench starts that handoff, the owner retains only a
 process-local return destination: parent widget incarnation, Session token,
 canonical Document ID and generation. Accept returns the same native controller
 to that still-live component through `guiMount`; it forwards presentation changes

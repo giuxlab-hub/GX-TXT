@@ -242,8 +242,14 @@ def discover_registrations(core_service="", session=""):
     """
     bindings = {}; modules = {}
     files = list(sorted((ROOT / "core" / "script_bindings").glob("*.py")))
-    files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding.py")))
-    files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding_v[0-9]*.py")))
+    # Plugin Installer staging and rollback directories are hidden siblings
+    # of installed modules. They are NOT active module owners and must not
+    # register Script Bridge APIs (or block unrelated CORE service preflights).
+    module_root = ROOT / "plugins" / "modules"
+    for pattern in ("*/api/script_bridge_binding.py",
+                    "*/api/script_bridge_binding_v[0-9]*.py"):
+        files.extend(path for path in sorted(module_root.glob(pattern))
+                     if not path.parent.parent.name.startswith("."))
     if core_service:
         # Same registration and invocation as real Jobs, without Session
         # creation, callback registration or a numerical worker.
@@ -318,10 +324,20 @@ class Host:
         self.module_id = self.config.get("runtime", "module_id", fallback="")
         self.run_id = self.config.get("runtime", "run_id", fallback="") or uuid.uuid4().hex
         self.operation = self.config.get("runtime", "operation", fallback="run")
+        preview_preparation = (
+            self.config.get("job_origin", "classification", fallback="") == "core_service" and
+            self.config.get("job_origin", "service_id", fallback="") == "dataset-preview" and
+            self.config.get("config", "source_mode", fallback="") == "core_service" and
+            self.config.get("config", "registered_script", fallback="") == "core-service:dataset-preview")
         self.tcl = tkinter.Tcl()
         with contextlib.redirect_stdout(sys.stderr):
             self.tcl.call("set", "argv0", "__not_main__")
             self.tcl.call("source", str(ROOT / "gxtxt_pipeline.tcl"))
+            if preview_preparation:
+                # This process prepares an existing Preview Job; Session load
+                # notifications must not recursively request more Preview Jobs.
+                # The full frozen-origin check below still precedes activation.
+                self.tcl.call("set", "::GX::PreviewCache::worker", 1)
             self.tcl.call("::GX::defaults")
             self.tcl.call("::GX::loadModuleCatalog")
             self.tcl.call("set", "::GX::currentSession", self.session)
@@ -331,6 +347,22 @@ class Host:
                     self.tcl.call("::GX::loadManifest", str(manifest))
                 self.tcl.call("::GX::loadDatasetRegistry", self.session)
             self.tcl.call("set", "::GX::currentSession", self.session)
+            if self.config.has_section("preview_activation"):
+                # Private runtime transport written only by the installed CORE
+                # Preview request preparer. Public cache arguments grant none.
+                if (self.config.get("job_origin", "classification", fallback="") != "core_service" or
+                        self.config.get("job_origin", "service_id", fallback="") != "dataset-preview" or
+                        self.config.get("config", "source_mode", fallback="") != "core_service" or
+                        self.config.get("config", "registered_script", fallback="") != "core-service:dataset-preview"):
+                    raise BridgeError("GXTXT:ScriptBridge:Ownership", "Preview activation requires the private CORE Preview runtime")
+                from gxtxt_script_inspection import result_origin, run_directory
+                runtime = {section: dict(self.config[section]) for section in self.config.sections()}
+                with run_directory(self.session, self.run_id) as (directory, _):
+                    origin = result_origin(directory, runtime.get("config", {}), runtime)
+                if origin != "core_service":
+                    raise BridgeError("GXTXT:ScriptBridge:Ownership", "Preview activation source identity changed")
+                snapshot = self.tcl.call("::GX::iniUnescape", self.config.get("preview_activation", "snapshot"))
+                self.tcl.call("::GX::_datasetPreviewActivationApply", snapshot)
             # Tcl writes to the process descriptor directly; Python's
             # redirect_stdout cannot protect the JSON response channel.
             self.tcl.eval('''
@@ -468,6 +500,7 @@ class Host:
     def context(self, execution):
         inputs = {}
         parameters = {}
+        parameter_schema = {}
         for section in self.config.sections():
             if section.startswith("script_parameter.") and section.count(".") == 1:
                 name = section.split(".", 1)[1]
@@ -480,6 +513,7 @@ class Host:
                 elif kind == "boolean":
                     value = value.lower() in ("1", "true", "yes", "on")
                 parameters[name] = value
+                parameter_schema[name] = {'type':kind, 'origin':self.config.get(section,'origin',fallback='registry'), 'declaration':self.config.get(section,'declaration',fallback='')}
                 continue
             if not section.startswith("analysis_source.") or section.count(".") != 1:
                 continue
@@ -506,6 +540,11 @@ class Host:
                 if "revision_base64" in inputs[alias]:
                     inputs[alias]["revision"] = base64.b64decode(inputs[alias].pop("revision_base64"), validate=True).decode("utf-8")
         output = dict(self.config.items("job_output")) if self.config.has_section("job_output") else {}
+        parameter_dataset = dict(self.config.items("job_parameter_dataset")) if self.config.has_section("job_parameter_dataset") else {}
+        if "revision_base64" in parameter_dataset:
+            parameter_dataset["revision"] = base64.b64decode(parameter_dataset.pop("revision_base64"), validate=True).decode("utf-8")
+        if "variable_ids" in parameter_dataset:
+            parameter_dataset["variable_ids"] = list(self.tcl.splitlist(parameter_dataset["variable_ids"]))
         if "replace_owned" in output:
             output["replace_owned"] = output["replace_owned"].lower() in ("1", "true", "yes", "on")
         return {"output": output, "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1", "bridge_api_version": 1,
@@ -516,8 +555,9 @@ class Host:
                 "public_operation": self.config.get("config", "public_operation", fallback=""),
                 "script_name": execution["script_name"],
                 "script_sha256": execution["script_sha256"],
-                "arguments_raw": execution["arguments_raw"], "parameters": parameters,
-                "inputs": inputs}
+                "arguments_raw": execution["arguments_raw"], "parameters": parameters, "parameter_schema":parameter_schema,
+                "script_project":dict(self.config.items('script_project')) if self.config.has_section('script_project') else {},
+                "inputs": inputs, "parameter_dataset": parameter_dataset}
 
     def record_publications(self, receipt):
         """Provider bindings report committed receipts, never requested outputs."""
@@ -541,6 +581,12 @@ class Host:
     def validate_inputs(self):
         # Input aliases are immutable submission snapshots. Revision authority
         # remains CORE Dataset Publication/Registry, never a Bridge sidecar.
+        if self.config.has_section("job_parameter_dataset"):
+            preset = self.config["job_parameter_dataset"]
+            current = self.call("::GX::datasetRevisionToken", preset["dataset_id"], self.session)
+            expected = base64.b64decode(preset["revision_base64"], validate=True).decode("utf-8")
+            if str(self.tcl.call("format", "%s", current)) != expected:
+                raise BridgeError("GXTXT:ScriptBridge:StaleInput", "Parameter Dataset changed after submission")
         for section in self.config.sections():
             if section.startswith("job_input."):
                 dataset_id = self.config.get(section, "dataset_id")
@@ -551,6 +597,9 @@ class Host:
                 current = str(self.tcl.call("format", "%s", token))
                 if current != revision:
                     raise BridgeError("GXTXT:ScriptBridge:StaleInput", f"Dataset input {section[10:]} changed after submission")
+                namespace = self.config.get(section, "namespace", fallback=None)
+                if namespace is not None and str(self.call("::GX::datasetNamespaceGet", self.session, dataset_id)) != namespace:
+                    raise BridgeError("GXTXT:ScriptBridge:StaleInput", f"Dataset input {section[10:]} moved from namespace {namespace}")
 
     def cleanup(self):
         self.callbacks.clear()

@@ -36,7 +36,7 @@ proc ::GX::scriptAnalysisSelectorWidget {parent id key row} {
     variable scriptAnalysisWidgets
     ttk::label $parent.l$row -text "Session registered script"
     ttk::frame $parent.w$row
-    ttk::combobox $parent.w$row.choice -textvariable ::GX::moduleCfg($id,$key) -state readonly -width 42
+    ttk::combobox $parent.w$row.choice -textvariable ::GX::moduleCfg($id,$key) -state readonly -width 42 -postcommand ::GX::scriptAnalysisRefresh
     ttk::button $parent.w$row.library -text "Script Library..." -command ::GX::scriptLibraryDialog
     ttk::label $parent.w$row.info -wraplength 640 -anchor w
     grid $parent.l$row -row $row -column 0 -sticky e -padx 4 -pady 2
@@ -196,48 +196,82 @@ proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
     if {$reference eq ""} { error "Select a registered script first." }
     set m [scriptRegistryDescribe $reference]
     set w .gxtxtScriptRun
-    if {$previous eq {} && [winfo exists $w] && $scriptRunUi(reference) eq $reference && $scriptRunUi(session_token) eq [interactiveDocumentSessionToken] && [dict get $scriptRunUi(metadata) sha256] eq [dict get $m sha256]} {
+    if {$previous eq {} && [winfo exists $w] && $scriptRunUi(reference) eq $reference && $scriptRunUi(session_token) eq [interactiveDocumentSessionToken] && [dict get $scriptRunUi(metadata) sha256] eq [dict get $m sha256] && [dict get $scriptRunUi(metadata) revision] eq [dict get $m revision] && [dict get $scriptRunUi(metadata) parameters] eq [dict get $m parameters]} {
         raise $w;focus $w
         return $w
     }
     catch {destroy $w}
     toplevel $w
     wm title $w "Run [dict get $m name]"
-    grid columnconfigure $w 1 -weight 1
+    wm minsize $w 480 360
+    grid columnconfigure $w 0 -weight 1
+    grid rowconfigure $w 1 -weight 1 -minsize 180
+    set scriptRunUi(epoch) [clock clicks]
+    set scriptRunUi(submitting) 0
+    set scriptRunUi(parameter_layout) {}
+    set scriptRunUi(actions_mode) {}
+    set scriptRunUi(preset) {}
+    set scriptRunUi(preset_id) {}
+    set scriptRunUi(preset_label) {}
     set scriptRunUi(reference) $reference
     set scriptRunUi(session_token) [interactiveDocumentSessionToken]
     set scriptRunUi(rerun) [expr {$previous ne {}}]
     set scriptRunUi(reviewed) 0
-    set row 0
-    set reviewInfo "[dict get $m language]  $reference  v[dict get $m version]  SHA-256: [dict get $m sha256]"
-    if {[datasetPublicationV2DictDefault $m default_arguments {}] ne {}} {append reviewInfo "\nSaved default arguments: [dict get $m default_arguments]"}
-    ttk::label $w.info -text $reviewInfo -wraplength 600
-    grid $w.info -row $row -column 0 -columnspan 2 -sticky ew -padx 8 -pady 8
-    incr row
+    set reviewInfo "[dict get $m name] · [dict get $m language] · $reference\nVersion [dict get $m version] · revision [dict get $m revision]\nSHA-256 [dict get $m sha256]"
+    if {[datasetPublicationV2DictDefault $m default_arguments {}] ne {}} {append reviewInfo "\nSaved arguments (inert text): [dict get $m default_arguments]"}
+    ttk::label $w.info -text $reviewInfo -wraplength 760 -padding {14 10}
+    grid $w.info -row 0 -column 0 -sticky ew
+    set body [uiFieldScrollableCreate $w.form 740]
+    set scriptRunUi(body) $body
+    grid $w.form -row 1 -column 0 -sticky nsew -padx 12
+    grid columnconfigure $body 0 -weight 1
+    ttk::labelframe $body.parameters -text {Invocation parameters} -padding 10
+    grid $body.parameters -row 0 -column 0 -sticky ew -pady 5
+    grid columnconfigure $body.parameters 1 -weight 1
+    set parameterRow 0
     dict for {name descriptor} [dict get $m parameters] {
         set scriptRunUi(parameter,$name) [dict get $descriptor default]
-        ttk::label $w.l_$name -text "$name ([dict get $descriptor type])"
-        uiFieldCreate $w.e_$name $descriptor ::GX::scriptRunUi(parameter,$name)
-        grid $w.l_$name -row $row -column 0 -sticky e -padx 6 -pady 4
-        grid $w.e_$name -row $row -column 1 -sticky ew -padx 6 -pady 4
-        incr row
+        set required [expr {[dict get $descriptor required] ? { · required} : { · optional}}]
+        ttk::label $body.parameters.l_$name -text "$name ([dict get $descriptor type])$required" -wraplength 210
+        uiFieldCreate $body.parameters.e_$name $descriptor ::GX::scriptRunUi(parameter,$name)
+        grid $body.parameters.l_$name -row $parameterRow -column 0 -sticky w -padx {0 8} -pady 4
+        grid $body.parameters.e_$name -row $parameterRow -column 1 -sticky ew -pady 4
+        incr parameterRow
+        if {[dict get $descriptor description] ne {}} {
+            ttk::label $body.parameters.d_$name -text [dict get $descriptor description] -wraplength 480
+            grid $body.parameters.d_$name -row $parameterRow -column 0 -columnspan 2 -sticky ew -pady {0 6}
+            incr parameterRow
+        }
+    }
+    if {!$parameterRow} {
+        ttk::label $body.parameters.empty -text {This Script declares no typed parameters.}
+        grid $body.parameters.empty -row 0 -column 0 -columnspan 2 -sticky w
     }
     set scriptRunUi(metadata) $m
-    set row [scriptRunBindingsBuild $w $row]
+    set scriptRunUi(invocation_parameters) {}
+    scriptRunPresetControls $body.parameters [expr {$parameterRow+1}]
+    scriptRunManualControls $body.parameters
+    set row [scriptRunBindingsBuild $body 1]
     if {$previous ne {}} {
         set review "NEW Job after explicit review. Historical [dict get $previous id] stays unchanged.\nOriginal $reference revision [scriptJobField $previous script_revision] SHA [scriptJobField $previous source_sha256]\nAvailable $reference revision [dict get $m revision] SHA [dict get $m sha256]"
+        dict for {name spec} [scriptJobField $previous parameter_schema {}] {
+            if {![dict exists $m parameters $name] && [datasetPublicationV2DictDefault $spec origin {}] eq {manual_invocation}} {dict set scriptRunUi(invocation_parameters) $name $spec}
+        }
+        scriptRunManualRefresh
         dict for {name value} [scriptJobField $previous parameters {}] {
-            if {[dict exists $m parameters $name]} {set scriptRunUi(parameter,$name) $value} else {append review "\nPrevious parameter '$name' is absent from the current Script; review its new schema."}
+            if {[dict exists [scriptInvocationSchema $m $scriptRunUi(invocation_parameters)] $name]} {set scriptRunUi(parameter,$name) $value} else {append review "\nPrevious parameter '$name' is absent from the current Script; review its new schema."}
         }
         dict for {alias binding} [scriptJobField $previous inputs {}] {
             scriptRunBindingAdd
             set n $scriptRunUi(input_count);set id [dict get $binding dataset_id]
             set scriptRunUi(alias,$n) $alias;set scriptRunUi(label,$n) [datasetPublicationV2DictDefault $binding label {}]
-            set available [expr {$id in $scriptRunUi(eligible)}]
+            set scriptRunUi(namespace,$n) [datasetPublicationV2DictDefault $binding namespace $scriptRunUi(namespace)]
+            scriptRunBindingChoices $n
+            set available [expr {$id in $scriptRunUi(eligible,$n)}]
             if {$available && [dict exists $binding revision]} {
                 if {[catch {datasetRevisionToken $id $::GX::currentSession} revision] || $revision ne [dict get $binding revision]} {set available 0;append review "\nInput $alias / $id revision changed: explicitly rebind it."}
             }
-            if {$available} {set scriptRunUi(dataset,$n) $id} else {append review "\nInput $alias / $id is missing, changed or outside current namespace: choose a valid binding."}
+            if {$available} {set scriptRunUi(dataset,$n) $id;scriptRunBindingSelected $n} else {append review "\nInput $alias / $id is missing, changed or outside its namespace: choose a valid binding."}
         }
         set output [scriptJobField $previous output {}]
         if {[dict exists $output dataset_id]} {
@@ -246,47 +280,276 @@ proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
             if {[datasetField $scriptRunUi(output_id) id {}] ne {}} {append review "\nOutput $scriptRunUi(output_id) already exists: choose a new ID or deliberately request an authorized owned replacement."}
         }
         $w.info configure -text "[$w.info cget -text]\n$review"
-        grid $w.bindings
-        ttk::checkbutton $w.review -text {I reviewed the current Script, parameters, inputs and output request} -variable ::GX::scriptRunUi(reviewed)
-        grid $w.review -row $row -column 0 -columnspan 2 -sticky w -padx 8 -pady 5
+        grid $body.bindings
+        ttk::checkbutton $body.review -text {I reviewed this invocation} -variable ::GX::scriptRunUi(reviewed)
+        native2DViewportTooltip $body.review {Confirm review of the current Script, parameters, inputs and output request before creating a new Job.}
+        grid $body.review -row $row -column 0 -sticky w -padx 8 -pady 5
         incr row
     }
-    ttk::button $w.run -text Run -command ::GX::scriptWorkspaceRunCommit
+    ttk::frame $w.actions -padding {12 8}
+    grid $w.actions -row 2 -column 0 -sticky ew
+    ttk::button $w.validate -text {Validate review} -command ::GX::scriptRunValidate
+    ttk::button $w.run -text {Run Job} -command ::GX::scriptWorkspaceRunCommit
     ttk::button $w.cancel -text Close -command [list destroy $w]
-    grid $w.run -row $row -column 0 -padx 8 -pady 8
-    grid $w.cancel -row $row -column 1 -sticky w -padx 8 -pady 8
-    incr row
-    ttk::label $w.status -textvariable ::GX::scriptRunUi(status) -wraplength 600
-    grid $w.status -row $row -column 0 -columnspan 2 -sticky ew -padx 8 -pady 6
-    set scriptRunUi(status) "Ready to run in the current Session."
+    ttk::button $w.help -text Help -command ::GX::scriptRunHelp
+    foreach {key text} {validate {Check current Script, typed values and input revisions without submitting a Job.} run {Submit one immutable reviewed invocation through the common Job supervisor.} cancel {Close this review. An already submitted Job continues under its Supervisor.} help {Explain input namespaces, canonical parameter Datasets and output authority.}} {native2DViewportTooltip $w.$key $text}
+    scriptRunActionsLayout 820
+    ttk::label $w.status -textvariable ::GX::scriptRunUi(status) -wraplength 740 -padding {12 0 12 10}
+    grid $w.status -row 3 -column 0 -sticky ew
+    set scriptRunUi(status) {Ready for review. Only Run Job submits; closing this review does not cancel a submitted Job.}
+    bind $w <Escape> [list destroy $w]
+    bind $w <Control-Return> ::GX::scriptWorkspaceRunCommit
+    bind $w <Configure> [list ::GX::scriptRunResize %W %w]
+    foreach child [list $w.info $w.actions $w.status] {
+        bind $child <Configure> [list ::GX::scriptRunMinimumRequest $scriptRunUi(epoch)]
+    }
+    after idle ::GX::scriptRunFit
+    return $w
+}
+
+proc ::GX::scriptRunResize {widget width} {
+    if {$widget ne {.gxtxtScriptRun}} return
+    variable scriptRunUi
+    foreach child {.gxtxtScriptRun.info .gxtxtScriptRun.status} {
+        if {[winfo exists $child]} {$child configure -wraplength [expr {max(200,$width-32)}]}
+    }
+    scriptRunActionsLayout $width
+    set body $scriptRunUi(body)
+    foreach label [list $body.parameters.preset.hint $body.bindings.scope $body.bindings.output.hint] {
+        if {[winfo exists $label]} {$label configure -wraplength [expr {max(180,$width-100)}]}
+    }
+    dict for {name descriptor} [scriptInvocationSchema $scriptRunUi(metadata) $scriptRunUi(invocation_parameters)] {
+        if {[winfo exists $body.parameters.d_$name]} {$body.parameters.d_$name configure -wraplength [expr {max(180,$width-80)}]}
+    }
+    set mode [expr {$width<650 ? {stacked} : {columns}}]
+    if {![info exists scriptRunUi(parameter_layout)] || $scriptRunUi(parameter_layout) ne $mode} {
+        set scriptRunUi(parameter_layout) $mode
+        set row 0
+        dict for {name descriptor} [dict get $scriptRunUi(metadata) parameters] {
+            set label $body.parameters.l_$name;set field $body.parameters.e_$name
+            if {$mode eq {stacked}} {
+                grid configure $label -row $row -column 0 -columnspan 2 -sticky w
+                incr row
+                grid configure $field -row $row -column 0 -columnspan 2 -sticky ew
+            } else {
+                grid configure $label -row $row -column 0 -columnspan 1 -sticky w
+                grid configure $field -row $row -column 1 -columnspan 1 -sticky ew
+            }
+            incr row
+            if {[winfo exists $body.parameters.d_$name]} {grid configure $body.parameters.d_$name -row $row -column 0 -columnspan 2;incr row}
+        }
+        grid configure $body.parameters.preset -row [expr {$row+1}]
+    }
+    set preset $body.parameters.preset
+    set output $body.bindings.output
+    foreach {parent labels fields} [list $preset {idlabel namelabel} {id name} $output {l_id l_label} {id label}] {
+        set row 0
+        foreach label $labels field $fields {
+            if {$mode eq {stacked}} {
+                grid configure $parent.$label -row $row -column 0 -columnspan 2
+                incr row
+                grid configure $parent.$field -row $row -column 0 -columnspan 2
+            } else {
+                grid configure $parent.$label -row $row -column 0 -columnspan 1
+                grid configure $parent.$field -row $row -column 1 -columnspan 1
+            }
+            incr row
+        }
+        if {$parent eq $preset} {
+            grid configure $parent.actions -row $row
+            grid configure $parent.hint -row [expr {$row+1}]
+        } else {
+            grid configure $parent.replace -row $row
+            grid configure $parent.hint -row [expr {$row+1}]
+        }
+    }
+    foreach button [list $preset.actions.load $preset.actions.save] {
+        if {$mode eq {stacked}} {pack configure $button -side top -fill x -pady 3} else {pack configure $button -side left -fill none -pady 0}
+    }
+    for {set n 1} {$n <= $scriptRunUi(input_count)} {incr n} {
+        set input $body.bindings.r$n
+        if {![winfo exists $input]} continue
+        set row 0
+        if {$mode eq {stacked}} {
+            foreach key {alias label namespace dataset} {
+                grid configure $input.l_$key -row $row -column 0 -columnspan 2 -sticky ew
+                $input.l_$key configure -wraplength [expr {max(180,$width-110)}]
+                incr row
+                grid configure $input.$key -row $row -column 0 -columnspan 2
+                incr row
+            }
+            grid configure $input.detail -row $row -column 0 -columnspan 2
+            grid configure $input.remove -row [expr {$row+1}] -column 0 -columnspan 2
+            $input.detail configure -wraplength [expr {max(180,$width-110)}]
+        } else {
+            foreach {key row column} {alias 0 0 label 0 1 namespace 2 0 dataset 2 1} {
+                grid configure $input.l_$key -row $row -column $column -columnspan 1 -sticky ew
+                $input.l_$key configure -wraplength [expr {max(120,($width-110)/2)}]
+                grid configure $input.$key -row [expr {$row+1}] -column $column -columnspan 1
+            }
+            grid configure $input.detail -row 4 -column 0 -columnspan 1
+            grid configure $input.remove -row 4 -column 1 -columnspan 1
+            $input.detail configure -wraplength [expr {max(120,($width-110)/2)}]
+        }
+    }
+    scriptRunMinimumRequest $scriptRunUi(epoch)
+}
+proc ::GX::scriptRunMinimumRequest {epoch} {
+    variable scriptRunUi
+    if {![winfo exists .gxtxtScriptRun] || $scriptRunUi(epoch) != $epoch} return
+    if {[info exists scriptRunUi(minimum_after)]} {after cancel $scriptRunUi(minimum_after)}
+    set scriptRunUi(minimum_after) [after idle [list ::GX::scriptRunMinimumSize $epoch]]
+}
+proc ::GX::scriptRunMinimumSize {epoch} {
+    variable scriptRunUi
+    set w .gxtxtScriptRun
+    if {![winfo exists $w] || $scriptRunUi(epoch) != $epoch} return
+    # Keep a useful scroll viewport after the identity, action and status rows
+    # have wrapped at the actual font size. A mapped action alone is not proof
+    # that the form remains reachable in a compact large-font window.
+    set height [expr {[winfo reqheight $w.info]+[winfo reqheight $w.actions]+[winfo reqheight $w.status]+180}]
+    set width [expr {max([winfo reqwidth $w.validate],[winfo reqwidth $w.help])+max([winfo reqwidth $w.run],[winfo reqwidth $w.cancel])+44}]
+    wm minsize $w [expr {min([winfo screenwidth $w]-60,max(480,$width))}] [expr {min([winfo screenheight $w]-80,max(360,$height))}]
+}
+proc ::GX::scriptRunActionsLayout {width} {
+    variable scriptRunUi
+    set w .gxtxtScriptRun
+    if {![winfo exists $w.help]} return
+    set requested 70
+    foreach name {validate run help cancel} {incr requested [winfo reqwidth $w.$name]}
+    set mode [expr {$width<$requested ? {wrapped} : {inline}}]
+    if {[info exists scriptRunUi(actions_mode)] && $scriptRunUi(actions_mode) eq $mode && [winfo manager $w.run] ne {}} return
+    set scriptRunUi(actions_mode) $mode
+    foreach name {validate run help cancel} {grid forget $w.$name}
+    foreach column {0 1 2 3 4} {grid columnconfigure $w.actions $column -weight 0}
+    if {$mode eq {inline}} {
+        grid columnconfigure $w.actions 2 -weight 1
+        foreach {name column} {validate 0 run 1 help 3 cancel 4} {grid $w.$name -in $w.actions -row 0 -column $column -padx 3 -pady 2 -sticky ew}
+    } else {
+        grid columnconfigure $w.actions 0 -weight 1;grid columnconfigure $w.actions 1 -weight 1
+        foreach {name row column} {validate 0 0 run 0 1 help 1 0 cancel 1 1} {grid $w.$name -in $w.actions -row $row -column $column -padx 3 -pady 2 -sticky ew}
+    }
+}
+proc ::GX::scriptRunHelp {} {
+    tk_messageBox -parent .gxtxtScriptRun -title {Script Runner} -message {Review the saved Script identity, typed invocation values and each input’s namespace and Dataset ID. Selecting a Dataset captures its revision; changes require explicit reselection. Validate checks the review without execution. Save parameters creates an ordinary canonical Dataset; Load validates schema, types, Script identity and integrity. Loaded values remain editable. Output requests grant no extra publication rights. Run Job submits through the shared durable Job supervisor; Script Jobs shows actual completion and committed outputs.}
+}
+proc ::GX::scriptRunPresetControls {parent row} {
+    variable scriptRunUi
+    ttk::labelframe $parent.preset -text {Parameter Dataset} -padding 8
+    grid $parent.preset -row $row -column 0 -columnspan 2 -sticky ew -pady {10 0}
+    grid columnconfigure $parent.preset 1 -weight 1
+    ttk::label $parent.preset.idlabel -text {Dataset ID}
+    ttk::entry $parent.preset.id -textvariable ::GX::scriptRunUi(preset_id) -width 24
+    ttk::label $parent.preset.namelabel -text {Save label (optional)}
+    ttk::entry $parent.preset.name -textvariable ::GX::scriptRunUi(preset_label)
+    grid $parent.preset.idlabel -row 0 -column 0 -sticky w -padx 3
+    grid $parent.preset.id -row 0 -column 1 -sticky ew -padx 3 -pady 3
+    grid $parent.preset.namelabel -row 1 -column 0 -sticky w -padx 3
+    grid $parent.preset.name -row 1 -column 1 -sticky ew -padx 3 -pady 3
+    ttk::frame $parent.preset.actions
+    grid $parent.preset.actions -row 2 -column 0 -columnspan 2 -sticky ew -pady 4
+    ttk::button $parent.preset.actions.load -text {Load parameters} -command {::GX::scriptRunPresetAction load}
+    ttk::button $parent.preset.actions.save -text {Save parameters as Dataset} -command {::GX::scriptRunPresetAction save}
+    native2DViewportTooltip $parent.preset.actions.save {Validate and create a new typed canonical Dataset. Existing IDs are never replaced.}
+    native2DViewportTooltip $parent.preset.actions.load {Validate an exact compatible Dataset before applying any values. No Job is submitted.}
+    pack $parent.preset.actions.load $parent.preset.actions.save -side left -padx 3
+    ttk::label $parent.preset.hint -text {Save creates a new Dataset in the script producer’s namespace. Load accepts an exact compatible preset from any namespace in this Session. Neither action runs the Script.} -wraplength 540
+    grid $parent.preset.hint -row 3 -column 0 -columnspan 2 -sticky ew -padx 3
+}
+proc ::GX::scriptRunIdentityCheck {} {
+    variable scriptRunUi
+    if {$scriptRunUi(session_token) ne [interactiveDocumentSessionToken]} {error {Session changed; reopen Script Runner}}
+    set current [scriptRegistryDescribe $scriptRunUi(reference)]
+    foreach key {sha256 revision parameters} {
+        if {[dict get $current $key] ne [dict get $scriptRunUi(metadata) $key]} {error {Registered Script changed during review; reopen Script Runner}}
+    }
+}
+proc ::GX::scriptRunParameters {} {
+    variable scriptRunUi
+    set supplied {}
+    dict for {name descriptor} [scriptInvocationSchema $scriptRunUi(metadata) $scriptRunUi(invocation_parameters)] {
+        set value $scriptRunUi(parameter,$name)
+        if {$value eq {} && ![dict get $descriptor required] && [dict get $descriptor default] eq {} && [dict get $descriptor type] in {integer double number boolean}} continue
+        dict set supplied $name $value
+    }
+    return [scriptExecutionParameters $scriptRunUi(metadata) $supplied $scriptRunUi(invocation_parameters)]
+}
+proc ::GX::scriptRunPresetAction {operation} {
+    variable scriptRunUi
+    if {$scriptRunUi(submitting)} return
+    if {[catch {
+        scriptRunIdentityCheck
+        if {$operation eq {save}} {
+            set result [scriptParameterDatasetSave $scriptRunUi(session) $scriptRunUi(reference) [scriptRunParameters] $scriptRunUi(preset_id) $scriptRunUi(preset_label) $scriptRunUi(metadata) $scriptRunUi(invocation_parameters)]
+            set scriptRunUi(status) "Parameter Dataset [dict get $result dataset_id] committed. No Job submitted."
+        } else {
+            set loaded [scriptParameterDatasetLoad $scriptRunUi(session) $scriptRunUi(reference) $scriptRunUi(preset_id)]
+            scriptRunIdentityCheck
+            set scriptRunUi(invocation_parameters) [dict get $loaded invocation_parameters]
+            scriptRunManualRefresh
+            # Apply only after the complete Dataset passes validation.
+            dict for {name descriptor} [dict get $scriptRunUi(metadata) parameters] {set scriptRunUi(parameter,$name) {}}
+            dict for {name value} [dict get $loaded parameters] {set scriptRunUi(parameter,$name) $value}
+            set scriptRunUi(preset) [dict remove $loaded parameters]
+            set scriptRunUi(status) "Loaded [dict get $loaded dataset_id]. Review values before Run Job."
+        }
+    } reason]} {set scriptRunUi(status) "Parameter Dataset $operation failed: $reason"}
+}
+proc ::GX::scriptRunReviewOptions {} {
+    variable scriptRunUi
+    scriptRunIdentityCheck
+    set inputs {}
+    for {set n 1} {$n <= $scriptRunUi(input_count)} {incr n} {
+        if {![winfo exists $scriptRunUi(body).bindings.r$n]} continue
+        set alias $scriptRunUi(alias,$n)
+        if {[dict exists $inputs $alias]} {error "Duplicate input alias '$alias'"}
+        if {$scriptRunUi(revision,$n) eq {}} {error "Input '$alias' requires a reviewed Dataset selection"}
+        dict set inputs $alias [dict create dataset_id $scriptRunUi(dataset,$n) namespace $scriptRunUi(namespace,$n) revision $scriptRunUi(revision,$n) label $scriptRunUi(label,$n)]
+    }
+    set inputs [scriptJobInputsResolve $scriptRunUi(session) $inputs $scriptRunUi(namespace)]
+    set output {}
+    if {$scriptRunUi(output_id) ne {}} {
+        datasetPublicationV2ValidateId dataset $scriptRunUi(output_id)
+        if {[datasetField $scriptRunUi(output_id) id {}] ne {}} {
+            if {!$scriptRunUi(replace)} {error {Output Dataset already exists; choose a new ID or review owned replacement}}
+            set producer [scriptAnalysisModule [dict get $scriptRunUi(metadata) language]]
+            _datasetNamespaceRequireModuleWrite $scriptRunUi(session) $producer $scriptRunUi(output_id)
+            if {[datasetField $scriptRunUi(output_id) producer_module {}] ne $producer} {error {Output belongs to another producer}}
+        }
+        set output [dict create dataset_id $scriptRunUi(output_id) label $scriptRunUi(output_label) replace_owned $scriptRunUi(replace)]
+    }
+    if {$scriptRunUi(preset) ne {}} {
+        set loaded [scriptParameterDatasetLoad $scriptRunUi(session) $scriptRunUi(reference) [dict get $scriptRunUi(preset) dataset_id]]
+        if {[dict get $loaded revision] ne [dict get $scriptRunUi(preset) revision]} {error {Parameter Dataset changed; load it again}}
+    }
+    return [dict create session $scriptRunUi(session) namespace $scriptRunUi(namespace) inputs $inputs output $output parameter_dataset $scriptRunUi(preset) invocation_parameters $scriptRunUi(invocation_parameters) reviewed_script $scriptRunUi(metadata)]
+}
+proc ::GX::scriptRunValidate {} {
+    variable scriptRunUi
+    if {$scriptRunUi(submitting)} return
+    if {[catch {scriptRunParameters;scriptRunReviewOptions} reason]} {set scriptRunUi(status) "Review needs attention: $reason";return 0}
+    set scriptRunUi(status) {Review valid. No Job submitted; Run Job performs fresh admission checks.}
+    return 1
 }
 
 proc ::GX::scriptWorkspaceRunCommit {} {
     variable scriptRunUi
     set w .gxtxtScriptRun
+    if {$scriptRunUi(submitting)} return
     if {[catch {
-        if {$scriptRunUi(session_token) ne [interactiveDocumentSessionToken]} {error {Session changed; reopen the Run review}}
         if {$scriptRunUi(rerun) && !$scriptRunUi(reviewed)} {error {Explicit review is required before creating a new Job}}
-        if {[dict get [scriptRegistryDescribe $scriptRunUi(reference)] sha256] ne [dict get $scriptRunUi(metadata) sha256]} {error {Registered Script changed during review; reopen Run and review the current revision}}
-        set supplied [dict create]
-        dict for {name descriptor} [dict get $scriptRunUi(metadata) parameters] {
-            if {$scriptRunUi(parameter,$name) ne ""} {dict set supplied $name $scriptRunUi(parameter,$name)}
-        }
-        set inputs {}
-        for {set n 1} {$n <= $scriptRunUi(input_count)} {incr n} {
-            if {![winfo exists $w.bindings.r$n]} continue
-            set alias $scriptRunUi(alias,$n)
-            if {[dict exists $inputs $alias]} {error "Duplicate input alias '$alias'"}
-            dict set inputs $alias [dict create dataset_id $scriptRunUi(dataset,$n) label $scriptRunUi(label,$n)]
-        }
-        set output {}
-        if {$scriptRunUi(output_id) ne {}} {set output [dict create dataset_id $scriptRunUi(output_id) label $scriptRunUi(output_label) replace_owned $scriptRunUi(replace)]}
-        set options [dict create session $scriptRunUi(session) namespace $scriptRunUi(namespace) inputs $inputs output $output]
+        set supplied [scriptRunParameters]
+        set options [scriptRunReviewOptions]
         if {[info exists scriptRunUi(importOverride)] && $scriptRunUi(importOverride)} {dict set options import_policy continue}
-        scriptJobSubmit $scriptRunUi(reference) $supplied $options ::GX::scriptWorkspaceSubmitted
-        $w.run state disabled
-        set scriptRunUi(status) {Submitting immutable script snapshot…}
-    } reason]} {set scriptRunUi(status) "Submission failed: $reason"}
+        set scriptRunUi(submitting) 1
+        scriptRunBusy 1
+        set scriptRunUi(status) {Submitting immutable Script and input snapshots…}
+        scriptJobSubmit $scriptRunUi(reference) $supplied $options [list ::GX::scriptWorkspaceSubmittedFor $scriptRunUi(epoch)]
+    } reason]} {
+        set scriptRunUi(submitting) 0
+        scriptRunBusy 0
+        set scriptRunUi(status) "Submission failed: $reason"
+    }
 }
 
 # The horizontal editor panes never change ownership when an assistant opens.
@@ -311,7 +574,11 @@ proc ::GX::scriptWorkspaceViewMenu {editor menu language} {
     $menu add command -label {Reset editor layout} -command [list ::GX::scriptWorkspaceLayoutReset $editor]
     $menu add separator
     set state($editor,properties) 1
-    $menu add checkbutton -label {Script properties / parameters} -variable ::GX::WorkspaceAssist::state($editor,properties) -command [list ::GX::scriptWorkspacePropertiesToggle $editor 1]
+    $menu add checkbutton -label {Script properties} -variable ::GX::WorkspaceAssist::state($editor,properties) -command [list ::GX::scriptWorkspacePropertiesToggle $editor 1]
+    foreach {key label value} {parameters Parameters 1 version Version 1 requiredApis {Additional required APIs} 0} {
+        set state($editor,$key) $value
+        $menu add checkbutton -label $label -variable ::GX::WorkspaceAssist::state($editor,$key) -command [list ::GX::scriptWorkspacePropertiesToggle $editor 1]
+    }
     $menu configure -postcommand [list ::GX::scriptWorkspaceViewRefresh $editor]
 }
 proc ::GX::scriptWorkspaceFindLayout {editor width} {
@@ -340,6 +607,8 @@ proc ::GX::scriptWorkspaceLayoutInit {editor} {
     bind GXScriptWorkspaceAssistant <Destroy> {::GX::scriptWorkspaceAssistDestroyed %W %W}
     set center $editor.p.center
     if {[winfo exists $center.work]} return
+    # Fit direct editor launches once; later reuse keeps the user's geometry.
+    uiFieldWindowFit $editor 1180 760
     apiBrowserMount $editor.p.left $state($editor,language)
     ttk::panedwindow $center.work -orient vertical
     pack $center.work -side top -fill both -expand 1 -before $center.edit
@@ -351,9 +620,10 @@ proc ::GX::scriptWorkspaceLayoutInit {editor} {
     bind $center.find <Configure> [list ::GX::scriptWorkspaceFindLayout $editor %w]
     scriptWorkspaceFindLayout $editor [winfo width $center.find]
     ttk::notebook $center.work.tools
-    ttk::button $center.propertiesToggle -text {Show script properties / parameters} -command [list ::GX::scriptWorkspacePropertiesToggle $editor]
+    ttk::button $center.propertiesToggle -text {Show script properties} -command [list ::GX::scriptWorkspacePropertiesToggle $editor]
     set state($editor,propertyPack) {}
-    foreach name {props desc params} {if {[winfo exists $center.$name]} {dict set state($editor,propertyPack) $center.$name [pack info $center.$name]}}
+    foreach name {props version requiredApis desc params} {if {[winfo exists $center.$name]} {dict set state($editor,propertyPack) $center.$name [pack info $center.$name]}}
+    scriptWorkspacePropertiesToggle $editor 1 0
     set state($editor,focus) {}
     set state($editor,restoreSides) {}
     set state($editor,fractions) {.19 .78};set state($editor,sourceFraction) .40
@@ -465,7 +735,10 @@ proc ::GX::scriptWorkspaceFocusSource {editor} {
         set state($editor,restoreSides) {}
     }
     scriptWorkspaceLayoutSchedule $editor
-    focus $p.center.edit.text
+    set tabs $p.center.edit
+    set target [dict get [scriptSourceTabsIdentity $tabs] source_widget]
+    if {[scriptSourceNotesActive $tabs]} {set note [$tabs.book select];set target [dict get [_documentEditorRecord $::GX::ScriptSourceTabs::state($tabs,$note,note_editor)] source]}
+    focus $target
     scriptWorkspaceViewRefresh $editor
 }
 proc ::GX::scriptWorkspaceAssistMount {editor panel} {
@@ -534,6 +807,7 @@ proc ::GX::scriptWorkspaceLayoutFractions {editor} {
 }
 proc ::GX::scriptWorkspaceLayoutRemember {editor} {
     variable ::GX::WorkspaceAssist::state
+    if {[info exists state($editor,noteFocus)] && $state($editor,noteFocus)} {return}
     if {![winfo exists $editor.p] || ![info exists state($editor,language)]} return
     scriptWorkspaceLayoutFractions $editor
     set work $editor.p.center.work
@@ -541,7 +815,7 @@ proc ::GX::scriptWorkspaceLayoutRemember {editor} {
     set key scripts.editor_layout.[string tolower $state($editor,language)]
     set prior [configurationGet $key]
     if {[catch {dict size $prior}]} {set prior {}}
-    set value [dict merge $prior [dict create properties $state($editor,properties) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]]
+    set value [dict merge $prior [dict create properties $state($editor,properties) parameters $state($editor,parameters) version $state($editor,version) requiredApis $state($editor,requiredApis) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]]
     configurationSet $key $value;configurationSave [list $key]
 }
 proc ::GX::scriptWorkspaceLayoutRestore {editor} {
@@ -550,14 +824,17 @@ proc ::GX::scriptWorkspaceLayoutRestore {editor} {
     set key scripts.editor_layout.[string tolower $state($editor,language)]
     set saved [configurationGet $key]
     if {![dict exists $saved properties]} {dict set saved properties 1}
+    foreach {field default} {parameters 1 version 1 requiredApis 0} {
+        if {![dict exists $saved $field] || ![string is boolean -strict [dict get $saved $field]]} {dict set saved $field $default}
+    }
     if {[catch {
         foreach side {left right properties} {if {![string is boolean -strict [dict get $saved $side]]} {error {Invalid side visibility}}}
         foreach value [concat [dict get $saved fractions] [dict get $saved source_fraction]] {if {![string is double -strict $value] || $value<=.05 || $value>=.95} {error {Invalid splitter fraction}}}
         if {[llength [dict get $saved fractions]]!=2} {error {Two horizontal splitter fractions required}}
         lassign [dict get $saved fractions] savedLeft savedRight
         if {$savedRight-$savedLeft<.10} {error {Source pane requires usable width}}
-    }]} {set saved {left 1 right 1 properties 1 fractions {.19 .78} source_fraction .40}}
-    set state($editor,properties) [dict get $saved properties]
+    }]} {set saved {left 1 right 1 properties 1 version 1 requiredApis 0 fractions {.19 .78} source_fraction .40}}
+    foreach field {properties parameters version requiredApis} {set state($editor,$field) [datasetPublicationV2DictDefault $saved $field 1]}
     scriptWorkspacePropertiesToggle $editor 1 0
     set state($editor,fractions) [dict get $saved fractions];set state($editor,sourceFraction) [dict get $saved source_fraction]
     foreach side {left right} {
@@ -588,12 +865,117 @@ proc ::GX::scriptWorkspacePropertiesToggle {editor {fromMenu 0} {persist 1}} {
     variable ::GX::WorkspaceAssist::state
     if {!$fromMenu} {set state($editor,properties) [expr {!$state($editor,properties)}]}
     set center $editor.p.center
-    if {$state($editor,properties)} {
-        pack forget $center.propertiesToggle
-        dict for {widget options} $state($editor,propertyPack) {pack $widget {*}$options -before $center.find}
-    } else {
-        dict for {widget options} $state($editor,propertyPack) {pack forget $widget}
-        pack $center.propertiesToggle -side top -fill x -before $center.find
+    pack forget $center.propertiesToggle
+    dict for {widget options} $state($editor,propertyPack) {pack forget $widget}
+    set anchor [expr {[winfo manager $center.find] eq {pack}?"$center.find":"$center.work"}]
+    # The Version and manual requirements rows are independent of the lower
+    # properties/arguments area; restoring any row keeps the same editor panes.
+    dict for {widget options} $state($editor,propertyPack) {
+        set name [lindex [split $widget .] end]
+        set key [expr {$name eq {params} ? {parameters} : ($name in {version requiredApis} ? $name : {properties})}]
+        if {$state($editor,$key)} {pack $widget {*}$options -before $anchor}
     }
+    if {!$state($editor,properties) && (![info exists state($editor,noteFocus)] || !$state($editor,noteFocus))} {pack $center.propertiesToggle -side top -fill x -before $anchor}
     if {$persist} {scriptWorkspaceLayoutRemember $editor}
 }
+
+# Invocation-only declarations share validation and Job transport with saved
+# declarations, but remain local to this reviewed Runner instance.
+proc ::GX::scriptRunManualControls {parent} {
+    ttk::labelframe $parent.manual -text {Additional parameters for this invocation} -padding 6
+    grid $parent.manual -row 900 -column 0 -columnspan 2 -sticky ew -pady 6
+    grid columnconfigure $parent.manual 1 -weight 1
+    ttk::button $parent.manual.add -text {Add parameter…} -command {::GX::scriptRunManualEdit {}}
+    grid $parent.manual.add -row 0 -column 0 -columnspan 2 -sticky w
+    ttk::frame $parent.manual.rows
+    grid $parent.manual.rows -row 1 -column 0 -columnspan 2 -sticky ew
+    grid columnconfigure $parent.manual.rows 1 -weight 1
+}
+proc ::GX::scriptRunManualRefresh {} {
+    variable scriptRunUi
+    set p $scriptRunUi(body).parameters.manual.rows
+    foreach child [winfo children $p] {destroy $child}
+    set row 0
+    dict for {name spec} $scriptRunUi(invocation_parameters) {
+        if {![info exists scriptRunUi(parameter,$name)]} {set scriptRunUi(parameter,$name) [dict get $spec default]}
+        ttk::label $p.l_$name -text "$name ([dict get $spec type])" -wraplength 160
+        uiFieldCreate $p.e_$name $spec ::GX::scriptRunUi(parameter,$name)
+        ttk::frame $p.a_$name
+        ttk::button $p.a_$name.edit -text Edit -command [list ::GX::scriptRunManualEdit $name]
+        ttk::button $p.a_$name.remove -text Remove -command [list ::GX::scriptRunManualRemove $name]
+        pack $p.a_$name.edit $p.a_$name.remove -side left -padx 2
+        grid $p.l_$name -row $row -column 0 -sticky w -padx 3
+        grid $p.e_$name -row $row -column 1 -sticky ew -padx 3
+        grid $p.a_$name -row $row -column 2 -sticky e
+        incr row
+        if {[dict get $spec description] ne {}} {
+            ttk::label $p.d_$name -text [dict get $spec description] -wraplength 360
+            grid $p.d_$name -row $row -column 0 -columnspan 3 -sticky ew
+            incr row
+        }
+    }
+}
+proc ::GX::scriptRunManualRemove {name} {
+    variable scriptRunUi
+    if {$scriptRunUi(submitting)} return
+    dict unset scriptRunUi(invocation_parameters) $name
+    unset -nocomplain scriptRunUi(parameter,$name)
+    scriptRunManualRefresh
+}
+proc ::GX::scriptRunManualEdit {name} {
+    variable scriptRunUi
+    if {$scriptRunUi(submitting)} return
+    set w .gxtxtScriptRun.parameter
+    catch {destroy $w};toplevel $w;wm transient $w .gxtxtScriptRun
+    wm title $w [expr {$name eq {} ? {Add invocation parameter} : {Edit invocation parameter}}]
+    set spec [expr {$name eq {} ? [dict create type string default {} required 0 description {}] : [dict get $scriptRunUi(invocation_parameters) $name]}]
+    set scriptRunUi(edit_original) $name
+    set scriptRunUi(edit,name) $name
+    set row 0
+    foreach {key label} {name Name type Type default Value required Required description Description values {Choices (Tcl list)} min Minimum max Maximum} {
+        if {$key ne {name}} {set scriptRunUi(edit,$key) [datasetPublicationV2DictDefault $spec $key {}]}
+        ttk::label $w.l_$key -text $label
+        if {$key eq {type}} {ttk::combobox $w.e_$key -textvariable ::GX::scriptRunUi(edit,$key) -state readonly -values {string integer double number boolean choice color path file command}} elseif {$key eq {required}} {ttk::checkbutton $w.e_$key -variable ::GX::scriptRunUi(edit,$key)} else {ttk::entry $w.e_$key -textvariable ::GX::scriptRunUi(edit,$key) -width 35}
+        grid $w.l_$key -row $row -column 0 -sticky w -padx 7 -pady 4
+        grid $w.e_$key -row $row -column 1 -sticky ew -padx 7 -pady 4
+        incr row
+    }
+    if {$name ne {}} {set scriptRunUi(edit,default) $scriptRunUi(parameter,$name)}
+    ttk::label $w.error -textvariable ::GX::scriptRunUi(edit_error) -wraplength 380
+    set scriptRunUi(edit_error) {}
+    grid $w.error -row $row -column 0 -columnspan 2 -sticky ew
+    ttk::button $w.ok -text Apply -command ::GX::scriptRunManualApply
+    ttk::button $w.cancel -text Cancel -command [list destroy $w]
+    grid $w.ok -row [incr row] -column 0 -pady 8
+    grid $w.cancel -row $row -column 1 -pady 8
+    grid columnconfigure $w 1 -weight 1
+    bind $w <Escape> [list destroy $w]
+    bind $w <Return> ::GX::scriptRunManualApply
+    focus $w.e_name
+}
+proc ::GX::scriptRunManualApply {} {
+    variable scriptRunUi
+    if {$scriptRunUi(submitting)} return
+    if {[catch {
+        scriptRunIdentityCheck
+        set name [string trim $scriptRunUi(edit,name)]
+        set spec {}
+        foreach key {type default required description values min max} {
+            set value $scriptRunUi(edit,$key)
+            if {$key in {values min max} && $value eq {}} continue
+            dict set spec $key $value
+        }
+        set manual $scriptRunUi(invocation_parameters)
+        if {$scriptRunUi(edit_original) ne {}} {dict unset manual $scriptRunUi(edit_original)}
+        if {[dict exists $manual $name]} {error {Duplicate invocation parameter name}}
+        dict set manual $name $spec
+        set effective [scriptInvocationSchema $scriptRunUi(metadata) $manual]
+        # UI_FIELD owns typed value/range/choice validation for both languages.
+        if {[dict get $spec default] ne {} || [dict get $spec required]} {uiFieldNormalize [dict get $effective $name] [dict get $spec default]}
+        set scriptRunUi(invocation_parameters) $manual
+        set scriptRunUi(parameter,$name) [dict get $spec default]
+        scriptRunManualRefresh
+        destroy .gxtxtScriptRun.parameter
+    } reason]} {set scriptRunUi(edit_error) $reason}
+}
+source [file join [file dirname [info script]] script_source_tabs.tcl]

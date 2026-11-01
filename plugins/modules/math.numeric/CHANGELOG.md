@@ -1,3 +1,7 @@
+# 1.64.0 — DEV111-P034
+
+Add bounded comparison_curves through the existing Tcl/Octave worker, with explicit display transforms, common-domain subtraction/ratio and preserved missing-sample gaps.
+
 ## 1.63.0 — dev108
 
 Public captured Dataset expression, interpolation and split-complex operations preserve managed resource and statistical result authority. Restricted callers receive only specifically approved existing Numeric operations.
@@ -137,7 +141,7 @@ Targeted tests cover three methods, independent analytic draws/covariance,
 precision/fixed identities, rank/bound/failure/deadline records and cancellation.
 No original fit is repeated. Historical results remain unchanged. Shared spectra
 manuals now describe current mixed real/complex grids without implementation
-chronology; this history remains here.
+chronology; this history remains here. Final acceptance is pending.
 
 ## 1.45.0
 
@@ -155,7 +159,7 @@ Accepted-model Workbench transfer retains exact supported Native2D primitives,
 independent axis units, original parameter mappings and immutable model resources.
 Unsupported representations are explicitly sampled; no refit or statistics are
 computed. Public Numeric/Fitter operations and CORE nested resource adoption
-serve both scripting languages.
+serve both scripting languages. Targeted evidence is recorded in checkpoint157.
 Workbench/current API manual chronology is moved to existing release history;
 compatibility contracts and literal document paths remain unchanged.
 
@@ -441,7 +445,7 @@ callback signatures remain supported. Nonlinear covariance now uses the
 column-scaled Jacobian SVD, avoiding the squared condition number of a normal
 matrix. Shared binary resources carry Script Bridge inputs and outputs.
 Numerical evidence is scoped to the named case/start/platform in delivery
-receipts;
+receipts; GUI integration and final release acceptance are tracked separately.
 
 # math.numeric 1.17.0
 
@@ -482,13 +486,13 @@ Ordered parametric/polar/oriented models, sparse smoothing and indexed native cu
 - Add split-complex matrix transport, inspection, solve with explicit rank policy, decompositions, eigenproblems, inverse/pseudoinverse, matrix exponential/power and provider-owned Octave/Python Script Bridge operation.
 - Add focused numerical and script acceptance fixtures.
 
-## 1.9.1
+## 1.9.1 — 2026-09-30
 
 - Resolve Dataset Selections through public read-only Session Inspection and Canonical Dataset variable metadata.
 
 # math.numeric changelog
 
-## 1.9.0
+## 1.9.0 — 2026-09-27
 
 - Added data-only operation introspection to the Tcl and Octave bindings, with stable IDs, signatures, binding availability, result metadata, and unit rules.
 - Added explicit input/valid/nonfinite observation counts to descriptive and weighted results; expanded axis reductions and typed Script Bridge result adaptation.
@@ -498,35 +502,35 @@ Ordered parametric/polar/oriented models, sparse smoothing and indexed native cu
 - Added Octave `student_t_quantile` and `hypothesis_test` primitives for one-sample, independent, Welch and paired t-tests plus Mann-Whitney and signed-rank tests. Rank tests use exact conditional enumeration for at most 20 observations and a documented tie-corrected normal approximation for larger samples.
 - Added Octave `one_way_anova` for ordinary and Welch group comparisons, group summaries, F/p values, sums of squares and ordinary-ANOVA effect sizes.
 
-## 1.8.0
+## 1.8.0 — 2026-09-26
 
 - Adds public `residual_metrics` to NUMERIC_API_v1 for reusable RMSE, MAE, maximum error, R² and relative-error summaries, with a finite-input and relative-floor contract.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-## 1.6.0
+## 1.6.0 — 2026-09-26
 
 - Added public Octave `matrix_statistics` with dimension-aware mean, median, variance and standard deviation for replicated curve datasets.
 
-## 1.5.0
+## 1.5.0 — 2026-09-25
 
 - Added public `vector_normalize` / `normalizeVector` with `unit_vector` and `mean_center_unit_vector` methods.
 - Added public `vector_similarity` / `vectorSimilarity` with cosine, Pearson, angular-similarity and normalized-residual methods.
 - These generic primitives remove reusable vector mathematics from spectroscopy/domain consumers while preserving their scientific matching semantics.
 
-## 1.4.0
+## 1.4.0 — 2026-09-25
 
 - Added public `weighted_quantiles` / `weightedQuantiles` for arbitrary weighted empirical-CDF inverse quantiles.
 - Added public `cumulative_sum` / `cumulativeSum` as a generic vector reduction.
 - These additions allow scientific consumers such as `analysis.spectral_features` to keep percentile and cumulative-distribution semantics in the analysis layer without implementing generic reductions privately.
 
-## 1.3.0
+## 1.3.0 — 2026-09-25
 
 - Added public `analytic_signal` / `analyticSignal` construction using the standard FFT Hilbert multiplier for even and odd real-valued records.
 - The primitive returns split complex data plus amplitude and deliberately excludes detrending, band selection and PSD/spectrum semantics.
 - Added Octave and Tcl regression coverage and exposed the `analytic_signal` capability through normal dependency discovery.
 
-## 1.2.0
+## 1.2.0 — 2026-09-25
 
 - Added public `NUMERIC_API_v1` FFT and IFFT primitives with explicit transform length and normalization conventions.
 - Added reusable frequency-grid and one-sided transform selection helpers with explicit DC/Nyquist behavior.
@@ -577,7 +581,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   with scaled extreme-value arithmetic, stable first-maximum identities and
   atomic error handling. No scientific interpretation is delegated to viewers.
 
-natural cubic smoothing keeps its original objective and
+Dev097 checkpoint113: natural cubic smoothing keeps its original objective and
 manual lambda0 semantics, adds O(N) native exact trace diagnostics and explicit
 bounded deterministic GCV. Independent dense/SciPy references, typed CORE/Script
 jobs, saved Fitter replay and active native cancellation targeted PASS.

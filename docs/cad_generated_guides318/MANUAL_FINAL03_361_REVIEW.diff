@@ -1,0 +1,19 @@
+--- preserved source9f96
++++ corrected clean researcher source for normalBuilder361
+@@ -24,7 +24,7 @@
+ 
+ On **Solids**, choose **box** or **cylinder**. Box X/Y/Z, cylinder radius and cylinder height are positive lengths in the displayed canonical working unit. Enter a name and use **Create solid** in the main toolbar. No geometry exists merely because a default value is displayed. The default box dimensions are 20 × 12 × 8; the initial document normally uses mm, but always check its actual unit.
+ 
+-**Object properties / role…** opens the original owner form for name, visibility, lock, color, attributes and geometry role. **regular**, **construction** and **reference** roles are distinct from visibility. Nonregular geometry is excluded from normal complete-geometry publication. Select objects by their actual logical IDs; use the face identity supplied by the current live pick when an operation requires a face.
++**Object properties / role…** opens the original owner form for name, visibility, lock, color, attributes and geometry role. **regular**, **construction** and **reference** roles are distinct from visibility. Nonregular geometry is excluded from normal complete-geometry publication. Select objects by their actual logical IDs; a rendered triangle or pixel alone is not a persistent OCCT face. Use the face identity from the current live pick and its current object/source context when an operation requires a face.
+ 
+ **Translate…**, **Rotate…**, **Scale geometry…** and **Reset placement…** use the original transform forms and commit owner. Translation and pivots are in the working length unit. Rotation input degrees are converted by the owner to native radians; scale factors are dimensionless. Physical Scale changes geometry, whereas **Convert working length unit…** changes coordinate representation while preserving physical size. Unit conversion can make captured measurements/comparisons stale and requires the existing saved-view unit checks.
+ 
+@@ -156,6 +156,6 @@
+ 
+ ## Work in a narrow window or with large text
+ 
+-When the main toolbar changes to **Actions…** in a narrow window, open that menu to reach its original document, inspection and geometry actions. The wide window restores the normal toolbar buttons. Use the inspector’s vertical scrollbar to reach document controls and the **Solids**, **Mesh**, **Inspect**, **Organize** and **Publish** pages. If a page is wider than the inspector, use the horizontal scrollbar at its bottom to bring the left or right action column fully into view. Pressing Tab moves focus between controls and brings the focused control into view. Different scroll positions show different columns; controls need not all be visible at once. The native geometry view remains separate from the inspector, and scrolling the inspector does not change geometry, units or History.
++When the main toolbar changes to **Actions…** in a narrow window, open that menu to reach its original document, inspection and geometry actions. The wide window restores the normal toolbar buttons. Use the inspector’s vertical scrollbar to reach document controls and the **Solids**, **Mesh**, **Inspect**, **Organize** and **Publish** pages. If a page is wider than the inspector, use the horizontal scrollbar at its bottom to bring the left or right action column fully into view. Use Tab to move between controls, then scroll as needed to read the full caption. Different scroll positions show different columns; controls need not all be visible at once. The native geometry view remains separate from the inspector, and scrolling the inspector does not change geometry, units or History.
+ 
+ For source-grounded worked examples, extract the separate illustrated HTML guide and open its index. It covers generated inputs, exact solids, measurements, constraints, units, publication, face images, Recipe replay and document recovery.

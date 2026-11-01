@@ -252,3 +252,26 @@ Bundle members use the same installer and exact registry transaction. Loaded
 members defer rebinding until the entire bundle commits; rollback never leaves
 a newly activated first member behind after a later member fails. Reopening a
 quiescent certified provider can activate the committed implementation.
+# Packaged modules delivered by framework patches
+
+The Plugin Manager lists installed descriptors as well as managed registry
+records. Activation and package registration are distinct: a bundled non-CORE
+module can be enabled before its first Plugin Manager update. Its row is marked
+`Bundled / not registered`; listing it does not write the installed registry.
+
+An explicit **Update selected** may adopt such a module through the existing
+installer transaction. The current canonical directory must contain matching
+package and descriptor identities/versions and a complete, valid SHA-256 file
+inventory. Symbolic links, incomplete inventories, inconsistent identities,
+unpackaged directories and unmanaged CORE modules are refused. Automatic install
+does not adopt existing unmanaged directories. The update version is compared
+with the actual installed descriptor/package, including when an older managed
+registry record survived a framework overlay. Bundle update uses the same check.
+Identity comparisons preserve the ordinary package reader's whitespace trimming
+and case normalization for the package type.
+
+Registration occurs only after successful replacement; failure preserves the old
+package and the exact prior registry, including absence of a registry file.
+Existing loaded-code, quiescence, pending restart and rollback rules still apply.
+Discovery does not make an unmanaged package removable. This CORE behavior is
+verified with separate test packages, without executing owner-supplied modules.

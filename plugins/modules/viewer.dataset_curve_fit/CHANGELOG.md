@@ -1,4 +1,4 @@
-## 0.46.1
+## 0.46.1 — 2026-10-17
 
 Surface command catalogs retain their distinct shortcut namespace while using the actual installed module identity for authenticated callbacks.
 
@@ -96,7 +96,7 @@ Targeted tests cover three methods, independent analytic draws/covariance,
 precision/fixed identities, rank/bound/failure/deadline records and cancellation.
 No original fit is repeated. Historical results remain unchanged. Shared spectra
 manuals now describe current mixed real/complex grids without implementation
-chronology; this history remains here.
+chronology; this history remains here. Final acceptance is pending.
 
 ## 0.33.0
 
@@ -114,7 +114,7 @@ Accepted-model Workbench transfer retains exact supported Native2D primitives,
 independent axis units, original parameter mappings and immutable model resources.
 Unsupported representations are explicitly sampled; no refit or statistics are
 computed. Public Numeric/Fitter operations and CORE nested resource adoption
-serve both scripting languages.
+serve both scripting languages. Targeted evidence is recorded in checkpoint157.
 Workbench/current API manual chronology is moved to existing release history;
 compatibility contracts and literal document paths remain unchanged.
 
@@ -406,7 +406,7 @@ Exact source workspace and scientific orientations/parametric models, requested 
 
 # Changelog
 
-## 0.2.0 / GX-TXT dev-051
+## 0.2.0 — 2026-10-06 / GX-TXT dev-051
 
 - Add circular arc, quadratic/cubic Bézier, PCHIP, smoothing spline and unbounded-order Fourier through NUMERIC_API_v1; reuse output grids, add parametric domains and exact geometric projection. Preserve local samples/CORE acceptance/Session Datasets as distinct workflows. Explicit fit/sample publication, reproducible accepted state and CSV provenance sidecar.
 
@@ -423,17 +423,17 @@ Python/Octave template creation/binding, and retained/published template lineage
 Workspace package/import/rename uses CORE; original row picks are never silently
 applied to new observations. GUI application keeps Preview and Accept explicit.
 
-Fit smoothing-selection and Results diagnostic commands,
+Dev097 checkpoint113: Fit smoothing-selection and Results diagnostic commands,
 bounded typed worker controls, compact CORE summary/full details, actual predictor
 units and exact accepted/recipe/Workspace search persistence. Manual lambda0 and
 historical defaults preserved. GUI, real Python/Octave and reopen targeted PASS.
 
-conditional model/domain controls retain values and focus;
+Dev097 checkpoint114: conditional model/domain controls retain values and focus;
 scrolling Results with an opt-in technical panel preserves the plot at enlarged
 fonts. Existing widget paths and scientific identities stay unchanged. CORE
 supplies explanatory solver status, with iteration/implementation data in details.
 
-font-measured plot margins, bounded non-overlapping tick
+Dev097 checkpoint115: font-measured plot margins, bounded non-overlapping tick
 labels and separate caption bands; physical coordinates/units and existing
 axis_label tag remain. Enlarged-font source/accepted rendering, exact point
 selection and residual subplot spacing use actual CORE coordinate transforms.
@@ -445,7 +445,7 @@ registration, exact source-row mapping through filters/weights, a paged Results
 dialog, source-guarded selection outside display samples, saved masks, recipe and
 Workspace integration. Unsupported model families refuse the opt-in explicitly.
 
-## parameter bootstrap and documentation reconciliation
+# dev097 checkpoint121 — parameter bootstrap and documentation reconciliation
 
 - Add default-off Fitter bootstrap settings, exact translated solver inputs,
   typed retained trials, CORE interpretation, paged Results and public Script pages.
@@ -455,29 +455,37 @@ Workspace integration. Unsupported model families refuse the opt-in explicitly.
 - Move release chronology out of current manuals and correct obsolete weighted-fit
   and callback availability statements. Historical source text follows for traceability.
 
+Former MANUAL.md text:
 
 From the dev-031 framework root, run the API and Tk check with a fresh output directory:
 
+Former MANUAL.md text:
 
 ## Scientific models and independent publication (introduced0.2.0, dev-051)
 
+Former MANUAL.md text:
 
 
 ## dev-053 CAD workspace
 
+Former MANUAL.md text:
 
 Source, preview, accepted-fit, selection and residual lines are clipped to the actual Native plotting viewport before rendering. Markers/text crossing the plot are omitted; scientific coordinates and fit input stay unchanged. Auto/X=Y, zoom, pan and resize share this authority. There are no cosmetic margin masks. If controls leave less than the minimum plot size, stale drawing is cleared. At narrow width with substantially increased fonts, the inherited vertical layout can consume the whole canvas; the larger scrollable/resizable/persisted-layout TASK-10 redesign remains separate.
 
+Former MANUAL.md text:
 
 
 ## 0.3.2 / dev-054 adapter compatibility
 
+Former MANUAL.md text:
 
 This patch carries the same current shared Native2D adapter as CORE and Curve Workbench. Scientific fitting, complete-input policies, conversions and actual viewport clipping are unchanged. TASK-10 layout redesign remains separate.
 
+Former MANUAL.md text:
 
 ## Layout and official named Workspaces (0.4.0)
 
+Former MANUAL.md text:
 
 Workspace provides New/Open/Save/Duplicate/Rename/Close/Delete and the standard
 Session Workspaces manager. This is the named Session Workspace around the
@@ -489,15 +497,18 @@ Version1/2 legacy documents remain available; saving an older document upgrades
 its schema with the same Document identity and preserved metadata. Scientific
 source changes/missing sources produce diagnostics while recoverable accepted
 fits remain available. CORE owns lifecycle, resource remapping and portable backup.
-## Fitter controls, scientific parameter results and Workspaces
+# Integrated dev096 candidate additions (acceptance pending)
 
+Former MANUAL.md text:
 
 # Parameter results and statistical assumptions (dev097)
 
+Former MANUAL.md text:
 
 
 ## Registered Python and Octave models (dev097)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 Built-in provenance is `source_kind=builtin_sample`, `source_sample_id` and the
 complete descriptor; `source_dataset_id` is absent. Real Dataset sources retain
@@ -506,42 +517,54 @@ source identity column, and its sidecar preserves this lineage. Legacy dev-051
 saved `source_kind=sample` documents remain readable and their accepted sample
 curve provenance is upgraded when restored.
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 Provider `viewer.dataset_curve_fit` 0.3.0, GX-TXT dev-052. Activate through `::GX::modulePublicApiActivate viewer.dataset_curve_fit DATASET_CURVE_FIT_API_v1`. The existing Tk viewer and public host API share canonical Dataset reads, Native2D CORE curves, Numerical API calculations and Interactive Document persistence. Viewer UI lifecycle stays host-only.
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Dataset measurement bindings in dev097
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Exact source science in dev-052
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Integrated dev096 candidate additions
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Integrated dev097 statistical compatibility
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ### Native nonlinear state and diagnostics (integrated dev097)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Comparable accepted models (module 0.8.0)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 
 ## Explicit data-only fit rerun (Fitter 0.11.0, dev097)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Named fit templates (Fitter 0.12.0, dev097)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 
 ### Independent accepted-model functions (dev097, Fitter 0.13.0)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 
 ### Registered model consumer (dev097 integration checkpoint 108)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 
 Checkpoint 109 (Fitter 0.14.0 / Numeric 1.29.0): the Fit menu now exposes
@@ -551,12 +574,14 @@ completed preview is adopted only if its source/settings/row mask still match;
 all owned resources are copied through CORE to the original Workspace. The Job
 keeps its independent retained result. Acceptance and History remain explicit.
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 Verified targeted coverage includes the real Debian GUI, exact filters/selection
 and omitted sigma rows, mV-to-V conversion, independent weighted coefficient/SE
 references, Workspace packaging, real Python/Octave explicit acceptance and
-publication. The remaining model contracts still require further targeted evidence.
+publication. The remaining model contracts still require further targeted evidence. No frozen acceptance claim.
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 
 Checkpoint 110: actual registered-model Jobs verify stale-completion refusal,
@@ -568,12 +593,15 @@ New Job Workspace display names include the invocation ID to prevent repeated
 or concurrent runs from colliding. Resource owners and result references use
 Document IDs; no existing Workspace or scientific identity is renamed.
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ### Smoothing selection (dev097)
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 ## Explicit logarithmic response fitting in dev097
 
+Former DATASET_CURVE_FIT_API_v1.md text:
 
 `curve_fit.log_result_reference`, `curve_fit.logarithmic_source`,
 `curve_fit.retransformation_coordinates`, resource SHA, column identities and

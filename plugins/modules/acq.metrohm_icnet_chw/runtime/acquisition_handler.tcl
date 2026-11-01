@@ -188,7 +188,17 @@ proc ::AcqMetrohmCHW::import {request} {
             provenance "Original bounded peak-point records extracted from CHW D section; optional component labels from source U audit section. Retention is source sample index times native interval divided by60; historical package reference-export comparisons are separate from current source-implementation parity evidence." \
             structured_metadata $peakMd]
     }
-    return [dict create datasets $datasets]
+    # Declare only outputs actually produced by the selected profile. CORE pins
+    # RAW/member identities and commits this wrapper in the same transaction.
+    set members {}
+    foreach dataset $datasets {
+        set memberId [dict get $dataset dataset_id]
+        set role [expr {$memberId eq $signalId?{chromatography.trace}:($memberId eq $peakId?{chromatography.peaks}:{chromatography.source_container})}]
+        lappend members [dict create dataset_id $memberId role $role required [expr {$memberId eq $signalId}]]
+    }
+    return [dict create datasets $datasets dataset_group [dict create \
+        group_id "${id}.group" display_name "CHW measurement — $id" \
+        group_contract chromatography.measurement primary_dataset_id $signalId members $members]]
 }
 
 proc ::AcqMetrohmCHW::datasetPreview {request} {

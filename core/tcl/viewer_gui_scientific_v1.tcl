@@ -159,7 +159,7 @@ proc ::GX::_viewerGuiScientificAcProbe {window form properties diagram dataset j
         }
         return -options $options $message
     }
-    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {Select AC probe source}}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window {Select AC probe source}}
     return [dict create mode $mode endpoint $endpoint dataset_id $dataset job_id [dict get $job job_id] source_guard [dict get $job source_guard] numeric_form $target real_variable_id $real imaginary_variable_id $imaginary frequency_variable_id frequency unit $unit representation canonical_split_complex explicit_evaluate_required 1 computation none publication none authority SCIENTIFIC_EXECUTION_API_v1]
 }
 proc ::GX::_viewerGuiScientificState {window form value} {

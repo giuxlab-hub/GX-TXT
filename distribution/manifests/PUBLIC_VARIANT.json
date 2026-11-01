@@ -1,0 +1,613 @@
+{
+  "accepted_input_sha256": "1a57c93f4a06b11e1b250139e38ae04bfe08c1954548b185ee9c78282ffd78d2",
+  "excluded_private_members": [
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_ir_library_explorer_lab_1.0.0.zip",
+      "sha256": "67db684511b8064789bf334748134bc3b0a1e7959f3de77910b36ecb1b4ee778",
+      "size": 28303
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_ir_spectral_contracts_lab_1.0.0.zip",
+      "sha256": "2d7e57fb2b21a353554e774e33a2aba7ab20b8dfce49d4aacf2767a27f9499f5",
+      "size": 36127
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_ir_teaching_labs_1.0.0.zip",
+      "sha256": "71338764583a5b644ce19101d7a923f9042bf0eeefb7e2c9adc8e4aceb08ed41",
+      "size": 1595264
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_ir_viewer_integrated_study_lab_1.0.0.zip",
+      "sha256": "b88eefffdd7dc4a345747cd9f4beb254b690018005a240541f9aabe001e5c9a3",
+      "size": 34336
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_nist_pnnl_ir_faculty_1.1.0.zip",
+      "sha256": "ef1b72fd89e3224c4a0f802a48f46346cb11bd909aef5a344005f65f48287146",
+      "size": 1455259
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/gxtxt_refimp_full_training_ir_1.1.0.zip",
+      "sha256": "7e5ff019daa71919a034bb49bb75881401f927ea5bbbe1c58a046c61a7c977a0",
+      "size": 34557
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/nist.pnnl.ir.optical_constants.2017_1.0.0.zip",
+      "sha256": "7144fc6f672186a096a8bea8e8565f5c8948e82584dcfc6fa67f52e69c6aa8cd",
+      "size": 424784
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/openspecy.example.nitrocellulose.2017_1.0.0.zip",
+      "sha256": "d40c86f8666a22a67f09c8456825b7d4d65bda375c228a08eae8a080b2fc0cf6",
+      "size": 109206
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/tum.refimp.ftir.2022_1.0.0.zip",
+      "sha256": "6f03d819733e0bba681b867b8a6e90f33f63fddb63f803339952854b0dd58c20",
+      "size": 85494
+    },
+    {
+      "mode": 420,
+      "path": "distribution/packages/tum.refimp.ftir.training.2022_1.0.0.zip",
+      "sha256": "8b8aa0e135264eec83044e130f13a4a96b81438eed5152585c7cc22e6f1d9be8",
+      "size": 43959549
+    },
+    {
+      "mode": 420,
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/data/cambridge_co2_nmr_1d_1.0.0.zip",
+      "sha256": "ce684ebef015919d2b93f767bfac6ccbf3f15a90d98499c08071694fc0d246ec",
+      "size": 5867835
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/EXPECTED_RESULTS.md",
+      "sha256": "7add87500389b8c62f32929ba8a707e3e47607a8a2831a38df9491cc23dd2fe9",
+      "size": 1079
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/FACULTY_GUIDE.md",
+      "sha256": "0434c78df83bf1a2ce1fb565302a97c03db15358da1b78e6868309a939758336",
+      "size": 2328
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/LAB_PLAN.json",
+      "sha256": "752809664dcbe9639ff04e07887a1b923437007a4fc2a433e37c849852429993",
+      "size": 1950
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/README.md",
+      "sha256": "c1fb1e8481c7c65d0e913af4663f9a7217d7148b576cd536125dc0eedeccb599",
+      "size": 1213
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/RIGHTS.md",
+      "sha256": "62823ddd3c5328f3ff0aa3874675d3f0486aa65ca52564f8fbd4163ddb5a926c",
+      "size": 1111
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/SHA256SUMS.txt",
+      "sha256": "60dab7986b643f11e1422159eeeb71d2b79218ed7b4315b8444f9c1d92e9c9bd",
+      "size": 1051
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/STUDENT_GUIDE.md",
+      "sha256": "818ccb512ab265955e2b681d4864163de85552391cfd66af456e867e9ae54f13",
+      "size": 4307
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/TEST_PLAN.md",
+      "sha256": "e556d4253420b7b0769479ec73dc76e7660de9b1c49e44e08648305d00b65b4d",
+      "size": 1932
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/generate.py",
+      "sha256": "83129213f8b9cf5468955c686351ac41f15de6b36537166e3fc612874e882a08",
+      "size": 172
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/generator.ini",
+      "sha256": "a6940948543de31cd6fd97777fa85680b51644e4f489ae5eb10f338b1197567b",
+      "size": 762
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/ir_lab_generator.py",
+      "sha256": "6b538cce1eeb3bc1133b70f63fcf3800c224b429e6292d17a22d4d31b6af0692",
+      "size": 2714
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/ir_lab_session.py",
+      "sha256": "132c829c8665c43ee2441d24593fb70672a4d11478ef817de19b27c44b459f01",
+      "size": 3695
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_library_explorer_lab/public_producer.tcl",
+      "sha256": "1e8ed7f1af13752597f240376fac16526ef8ffbe8f0665fd3bd53117f18b6ed2",
+      "size": 11140
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/EXPECTED_RESULTS.md",
+      "sha256": "f1ca32504ab589c3e7026e94b1495b0e716bdc6b25f144e2545efa0eec636263",
+      "size": 1663
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/FACULTY_GUIDE.md",
+      "sha256": "9b7cfa8a70cdeeea4dbddea211f4acfd08d9acaa9ae28b3e56152e4594083286",
+      "size": 2919
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/LAB_PLAN.json",
+      "sha256": "968bc0891782b8b175cec16219b1d542a68eb529a0b3303e8ce12e0980866a39",
+      "size": 5178
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/README.md",
+      "sha256": "e1cefdce792568fefdb312b24ff027a71035f80d4adfc0ecf35e8b4d6a8d0fff",
+      "size": 682
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/RIGHTS.md",
+      "sha256": "83bf17ecd4203e10ae3e285b4c897d31f8f4cf2ee23b2ffaec50bef1c3854af6",
+      "size": 1538
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/SHA256SUMS.txt",
+      "sha256": "8a2108e0940ab7c2c79a7c2932779e3304b9db1fe56c9b045e08b557a2262b50",
+      "size": 1412
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/STUDENT_GUIDE.md",
+      "sha256": "378558e2df0411b9701866d822d12add87cf0556d5aa252fe479c8b5097d8f3c",
+      "size": 5373
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/TEST_PLAN.md",
+      "sha256": "aaf288a05e947848e4cc9d01c74283d7478704520891269f4fb0d9f25f1f0760",
+      "size": 1614
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/assets/refimp_pp_item13.csv",
+      "sha256": "7fd1363d540fb6cccbf1543ad715e219fe672e0036b3b205e58d21a2437fa54b",
+      "size": 20507
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/assets/synthetic_a.csv",
+      "sha256": "ca3f80965b8b1c520f94fa3777cfda465f263025f05f1debc57d34f623205b62",
+      "size": 118
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/assets/synthetic_a.jdx",
+      "sha256": "da01ce4ee1a6b8fe679bde6ee3ba7682d1d428ca63ce30dca880fab1bc789c2b",
+      "size": 363
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/assets/synthetic_b.csv",
+      "sha256": "56d86181c867fa9e6d6180f617293fd4ccff4a272f037e92690b0fbf429e25cb",
+      "size": 132
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/generate.py",
+      "sha256": "83129213f8b9cf5468955c686351ac41f15de6b36537166e3fc612874e882a08",
+      "size": 172
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/generator.ini",
+      "sha256": "ccc5f8c5d0df1f3dc885f1d14f2ec5a9160e5e73c0bada0f511f091852e4a485",
+      "size": 761
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/ir_lab_generator.py",
+      "sha256": "6b538cce1eeb3bc1133b70f63fcf3800c224b429e6292d17a22d4d31b6af0692",
+      "size": 2714
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/ir_lab_session.py",
+      "sha256": "132c829c8665c43ee2441d24593fb70672a4d11478ef817de19b27c44b459f01",
+      "size": 3695
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_spectral_contracts_lab/public_producer.tcl",
+      "sha256": "1e8ed7f1af13752597f240376fac16526ef8ffbe8f0665fd3bd53117f18b6ed2",
+      "size": 11140
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/EXPECTED_RESULTS.md",
+      "sha256": "412e2223a4eb823cb13506fd2ac6231a1037bf7ac1fef68d1c7f2688a9b5d3b9",
+      "size": 1149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/FACULTY_GUIDE.md",
+      "sha256": "28240b34b2cb592256f8c4077ca86c0ef5b9e22ee456d5b25a1b8a9b15b1237c",
+      "size": 2366
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/LAB_PLAN.json",
+      "sha256": "6bbf5ae3786bf261002bab3ba33cf350bb3bc541b15b6015e8a65d326726b743",
+      "size": 2343
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/README.md",
+      "sha256": "80f674ae34c63481aa9c1de56cbdf511988cad34fc5414fb4db0fae315d652eb",
+      "size": 1158
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/RIGHTS.md",
+      "sha256": "6fb43c4ef631cb7b6a9d45c70119305705a3d2c2908e677fe94d1c63c9ac4d55",
+      "size": 790
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/SHA256SUMS.txt",
+      "sha256": "b68dc26638b70bd43f5478e96839086758e35508bc48eecee9084b81df67f320",
+      "size": 1145
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/STUDENT_GUIDE.md",
+      "sha256": "1e7d271bbb3296907ee0125b7e0b0ffb62bbd296a1b69d3c3068222c7e9f8bb6",
+      "size": 4535
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/TEST_PLAN.md",
+      "sha256": "64be5f6e4ba2b1a011f266cfe726bed1cec269e81d30f96ee9ef04f6078aadc2",
+      "size": 2039
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/assets/refimp_pp_item13.csv",
+      "sha256": "7fd1363d540fb6cccbf1543ad715e219fe672e0036b3b205e58d21a2437fa54b",
+      "size": 20507
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/generate.py",
+      "sha256": "83129213f8b9cf5468955c686351ac41f15de6b36537166e3fc612874e882a08",
+      "size": 172
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/generator.ini",
+      "sha256": "f75a8641e42986fe063a81a70b70e5e7d45a16c3c6ea151d774209c4a1edc379",
+      "size": 785
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/ir_lab_generator.py",
+      "sha256": "6b538cce1eeb3bc1133b70f63fcf3800c224b429e6292d17a22d4d31b6af0692",
+      "size": 2714
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/ir_lab_session.py",
+      "sha256": "132c829c8665c43ee2441d24593fb70672a4d11478ef817de19b27c44b459f01",
+      "size": 3695
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_viewer_integrated_study_lab/public_producer.tcl",
+      "sha256": "1e8ed7f1af13752597f240376fac16526ef8ffbe8f0665fd3bd53117f18b6ed2",
+      "size": 11140
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/EXPECTED_RESULTS.md",
+      "sha256": "c9ba86b703e1056e5d3a1a32edaffacb55feced5d9480195b51078c1335995ae",
+      "size": 2290
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/FACULTY_GUIDE.md",
+      "sha256": "129fcd86741a43b4c7aa16a6e2d518596e1f0d846b6f4e5dd562118947d66037",
+      "size": 2555
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/LAB_PLAN.json",
+      "sha256": "573bace83abfacebb88d7c576747623a4682daf858845bb0c9f7abdeb7de973f",
+      "size": 7894
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/README.md",
+      "sha256": "1cd95832b768014ef2b12464b8b0f753dead0e894ab68b657cfe36bc32f58b22",
+      "size": 1178
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/RIGHTS.md",
+      "sha256": "7846bbc2b333463b4f944391f298715c735861e5f02149fc345c33fa385ae071",
+      "size": 705
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/SHA256SUMS.txt",
+      "sha256": "ab62219d3d0c5fe085f6f18c38ad362460b2a41876da14d9ce28dfc5992c370e",
+      "size": 2548
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/STUDENT_GUIDE.md",
+      "sha256": "2728fb41bf4ec05f9e50c03e65a593987c57243fc6a705480580d575c94a38f3",
+      "size": 5460
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/TEST_PLAN.md",
+      "sha256": "9a698f52493a3fd3b60f94208953b099a6f2f5da8d5951dad441451ea4d618ea",
+      "size": 2188
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/2_propanol/spectrum.jdx",
+      "sha256": "a335f0e3b552b1b69d1b505f8a7cb0874aa5e46da749e8b28a11a6c9c9d4f57e",
+      "size": 307573
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/2_propanol/spectrum.svg",
+      "sha256": "e2f664b1743a1c0507b5402ddfbc0ec46e43886468e5698ae4d34e2a77384cf9",
+      "size": 499312
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/2_propanol/spectrum_image",
+      "sha256": "38bd336f601c2c8791d908fcfda4bb46cbfc3887c5b9f0dbece0a20a2d8253e2",
+      "size": 43033
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/derived/2_propanol_absorption_index.jdx",
+      "sha256": "fd15340773c05ffc7b2557d41d8dcdba3bca816688c317dfb17146a56b56951d",
+      "size": 135425
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/derived/ethanol_absorption_index.jdx",
+      "sha256": "0904a5bd75492aafb6480fcd2744245db3080794700bee46aa05fb67e013a015",
+      "size": 132023
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/derived/methanol_absorption_index.jdx",
+      "sha256": "0c2fe2d5de1c283d57513a396de8b38d644372b93b181c19238ad3f61fc7fdf1",
+      "size": 131280
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/ethanol/spectrum.jdx",
+      "sha256": "075251018d26ed75c75a2b4bbf72d60de63fb27515a09e663fef7a19be1f343b",
+      "size": 304095
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/ethanol/spectrum.svg",
+      "sha256": "d18b0841582d5b6d220e6435e758f3b322dac226da8ec08ba89d87b63cc17c04",
+      "size": 500670
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/ethanol/spectrum_image",
+      "sha256": "c88f36fbcbf6b84dac52dd3e3efd22153dd49abe59cd8d760c51ddb0b83f8093",
+      "size": 41331
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/methanol/spectrum.jdx",
+      "sha256": "ca115d78f535b46cc7ba3a1d201282341b937b8b2acc8efd60a9be79339db046",
+      "size": 303338
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/methanol/spectrum.svg",
+      "sha256": "c2ecd23f583b25791356fe7790d41d943fd5067865091c43bca18d0b6a5b6f3d",
+      "size": 495051
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_2017/methanol/spectrum_image",
+      "sha256": "f649550570dc7a76d904ae3942857e049b310cab38ba9a4391f0a14535be5ed5",
+      "size": 36181
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/assets/nist_pnnl_ir_optical_constants_2017.gxsrl.zip",
+      "sha256": "be9c4228519af6f819715e9d8fd7d9cff4ea7a7a5ffde656cf723c107cf13536",
+      "size": 424606
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/generate.py",
+      "sha256": "83129213f8b9cf5468955c686351ac41f15de6b36537166e3fc612874e882a08",
+      "size": 172
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/generator.ini",
+      "sha256": "fab36dfa77a3f0cf9404865bfab89e7432a8405994293f863218d9791f55d2e2",
+      "size": 743
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/ir_lab_generator.py",
+      "sha256": "6b538cce1eeb3bc1133b70f63fcf3800c224b429e6292d17a22d4d31b6af0692",
+      "size": 2714
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/ir_lab_session.py",
+      "sha256": "132c829c8665c43ee2441d24593fb70672a4d11478ef817de19b27c44b459f01",
+      "size": 3695
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/nist_pnnl_ir_faculty/public_producer.tcl",
+      "sha256": "1e8ed7f1af13752597f240376fac16526ef8ffbe8f0665fd3bd53117f18b6ed2",
+      "size": 11140
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/EXPECTED_RESULTS.md",
+      "sha256": "1413a0472f907b3604cca1c7365a0c0b4a1800a3d54b06c75f623d28e8496b30",
+      "size": 1246
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/FACULTY_GUIDE.md",
+      "sha256": "832932803420b22aec477469489366eca8d432ac6edc362e23d140d3ee48acda",
+      "size": 2605
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/LAB_PLAN.json",
+      "sha256": "6a9cdd1d9d45f2c3ea82e555c8eb87142f3eabbe6e00bc2a4d2855b8ea676462",
+      "size": 2950
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/README.md",
+      "sha256": "20882d8b95c8945ed8484076231aff8b9df7355ba3fde26e87491c233330ac55",
+      "size": 1238
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/RIGHTS.md",
+      "sha256": "6fb43c4ef631cb7b6a9d45c70119305705a3d2c2908e677fe94d1c63c9ac4d55",
+      "size": 790
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/SHA256SUMS.txt",
+      "sha256": "6dffec72ee4388006a7fed22452ec281b5c21ae7997405c64b77b1084a3503e6",
+      "size": 1145
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/STUDENT_GUIDE.md",
+      "sha256": "e465c34a9973c40e10bdb29c501242ac306860bac5076be7933acfc441e60369",
+      "size": 4333
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/TEST_PLAN.md",
+      "sha256": "2f49487907aa044c2a7451861a1d006e63508679afd79f6a7062e9232b5feccb",
+      "size": 2184
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/assets/refimp_pp_item13.csv",
+      "sha256": "7fd1363d540fb6cccbf1543ad715e219fe672e0036b3b205e58d21a2437fa54b",
+      "size": 20507
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/generate.py",
+      "sha256": "83129213f8b9cf5468955c686351ac41f15de6b36537166e3fc612874e882a08",
+      "size": 172
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/generator.ini",
+      "sha256": "fda9347189cd0985b2920f39621bdf0783fdd1ed1cf9069ee567e33c4d7012a4",
+      "size": 748
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/ir_lab_generator.py",
+      "sha256": "6b538cce1eeb3bc1133b70f63fcf3800c224b429e6292d17a22d4d31b6af0692",
+      "size": 2714
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/ir_lab_session.py",
+      "sha256": "132c829c8665c43ee2441d24593fb70672a4d11478ef817de19b27c44b459f01",
+      "size": 3695
+    },
+    {
+      "mode": 420,
+      "path": "session_generator_libraries/gxtxt.accepted_generators/generators/refimp_full_training_ir/public_producer.tcl",
+      "sha256": "1e8ed7f1af13752597f240376fac16526ef8ffbe8f0665fd3bd53117f18b6ed2",
+      "size": 11140
+    }
+  ],
+  "framework_modules": 149,
+  "generator_descriptor_change": "Qualified public subset name/version only; kept Generator code is unchanged.",
+  "private_generators_separate": 5,
+  "private_policy_sha256": "18ffa64eb5f616dfafc3722824c55f986dd995db3be166076daba0b59e936262",
+  "public_generators": 39,
+  "schema": "gxtxt.dev112.public_variant.v1",
+  "scientific_data_included": false,
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8"
+}

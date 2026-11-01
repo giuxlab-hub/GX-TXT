@@ -13,10 +13,23 @@ dictionary. Fields are schema, title, module_id, provider_id, version, geometry,
 requirements, components, handlers and origin. Optional `shell` records initial
 inspector width and status text. Requirements map actual public
 API IDs to supported integer versions. Each component has id, type, parent,
-properties and layout. Parents precede their children; root slots are toolbar,
+properties and layout. Parents may occur before or after their children; root slots are toolbar,
 inspector, canvas, footer and menubar. Tabs contain tab pages and menus belong
 to menubar. Unknown fields, duplicate IDs, incompatible parents, unavailable
 capabilities and overlapping grid spans fail validation.
+
+Typed `field`, `toggle` and `choice` admission uses the exact public
+`uiFieldComponentDescriptor` used by native construction. `uiFieldNormalize`
+checks finite ordered numeric bounds even without a default, and validates each
+declared nonempty default against its datatype, range or choices. Existing
+optional empty or absent defaults remain valid. Rejected model edits do not add
+an Undo step. The Builder also checks retained live values before replacing its
+Preview: an incompatible range/choice edit leaves its full model, history,
+existing native handle and captured state intact. A subsequent composition error
+recovers the prior model and reconstructs its Preview from the prior snapshot.
+Dynamic provider choices are retained only for an unchanged authored choice list
+and compatible component datatype. A changed list is validated and mounted with
+its new choices, without restoring the old dynamic options over it.
 
 `viewerGuiDesignRead path` reads at most 4 MiB as data, never Tcl code.
 `viewerGuiDesignSave path design` uses Resource Management's atomic byte writer.
@@ -39,7 +52,7 @@ snapshots and no scientific arrays. Handler contracts declare the exact
 `{window action}` arguments and an explicit unbound/presentation/mutating effect.
 An effect declaration alone never executes or authorizes a callback.
 
-Dev108 preserves the component declaration list during `reparent`. Its one-based
+The model preserves the component declaration list during `reparent`. Its one-based
 positions are the restricted C++ SDK component identities. A parent may appear
 later in that list: validation checks the complete ID map, container types and
 acyclic dependencies; native composition and the Builder hierarchy derive their
@@ -219,7 +232,7 @@ local GUI-history step to navigate; it never fabricates the original domain
 history. Authors connecting their domain backend must deliberately revise the
 snapshot/enablement contract as that backend's state changes.
 
-## Native command-container project icons (dev108)
+## Native command-container project icons
 
 `command_toolbar`, `menu` and `context_menu` accept optional `command_icons`.
 Each key is an existing ID in that component's `actions`; each value contains
@@ -239,7 +252,7 @@ icon-only tooltips are explicitly unavailable. Assign rejects unsupported
 requests and keeps its error visible in Icon Library. Menu Preview is an actual
 native menu. Older designs without command_icons retain their appearance.
 
-## Declared scientific probe references (dev108)
+## Declared scientific probe references
 
 The existing Scientific section accepts `scientific_probe_diagram`,
 `scientific_probe_plot` and `scientific_probe_mode` as typed identifier properties.
@@ -253,7 +266,7 @@ access is needed.
 
 ## Existing navigation command IDs
 
-### Native2D tool presentation (dev109)
+### Native2D tool presentation
 
 An existing `action` may declare `diagram_tool {COMPONENT_ID MODE}` through
 normal Builder properties. The target must be a declared Native2D component
@@ -378,3 +391,101 @@ and closing or invalidating that target disables them. This also applies when
 a compiled Viewer callback invokes `viewerGuiDesignRasterCommand` outside a
 normal command-widget callback. The transition changes presentation state only;
 it does not commit a scientific Document or add a History entry.
+
+
+## Managed Sketch and diagnostic components
+
+See [typed Sketch and diagnostics integration](VIEWER_GUI_P020_ADDITIONS.md) for
+actual component properties, admitted C++ operations, grants, lifecycle and bounded
+event payloads. Existing v1 identities and non-opt-in consumers remain compatible.
+
+## Preview Module project target
+
+Optional `target` is `viewer` (the default for existing designs) or `preview`.
+Preview requires a `preview.<lowercase_id>` module ID and a `preview` options
+dictionary containing `dataset_contracts`, with complementary view_role. Optional
+match_producer_modules, match_source_modules, match_producer_versions,
+match_provenance, match_metadata, match_semantic_roles and match_source_contracts
+reuse PREVIEW_DESCRIPTOR_API_v1 compatibility semantics. Bounded values are inert
+metadata; they do not grant rights. The model `target` edit atomically changes
+identity and requirements, validates, and retains Undo/Redo. Invalid transitions
+preserve the original design.
+
+Preview admits existing UI_FIELD_API_v1 component types and supported properties,
+change_action bindings, layout and icons. IDs have at most48 characters and cannot
+start with reserved gxpreview_. Viewer-only surfaces, menu hosts, Workspace and
+History report an explicit CORE gap. Optional action.preview_operation is fit,
+zoom_in or zoom_out; panel.preview_anchor is a public ViewportHost anchor;
+label/status.preview_context is dataset_id, session_token or component_id.
+The session_token presentation reads the existing Preview context token.
+
+`viewerGuiDesignPreviewMount design host callback` is a trusted host-only adapter
+under VIEWER_GUI_HOST_API_v1, called by generated guiMount. It validates this same
+design and constructs slot containers and controls only through public
+PREVIEW_COMPONENT_GUI_API_v1 operations. It receives an already current opaque
+Preview host, never creates a Viewer/toplevel or grants a worker Tk access. The
+existing Preview owner admits callbacks, exact Dataset/Session identity, activation,
+source switching and disposal. Viewport panels require the existing Plot viewport.
+The generated pane's existing root grid attaches to the shared UI Field adaptive
+overflow owner. Small windows or large captions/fonts use its native wheel/focus
+scrolling; fitting layouts keep their ordinary grid and restore it on enlargement.
+Declared control paths/native handles and their callbacks/values are preserved;
+anchored Plot panels retain their original owner and lifetime.
+The callback receives `(host, event)`. Author handlers use that same Preview shape;
+the common inert design handler slots retain their two positional argument contract.
+
+Generation uses the existing Module Builder, emitting a real kind=preview service
+module with preview/guiMount/guiDispose, descriptor compatibility, editable design,
+handwritten callbacks, assets, manual, source contracts and package checksums.
+Handwritten callbacks remain byte-identical on regeneration. The Builder's separate
+Preview window simulates layout; actual host tests require normal private install,
+Module enablement and a compatible genuine Dataset in Dataset Preview.
+
+P028 Preview `initial_action` parity is deliberately limited to a declared,
+available `effect=presentation` handler bound to an action control. After all
+controls mount, CORE rechecks the same source/Session/module host, dispatches the
+ordinary `(host,event)` callback with `mount=1`, and rechecks the host afterwards.
+It may initialize bounded registered context metadata and choices. Numeric reads,
+scans, imports and scientific work remain explicit user actions. Unsupported
+scientific/unbound/unavailable initial handlers fail validation; old Preview
+projects without an initial action and Viewer lifecycle behavior are unchanged.
+
+P032 adds `viewerGuiDesignNumericPreviewNew ?title?`, a validated managed C++
+Preview layout with the exact current Dataset, X/Y selectors and canonical Plot.
+It contains no scientific values or parser. The primary File menu's **New Numeric
+Preview** uses this same factory and model; ordinary edits, Undo/Redo and file
+roundtrip keep their existing owners. `viewerGuiPreviewComponentTypes DESIGN`
+supplies target-aware palette eligibility: managed numeric controls differ from
+the original Markdown/UML document panes. Native surfaces, Workspace, History,
+publication and document mixing remain unavailable in this numeric target.
+Fit/Zoom controls share one row. Source selectors and actual compiled callbacks
+remain separate from the Builder's explicitly simulated layout display.
+
+For `target=preview; preview.runtime=managed_cpp`, the primary Generate action
+uses the existing C++ Development validator, compiler, restricted SDK, factory
+and normal candidate exporter. It delivers the resulting native ZIP unchanged;
+it cannot fall through to the legacy Tcl template. A fresh source folder receives
+a minimal canonical Plot callback (numeric) or shared document render callback
+(document). X and Y selectors occupy separate rows to remain usable at large fonts.
+
+Subsequent generation saves the admitted layout with an expected design revision.
+It preserves all handwritten C++/headers, project metadata/capability requests,
+notes and manual; add custom callbacks or new capabilities in the existing
+Development Workspace. A different existing project identity/version refuses
+with an actionable error. Generation does not run scientific work or publish
+Datasets, and an existing delivery ZIP is never overwritten. The generated
+`generation-report.json` distinguishes compilation/export from functional, GUI
+and independent acceptance. Ordinary Viewer and legacy Preview generation keep
+their established path.
+
+## Comparison Viewer composition (P034)
+
+Builder File > New Comparison Viewer creates an optional profile on the existing
+Plot component, ordinary source/method tabs, a primary Compare menu and a primary
+Plot menu for native presentation, cursor, image copy/export and Graph variants. Reciprocal
+comparison_form/comparison_target references exclude plot_form or another scientific
+owner on that slot. Mode/normalization/offset are explicit; source selection is
+ordinary Workspace draft state, without another Registry or sample store.
+Use [COMPARISON_PLOT_API_v1](COMPARISON_PLOT_API_v1.md) and exact Numeric/Plot
+capabilities. Compiled Workspace lifecycle uses native get/save plus an actual
+Workspace component, with separate Recipe permissions for History.

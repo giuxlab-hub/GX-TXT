@@ -55,6 +55,76 @@ proc ::GX::layoutControlsPath {} {
     return .top.nb.graphs.preview.layout
 }
 
+# Object-specific inspector; numerical state remains ui/layoutVal + axisOverride.
+proc ::GX::layoutControlsInspectorPath {} {return [layoutControlsPath].inspector}
+proc ::GX::layoutControlsFieldsPath {} {return [layoutControlsInspectorPath].viewport.canvas.body}
+proc ::GX::layoutControlsIdentityRefresh {path key} {
+    variable ui
+    set title {Select a plot in the Plots browser.}
+    if {$key ne {}} {
+        set title [graphDisplayTitle $path]
+        set identity [graphUseIdentityForPath $path]
+        if {[llength $identity]==3} {lassign $identity module graph variant;append title "\n$module · $graph · ";append title [expr {$variant eq {}?{Base plot}:"Variant $variant"}]
+        } else {append title "\nPlot identity: $key"}
+    }
+    set ui(layoutInspectorIdentity) $title
+    set window [layoutControlsInspectorPath]
+    if {[winfo exists $window]} {wm title $window [expr {$key eq {}?{Plot layout — select a plot}:"Plot layout — $key"}]}
+}
+proc ::GX::layoutControlsInspectorHide {{actual {}}} {
+    set panel [layoutControlsPath]
+    if {$actual ne {} && $actual ne $panel} return
+    set window [layoutControlsInspectorPath]
+    if {[winfo exists $window]} {wm withdraw $window}
+    if {[winfo exists $panel.show]} {$panel.show configure -text {Show controls}}
+}
+proc ::GX::layoutControlsInspectorToggle {} {
+    set window [layoutControlsInspectorPath];set panel [layoutControlsPath]
+    if {![winfo exists $window]} {layoutControlsInspectorBuild}
+    if {[winfo viewable $window]} {layoutControlsInspectorHide;return}
+    layoutControlsToggle
+    $panel.show configure -text {Hide controls}
+    uiFieldDialogPresent $window $window.b.auto
+}
+proc ::GX::layoutControlsInspectorBuild {} {
+    variable ui
+    set panel [layoutControlsPath];set window [layoutControlsInspectorPath]
+    if {[winfo exists $window]} return
+    set width [expr {min(840,max(500,[winfo screenwidth $panel]-60))}]
+    set height [expr {min(560,max(360,[winfo screenheight $panel]-100))}]
+    uiFieldDialogCreate $window $panel {Plot layout} ${width}x${height}
+    set body [scrollableDialogBody $window]
+    grid columnconfigure $body 1 -weight 1
+    if {![info exists ui(layoutInspectorIdentity)]} {set ui(layoutInspectorIdentity) {Select a plot in the Plots browser.}}
+    ttk::label $body.identity -textvariable ::GX::ui(layoutInspectorIdentity) -wraplength 720 -justify left
+    grid $body.identity -row 0 -column 0 -columnspan 3 -sticky ew -padx 8 -pady 6
+    set r 0
+    foreach {field label lo hi} [layoutFieldDefs] {
+        ttk::label $body.l$r -text $label
+        ttk::scale $body.s$r -from $lo -to $hi -orient horizontal -length 115 -variable ::GX::ui(layoutVal,$field) -command [list ::GX::layoutSliderChanged $field]
+        ttk::entry $body.e$r -width 6 -textvariable ::GX::ui(layoutVal,$field)
+        bind $body.e$r <Return> {::GX::layoutControlsApplyRender;break}
+        set row [expr {$r+1}]
+        grid $body.l$r -row $row -column 0 -sticky e -padx {6 2} -pady 3
+        grid $body.s$r -row $row -column 1 -sticky ew -padx 2 -pady 3
+        grid $body.e$r -row $row -column 2 -sticky w -padx {2 6} -pady 3
+        incr r
+    }
+    ttk::label $body.note -text {Per plot. Manual margins apply to single- and multi-panel plots. Panel gap applies to multi-panel plots. External legends reserve an additional band.} -foreground #555555 -wraplength 680 -justify left
+    grid $body.note -row 7 -column 0 -columnspan 3 -sticky ew -padx 8 -pady 6
+    ttk::frame $window.b
+    ttk::checkbutton $window.b.auto -text Automatic -variable ::GX::ui(layoutAuto) -command ::GX::layoutControlsToggle
+    ttk::checkbutton $window.b.negative -text {Allow negative Y-label offset} -variable ::GX::ui(layoutNegativeOffset) -command ::GX::layoutNegativeOffsetToggle
+    ttk::button $window.b.apply -text {Apply and rerender} -command ::GX::layoutControlsApplyRender
+    ttk::button $window.b.reset -text {Restore automatic} -command ::GX::layoutControlsReset
+    pack $window.b -side bottom -fill x -padx 6 -pady 6
+    bind $window.b <Configure> [list ::GX::uiFieldControlsLayout $window.b %w [winfo children $window.b]]
+    uiFieldScrollAreaAttach $window.viewport.canvas $body
+    bind $window <FocusIn> +[list ::GX::plotDialogFieldSee $window.viewport.canvas $body %W]
+    wm protocol $window WM_DELETE_WINDOW ::GX::layoutControlsInspectorHide
+    bind $window <Escape> {::GX::layoutControlsInspectorHide;break}
+}
+
 proc ::GX::layoutSliderChanged {field value} {
     variable ui
     if {![info exists ui(layoutVal,$field)]} { return }
@@ -64,7 +134,7 @@ proc ::GX::layoutSliderChanged {field value} {
 }
 
 proc ::GX::layoutControlsState {enabled} {
-    set p [::GX::layoutControlsPath]
+    set p [::GX::layoutControlsFieldsPath]
     if {![winfo exists $p]} { return }
     for {set r 0} {$r < 6} {incr r} {
         if {$enabled} {
@@ -88,7 +158,7 @@ proc ::GX::layoutControlsToggle {} {
 
 proc ::GX::layoutNegativeOffsetToggle {} {
     variable ui
-    set p [layoutControlsPath]
+    set p [layoutControlsFieldsPath]
     if {![winfo exists $p.s5]} return
     if {$ui(layoutNegativeOffset)} {
         $p.s5 configure -from -30 -to 30
@@ -110,6 +180,7 @@ proc ::GX::layoutControlsLoad {} {
     set gk ""
     if {$path ne ""} { catch {set gk [::GX::graphKeyForPath $path]} }
     set ui(layoutGraphKey) $gk
+    layoutControlsIdentityRefresh $path $gk
     if {$gk eq ""} {
         foreach field [::GX::layoutFieldNames] { set ui(layoutVal,$field) 0 }
         set ui(layoutAuto) 1
@@ -131,6 +202,12 @@ proc ::GX::layoutControlsApply {} {
     variable axisOverride
     if {![info exists ui(layoutGraphKey)] || $ui(layoutGraphKey) eq ""} { return 0 }
     set gk $ui(layoutGraphKey)
+    # The selection guard belongs to the mounted inspector. Existing headless
+    # layout application remains available through its established state owner.
+    if {[llength [info commands winfo]] && [winfo exists [layoutControlsInspectorPath]]} {
+        set current {};catch {set current [graphKeyForPath [currentGraphPath]]}
+        if {$current ne $gk} {tk_messageBox -icon error -message {Plot selection changed. Select the intended plot and reopen its layout controls before applying.};return 0}
+    }
     set staged {}
     foreach {field label lo hi} [::GX::layoutFieldDefs] {
         set v [string trim $ui(layoutVal,$field)]
@@ -175,44 +252,17 @@ proc ::GX::layoutControlsReset {} {
 }
 
 proc ::GX::layoutControlsBuild {} {
-    variable ui
     set parent .top.nb.graphs.preview
-    if {![winfo exists $parent]} { return }
-    set p [::GX::layoutControlsPath]
-    if {[winfo exists $p]} { return }
-    ttk::labelframe $p -text "Plot layout"
-    # Two control groups per row fit normal notebook windows without forcing
-    # the preview pane wider than the application. Buttons and explanatory
-    # text get separate rows so neither can squeeze the numeric fields.
-    set r 0
-    foreach {field label lo hi} [::GX::layoutFieldDefs] {
-        set row [expr {$r / 2}]
-        set col [expr {($r % 2) * 3}]
-        ttk::label $p.l$r -text $label
-        ttk::scale $p.s$r -from $lo -to $hi -orient horizontal -length 115 \
-            -variable ::GX::ui(layoutVal,$field) -command [list ::GX::layoutSliderChanged $field]
-        ttk::entry $p.e$r -width 6 -textvariable ::GX::ui(layoutVal,$field)
-        bind $p.e$r <Return> {::GX::layoutControlsApplyRender; break}
-        grid $p.l$r -row $row -column $col -sticky e -padx {6 2} -pady 2
-        grid $p.s$r -row $row -column [expr {$col + 1}] -sticky ew -padx 2 -pady 2
-        grid $p.e$r -row $row -column [expr {$col + 2}] -sticky w -padx {2 6} -pady 2
-        incr r
-    }
-    foreach col {1 4} { grid columnconfigure $p $col -weight 1 }
-    ttk::frame $p.b
-    ttk::checkbutton $p.b.auto -text "Automatic" -variable ::GX::ui(layoutAuto) -command ::GX::layoutControlsToggle
-    ttk::checkbutton $p.b.negative -text "Allow negative Y-label offset" -variable ::GX::ui(layoutNegativeOffset) -command ::GX::layoutNegativeOffsetToggle
-    ttk::button $p.b.apply -text "Apply and rerender" -command ::GX::layoutControlsApplyRender
-    ttk::button $p.b.reset -text "Restore automatic" -command ::GX::layoutControlsReset
-    pack $p.b.auto $p.b.negative $p.b.apply $p.b.reset -side left -padx 4
-    grid $p.b -row 3 -column 0 -columnspan 6 -sticky w -padx 4 -pady {4 2}
-    ttk::label $p.note -text "Per plot. Manual margins apply to single- and multi-panel plots. Panel gap applies to multi-panel plots. External legends reserve an additional band." -foreground #555555 -wraplength 680 -justify left
-    grid $p.note -row 4 -column 0 -columnspan 6 -sticky ew -padx 8 -pady {0 5}
-    if {[info exists ui(graphPreview)] && [winfo exists $ui(graphPreview)]} {
-        pack $p -side top -fill x -padx 2 -pady {2 4} -before $ui(graphPreview)
-    } else {
-        pack $p -side top -fill x -padx 2 -pady {2 4}
-    }
+    if {![winfo exists $parent]} return
+    set p [layoutControlsPath]
+    if {[winfo exists $p]} return
+    ttk::labelframe $p -text {Plot layout}
+    ttk::button $p.show -text {Show controls} -command ::GX::layoutControlsInspectorToggle
+    pack $p.show -side top -anchor w -padx 6 -pady 4
+    if {[info exists ::GX::ui(graphPreview)] && [winfo exists $::GX::ui(graphPreview)]} {pack $p -side top -fill x -padx 2 -pady {2 4} -before $::GX::ui(graphPreview)
+    } else {pack $p -side top -fill x -padx 2 -pady {2 4}}
+    bind $p <Unmap> [list ::GX::layoutControlsInspectorHide %W]
+    layoutControlsInspectorBuild
 }
 
 proc ::GX::layoutControlsEnsure {} {

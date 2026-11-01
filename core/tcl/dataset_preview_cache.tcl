@@ -37,9 +37,10 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
     if {$renderer eq {}} {
         set renderer gxtxt.preview.retained.v1
         foreach relative {
-            core/tcl/dataset_preview_cache.tcl core/tcl/dataset_preview_worker_v1.tcl core/tcl/scientific_dataset_filters_v1.tcl
+            core/tcl/dataset_preview_cache.tcl core/tcl/dataset_preview_worker_v1.tcl core/tcl/dataset_preview_source_request_v1.tcl core/tcl/scientific_dataset_filters_v1.tcl
             core/tcl/dataset_digitizer_preview_v1.tcl core/python/dataset_digitizer_quality_summary_v1.py
             core/tcl/dataset_preview_api_v1.tcl core/tcl/scientific_dataset_preview_v1.tcl
+            core/tcl/dataset_preview_provider_v1.tcl core/tcl/dataset_preview_native_v1.tcl core/tcl/preview_descriptor_api_v1.tcl
             core/tcl/scientific_dataset_filter_configuration_v1.tcl core/tcl/dataset_viewer_api_v1.tcl
             core/tcl/curve_source_api_v1.tcl core/tcl/dataset_coordinate_context_v1.tcl
             core/tcl/scientific_dataset_coordinates_v1.tcl
@@ -63,7 +64,7 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
     # Keep values intact, including scientifically meaningful grouping lists.
     set orderedOptions {}
     foreach name [lsort [dict keys $options]] {dict set orderedOptions $name [dict get $options $name]}
-    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured]]
+    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured [datasetPreviewProviderIdentity $id]]]
 }
 proc ::GX::datasetPreviewCachePath {session key} {
     if {![regexp {^[0-9a-f]{64}$} $key]} {error {Invalid Preview cache key}}
@@ -115,6 +116,20 @@ proc ::GX::datasetPreviewCacheRead {id key {allowStale 0}} {
             set artifact [file join $dir $name]
             if {![file isfile $artifact] || [file type $artifact] eq "link" || [sha256File $artifact] ne $expected} {return {}}
         }
+    }
+    if {[dict exists $result media_artifact]} {
+        # A copied Session retains the old absolute derivative path. Resolve
+        # only an authenticated local artifact from this cache entry; never
+        # follow the recorded path into the source Session. The ordinary
+        # descriptor authority still admits the resulting local file.
+        if {[catch {
+            set artifact [dict get $result media_artifact]
+            set name [file tail [dict get $artifact path]]
+            if {![dict exists $result artifacts $name]} {error {Unlisted cached media artifact}}
+            dict set artifact path [file join $dir $name]
+            previewDescriptorSafeArtifact $artifact $dir
+        }]} {return {}}
+        dict set result media_artifact $artifact
     }
     set currentKey [datasetPreviewCacheKey $id [dict get $result options]]
     set current [expr {[dict get $result source] eq [datasetPreviewCacheSource $id] && $key eq $currentKey}]
@@ -176,7 +191,19 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
             if {$artifact ne {}} {dict set result media_artifact $artifact;dict set result kind [expr {$mesh?"native3d":"media"}]}
             if {[catch {set axes [scientificDatasetAxes $id]}]} {set axes {numeric {} x {} y {}}}
             set numeric [dict get $axes numeric]
-            if {[dict get $axes x] eq {} && [llength $numeric]>=2} {dict set axes x [lindex $numeric 0];dict set axes y [lindex $numeric 1]}
+            if {[dict get $axes x] eq {} && [llength $numeric]>=2} {
+                # Independent n-D coordinate vectors are not a curve. Keep
+                # the legacy two-column fallback only for a shared row domain;
+                # otherwise the existing canonical array-plane owner applies.
+                set schemaById {}
+                foreach variable [datasetVariableSchemaV3 $id] {dict set schemaById [dict get $variable variable_id] $variable}
+                set first [dict get $schemaById [lindex $numeric 0]]
+                set second [dict get $schemaById [lindex $numeric 1]]
+                if {[datasetSchemaV3SplitIds [dict get $first dimension_ids]] eq [datasetSchemaV3SplitIds [dict get $second dimension_ids]] &&
+                    [datasetSchemaV3SplitIds [dict get $first shape]] eq [datasetSchemaV3SplitIds [dict get $second shape]]} {
+                    dict set axes x [lindex $numeric 0];dict set axes y [lindex $numeric 1]
+                }
+            }
             foreach axis {x y z} {if {[dict exists $options $axis]} {dict set axes $axis [dict get $options $axis]}}
             dict set result axes $axes
             set dimensions {}
@@ -195,24 +222,52 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
                     # per-row discovery pass or one Transform scan per series.
                     set plan [_scientificDatasetFilterPlan $dimensions [dict remove $selections @hidden_filters] 1]
                     dict set plan dataset_id $id
-                    dict set renderOptions batch_plan $plan
-                    set requests {}
+                    # A single unfiltered signal already has a bounded native
+                    # Curve Source display owner. Batch retains selected rows
+                    # for sorting/grouping and deliberately caps them at 2M;
+                    # do not send an ordinary full-resolution waveform there.
+                    set continuity [datasetPublicationV2DictDefault [datasetMetadataRead $::GX::currentSession $id] curve_source.continuity_policy {}]
+                    if {[dict get $plan group_variable_ids] eq {} && [dict get $plan filters] eq {} &&
+                        [datasetPublicationV2DictDefault $options ordering {}] eq {} && $continuity eq {}} {
+                        set requests [list {}]
+                    } else {
+                        dict set renderOptions batch_plan $plan
+                        set requests {}
+                    }
                 } else {
                     set requests [scientificDatasetFilterRequests $dimensions [dict remove $selections @hidden_filters] 1]
+                }
+                if {[dict exists $options source_window]} {
+                    set window [_datasetPreviewSourceRequestNormalize $id [dict get $options source_window]]
+                    dict set axes x [dict get $window x_variable_id];dict set axes y [dict get $window y_variable_id]
+                    dict set result axes $axes
+                    # One explicit source request always uses the existing bounded
+                    # individual Curve Source, including a full >2M time interval.
+                    # No grouped retained-row collector, new reader or reducer.
+                    set filters {}
+                    if {[dict get $window mode] eq {time}} {lappend filters [dict create filter_variable_id [dict get $window x_variable_id] predicate between_inclusive lower [dict get $window time_min] upper [dict get $window time_max]]}
+                    set requests [list $filters]
+                    dict unset renderOptions batch_plan
+                    dict set renderOptions ordering {}
+                    set selections [dict create @grouping {} @predicates $filters @single_series 1]
                 }
                 set receipt [scientificDatasetPreviewFiltered $id [dict get $axes x] [dict get $axes y] [file join $dir standard.png] $requests $renderOptions]
                 dict set result kind native2d
                 foreach field {native_model row_count displayed_points} {dict set result $field [dict get $receipt $field]}
+                if {[dict exists $receipt native_provider]} {dict set result native_provider [dict get $receipt native_provider]}
                 dict set result selections $selections
                 dict set result dimensions $dimensions
                 if {[dict exists $options ordering]} {dict set result ordering [dict get $options ordering]}
-                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}]]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
+                set nativeOverlay [datasetPublicationV2DictDefault $receipt native_overlay {}]
+                if {$nativeOverlay ne {} && ([catch {dict get $nativeOverlay native_provider receipt source_receipt cache_key} overlayKey] || $overlayKey ne $key)} {set nativeOverlay {}}
+                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}] $nativeOverlay]} message]} {if {$digitizer ne {}} {dict set result digitizer $digitizer}} else {dict set result description "Source raster/Quality unavailable: $message"}
             } else {
                 if {!$mesh && ![dict exists $result media_artifact]} {
                     set arrayPath [file join $dir array-standard.png]
-                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath]}] && $arrayDescription ne {}} {
+                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath nativeReceipt $options]}] && $arrayDescription ne {}} {
                         dict set result media_artifact [dict create path $arrayPath media_type image/png label {Bounded original array cells}]
                         dict set result kind array;dict set result description $arrayDescription
+                        if {$nativeReceipt ne {}} {dict set result native_provider $nativeReceipt}
                     }
                 }
                 if {![dict exists $result media_artifact] && ![dict exists $result description]} {dict set result description "Dataset $id: [datasetField $id kind]. Use Open Dataset for supported media, geometry or explicit multidimensional selection."}
@@ -232,7 +287,7 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
 }
 proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     variable ::GX::PreviewCache::tasks;variable ::GX::PreviewCache::misses
-    set session $::GX::currentSession;set key [datasetPreviewCacheKey $id $options]
+    set session $::GX::currentSession;set activation [_datasetPreviewActivationSnapshot];set key [datasetPreviewCacheKey $id $options]
     set cached [datasetPreviewCacheRead $id $key]
     if {$cached ne {}} {
         if {[datasetField $id storage_provider {}] eq "remote" && [llength [info commands ::winfo]]} {
@@ -260,12 +315,13 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     }
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
-    dict set tasks $key [dict create session $session session_token [interactiveDocumentSessionToken] id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
-    if {$::GX::PreviewCache::watchCalling && [auto_execok setsid] ne {} && [auto_execok tclsh] ne {}} {
+    dict set tasks $key [dict create session $session session_token [interactiveDocumentSessionToken] id $id options $options preview_activation $activation callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
+    set native [datasetPreviewProviderSelect $id standard [datasetPublicationV2DictDefault $options primary_component {}]]
+    if {($::GX::PreviewCache::watchCalling || [dict get $native status] eq {candidate}) && [auto_execok setsid] ne {} && [auto_execok tclsh] ne {}} {
         _datasetPreviewCacheManagedStart $key
     } else {
         dict set tasks $key execution_kind durable_job
-        _scriptJobSubmitCore dataset-preview [dict create dataset_id $id options $options expected_key $key] [dict create session $session] [list ::GX::_datasetPreviewCacheSubmitted $key]
+        _scriptJobSubmitCore dataset-preview [dict create dataset_id $id options $options expected_key $key] [dict create session $session preview_activation $activation] [list ::GX::_datasetPreviewCacheSubmitted $key]
     }
     return $key
 }
@@ -276,11 +332,11 @@ proc ::GX::_datasetPreviewCacheManagedStart {key} {
     dict set tasks $key execution_kind managed_request
     dict set tasks $key managed_generation $generation
     dict set tasks $key request_id {}
-    set payload [dict create schema gxtxt.preview_worker.v1 session [dict get $entry session] dataset_id [dict get $entry id] options [dict get $entry options] expected_key $key]
+    set payload [dict create schema gxtxt.preview_worker.v1 session [dict get $entry session] dataset_id [dict get $entry id] options [dict get $entry options] expected_key $key preview_activation [dict get $entry preview_activation]]
     set command [list [auto_execok setsid] [auto_execok tclsh] [file join $::GX::scriptDir core tcl dataset_preview_worker_v1.tcl] $::GX::scriptDir]
     if {[catch {
         if {[string bytelength $payload]>1048576} {error {Preview worker request exceeds1MiB}}
-        set request [scriptJobAsync $command $payload [list ::GX::_datasetPreviewCacheManagedDone $key $generation] {timeout_ms 120000 max_bytes 65536 process_group 1 ui_lifetime 1 label {Dataset Preview preparation}}]
+        set request [scriptJobAsync $command $payload [list ::GX::_datasetPreviewCacheManagedDone $key $generation] {timeout_ms 120000 max_bytes 65536 process_group 1 ui_lifetime 1 separate_stderr 1 label {Dataset Preview preparation}}]
     } reason]} {
         after idle [list ::GX::_datasetPreviewCacheFinish $key [dict create status error key $key execution_kind managed_request job_id {} request_id {} message $reason]]
         return
@@ -456,6 +512,10 @@ proc ::GX::datasetPreviewCacheUnsubscribe {ticket} {
 proc ::GX::datasetPreviewCachePublished {session receipt} {
     variable ::GX::PreviewCache::worker
     if {$worker || [info exists ::env(GXTXT_PREVIEW_WORKER)] || $session ne $::GX::currentSession || [dict get $receipt change_kind] in {session namespace}} return
+    # A reserved creation stage is not yet a stable Session location. Defer
+    # speculative prewarming until ordinary promotion/open; explicit requests
+    # keep their existing authority and the Generator drains them before move.
+    if {[_sessionGeneratorStagingActive $session]} return
     datasetPreviewCacheInit
     if {![configurationGet preview.cache_enabled]} return
     foreach id [lsort -unique [concat [dict get $receipt added] [dict get $receipt changed]]] {
@@ -555,4 +615,120 @@ proc ::GX::datasetPreviewCacheEvict {session keep} {
         if {$key eq $keep} continue
         datasetPreviewCacheClear $session [list $key];incr total -[dict get $item size_bytes]
     }
+}
+
+# Cache Bridge 022: canonical pages are disposable subresources of the SAME
+# scientific Preview entry. Their directory is separate from retained-model
+# artifacts; refreshing a page must never invalidate the retained model digest.
+proc ::GX::_datasetPreviewCachedPageOptions {options} {
+    if {[catch {dict size $options}]} {error {Cached page options must be a dictionary}}
+    foreach name [dict keys $options] {if {$name ni {start count variable_ids}} {error {Unknown cached page option}}}
+    foreach name {start count variable_ids} {if {![dict exists $options $name]} {error "Cached page options require $name"}}
+    set start [dict get $options start];set count [dict get $options count];set ids [dict get $options variable_ids]
+    if {![string is entier -strict $start] || $start<0 || ![string is entier -strict $count] || $count<1 || $count>1000 ||
+        [llength $ids]<1 || [llength $ids]>32 || [llength [lsort -unique $ids]]!=[llength $ids]} {error {Invalid bounded cached page request}}
+    foreach id $ids {if {![regexp {^[a-zA-Z][a-zA-Z0-9_.:-]{0,127}$} $id]} {error {Invalid cached page Variable ID}}}
+    return [dict create start $start count $count variable_ids $ids]
+}
+proc ::GX::_datasetPreviewCachedPagePaths {id key options} {
+    set options [_datasetPreviewCachedPageOptions $options]
+    set digest [datasetStorageSha256Text $::GX::currentSession [list $key $options]]
+    if {![regexp {^[a-f0-9]{64}$} $digest]} {error {Invalid cached page digest}}
+    set root [file join [datasetPreviewCachePath $::GX::currentSession $key] pages]
+    if {![catch {file lstat $root entry}] && $entry(type) ne {directory}} {error {Preview page directory must be an ordinary directory}}
+    set base [file join $root $digest]
+    return [list "$base.tcldict" "$base.sha256" $digest]
+}
+proc ::GX::datasetPreviewCachedPageRead {id options {cacheOptions {}}} {
+    set options [_datasetPreviewCachedPageOptions $options]
+    set key [datasetPreviewCacheKey $id $cacheOptions]
+    set retained [datasetPreviewCacheRead $id $key]
+    if {$retained eq {} || ![dict get $retained current]} {return {}}
+    return [_datasetPreviewCachedPageReadAtKey $id $options $key]
+}
+# Internal reader: callers must first validate the current source/key through
+# the normal retained-cache owner. Never expose raw cache paths to a module.
+proc ::GX::_datasetPreviewCachedPageReadAtKey {id options key} {
+    set options [_datasetPreviewCachedPageOptions $options]
+    lassign [_datasetPreviewCachedPagePaths $id $key $options] path digest
+    if {[catch {
+        foreach file [list $path $digest] {
+            if {![file isfile $file] || [file type $file] ne {file}} {error missing}
+        }
+        if {[file size $path]>4194304 || [file size $digest]>128} {error oversized}
+        set f [open $digest r];try {set expected [string trim [read $f 128]]} finally {close $f}
+        if {![regexp {^[a-f0-9]{64}$} $expected] || [sha256File $path] ne $expected} {error checksum}
+        set f [open $path r];fconfigure $f -encoding utf-8
+        try {set record [read $f 4194305]} finally {close $f}
+        dict size $record
+        foreach field {schema dataset_id cache_key options page} {if {![dict exists $record $field]} {error envelope}}
+        if {[dict get $record schema] ne {gxtxt.preview_canonical_page.v1} || [dict get $record dataset_id] ne $id ||
+            [dict get $record cache_key] ne $key || [dict get $record options] ne $options} {error identity}
+        set page [dict get $record page]
+        foreach field {available dataset_id start page_size count row_count rows source_rows columns} {if {![dict exists $page $field]} {error page}}
+        if {![string is boolean -strict [dict get $page available]] || ![dict get $page available] || [dict get $page dataset_id] ne $id} {error unavailable}
+        foreach field {start page_size count} {
+            if {![string is entier -strict [dict get $page $field]] || [dict get $page $field]<0} {error bounds}
+        }
+        set count [dict get $page count];set ids [dict get $options variable_ids]
+        set total [dict get $page row_count]
+        if {![string is entier -strict $total] || $total< -1 || ($total>=0 && [dict get $options start]+$count>$total)} {error total}
+        if {[dict get $page start]!=[dict get $options start] || [dict get $page page_size]!=[dict get $options count] ||
+            $count>[dict get $options count] || $count!=[llength [dict get $page rows]] || $count!=[llength [dict get $page source_rows]] ||
+            [llength [dict get $page columns]]!=[llength $ids]} {error shape}
+        set schema {}
+        foreach variable [datasetVariableSchemaV3 $id] {dict set schema [dict get $variable variable_id] $variable}
+        set selected {}
+        foreach column [dict get $page columns] {
+            set variable [dict get $column variable_id];lappend selected $variable
+            if {![dict exists $schema $variable]} {error column}
+            foreach field {unit dtype rank shape semantic_role} {
+                if {![dict exists $column $field] || [dict get $column $field] ne [dict get $schema $variable $field]} {error column}
+            }
+        }
+        if {$selected ne $ids} {error variables}
+        foreach row [dict get $page rows] {if {[llength $row]!=[llength $ids]} {error rowshape}}
+        # Matching SHA and dtype declarations do not prove typed cell content.
+        # Reuse the canonical writer's existing scalar rules without changing,
+        # rounding or reformatting any cached value (including exact integers).
+        set columnIndex 0
+        foreach column [dict get $page columns] {
+            if {[dict get $column dtype] ne {string}} {
+                set values {}
+                foreach row [dict get $page rows] {lappend values [lindex $row $columnIndex]}
+                # Page rows are literal canonical cells, never writer transport
+                # envelopes. Do not let a forged cell vector take that shortcut.
+                if {[datasetPublicationV2IsResource $values] || [datasetPublicationV2IsBinaryBlock $values]} {error celltransport}
+                datasetPublicationV2ValidateTypedValues $column $values
+            }
+            incr columnIndex
+        }
+        # The existing public page contract uses zero-based start but displays
+        # canonical one-based source row identities. Preserve that distinction.
+        set index [expr {[dict get $options start]+1}]
+        foreach sourceRow [dict get $page source_rows] {
+            if {![string is entier -strict $sourceRow] || $sourceRow!=$index} {error sourcerow}
+            incr index
+        }
+    }]} {return {}}
+    return $page
+}
+proc ::GX::datasetPreviewCachedPageGenerate {id options expectedKey {cacheOptions {}}} {
+    set options [_datasetPreviewCachedPageOptions $options]
+    if {![regexp {^[a-f0-9]{64}$} $expectedKey] || [datasetPreviewCacheKey $id $cacheOptions] ne $expectedKey} {error {Canonical cached page source changed before preparation}}
+    set retained [datasetPreviewCacheGenerate $id $cacheOptions $expectedKey]
+    if {[dict exists $retained current] && ![dict get $retained current]} {error {Preview representation is not current}}
+    if {[datasetPreviewCachedPageRead $id $options $cacheOptions] ne {}} {return [dict create status ready key $expectedKey cache_hit 1]}
+    set page [datasetPreviewPage $::GX::currentSession $id $options]
+    if {![dict get $page available]} {error {Canonical Dataset page unavailable}}
+    if {[datasetPreviewCacheKey $id $cacheOptions] ne $expectedKey || [datasetPreviewCacheSource $id] ne [dict get $retained source]} {error {Canonical Dataset changed during page preparation}}
+    lassign [_datasetPreviewCachedPagePaths $id $expectedKey $options] path digest
+    set record [dict create schema gxtxt.preview_canonical_page.v1 dataset_id $id cache_key $expectedKey options $options page $page]
+    set bytes [encoding convertto utf-8 $record]
+    if {[string length $bytes]>4194304} {error {Canonical cached page exceeds 4 MiB}}
+    file mkdir [file dirname $path]
+    resourceLifecycleWriteBytes $path $bytes
+    resourceLifecycleWriteBytes $digest [encoding convertto utf-8 [sha256File $path]]
+    datasetPreviewCacheEvict $::GX::currentSession $expectedKey
+    return [dict create status ready key $expectedKey cache_hit 0]
 }

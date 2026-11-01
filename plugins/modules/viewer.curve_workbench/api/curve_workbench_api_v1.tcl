@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.20.0
+    variable version 2.21.18
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
@@ -173,15 +173,7 @@ proc ::GX::CurveWorkbench::_snapshotIds {w ids} {
     }
     return $result
 }
-proc ::GX::CurveWorkbench::_history {w before ids} {
-    variable st
-    set after [_snapshotIds $w $ids]
-    if {$before eq $after} return
-    lappend st($w,undo) [list $before $after]
-    if {[llength $st($w,undo)]>30} {set st($w,undo) [lrange $st($w,undo) end-29 end]}
-    set st($w,redo) {}
-    _changed $w
-}
+proc ::GX::CurveWorkbench::_history {w before ids} {return [_historySubmit $w $before $ids]}
 proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {
     variable st
     set previousActive $st($w,active)
@@ -193,24 +185,18 @@ proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {
     _selectionScene $w
 }
 proc ::GX::CurveWorkbench::undo {w} {
-    variable st
-    if {![llength $st($w,undo)]} return
-    lassign [lindex $st($w,undo) end] before after
-    set st($w,undo) [lrange $st($w,undo) 0 end-1]
-    _restoreSnapshot $w $before;lappend st($w,redo) [list $before $after];_changed $w
+    if {[_historyBrowsing $w]} {_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w previous]}
+    _sketchIdle $w;_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w undo]
 }
 proc ::GX::CurveWorkbench::redo {w} {
-    variable st
-    if {![llength $st($w,redo)]} return
-    lassign [lindex $st($w,redo) end] before after
-    set st($w,redo) [lrange $st($w,redo) 0 end-1]
-    _restoreSnapshot $w $after;lappend st($w,undo) [list $before $after];_changed $w
+    if {[_historyBrowsing $w]} {_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w next]}
+    _sketchIdle $w;_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w redo]
 }
 proc ::GX::CurveWorkbench::_load {w} {
     variable st
     variable openingWorkspace
     if {[info exists openingWorkspace]&&$openingWorkspace eq "new"} return
-    set docs [::GX::interactiveDocumentList viewer.curve_workbench curve_workbench]
+    set docs [::GX::nativeWorkspaceQuery curve_workbench]
     if {[info exists openingWorkspace]&&$openingWorkspace ne {}} {
         ::GX::sessionWorkspaceValidate $openingWorkspace
         set st($w,document) $openingWorkspace
@@ -603,7 +589,7 @@ proc ::GX::CurveWorkbench::_metrics {w} {
     set unit [expr {$metric eq "span_y"?$uy:$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"$ux^2":$ux}]
     if {$metric in {length signed_area length_span_ratio}} {set unit [expr {$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"[dict get $m unit]^2":[dict get $m unit]}]}
     set message "[dict get [_record $w $id] name]: $metric = [format %.7g $value] $unit (geometry coordinates) · [_pointCount [_record $w $id]] exact controls/points"
-    if {$target ne ""} {append message " · target error = [format %.7g [expr {$value-[_finite $target Target]}]]"}
+    if {$target ne ""} {append message " · difference from expected = [format %.7g [expr {$value-[_finite $target {Expected value}]}]]"}
     if {$st($w,residual) ne {}} {append message " · max residual [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] max_abs_error]] · RMSE [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] rmse]]"}
     if {[dict get $activeRecord breaks] ne {}} {append message " · disconnected fragments; gaps excluded from length"}
     set st($w,metricText) $message
@@ -805,22 +791,24 @@ proc ::GX::CurveWorkbench::_cancelDirectionDrag {w} {
     set id [dict get $st($w,drag) curve_id]
     set before [dict get $st($w,drag) before $id direction]
     if {[dict exists $st($w,curves) $id]} {
-        ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] $before
+        [_advancedCore $w] direction cancel
     }
     set st($w,drag) {}
 }
 proc ::GX::CurveWorkbench::_directionToggle {w} {
+    if {![_timelineEditable $w]} return
     variable st
     set id [_active $w];set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] [dict create present 1 visible $st($w,directionShown)]
+    [_advancedCore $w] direction properties [dict get [_record $w $id] native] {} [dict create present 1 visible $st($w,directionShown)]
     _history $w $before [list $id]
 }
 proc ::GX::CurveWorkbench::_directionFlip {w} {
+    if {![_timelineEditable $w]} return
     variable st
     set id [_active $w];set native [dict get [_record $w $id] native]
     set marker [::GX::Native2D::core direction_marker $st($w,scene) $native]
     set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create forward [expr {![dict get $marker forward]}]]
+    [_advancedCore $w] direction properties $native {} [dict create forward [expr {![dict get $marker forward]}]]
     _history $w $before [list $id]
     set st($w,status) "Intended direction flipped. Dataset publication follows this direction."
 }
@@ -859,6 +847,7 @@ proc ::GX::CurveWorkbench::_directionOpen {w} {
     bind $d <Escape> [list destroy $d]
 }
 proc ::GX::CurveWorkbench::_directionApply {w id fields} {
+    if {![_timelineEditable $w]} return
     variable st
     if {[_active $w] ne $id} {error "Active curve changed; reopen Direction settings"}
     set changes {};set row 0
@@ -871,7 +860,7 @@ proc ::GX::CurveWorkbench::_directionApply {w id fields} {
         dict set changes $key $value;incr row
     }
     set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] $changes
+    [_advancedCore $w] direction properties [dict get [_record $w $id] native] {} $changes
     _history $w $before [list $id]
 }
 proc ::GX::CurveWorkbench::_gridToggle {w property} {
@@ -921,7 +910,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         set currentMarker [::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $st($w,active)] native]]
         set st($w,directionShown) [dict get $currentMarker visible]
     }
-    $c delete all
+    ::GX::native2DGridPresenterBegin $c [list ::GX::CurveWorkbench::_viewportDrawLater $w]
     lassign [lrange $view 2 5] left top right bottom
     lassign [lindex $view 6] x0 y0 x1 y1
     set plotRight [expr {$width-$right}];set plotBottom [expr {$height-$bottom}]
@@ -930,61 +919,44 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     set backgroundRgb [dict get $background rgb]
     set textRgb [::GX::uiFieldColorReadableText $background]
     $c configure -background $backgroundRgb
-    $c create rectangle $left $top $plotRight $plotBottom -fill $backgroundRgb -outline #9babbc -tags native_plot_background
     set grid [::GX::Native2D::core grid $st($w,scene)]
     set st($w,gridShown) [dict get $grid visible]
     set st($w,gridSnap) [dict get $grid snap_enabled]
-    ::GX::native2DCanvasGrid $st($w,scene) $c construction_grid 16
+    ::GX::native2DGridPresenterUpdate $c $st($w,scene) $plans [dict create background $backgroundRgb text_color $textRgb]
+    ::GX::native2DSpriteSceneBegin $c [list $left $top $plotRight $plotBottom]
     set st($w,coordinateAxisPlans) $plans
-    foreach axis {x y} {
-        foreach tick [dict get $plans $axis ticks] {
-            set value [dict get $tick value]
-            if {$axis eq {x}} {
-                lassign [::GX::Native2D::core device $st($w,scene) [list $value $y0]] sx unused
-                if {[dict get $grid visible]} {$c create line $sx $top $sx $plotBottom -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
-                $c create line $sx $plotBottom $sx [expr {$plotBottom+4}] -fill $textRgb -tags {axis_graduation coordinate_x_graduation}
-                $c create text $sx [expr {$plotBottom+15}] -text [dict get $tick label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_x_tick}
-            } else {
-                lassign [::GX::Native2D::core device $st($w,scene) [list $x0 $value]] unused sy
-                if {[dict get $grid visible]} {$c create line $left $sy $plotRight $sy -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
-                $c create line [expr {$left-4}] $sy $left $sy -fill $textRgb -tags {axis_graduation coordinate_y_graduation}
-                $c create text [expr {$left-7}] $sy -text [dict get $tick label] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_y_tick}
-            }
-        }
-    }
-    set index 0
+    set index 0;set descriptors {}
     dict for {id r} $st($w,curves) {
         if {![_curveVisible $w $r]} continue
-        set curveStyle [_coordinateCurveStyle $w $id $index $background];incr index
-        set color [dict get [::GX::uiFieldColorFromRGBA [dict get $curveStyle color]] rgb]
-        set sampled {} ;# Defining/row markers query their own Native authority.
-        # Shared Native presentation supports point objects as filled markers;
-        # a singleton is geometry even when it has no selected defining handle.
-        set object [::GX::native2DPresentationObjectSnapshot $st($w,scene) [dict get $r native] 4096]
-        if {$object ne {}&&[::GX::datasetPublicationV2DictDefault $r display_style straight] ne "points"} {
-            dict set object style [dict merge [dict get $object style] $curveStyle]
-            # Defining controls / Dataset points have their own semantic marker
-            # presenter. Drawing a marker at every retained display sample both
-            # implies false controls and creates thousands of redundant Tk items.
-            if {[dict get $object kind] eq "curve"} {dict set object style marker 0}
-            dict unset object marker
-            ::GX::native2DCanvasDrawObject $c $object $backgroundRgb [list curve_$id]
+        set curveStyle [_coordinateCurveStyle $w $id $index $background]
+        set retained [dict exists $r sketch_definition];set selected {};set table {}
+        if {$retained} {
+            foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id} {lappend selected [dict get $ref index]}}
+        } else {
+            set selected [_semanticPointIndices $w $id]
+            if {$id eq $st($w,active)} {set table [_pointTableSelected $w]}
         }
-        set marker {}
-        if {![dict exists $r sketch_definition]||[dict get $r sketch_definition family] ni {compound composite_path}} {set marker [::GX::Native2D::core render_marker $st($w,scene) [dict get $r native]]}
-        if {$marker ne {}} {
-            set style [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]]
-            set markerColor [::GX::uiFieldColorFromRGBA [dict get $style color]]
-            set rgb [dict get [::GX::uiFieldColorComposite $markerColor $background] rgb]
-            $c create line {*}[dict get $marker tail] {*}[dict get $marker tip] -fill $rgb -width [dict get $style line_width] -tags [list direction_marker direction_$id]
-            $c create line {*}[dict get $marker head_left] {*}[dict get $marker tip] {*}[dict get $marker head_right] -fill $rgb -width [dict get $style line_width] -tags [list direction_marker direction_$id]
-            if {$id eq $st($w,active)} {
-                lassign [dict get $marker bounds] mx0 my0 mx1 my1
-                $c create text [expr {$mx1+8}] [expr {($my0+$my1)/2}] -text Flip -anchor w -fill $rgb -font TkDefaultFont -tags direction_flip
-            }
+        lappend descriptors [dict create id $id object [dict get $r native] z $index style $curveStyle sample_markers 0 controls $retained point_markers [expr {!$retained}] selected $selected table_selected $table skip_path [expr {[::GX::datasetPublicationV2DictDefault $r display_style straight] eq {points}}]]
+        incr index
+    }
+    set receipt [::GX::native2DSpriteSceneSync $c $st($w,scene) $descriptors [dict create active $st($w,active) background $backgroundRgb budget 4096]]
+    if {[dict exists $receipt active_marker]} {
+        set marker [dict get $receipt active_marker]
+        lassign [dict get $marker bounds] mx0 my0 mx1 my1
+        $c create text [expr {$mx1+8}] [expr {($my0+$my1)/2}] -text Flip -anchor w -fill [dict get $marker color] -font TkDefaultFont -tags direction_flip
+    }
+    # Source-row locators remain an existing Viewer overlay. Only selected
+    # indices and their small native position receipt cross this boundary.
+    dict for {id positions} [dict get $receipt locators] {
+        set record [_record $w $id]
+        if {[dict get $record source] eq {}} continue
+        foreach locator $positions {
+            lassign $locator index point
+            set row [dict get [_sampleAt $w $id $index] row]
+            if {$row<0} continue
+            lassign $point x y
+            $c create oval [expr {$x-9}] [expr {$y-9}] [expr {$x+9}] [expr {$y+9}] -outline #c51d24 -width 2 -tags [list dataset_row_locator dataset_locator_$id source_row_$row locator_point_$index]
         }
-        if {[dict get [::GX::Native2D::core object_style $st($w,scene) [dict get $r native]] selectable]||[::GX::datasetPublicationV2DictDefault $r display_style straight] eq "points"} {_drawPointMarkers $w $id $sampled $color}
-
     }
     if {$st($w,previewNative) ne ""} {
         foreach path [::GX::Native2D::core render_paths $st($w,scene) $st($w,previewNative)] {
@@ -1004,9 +976,10 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         }
     }
     if {$st($w,box) ne {}} {$c create rectangle {*}$st($w,box) -outline #234e9b -dash {4 3}}
+    ::GX::native2DSpriteSceneEnd $c
+    ::GX::native2DGridPresenterEnd $c
     ::GX::native2DCanvasViewportClip $c $st($w,scene)
-    $c create text [expr {($left+$plotRight)/2}] [expr {$height-14}] -text [dict get $plans x label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
-    $c create text 13 [expr {($top+$plotBottom)/2}] -text [dict get $plans y label] -angle 90 -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
+
 }
 # The residual is an actual derived comparison, never a canonical Dataset.
 proc ::GX::CurveWorkbench::_residualDispose {w} {
@@ -1062,14 +1035,17 @@ proc ::GX::CurveWorkbench::_hitCurve {w world tolerance} {
 }
 proc ::GX::CurveWorkbench::_pointerDownScientific {w x y state} {
     variable st
+    if {$st($w,tool) eq {pan}} {set host [_cadCanvas $w];$host tool pan;$host event down $x $y $state;set st($w,drag) [dict create mode pan x $x y $y];return 1}
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {return 1}
-    set st($w,drag) [dict create mode none x $x y $y]
+    # A Canvas command is not a gesture. Admit/record Flip before allocating
+    # the placeholder used by actual scientific pointer interactions.
     if {"direction_flip" in [$w.right.viewport.canvas gettags current]} {_directionFlip $w;return 1}
-    if {$st($w,tool) eq "pan"} {dict set st($w,drag) mode pan;return 1}
+    set st($w,drag) [dict create mode none x $x y $y]
     if {$st($w,tool) eq "select" && $st($w,active) ne ""} {
         set id $st($w,active);set native [dict get [_record $w $id] native]
         if {[::GX::Native2D::core marker_hit $st($w,scene) $native [list $x $y] 5]} {
             set st($w,drag) [dict create mode direction curve_id $id native $native before [_snapshotIds $w [list $id]]]
+            [_advancedCore $w] direction start $native {}
             return 1
         }
     }
@@ -1127,11 +1103,10 @@ proc ::GX::CurveWorkbench::_pointerMoveScientific {w x y} {
     if {$st($w,drag) eq {}} {return 1}
     set mode [dict get $st($w,drag) mode]
     if {$mode eq "direction"} {
-        ::GX::Native2D::core marker_place $st($w,scene) [dict get $st($w,drag) native] [list $x $y]
+        [_advancedCore $w] direction move [list $x $y]
         _draw $w
     } elseif {$mode eq "pan"} {
-        ::GX::Native2D::core pan $st($w,scene) [expr {$x-[dict get $st($w,drag) x]}] [expr {$y-[dict get $st($w,drag) y]}]
-        dict set st($w,drag) x $x;dict set st($w,drag) y $y;_viewDrawLater $w
+        [_cadCanvas $w] event move $x $y
     } elseif {$mode eq "box"} {set st($w,box) [list [dict get $st($w,drag) x] [dict get $st($w,drag) y] $x $y];_draw $w} elseif {$mode eq "points"} {
         set world [::GX::Native2D::core world $st($w,scene) [list $x $y]]
         lassign [dict get $st($w,drag) world] ax ay
@@ -1165,10 +1140,12 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 }
 proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
     variable st
+    if {$st($w,drag) ne {} && [dict get $st($w,drag) mode] eq {pan}} {[_cadCanvas $w] event up $x $y;set st($w,drag) {};return 1}
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {return 1}
     if {$st($w,drag) eq {}} {return 1}
     set drag $st($w,drag);set mode [dict get $drag mode];set st($w,drag) {}
     if {$mode eq "direction"} {
+        [_advancedCore $w] direction commit
         _history $w [dict get $drag before] [list [dict get $drag curve_id]]
     } elseif {$mode eq "points"} {
         ::GX::Native2D::core drag_commit $st($w,selectionScene)
@@ -1201,8 +1178,7 @@ proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
 }
 proc ::GX::CurveWorkbench::_wheel {w x y delta} {
     variable st
-    ::GX::Native2D::core zoom $st($w,scene) [expr {$delta>0?0.82:1.22}] [list $x $y]
-    _viewDrawLater $w;_viewPersistLater $w
+    [_cadCanvas $w] event wheel $x $y $delta
 }
 proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     variable st
@@ -1427,3 +1403,7 @@ source [file join [file dirname [info script]] curve_workbench_coordinate_declar
 source [file join [file dirname [info script]] curve_workbench_coordinate_controls_v1.tcl]
 
 source [file join [file dirname [info script]] curve_workbench_fit_import_v1.tcl]
+
+source [file join [file dirname [info script]] curve_workbench_cad_canvas.tcl]
+source [file join [file dirname [info script]] curve_workbench_advanced_tools.tcl]
+source [file join [file dirname [info script]] curve_workbench_advanced_constraints.tcl]

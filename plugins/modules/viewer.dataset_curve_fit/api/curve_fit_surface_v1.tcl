@@ -122,7 +122,7 @@ proc ::GX::DatasetCurveFit::_surfaceCommit {original payload description} {
     if {$history eq {}} {set history [::GX::scientificHistoryCreate viewer.dataset_curve_fit.surface [dict remove $before scientific_history]]}
     set snapshot [dict remove $payload scientific_history]
     dict set payload scientific_history [::GX::scientificHistoryAppend viewer.dataset_curve_fit.surface $history $snapshot $description]
-    return [::GX::sessionWorkspaceUpdate $id $payload]
+    return [::GX::sessionWorkspaceUpdate $id $payload $original]
 }
 proc ::GX::DatasetCurveFit::_surfaceArrayImport {document file shape dtype unit role} {
     set metadata [dict create format gxtxt.numeric_array_le.v1 dtype $dtype endian little order F shape $shape unit $unit role $role]

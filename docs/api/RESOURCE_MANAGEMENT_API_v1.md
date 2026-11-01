@@ -9,6 +9,12 @@ document resources, native rendering caches or their recovery contracts.
 
 ## Host interfaces
 
+P028 adds `resourceManagementInspect resourceId` (Python `inspect(resource_id)`)
+to read one existing allocation's owner/lease state without a global filesystem
+rescan. It returns the normal resource record and never releases/deletes it or
+changes the scientific owner. This is host metadata, not an arbitrary file reader
+or a new Script Bridge/SDK permission.
+
 Python hosts import `ResourceManager` from `core/python/gxtxt_resource_manager.py`.
 Tcl hosts use the following additive API; options are Tcl dictionaries.
 

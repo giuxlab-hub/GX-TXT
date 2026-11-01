@@ -16,6 +16,15 @@
 #include <vector>
 #include <set>
 #include <sstream>
+#include <cstddef>
+#include <dlfcn.h>
+#include <stdexcept>
+
+// Opaque standard C ABI types. No third-party implementation is copied and no
+// development package or renderer executable is required. See the public
+// NATIVE2D_TEXT_ENGINE_API_v1 manual for the verified primary declarations.
+typedef struct _PangoLayout PangoLayout;
+typedef struct _PangoFontDescription PangoFontDescription;
 
 namespace {
 Tcl_Obj *str(const char *s) { return Tcl_NewStringObj(s,-1); }
@@ -24,6 +33,110 @@ void put(Tcl_Obj *d,const char *k,Tcl_Obj *v) { Tcl_DictObjPut(nullptr,d,str(k),
 int error(Tcl_Interp *ip,const char *s) {Tcl_SetObjResult(ip,str(s));return TCL_ERROR;}
 double number(Tcl_Interp *ip,Tcl_Obj *d,const char *key,double fallback) { auto v=get(ip,d,key);double x;return v&&Tcl_GetDoubleFromObj(ip,v,&x)==TCL_OK?x:fallback; }
 std::string text(Tcl_Interp *ip,Tcl_Obj *d,const char *key,const char *fallback="") {auto v=get(ip,d,key);if(!v)return fallback;Tcl_DString bytes;Tcl_DStringInit(&bytes);Tcl_Encoding utf=Tcl_GetEncoding(ip,"utf-8");int length;const char *value=Tcl_GetStringFromObj(v,&length);Tcl_UtfToExternalDString(utf,value,length,&bytes);std::string result(Tcl_DStringValue(&bytes),Tcl_DStringLength(&bytes));Tcl_DStringFree(&bytes);Tcl_FreeEncoding(utf);return result;}
+struct PangoApi {
+ void *library=nullptr;
+ bool available=false;
+ std::string problem;
+ PangoLayout *(*create)(cairo_t*)=nullptr;
+ void (*show)(cairo_t*,PangoLayout*)=nullptr;
+ PangoFontDescription *(*fontNew)()=nullptr;
+ void (*fontFree)(PangoFontDescription*)=nullptr;
+ void (*fontFamily)(PangoFontDescription*,const char*)=nullptr;
+ void (*fontSize)(PangoFontDescription*,double)=nullptr;
+ void (*setFont)(PangoLayout*,const PangoFontDescription*)=nullptr;
+ void (*setText)(PangoLayout*,const char*,int)=nullptr;
+ void (*pixelSize)(PangoLayout*,int*,int*)=nullptr;
+ int (*unknownGlyphs)(PangoLayout*)=nullptr;
+ void (*unref)(void*)=nullptr;
+ int (*utf8Valid)(const char*,std::ptrdiff_t,const char**)=nullptr;
+ const char *(*versionCheck)(int,int,int)=nullptr;
+ const char *(*versionString)()=nullptr;
+ template<class Function> bool symbol(Function &fn,const char *name) {
+  fn=reinterpret_cast<Function>(dlsym(library,name));
+  if(!fn){problem=std::string("PangoCairo runtime is missing required symbol ")+name;return false;}
+  return true;
+ }
+ PangoApi() {
+  library=dlopen("libpangocairo-1.0.so.0",RTLD_NOW|RTLD_LOCAL);
+  if(!library){problem="PangoCairo 1.x runtime is unavailable; source remains inspectable";return;}
+  if(!symbol(create,"pango_cairo_create_layout") || !symbol(show,"pango_cairo_show_layout") ||
+     !symbol(fontNew,"pango_font_description_new") || !symbol(fontFree,"pango_font_description_free") ||
+     !symbol(fontFamily,"pango_font_description_set_family") || !symbol(fontSize,"pango_font_description_set_absolute_size") ||
+     !symbol(setFont,"pango_layout_set_font_description") || !symbol(setText,"pango_layout_set_text") ||
+     !symbol(pixelSize,"pango_layout_get_pixel_size") || !symbol(unknownGlyphs,"pango_layout_get_unknown_glyphs_count") ||
+     !symbol(unref,"g_object_unref") || !symbol(utf8Valid,"g_utf8_validate") ||
+     !symbol(versionCheck,"pango_version_check") || !symbol(versionString,"pango_version_string"))return;
+  const char *mismatch=versionCheck(1,16,0);
+  if(mismatch){problem=std::string("PangoCairo ABI version refused: ")+mismatch;return;}
+  available=true;
+  // Keep the OS library bound for this process lifetime. Live layouts/font maps
+  // must never outlive their code; closing a view releases its own layouts only.
+ }
+};
+PangoApi &pangoApi(){static PangoApi api;return api;}
+struct ShapedLayout {
+ PangoApi &api;
+ PangoLayout *layout=nullptr;
+ int width=0,height=0;
+ ShapedLayout(cairo_t *cr,const std::string &family,double size,const std::string &value):api(pangoApi()) {
+  if(!api.available)throw std::runtime_error(api.problem);
+  if(family.empty() || family.size()>128 || family.find_first_of("/\\\r\n")!=std::string::npos ||
+     !api.utf8Valid(family.data(),family.size(),nullptr))throw std::runtime_error("Native shaped font family must be a bounded plain family name");
+  if(!std::isfinite(size) || size<1 || size>256 || value.size()>65536 || value.find_first_of("\r\n")!=std::string::npos ||
+     !api.utf8Valid(value.data(),value.size(),nullptr))throw std::runtime_error("Native shaped text needs one valid UTF-8 line within 64 KiB and font size 1..256 pixels");
+  // Resolve the same explicit font options on image, live Xlib and vector
+  // contexts. Metrics and painting must not inherit different target defaults.
+  cairo_font_options_t *options=cairo_font_options_create();
+  cairo_font_options_set_antialias(options,CAIRO_ANTIALIAS_GRAY);
+  cairo_font_options_set_hint_style(options,CAIRO_HINT_STYLE_SLIGHT);
+  cairo_font_options_set_hint_metrics(options,CAIRO_HINT_METRICS_ON);
+  cairo_set_font_options(cr,options);cairo_font_options_destroy(options);
+  layout=api.create(cr);
+  if(!layout)throw std::runtime_error("PangoCairo could not allocate a layout");
+  PangoFontDescription *font=api.fontNew();
+  if(!font){api.unref(layout);layout=nullptr;throw std::runtime_error("PangoCairo could not allocate a font description");}
+  api.fontFamily(font,family.c_str());
+  api.fontSize(font,size*1024.0); // PANGO_SCALE, stable public ABI device units.
+  api.setFont(layout,font);api.fontFree(font);
+  api.setText(layout,value.data(),static_cast<int>(value.size())); // Plain text, never markup.
+  api.pixelSize(layout,&width,&height);
+  int missing=api.unknownGlyphs(layout);
+  if(missing || width<0 || height<0 || width>16384 || height>4096) {
+   api.unref(layout);layout=nullptr;
+   if(missing)throw std::runtime_error("Native shaped text has unavailable glyphs; install/select a font with coverage; source remains intact");
+   throw std::runtime_error("Native shaped text metrics exceed bounded layout capacity");
+  }
+ }
+ ~ShapedLayout(){if(layout)api.unref(layout);}
+ ShapedLayout(const ShapedLayout&)=delete;
+ ShapedLayout& operator=(const ShapedLayout&)=delete;
+};
+int textEngineInfo(ClientData,Tcl_Interp *ip,int n,Tcl_Obj *const[]) {
+ if(n!=1)return error(ip,"Usage: native text_engine_info");
+ auto &api=pangoApi();Tcl_Obj *result=Tcl_NewDictObj();
+ put(result,"schema",str("gxtxt.native2d.text_engine.v1"));put(result,"api_version",Tcl_NewIntObj(1));
+ put(result,"default_engine",str("cairo_toy"));put(result,"opt_in_engine",str("PangoCairo"));
+ put(result,"available",Tcl_NewBooleanObj(api.available));put(result,"message",str(api.problem.c_str()));
+ put(result,"runtime_version",str(api.available?api.versionString():""));put(result,"plain_text_only",Tcl_NewBooleanObj(1));
+ put(result,"rotation_degrees",Tcl_NewIntObj(0));put(result,"unknown_glyph_policy",str("refuse"));
+ Tcl_SetObjResult(ip,result);return TCL_OK;
+}
+int textMetrics(ClientData,Tcl_Interp *ip,int n,Tcl_Obj *const v[]) {
+ if(n!=4)return error(ip,"Usage: native text_metrics family pixelSize plainText");
+ double size;if(Tcl_GetDoubleFromObj(ip,v[2],&size)!=TCL_OK)return TCL_ERROR;
+ Tcl_Obj *fields=Tcl_NewDictObj();Tcl_IncrRefCount(fields);
+ Tcl_DictObjPut(ip,fields,str("family"),v[1]);Tcl_DictObjPut(ip,fields,str("text"),v[3]);
+ auto family=text(ip,fields,"family"),value=text(ip,fields,"text");Tcl_DecrRefCount(fields);
+ cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,1,1);cairo_t *cr=cairo_create(surface);
+ int status=TCL_OK;
+ try {
+  ShapedLayout layout(cr,family,size,value);Tcl_Obj *result=Tcl_NewDictObj();
+  put(result,"width",Tcl_NewIntObj(layout.width));put(result,"height",Tcl_NewIntObj(layout.height));
+  put(result,"engine",str("PangoCairo"));put(result,"api_version",Tcl_NewIntObj(1));put(result,"units",str("pixels"));
+  put(result,"unknown_glyphs",Tcl_NewIntObj(0));Tcl_SetObjResult(ip,result);
+ } catch(const std::exception &problem){status=error(ip,problem.what());}
+ cairo_destroy(cr);cairo_surface_destroy(surface);return status;
+}
 struct Cell {std::string value,kind;std::map<std::string,std::string> style;int c1=0,r1=0,c2=0,r2=0;};
 struct Host {
  Tcl_Interp *ip;Tk_Window win;Tcl_Command command=nullptr;bool grid=false,pending=false,drawing=false,dead=false,dirtyDuringDraw=false;
@@ -135,11 +248,19 @@ void paintGrid(Host *h,cairo_t *cr){
 /* The same native device primitive contract is used by Plot v4 and the grid.
  * Surface primitives are presentation only; scientific point identities stay
  * in the producing Native2D model, never inferred from display reduction. */
-void paintPrimitives(Host *h,cairo_t *cr){if(!h->primitives)return;int n;Tcl_Obj **items;if(Tcl_ListObjGetElements(h->ip,h->primitives,&n,&items)!=TCL_OK)return;for(int i=0;i<n;++i){auto d=items[i];auto cv=get(h->ip,d,"coords");int m;Tcl_Obj **v;if(!cv||Tcl_ListObjGetElements(h->ip,cv,&m,&v)!=TCL_OK||m<2)continue;std::vector<double> xy;bool ok=true;for(int j=0;j<m;++j){double a;if(Tcl_GetDoubleFromObj(h->ip,v[j],&a)!=TCL_OK||!std::isfinite(a)){ok=false;break;}xy.push_back(a);}if(!ok)continue;cairo_save(cr);auto clip=get(h->ip,d,"clip");if(clip){int z;Tcl_Obj **p;if(Tcl_ListObjGetElements(h->ip,clip,&z,&p)==TCL_OK&&z==4){double q[4];bool good=true;for(int k=0;k<4;++k)good=good&&Tcl_GetDoubleFromObj(h->ip,p[k],q+k)==TCL_OK;if(good){cairo_rectangle(cr,q[0],q[1],q[2]-q[0],q[3]-q[1]);cairo_clip(cr);}}}
+int paintPrimitives(Host *h,cairo_t *cr){if(!h->primitives)return TCL_OK;int n;Tcl_Obj **items;if(Tcl_ListObjGetElements(h->ip,h->primitives,&n,&items)!=TCL_OK)return TCL_ERROR;for(int i=0;i<n;++i){auto d=items[i];auto cv=get(h->ip,d,"coords");int m;Tcl_Obj **v;if(!cv||Tcl_ListObjGetElements(h->ip,cv,&m,&v)!=TCL_OK||m<2)continue;std::vector<double> xy;bool ok=true;for(int j=0;j<m;++j){double a;if(Tcl_GetDoubleFromObj(h->ip,v[j],&a)!=TCL_OK||!std::isfinite(a)){ok=false;break;}xy.push_back(a);}if(!ok)continue;cairo_save(cr);auto clip=get(h->ip,d,"clip");if(clip){int z;Tcl_Obj **p;if(Tcl_ListObjGetElements(h->ip,clip,&z,&p)==TCL_OK&&z==4){double q[4];bool good=true;for(int k=0;k<4;++k)good=good&&Tcl_GetDoubleFromObj(h->ip,p[k],q+k)==TCL_OK;if(good){cairo_rectangle(cr,q[0],q[1],q[2]-q[0],q[3]-q[1]);cairo_clip(cr);}}}
  auto type=text(h->ip,d,"type");double alpha=std::max(0.,std::min(1.,number(h->ip,d,"opacity",1)));auto fill=text(h->ip,d,"fill"),stroke=text(h->ip,d,"stroke","#233746");cairo_set_line_width(cr,std::max(.1,number(h->ip,d,"width",1)));auto dash=get(h->ip,d,"dash");if(dash){int z;Tcl_Obj **p;if(Tcl_ListObjGetElements(h->ip,dash,&z,&p)==TCL_OK&&z<=32){std::vector<double>a;for(int k=0;k<z;++k){double x;if(Tcl_GetDoubleFromObj(h->ip,p[k],&x)==TCL_OK&&x>0)a.push_back(x);}if(!a.empty())cairo_set_dash(cr,a.data(),a.size(),0);}}
- if(type=="text"){color(h,cr,fill.empty()?stroke:fill,alpha);cairo_select_font_face(cr,text(h->ip,d,"font_family","sans").c_str(),CAIRO_FONT_SLANT_NORMAL,CAIRO_FONT_WEIGHT_NORMAL);cairo_set_font_size(cr,number(h->ip,d,"font_size",h->fontSize));std::string s=text(h->ip,d,"text");cairo_text_extents_t ex;cairo_text_extents(cr,s.c_str(),&ex);cairo_translate(cr,xy[0],xy[1]);cairo_rotate(cr,-number(h->ip,d,"angle",0)*acos(-1)/180);auto anchor=text(h->ip,d,"anchor","center");double tx=anchor=="nw"?0:-ex.x_advance/2,ty=anchor=="nw"?-ex.y_bearing:-ex.y_bearing/2;cairo_move_to(cr,tx,ty);cairo_show_text(cr,s.c_str());}
+ if(type=="text" && text(h->ip,d,"text_engine")=="PangoCairo") {
+  try {
+   ShapedLayout layout(cr,text(h->ip,d,"font_family","sans"),number(h->ip,d,"font_size",h->fontSize),text(h->ip,d,"text"));
+   color(h,cr,fill.empty()?stroke:fill,alpha);
+   const bool northwest=text(h->ip,d,"anchor","center")=="nw";
+   cairo_move_to(cr,xy[0]-(northwest?0:layout.width/2.),xy[1]-(northwest?0:layout.height/2.));
+   layout.api.show(cr,layout.layout);
+  } catch(const std::exception &problem) {cairo_restore(cr);return error(h->ip,problem.what());}
+ } else if(type=="text"){color(h,cr,fill.empty()?stroke:fill,alpha);cairo_select_font_face(cr,text(h->ip,d,"font_family","sans").c_str(),CAIRO_FONT_SLANT_NORMAL,CAIRO_FONT_WEIGHT_NORMAL);cairo_set_font_size(cr,number(h->ip,d,"font_size",h->fontSize));std::string s=text(h->ip,d,"text");cairo_text_extents_t ex;cairo_text_extents(cr,s.c_str(),&ex);cairo_translate(cr,xy[0],xy[1]);cairo_rotate(cr,-number(h->ip,d,"angle",0)*acos(-1)/180);auto anchor=text(h->ip,d,"anchor","center");double tx=anchor=="nw"?0:-ex.x_advance/2,ty=anchor=="nw"?-ex.y_bearing:-ex.y_bearing/2;cairo_move_to(cr,tx,ty);cairo_show_text(cr,s.c_str());}
  else {if((type=="rectangle"||type=="oval")&&m>=4){if(type=="rectangle")cairo_rectangle(cr,xy[0],xy[1],xy[2]-xy[0],xy[3]-xy[1]);else {cairo_save(cr);cairo_translate(cr,(xy[0]+xy[2])/2,(xy[1]+xy[3])/2);cairo_scale(cr,std::max(.0001,std::abs(xy[2]-xy[0])/2),std::max(.0001,std::abs(xy[3]-xy[1])/2));cairo_arc(cr,0,0,1,0,2*acos(-1));cairo_restore(cr);}}else{cairo_move_to(cr,xy[0],xy[1]);for(int j=2;j+1<m;j+=2)cairo_line_to(cr,xy[j],xy[j+1]);if(type=="polygon")cairo_close_path(cr);}if(color(h,cr,fill,alpha))cairo_fill_preserve(cr);if(color(h,cr,stroke,alpha))cairo_stroke(cr);else cairo_new_path(cr);}cairo_restore(cr);
-}}
+}return TCL_OK;}
 int validatePrimitives(Tcl_Interp *ip,Tcl_Obj *primitives){
  int count;Tcl_Obj **items;
  if(Tcl_ListObjGetElements(ip,primitives,&count,&items)!=TCL_OK||count>200000)return error(ip,"Native display list exceeds bounded presentation capacity");
@@ -153,6 +274,19 @@ int validatePrimitives(Tcl_Interp *ip,Tcl_Obj *primitives){
   coordinates+=n;if(coordinates>4000000)return error(ip,"Native display coordinates exceed bounded capacity");
   for(int k=0;k<n;++k){double value;if(Tcl_GetDoubleFromObj(ip,v[k],&value)!=TCL_OK||!std::isfinite(value))return error(ip,"Native primitive coordinates must be finite");}
   for(const char *key:{"width","opacity","angle","font_size"}){auto value=get(ip,d,key);double x;if(value&&(Tcl_GetDoubleFromObj(ip,value,&x)!=TCL_OK||!std::isfinite(x)))return error(ip,"Native primitive style requires finite numbers");if(value&&((std::string(key)=="opacity"&&(x<0||x>1))||(std::string(key)=="width"&&x<0)||(std::string(key)=="font_size"&&(x<1||x>256))))return error(ip,"Native primitive style is outside supported bounds");}
+  if(type=="text") {
+   auto engine=text(ip,d,"text_engine");
+   if(!engine.empty() && engine!="cairo_toy" && engine!="PangoCairo")return error(ip,"Unknown native text engine; select cairo_toy or explicit PangoCairo v1");
+   if(engine=="PangoCairo") {
+    auto version=get(ip,d,"text_engine_version");int revision;
+    if(!version || Tcl_GetIntFromObj(ip,version,&revision)!=TCL_OK || revision!=1 || number(ip,d,"angle",0)!=0)return error(ip,"PangoCairo text engine v1 requires explicit version 1 and horizontal text");
+    cairo_surface_t *surface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,1,1);cairo_t *context=cairo_create(surface);
+    int status=TCL_OK;
+    try {ShapedLayout layout(context,text(ip,d,"font_family","sans"),number(ip,d,"font_size",12),text(ip,d,"text"));}
+    catch(const std::exception &problem){status=error(ip,problem.what());}
+    cairo_destroy(context);cairo_surface_destroy(surface);if(status!=TCL_OK)return status;
+   }
+  }
   auto clip=get(ip,d,"clip");if(clip){int n;Tcl_Obj **v;if(Tcl_ListObjGetElements(ip,clip,&n,&v)!=TCL_OK||n!=4)return error(ip,"Native clip requires four finite bounds");for(int k=0;k<4;++k){double x;if(Tcl_GetDoubleFromObj(ip,v[k],&x)!=TCL_OK||!std::isfinite(x))return error(ip,"Native clip bounds must be finite");}}
  }
  return TCL_OK;
@@ -166,7 +300,8 @@ int exportPrimitives(Host *h,const char *path,int width,int height){
  else if(kind=="svg")surface=cairo_svg_surface_create(path,width,height);
  else return error(h->ip,"Native export supports PNG, PDF and SVG");
  if(cairo_surface_status(surface)!=CAIRO_STATUS_SUCCESS){auto status=cairo_surface_status(surface);cairo_surface_destroy(surface);return error(h->ip,cairo_status_to_string(status));}
- cairo_t *cr=cairo_create(surface);color(h,cr,h->background);cairo_paint(cr);paintPrimitives(h,cr);cairo_destroy(cr);
+ cairo_t *cr=cairo_create(surface);color(h,cr,h->background);cairo_paint(cr);int painted=paintPrimitives(h,cr);cairo_destroy(cr);
+ if(painted!=TCL_OK){cairo_surface_destroy(surface);return painted;}
  cairo_status_t status=kind=="png"?cairo_surface_write_to_png(surface,path):CAIRO_STATUS_SUCCESS;
  cairo_surface_finish(surface);if(status==CAIRO_STATUS_SUCCESS)status=cairo_surface_status(surface);cairo_surface_destroy(surface);
  if(status!=CAIRO_STATUS_SUCCESS)return error(h->ip,cairo_status_to_string(status));
@@ -257,7 +392,7 @@ int textPhoto(ClientData,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){
 }
 void display(ClientData data){auto h=(Host*)data;h->pending=false;if(h->dead||!h->win||!Tk_IsMapped(h->win))return;Tcl_Preserve(h);h->drawing=true;h->clamp();uint64_t gen=h->generation,rev=h->revision;
  if(h->grid&&h->fetch){Tcl_Obj *reply=nullptr;++h->fetches;if(call(h,h->fetch,{str(Tk_PathName(h->win)),range(h)},&reply)&&reply){if(!h->dead&&h->generation==gen&&h->revision==rev&&!loadCells(h,reply))h->lastError="Invalid bounded grid cell reply";Tcl_DecrRefCount(reply);}}
- if(!h->dead&&h->win&&Tk_IsMapped(h->win)){int w=h->width(),z=h->height();Pixmap pix=Tk_GetPixmap(Tk_Display(h->win),Tk_WindowId(h->win),w,z,Tk_Depth(h->win));cairo_surface_t *surface=cairo_xlib_surface_create(Tk_Display(h->win),pix,Tk_Visual(h->win),w,z);cairo_t *cr=cairo_create(surface);color(h,cr,h->background);cairo_paint(cr);if(h->grid)paintGrid(h,cr);else paintPrimitives(h,cr);cairo_destroy(cr);cairo_surface_destroy(surface);GC gc=Tk_GetGC(h->win,0,nullptr);XCopyArea(Tk_Display(h->win),pix,Tk_WindowId(h->win),gc,0,0,w,z,0,0);Tk_FreeGC(Tk_Display(h->win),gc);Tk_FreePixmap(Tk_Display(h->win),pix);++h->draws;
+ if(!h->dead&&h->win&&Tk_IsMapped(h->win)){int w=h->width(),z=h->height();Pixmap pix=Tk_GetPixmap(Tk_Display(h->win),Tk_WindowId(h->win),w,z,Tk_Depth(h->win));cairo_surface_t *surface=cairo_xlib_surface_create(Tk_Display(h->win),pix,Tk_Visual(h->win),w,z);cairo_t *cr=cairo_create(surface);color(h,cr,h->background);cairo_paint(cr);int painted=TCL_OK;if(h->grid)paintGrid(h,cr);else painted=paintPrimitives(h,cr);cairo_destroy(cr);cairo_surface_destroy(surface);if(painted!=TCL_OK){Tk_FreePixmap(Tk_Display(h->win),pix);Tcl_BackgroundException(h->ip,TCL_ERROR);h->drawing=false;Tcl_Release(h);return;}GC gc=Tk_GetGC(h->win,0,nullptr);XCopyArea(Tk_Display(h->win),pix,Tk_WindowId(h->win),gc,0,0,w,z,0,0);Tk_FreeGC(Tk_Display(h->win),gc);Tk_FreePixmap(Tk_Display(h->win),pix);++h->draws;
   if(h->grid){call(h,h->xscroll,{Tcl_NewDoubleObj(double(h->sx)/h->totalWidth()),Tcl_NewDoubleObj(std::min(1.,double(h->sx+h->bodyw())/h->totalWidth()))});if(!h->dead)call(h,h->yscroll,{Tcl_NewDoubleObj(double(h->sy)/(h->totalHeight())),Tcl_NewDoubleObj(std::min(1.,double(h->sy+h->bodyh())/(h->totalHeight())))});}}
  h->drawing=false;if(h->dirtyDuringDraw&&!h->dead){h->dirtyDuringDraw=false;schedule(h);}Tcl_Release(h);
 }
@@ -331,4 +466,4 @@ int command(ClientData data,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){auto h=(Hos
 }
 int create(ClientData data,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){if(n<2)return error(ip,"Usage: native surface|grid widgetPath ?options?");Tk_Window main=Tk_MainWindow(ip);if(!main)return error(ip,"Native2D presentation requires a live Tk interpreter");Tk_Window win=Tk_CreateWindowFromPath(ip,main,Tcl_GetString(v[1]),nullptr);if(!win)return TCL_ERROR;auto h=new Host;h->ip=ip;h->win=win;h->grid=data!=nullptr;Tk_SetClass(win,h->grid?"GXNativeGrid":"GXNativeSurface");Tk_GeometryRequest(win,600,350);Tk_CreateEventHandler(win,ExposureMask|StructureNotifyMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask|KeyPressMask,event,h);h->command=Tcl_CreateObjCommand(ip,Tk_PathName(win),command,h,deleted);if(n>2){std::vector<Tcl_Obj*> args={v[1],str("configure")};args.insert(args.end(),v+2,v+n);if(command(h,ip,args.size(),args.data())!=TCL_OK){Tk_DestroyWindow(win);return TCL_ERROR;}}Tcl_SetObjResult(ip,v[1]);return TCL_OK;}
 }
-extern "C" int gx2d_surface_init(Tcl_Interp *ip){Tcl_CreateNamespace(ip,"::gx::native2d",nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::surface",create,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::grid",create,(ClientData)1,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::render",render,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::text_photo",textPhoto,nullptr,nullptr);return TCL_OK;}
+extern "C" int gx2d_surface_init(Tcl_Interp *ip){Tcl_CreateNamespace(ip,"::gx::native2d",nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::surface",create,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::grid",create,(ClientData)1,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::render",render,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::text_photo",textPhoto,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::text_engine_info",textEngineInfo,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::text_metrics",textMetrics,nullptr,nullptr);return TCL_OK;}

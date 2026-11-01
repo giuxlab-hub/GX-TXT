@@ -1,21 +1,38 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Shared presentation of the existing Development/Bridge declaration catalog.
+source [file join [file dirname [info script]] api_catalog_service_v1.tcl]
 namespace eval ::GX::ApiBrowser {variable state;variable serial 0}
-proc ::GX::apiBrowserCreate {w language} {
+proc ::GX::apiBrowserCreate {w language {options {}}} {
     variable ::GX::ApiBrowser::state
     ttk::frame $w
     set state($w,language) $language;set state($w,query) {};set state($w,generation) 0;set state($w,request) {};set state($w,catalog) {}
-    set state($w,project) {};set state($w,cpp_context) {}
+    set state($w,project) {};set state($w,cpp_context) {status NO_PROJECT requests {}};set state($w,offset) 0
+    set state($w,scope) [datasetPublicationV2DictDefault $options scope editor]
+    set state($w,enabled) [datasetPublicationV2DictDefault $options enabled 1]
+    set state($w,selectedRecord) {};set state($w,total) 0;set state($w,count) 0
+    set state($w,api_filter) [datasetPublicationV2DictDefault $options api_id {}]
+    set state($w,provider_filter) [datasetPublicationV2DictDefault $options provider_id {}]
+    set state($w,surface) [expr {$language eq {Public}?{All public}:($language eq {Cpp}?{C++ documentation}:{Script Bridge})}]
     set state($w,status) {Installed declarations}
     ttk::frame $w.tools
-    ttk::label $w.tools.title -text {API Browser} -font TkHeadingFont
-    ttk::button $w.tools.refresh -text \u21bb -width 0 -command [list ::GX::apiBrowserRefresh $w]
-    bind $w.tools.refresh <Enter> [list ::GX::plotsToolbarTipSchedule $w.tools.refresh {Refresh API declarations}]
-    bind $w.tools.refresh <Leave> ::GX::plotsToolbarTipHide
+    ttk::label $w.tools.title -text [datasetPublicationV2DictDefault $options title {API Browser}] -font TkHeadingFont
+    if {$state($w,scope) eq {editor}} {
+        ttk::button $w.tools.refresh -text \u21bb -width 0 -command [list ::GX::apiBrowserRefresh $w]
+        bind $w.tools.refresh <Enter> [list ::GX::plotsToolbarTipSchedule $w.tools.refresh {Reload indexed API view}]
+        bind $w.tools.refresh <Leave> ::GX::plotsToolbarTipHide
+    }
     ttk::entry $w.tools.query -width 12 -textvariable ::GX::ApiBrowser::state($w,query)
     grid $w.tools.title -row 0 -column 0 -sticky w
-    grid $w.tools.refresh -row 0 -column 1 -sticky e
+    if {$state($w,scope) eq {editor}} {grid $w.tools.refresh -row 0 -column 1 -sticky e}
     grid $w.tools.query -row 1 -column 0 -columnspan 2 -sticky ew -pady 3
+    ttk::combobox $w.tools.surface -state readonly -width 15 -textvariable ::GX::ApiBrowser::state($w,surface) -values [expr {$state($w,scope) eq {editor} && $language eq {Cpp}?{{C++ documentation} {C++ SDK} {Trusted host}}:{{All public} {Script Bridge} {C++ documentation} {C++ SDK} {Trusted host}}}]
+    if {$state($w,scope) eq {catalog} || $language eq {Cpp}} {grid $w.tools.surface -row 2 -column 0 -columnspan 2 -sticky ew}
+    bind $w.tools.surface <<ComboboxSelected>> [list ::GX::apiBrowserFilterChanged $w]
+    ttk::frame $w.pages
+    ttk::button $w.pages.previous -text {Previous} -command [list ::GX::apiBrowserPage $w -1]
+    ttk::button $w.pages.next -text {Next} -command [list ::GX::apiBrowserPage $w 1]
+    pack $w.pages.previous -side left;pack $w.pages.next -side right
+    pack $w.pages -side bottom -fill x
     grid columnconfigure $w.tools 0 -weight 1
     pack $w.tools -fill x
     bind $w.tools.query <KeyRelease> [list ::GX::apiBrowserSearchSchedule $w]
@@ -28,6 +45,9 @@ proc ::GX::apiBrowserCreate {w language} {
     foreach side {list details} {ttk::frame $w.body.$side;$w.body add $w.body.$side -weight 1}
     ttk::treeview $w.body.list.tree -show tree -selectmode browse -height 6
     $w.body.list.tree column #0 -width 240 -minwidth 100 -stretch 0
+    # Before population the shared inspection owner sets readable font rows
+    # while its empty-#0 guard preserves this Browser's column/scroll policy.
+    uiFieldInspectionColumnsFit $w.body.list.tree
     ttk::scrollbar $w.body.list.y -command [list $w.body.list.tree yview]
     ttk::scrollbar $w.body.list.x -orient horizontal -command [list $w.body.list.tree xview]
     $w.body.list.tree configure -yscrollcommand [list $w.body.list.y set] -xscrollcommand [list $w.body.list.x set]
@@ -42,6 +62,30 @@ proc ::GX::apiBrowserCreate {w language} {
     bind $w <Destroy> +[list ::GX::apiBrowserDispose $w %W]
     set state($w,sessionTrace) [list ::GX::apiBrowserSessionChanged $w]
     trace add variable ::GX::currentSession {write unset} $state($w,sessionTrace)
+    bind $w.tools.query <Return> [list ::GX::apiBrowserFilterChanged $w]
+    set state($w,presentation) [datasetPublicationV2DictDefault $options presentation full]
+    if {$state($w,presentation) eq {compact}} {
+        # An explicitly empty title lets an enclosing notebook supply it.
+        # Other compact callers retain their default/custom title semantics.
+        if {[$w.tools.title cget -text] eq {}} {
+            grid forget $w.tools.title
+            grid $w.tools.query -row 0 -column 0 -columnspan 1 -sticky ew -pady 3
+            if {[winfo manager $w.tools.surface] eq {grid}} {grid $w.tools.surface -row 1 -column 0 -columnspan 2 -sticky ew}
+        }
+        $w.manual configure -text Manual
+        $w.pages.previous configure -width 0;$w.pages.next configure -width 0
+        pack forget $w.pages.previous $w.pages.next $w.manual
+        grid $w.manual -in $w.pages -row 0 -column 0
+        bind $w.pages <Configure> [list ::GX::uiFieldControlsLayout $w.pages %w [list $w.manual $w.pages.previous $w.pages.next]]
+        ::GX::uiFieldControlsLayout $w.pages 360 [list $w.manual $w.pages.previous $w.pages.next]
+        foreach {control tip} [list $w.manual {Open selected API manual} $w.pages.previous {Previous page of API declarations} $w.pages.next {Next page of API declarations}] {
+            bind $control <Enter> [list ::GX::plotsToolbarTipSchedule $control $tip]
+            bind $control <Leave> ::GX::plotsToolbarTipHide
+        }
+        $w.body.list.tree configure -height 3;$w.body.details.text configure -height 4
+        bind $w.body <Configure> +[list ::GX::apiBrowserCompactSchedule $w]
+    }
+    apiBrowserEnabled $w $state($w,enabled)
     after idle [list ::GX::apiBrowserRefresh $w]
     return $w
 }
@@ -49,9 +93,9 @@ proc ::GX::apiBrowserDispose {w actual} {
     variable ::GX::ApiBrowser::state
     if {$w ne $actual} return
     if {[info exists state($w,sessionTrace)]} {trace remove variable ::GX::currentSession {write unset} $state($w,sessionTrace)}
-    foreach key {request searchTimer sessionTimer rowTimer} {
+    foreach key {request searchTimer sessionTimer rowTimer compactTimer} {
         if {[info exists state($w,$key)] && $state($w,$key) ne {}} {
-            if {$key eq {request}} {scriptJobRequestCancel $state($w,$key)} else {after cancel $state($w,$key)}
+            if {$key eq {request}} {apiCatalogCancel $state($w,$key)} else {after cancel $state($w,$key)}
         }
     }
     array unset state $w,*
@@ -100,13 +144,11 @@ proc ::GX::apiBrowserSessionUpdated {w} {
 proc ::GX::apiBrowserRefresh {w} {
     variable ::GX::ApiBrowser::state
     if {![winfo exists $w] || ![info exists state($w,request)]} return
-    if {$state($w,request) ne {}} {scriptJobRequestCancel $state($w,request)}
+    if {$state($w,request) ne {}} {apiCatalogCancel $state($w,request)}
     set generation [incr state($w,generation)]
-    set state($w,status) {Reading declarations…}
+    set state($w,status) {Reconciling installed API catalog…}
     apiBrowserStatusShow $w 1
-    set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] --api-browser-tcl]
-    if {$state($w,project) ne {}} {lappend command --project $state($w,project)}
-    set state($w,request) [scriptJobAsync $command {} [list ::GX::apiBrowserReceived $w $generation] {timeout_ms 25000 max_bytes 16777216 process_group 1 ui_lifetime 1 label {API metadata discovery}}]
+    set state($w,request) [apiCatalogRequest [list ::GX::apiBrowserReceived $w $generation]]
 }
 proc ::GX::apiBrowserProjectSet {w project} {
     variable ::GX::ApiBrowser::state
@@ -117,71 +159,138 @@ proc ::GX::apiBrowserReceived {w generation response} {
     variable ::GX::ApiBrowser::state
     if {![winfo exists $w] || ![info exists state($w,generation)] || $generation!=$state($w,generation)} return
     set state($w,request) {}
-    if {![dict get $response ok]} {set state($w,status) "Metadata unavailable: [string range [dict get $response error] 0 1000]";return}
-    if {[catch {set state($w,catalog) [dict get $response result apis];dict size $state($w,catalog)} reason]} {set state($w,status) "Invalid metadata: $reason";return}
-    set state($w,cpp_context) [datasetPublicationV2DictDefault [dict get $response result] cpp_context {}]
+    if {![dict get $response ok]} {
+        catch {apiBrowserSearch $w}
+        set state($w,status) "Catalog unavailable or stale: [string range [dict get $response error] 0 500]"
+        apiBrowserStatusShow $w 1
+        return
+    }
+    set state($w,cpp_context) [apiCatalogProjectContext $state($w,project)]
+    apiBrowserSearch $w
+}
+proc ::GX::apiBrowserFilterChanged {w} {set ::GX::ApiBrowser::state($w,offset) 0;apiBrowserSearch $w}
+proc ::GX::apiBrowserPage {w direction} {
+    variable ::GX::ApiBrowser::state
+    if {!$state($w,enabled)} return
+    if {$direction>0 && $state($w,offset)+$state($w,count)>=$state($w,total)} return
+    if {$direction<0 && $state($w,offset)<=0} return
+    set state($w,offset) [expr {max(0,$state($w,offset)+$direction*250)}]
     apiBrowserSearch $w
 }
 proc ::GX::apiBrowserSearchSchedule {w} {
     variable ::GX::ApiBrowser::state
     if {[info exists state($w,searchTimer)]} {after cancel $state($w,searchTimer)}
+    set state($w,offset) 0
     set state($w,searchTimer) [after 150 [list ::GX::apiBrowserSearch $w]]
 }
 proc ::GX::apiBrowserSearch {w} {
     variable ::GX::ApiBrowser::state
     if {![winfo exists $w] || ![info exists state($w,catalog)]} return
-    set query [string tolower [string range $state($w,query) 0 255]]
-    set tree $w.body.list.tree;set selected [$tree selection];$tree delete [$tree children {}]
+    unset -nocomplain state($w,searchTimer)
+    switch $state($w,surface) {
+        {All public} {set surface {host script_bridge cpp_sdk}}
+        {C++ documentation} {set surface {host cpp_sdk}}
+        {Script Bridge} {set surface script_bridge}
+        {C++ SDK} {set surface cpp_sdk}
+        {Trusted host} {set surface host}
+        {All surfaces} {set surface {host script_bridge cpp_sdk}}
+    }
+    if {[catch {set response [apiCatalogQuery [dict create surface $surface language [expr {$state($w,language) eq {Public}?{}:$state($w,language)}] query [string range $state($w,query) 0 255] api_id $state($w,api_filter) provider_id $state($w,provider_filter) offset $state($w,offset) limit 250]]} reason]} {
+        set state($w,status) "Catalog unavailable: $reason";apiBrowserStatusShow $w 1;return
+    }
+    set tree $w.body.list.tree;set selected [$tree selection];if {![llength $selected] && $state($w,selectedRecord) ne {}} {set selected [list $state($w,selectedRecord)]};set expanded {}
+    foreach node [$tree children {}] {if {[$tree item $node -open]} {lappend expanded $node}}
+    $tree delete [$tree children {}]
     unset -nocomplain state($w,selectedApi)
     $w.body.details.text configure -state normal;$w.body.details.text delete 1.0 end;$w.body.details.text configure -state disabled
-    set state($w,rows) {};set count 0;set total 0
-    foreach api [lsort -dictionary [dict keys $state($w,catalog)]] {
-        set row [dict get $state($w,catalog) $api]
-        if {$query ne {} && [string first $query [string tolower "$api $row"]]<0} continue
-        incr total;if {$count>=250} continue
-        incr count;set node family:$api;set title $api
-        if {[datasetPublicationV2DictDefault $row deprecated 0] eq {1}} {append title { · deprecated}}
-        $tree insert {} end -id $node -text $title
-        dict set state($w,rows) $node [dict create api $api row $row surface family]
-        set n 0
-        foreach provider [datasetPublicationV2DictDefault $row providers {}] {
-            set child $node.provider:[dict get $provider provider]:[dict get $provider version]
-            $tree insert $node end -id $child -text "[dict get $provider provider] · v[dict get $provider version]"
-            dict set state($w,rows) $child [dict create api $api row $provider surface host]
+    set state($w,rows) {};set state($w,catalog) {};set count 0
+    foreach record [dict get $response rows] {
+        set api [dict get $record api_id];set node family:$api
+        if {![$tree exists $node]} {
+            set familyRecord [apiCatalogGet $node];set family [dict get $familyRecord payload]
+            dict set state($w,catalog) $api $family
+            $tree insert {} end -id $node -text $api -open [expr {$node in $expanded}]
+            dict set state($w,rows) $node [dict create api $api row $family surface family runtime_state [dict get $familyRecord runtime_state]]
         }
-        if {[string equal -nocase $state($w,language) Cpp]} {
-            dict for {method descriptor} [datasetPublicationV2DictDefault $row cpp_methods {}] {
-                set child $node.cpp:$method
-                $tree insert $node end -id $child -text "Host::$method · C++"
-                dict set state($w,rows) $child [dict create api $api row $descriptor surface cpp_sdk operation $method]
-            }
-        }
-        if {[dict exists $row script_descriptor]} {
-            dict for {operation descriptor} [dict get $row script_descriptor operations] {
-                set child $node.operation:$operation
-                $tree insert $node end -id $child -text "$operation · Python/Octave"
-                dict set state($w,rows) $child [dict create api $api row $descriptor surface script_bridge operation $operation provider [dict get $row script_descriptor provider_id]]
-            }
-        }
+        set child [dict get $record id];set item [dict get $record payload]
+        dict set item runtime_state [dict get $record runtime_state]
+        set suffix [dict get $record surface]
+        $tree insert $node end -id $child -text "[dict get $record title] · $suffix"
+        dict set state($w,rows) $child $item
+        incr count
     }
-    set context [expr {$::GX::currentSession eq {}?{no Session}:{Session open; no active script implied}}]
-    set state($w,status) "$count/$total families · $state($w,language)"
-    # The selected scrollable reference owns full admission/Session context.
-    # Retain the status for pending/error/empty results, without permanently
-    # consuming a reference line for a redundant successful family count.
-    apiBrowserStatusShow $w [expr {$count==0}]
-    if {[llength $selected] && [$tree exists [lindex $selected 0]]} {$tree selection set [lindex $selected 0];apiBrowserSelect $w}
+    set total [dict get $response total];set state($w,total) $total;set state($w,count) $count
+    $w.pages.previous configure -state [expr {$state($w,offset)>0?{normal}:{disabled}}]
+    $w.pages.next configure -state [expr {$state($w,offset)+$count<$total?{normal}:{disabled}}]
+    set state($w,status) "[dict get $response freshness] · $count/$total records · $state($w,language)"
+    if {$state($w,offset)>0} {append state($w,status) " · from [expr {$state($w,offset)+1}]"}
+    apiBrowserStatusShow $w [expr {$state($w,presentation) ne {compact} || !$count || [dict get $response freshness] ne {current}}]
+    apiBrowserEnabled $w $state($w,enabled)
+    event generate $w <<ApiCatalogView>>
+    if {[llength $selected] && [$tree exists [lindex $selected 0]]} {$tree selection set [lindex $selected 0];$tree see [lindex $selected 0];apiBrowserSelect $w}
+}
+proc ::GX::apiBrowserHostContractsText {contracts {selectedOperation {}}} {
+    # CORE's older reference metadata has signature/parameters/result.description;
+    # provider documentation may additionally declare command/arguments/result.type.
+    # Neither form is an invocation grant, and missing fields are never inferred.
+    if {[catch {dict size $contracts}]} {return "Host documentation unavailable: invalid operation metadata.\n"}
+    set detail {}
+    dict for {operation contract} $contracts {
+        if {$selectedOperation ne {} && $operation ne $selectedOperation} continue
+        if {[catch {dict size $contract}]} {append detail "$operation: invalid host documentation; consult the owner manual.\n\n";continue}
+        set command [datasetPublicationV2DictDefault $contract command {}]
+        set arguments [datasetPublicationV2DictDefault $contract arguments [datasetPublicationV2DictDefault $contract signature {not declared}]]
+        if {$command ne {}} {append detail "$operation: $command $arguments\n"
+        } else {append detail "$operation: $arguments\nHost command: not declared in this reference metadata; consult the owner manual.\n"}
+        set parameters [datasetPublicationV2DictDefault $contract parameters {}]
+        if {[catch {dict size $parameters}]} {append detail "Parameter metadata unavailable; consult the owner manual.\n"
+        } else {
+            dict for {name parameter} $parameters {
+                if {[catch {dict size $parameter}]} {append detail "  $name: invalid parameter documentation.\n";continue}
+                append detail "  $name ([datasetPublicationV2DictDefault $parameter type {not declared}]): [datasetPublicationV2DictDefault $parameter description {See owner manual}]\n"
+            }
+        }
+        set result [datasetPublicationV2DictDefault $contract result {}]
+        if {[catch {dict size $result}]} {append detail "Result metadata unavailable; consult the owner manual.\n"
+        } else {append detail "Result ([datasetPublicationV2DictDefault $result type {not declared}]): [datasetPublicationV2DictDefault $result description {See owner manual}]\n"}
+        append detail "Context: [datasetPublicationV2DictDefault $contract context {not declared}]\n"
+        if {[dict exists $contract example]} {append detail "Host example: [dict get $contract example]\n"}
+        append detail "\n"
+    }
+    return $detail
 }
 proc ::GX::apiBrowserSelect {w} {
     variable ::GX::ApiBrowser::state
     set id [lindex [$w.body.list.tree selection] 0]
-    if {$id eq {} || ![dict exists $state($w,rows) $id]} return
+    if {$id eq {} || ![dict exists $state($w,rows) $id] || !$state($w,enabled)} return
+    set state($w,selectedRecord) $id
     set item [dict get $state($w,rows) $id];set row [dict get $item row]
+    if {[dict get $item surface] eq {cpp_sdk}} {set row [apiCatalogProjectMethod $row $state($w,cpp_context)]}
+    if {$state($w,language) eq {Cpp} && [dict get $item surface] eq {family}} {
+        set api [dict get $item api]
+        if {[dict exists $state($w,cpp_context) requests $api]} {
+            dict set row cpp_project_status [dict get $state($w,cpp_context) requests $api status]
+            dict set row cpp_project_request [dict get $state($w,cpp_context) requests $api request]
+        } else {dict set row cpp_project_status [expr {[dict get $state($w,cpp_context) status] eq {SAVED_PROJECT_METADATA}?{NOT_REQUESTED}:[dict get $state($w,cpp_context) status]}];dict set row cpp_project_request {}}
+    }
+    if {$state($w,surface) eq {Script Bridge} && [dict get $item surface] eq {family}} {
+        # The safe script reference must not list unrelated host/SDK operations
+        # as this language's exports, even inside the family detail pane.
+        foreach key {host_operation_contracts host_entrypoint host_arguments allowed_operations operation_shapes sdk_exposed authorization_reason design_operations laboratory_operations profiles new_viewer_admission} {dict unset row $key}
+        set operations {}
+        foreach child [$w.body.list.tree children $id] {if {[dict exists $state($w,rows) $child operation]} {lappend operations [dict get $state($w,rows) $child operation]}}
+        dict set row operations $operations
+        dict set row availability_scope {Registered language exports on this indexed page; runtime state is separate}
+    }
     set state($w,selectedApi) [dict get $item api]
-    set detail "[dict get $item api]\nSurface: [dict get $item surface]\n\n"
+    set detail "[dict get $item api]\nSurface: [dict get $item surface]\n"
+    if {[dict exists $item operation]} {append detail "Operation: [dict get $item operation]\n"}
+    append detail "\n"
     append detail "[expr {$::GX::currentSession eq {} ? {No Session.} : {Session: }}]"
     if {$::GX::currentSession ne {}} {append detail [file tail $::GX::currentSession]}
-    append detail "\n"
+    append detail "\nCatalog: $::GX::ApiCatalog::freshness\n"
+    if {[dict exists $item runtime_state]} {dict for {key value} [dict get $item runtime_state] {append detail "$key: $value\n"}}
+    if {[dict exists $item catalog_meta]} {dict for {key value} [dict get $item catalog_meta] {if {$key ni {arguments result_contract}} {append detail "$key: $value\n"}}}
     if {[string equal -nocase $state($w,language) Cpp]} {
         append detail "Saved C++ project: [datasetPublicationV2DictDefault $state($w,cpp_context) status NO_PROJECT]\n"
         foreach key {profile project reason} {if {[dict exists $state($w,cpp_context) $key]} {append detail "$key: [dict get $state($w,cpp_context) $key]\n"}}
@@ -220,45 +329,72 @@ proc ::GX::apiBrowserSelect {w} {
         dict for {key value} $row {append detail "$key: $value\n\n"}
     } else {
         foreach key {name summary provider provider_version version version_conflict enabled available availability_scope deprecated superseded_by new_viewer_admission documentation capabilities operations design_operations laboratory_operations profiles host_entrypoint host_arguments result_contract metadata_error sdk_exposed allowed_operations operation_shapes authorization_reason cpp_project_status cpp_project_request} {
-            if {[dict exists $row $key]} {append detail "$key: [dict get $row $key]\n\n"}
+            if {[dict exists $row $key]} {set label [expr {$key in {enabled available}?"packaged_reference_$key":$key}];append detail "$label: [dict get $row $key]\n\n"}
         }
         if {[dict exists $row host_operation_contracts]} {
             append detail "Trusted host documentation only. These Tcl signatures do not authorize Script Bridge or C++ SDK calls.\n\n"
-            dict for {operation contract} [dict get $row host_operation_contracts] {
-                append detail "$operation: [dict get $contract command] [dict get $contract arguments]\n"
-                dict for {name parameter} [dict get $contract parameters] {
-                    append detail "  $name ([dict get $parameter type]): [dict get $parameter description]\n"
-                }
-                append detail "Result ([dict get $contract result type]): [dict get $contract result description]\nContext: [dict get $contract context]\n"
-                if {[dict exists $contract example]} {append detail "Host example: [dict get $contract example]\n"}
-                append detail "\n"
-            }
+            append detail [apiBrowserHostContractsText [dict get $row host_operation_contracts] [datasetPublicationV2DictDefault $item operation {}]]
         }
         if {![dict exists $row operations] && ![dict exists $row script_descriptor]} {append detail "Exact operation signatures are not declared in this row. Open the owner manual; no argument or result type is inferred.\n"}
-        if {[dict exists $row script_descriptor]} {append detail "Registered Python/Octave operations are listed below this family. Registration does not prove external tools/runtime availability or an active script.\n"}
+        if {[dict exists $row script_descriptor]} {append detail "Script Bridge exports are catalogued separately. Registration does not prove external tools/runtime availability or an active script.\n"}
     }
+    event generate $w <<ApiCatalogSelection>>
     set text $w.body.details.text;$text configure -state normal;$text delete 1.0 end;$text insert end [string range $detail 0 262143];$text configure -state disabled
 }
 proc ::GX::apiBrowserManual {w} {
     variable ::GX::ApiBrowser::state
     if {![info exists state($w,selectedApi)]} {set state($w,status) {Select an API family or operation first.};apiBrowserStatusShow $w 1;return}
-    if {[catch {documentationBrowserOpenApi $state($w,selectedApi)} reason]} {set state($w,status) "API manual unavailable: $reason";apiBrowserStatusShow $w 1}
+    set module viewer.interface_builder
+    if {$state($w,language) in {Octave Python}} {set module [scriptAnalysisModule $state($w,language)]}
+    if {[catch {documentationBrowserOpenApiWindow $state($w,selectedApi) $module [winfo toplevel $w]} reason]} {set state($w,status) "API manual unavailable: $reason";apiBrowserStatusShow $w 1;return}
+    event generate $w <<ApiCatalogManual>>
 }
 proc ::GX::apiBrowserStatusShow {w visible} {
     if {![winfo exists $w.status]} return
     set mapped [expr {[winfo manager $w.status] ne {}}]
     if {$mapped==$visible} return
-    if {$visible} {pack $w.status -side bottom -fill x -before $w.manual} else {pack forget $w.status}
+    if {$visible} {
+        set before [expr {$::GX::ApiBrowser::state($w,presentation) eq {compact}?"$w.pages":"$w.manual"}]
+        pack $w.status -side bottom -fill x -before $before
+    } else {pack forget $w.status}
     set split [winfo parent $w]
     if {[info exists ::GX::ApiBrowser::state($split,visible)]} {apiBrowserSplitLayout $split}
+    if {$::GX::ApiBrowser::state($w,presentation) eq {compact}} {apiBrowserCompactSchedule $w}
 }
 proc ::GX::apiBrowserMinimumHeight {browser} {
     set line [font metrics TkDefaultFont -linespace]
     set tree $browser.body.list.tree
-    set row [expr {max($line,int(double([winfo reqheight $tree])/max(1,[$tree cget -height])))}]
+    set row [expr {max($line,int(ceil(double([winfo reqheight $tree]-2)/max(1,[$tree cget -height]))))}]
     set scroll [winfo reqheight $browser.body.list.x]
     set status [expr {[winfo manager $browser.status] eq {} ? 0 : [winfo reqheight $browser.status]}]
-    return [dict create browser [expr {[winfo reqheight $browser.tools]+[winfo reqheight $browser.manual]+$status+3*$row+4*$line+$scroll+16}] explorer [expr {2*$line+$scroll+8}]]
+    set textLine [font metrics [$browser.body.details.text cget -font] -linespace]
+    set manual [expr {[winfo manager $browser.manual] eq {pack} ? [winfo reqheight $browser.manual] : 0}]
+    set listMinimum [expr {3*$row+$scroll+4}]
+    set detailMinimum [expr {4*$textLine+6}]
+    return [dict create browser [expr {[winfo reqheight $browser.tools]+$manual+[winfo reqheight $browser.pages]+$status+$listMinimum+$detailMinimum+9}] explorer [expr {2*$line+$scroll+8}] list $listMinimum details $detailMinimum]
+}
+proc ::GX::apiBrowserCompactSchedule {w} {
+    variable ::GX::ApiBrowser::state
+    if {![winfo exists $w] || ![info exists state($w,presentation)]} return
+    if {[info exists state($w,compactTimer)]} {after cancel $state($w,compactTimer)}
+    set state($w,compactTimer) [after idle [list ::GX::apiBrowserCompactApply $w]]
+}
+proc ::GX::apiBrowserCompactApply {w} {
+    variable ::GX::ApiBrowser::state
+    unset -nocomplain state($w,compactTimer)
+    if {![winfo exists $w.body] || ![winfo ismapped $w.body]} return
+    set minimum [apiBrowserMinimumHeight $w]
+    set needed [dict get $minimum browser]
+    if {![info exists state($w,minimumHeight)] || $state($w,minimumHeight)!=$needed} {
+        set state($w,minimumHeight) $needed
+        event generate $w <<ApiBrowserLayout>> -when tail
+    }
+    set low [dict get $minimum list]
+    set high [expr {[winfo height $w.body]-[dict get $minimum details]-5}]
+    if {$high<$low} return
+    set position [$w.body sashpos 0]
+    set desired [expr {max($low,min($position,$high))}]
+    if {$position!=$desired} {$w.body sashpos 0 $desired}
 }
 proc ::GX::apiBrowserMount {left language} {
     variable ::GX::ApiBrowser::state
@@ -335,6 +471,7 @@ proc ::GX::apiBrowserSplitDispose {split actual} {
 proc ::GX::apiBrowserSplitSettled {split} {variable ::GX::ApiBrowser::state;if {[winfo exists $split]} {set state($split,pending) 0}}
 proc ::GX::apiBrowserSplitRemember {split} {
     variable ::GX::ApiBrowser::state
+    if {[winfo exists $split]} {set editor [winfo toplevel $split];if {[info exists ::GX::WorkspaceAssist::state($editor,noteFocus)] && $::GX::WorkspaceAssist::state($editor,noteFocus)} {return}}
     if {![winfo exists $split] || ![info exists state($split,language)]} return
     if {!$state($split,pending) && [llength [$split panes]]>1 && "$split.browser" in [$split panes] && [winfo height $split]>100} {set fraction [expr {[$split sashpos 0]/double([winfo height $split])}];if {$fraction>.1 && $fraction<.9} {set state($split,fraction) $fraction}}
     set key scripts.editor_layout.$state($split,language);set value [configurationGet $key]
@@ -354,9 +491,47 @@ proc ::GX::apiBrowserToggle {left} {
 }
 proc ::GX::apiBrowserCatalogChanged {} {
     variable ::GX::ApiBrowser::state
+    apiCatalogInvalidate
     if {![llength [info commands winfo]]} return
     foreach name [array names state *,request] {
         set w [string range $name 0 end-8]
         if {[winfo exists $w]} {after idle [list ::GX::apiBrowserRefresh $w]}
+    }
+}
+
+# Presentation state is bounded and contains no grants, handles or scientific data.
+proc ::GX::apiBrowserCapture {w} {
+    variable ::GX::ApiBrowser::state
+    set result {};foreach key {query surface offset selectedRecord} {dict set result $key $state($w,$key)}
+    return $result
+}
+proc ::GX::apiBrowserRestore {w value} {
+    variable ::GX::ApiBrowser::state
+    if {[catch {dict size $value}] || [string bytelength $value]>4096} {error {Invalid API Catalog presentation state}}
+    foreach key [dict keys $value] {if {$key ni {query surface offset selectedRecord}} {error {Unknown API Catalog presentation field}}}
+    set query [datasetPublicationV2DictDefault $value query {}]
+    set surface [datasetPublicationV2DictDefault $value surface $state($w,surface)]
+    set offset [datasetPublicationV2DictDefault $value offset 0]
+    if {[string length $query]>256 || $surface ni {{All public} {Script Bridge} {C++ documentation} {C++ SDK} {Trusted host}} || ![string is integer -strict $offset] || $offset<0 || $offset>50000} {error {Invalid API Catalog presentation limits}}
+    if {$state($w,scope) eq {editor} && $state($w,language) in {Python Octave} && $surface ne {Script Bridge}} {error {Script editors require the registered Script Bridge surface}}
+    set state($w,query) $query;set state($w,surface) $surface;set state($w,offset) $offset
+    set state($w,selectedRecord) [datasetPublicationV2DictDefault $value selectedRecord {}]
+    apiBrowserSearch $w
+}
+proc ::GX::apiBrowserEnabled {w enabled} {
+    if {![string is boolean -strict $enabled]} {error {API Catalog enabled must be boolean}}
+    set ::GX::ApiBrowser::state($w,enabled) $enabled
+    foreach widget [list $w.tools.query $w.tools.refresh $w.manual $w.body.list.tree] {if {[winfo exists $widget]} {$widget state [expr {$enabled?{!disabled}:{disabled}}]}}
+    $w.tools.surface configure -state [expr {$enabled?{readonly}:{disabled}}]
+    variable ::GX::ApiBrowser::state
+    set previous [expr {$enabled && $state($w,offset)>0}]
+    set next [expr {$enabled && $state($w,offset)+$state($w,count)<$state($w,total)}]
+    $w.pages.previous state [expr {$previous?{!disabled}:{disabled}}]
+    $w.pages.next state [expr {$next?{!disabled}:{disabled}}]
+}
+proc ::GX::apiBrowserCatalogStatusChanged {} {
+    foreach name [array names ::GX::ApiBrowser::state *,language] {
+        set w [string range $name 0 end-9]
+        if {[winfo exists $w.body.list.tree]} {apiBrowserSearch $w}
     }
 }

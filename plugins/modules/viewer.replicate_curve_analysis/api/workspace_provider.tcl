@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::ReplicateWorkspace {}
+source [file join [file dirname [info script]] workspace_native.tcl]
 proc ::GX::ReplicateWorkspace::validate {payload} {
     foreach key {format request hidden} {if {![dict exists $payload $key]} {error "Replicate Workspace requires '$key'"}}
     if {[dict get $payload format] ne "gxtxt.replicate_viewer.v1"} {error {Unsupported Replicate Workspace schema}}

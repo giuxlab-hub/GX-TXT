@@ -1,0 +1,38 @@
+{
+  "candidate_source_sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7",
+  "acceptance": "Candidate documentation, not MAIN installed acceptance",
+  "images": [
+    {
+      "asset": "images/browser.png",
+      "source": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_generator_normal.png",
+      "origin": "Unaltered real GUI PNG; exact byte copy, no crop/retouch or generation",
+      "sha256": "33b3a1d1ab8670d8382e212c1b91c18d76b33429f08cb18e8f2cadcfb7de9e41",
+      "caption": "Fresh-context independent reviewer capture: real Linear Regression selected; name edited normally without running Generate.",
+      "reviewer": "/root/session_generator_independent_review01"
+    },
+    {
+      "asset": "images/manager.png",
+      "source": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_manager_route0.png",
+      "origin": "Unaltered real GUI PNG; exact byte copy, no crop/retouch or generation",
+      "sha256": "16c6af95714ed37008d78d73b897524fd30169266c7583305382f35640b7c33a",
+      "caption": "Fresh-context independent reviewer capture: actual Manager and normal return-route check.",
+      "reviewer": "/root/session_generator_independent_review01"
+    },
+    {
+      "asset": "images/narrow.png",
+      "source": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_independent01_20261020_01/independent_manager_narrow.png",
+      "origin": "Unaltered real GUI PNG; exact byte copy, no crop/retouch or generation",
+      "sha256": "e17018677b7a5c5abf62ab1077256243969695ca108959973eff703e70ea6d14",
+      "caption": "Fresh-context independent reviewer capture: actual narrow Manager, scrollbars and wrapped actions.",
+      "reviewer": "/root/session_generator_independent_review01"
+    },
+    {
+      "asset": "images/generation.png",
+      "source": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/gui_final02/completion_1792531407021454.png",
+      "origin": "Unaltered real GUI PNG; exact byte copy, no crop/retouch or generation",
+      "sha256": "4c84c2817dbcb4b2d60c57092706bb394321c7dd0e747dfeba2825d4f8c2ab8e",
+      "caption": "Original successful genuine GUI generation before sash-only final refinement; scientific readback in GENERATION_VERIFIED.json.",
+      "reviewer": "Original author generation evidence reused read-only; independent reviewer reviewed its receipt/hashes."
+    }
+  ]
+}

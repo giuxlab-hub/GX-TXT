@@ -123,7 +123,7 @@ Session reopen the host validates and reuses that representation or rebuilds
 it from the authoritative source display cache. An accepted representation
 does not modify the source model.
 
-## Interactive working plane and surface picks
+## Interactive working plane and surface picks (0.9.3)
 
 `::GX::Native3D::setWorkingPlane origin normal uAxis ?visible?` sends a real `vtkImplicitPlaneWidget2` plane to the native host; the host displays U/V/N axes and emits a `plane` event when the user drags it. `workingPlane` returns the most recently requested plane. The inputs are three numeric XYZ triples and visibility is `0` or `1`.
 

@@ -64,10 +64,12 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
     }
     set id [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
     if {[winfo exists .curve_workbench]&&$id ne {}&&($id eq "new"||$st(.curve_workbench,document) ne $id)} {
-        if {![_replaceDecision .curve_workbench]} {return .curve_workbench}
+        if {[dict exists $::GX::SessionWorkspace::adapters .curve_workbench]} {
+            if {![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters .curve_workbench] opening]} {return .curve_workbench}
+        } elseif {![_replaceDecision .curve_workbench]} {return .curve_workbench}
         # Replacement can ask further Save/discard questions after axis review.
         _sketchOpenReviewCheck $reviewGuard
-        _close .curve_workbench
+        _workspaceDispose .curve_workbench
     }
     if {[winfo exists .curve_workbench]} {raise .curve_workbench;return .curve_workbench}
     set openingWorkspace $id
@@ -142,13 +144,14 @@ proc ::GX::CurveWorkbench::_cadGui {w} {
     _buildExtensions $w
     _buildRoles $w
     _buildExport $w
-    _buildComparison $w
     _buildRecipe $w
     _buildConstruction $w
     _buildConstraintTools $w
     _buildCommandMenus $w
     _buildViewport $w
+    _buildComparison $w
     _buildWorkspace $w
+    _helpBuild $w
     _buildImages $w
     _buildComparisonActivation $w
 }
@@ -164,7 +167,7 @@ proc ::GX::CurveWorkbench::_initWorkbenchState {w} {
     set st($w,showConstraints) 1;set st($w,showDimensions) 1;set st($w,dimForced) {};set st($w,dimDriven) 0
     set st($w,canvasTool) select;set st($w,placements) {};set st($w,toolPreview) {};set st($w,previewDefinition) {};set st($w,handleDrag) {};set st($w,snapCandidate) {};set st($w,sketchSelection) {};set st($w,sketchUnit) mm
     set st($w,toolLabel) {Select — click geometry or defining handles. Ctrl adds; Shift subtracts.}
-    set st($w,scientificRecipe) {}
+    set st($w,historySeed) {};set st($w,historyAuxSeed) {};set st($w,historyReady) 0
     set st($w,lastGeometricComparison) {};set st($w,comparisonImplicit) 0;set st($w,residualPanelShown) -1
     set st($w,extensionBusy) 0
     set st($w,seriesContainers) {};set st($w,nextSeries) 0
@@ -200,12 +203,13 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set st($w,pointSyncRunning) 0;set st($w,pointSyncCommits) 0;set st($w,pointTableSignature) {}
     set st($w,pointPageStart) 0;set st($w,pointPageLabel) "";set st($w,pointPageInput) 1
     set st($w,curves) [dict create];set st($w,active) "";set st($w,next) 0
+    set st($w,historyRecoveryChoice) [::GX::datasetPublicationV2DictDefault $context recovery_choice {}]
     set st($w,document) "";set st($w,token) [::GX::interactiveDocumentSessionToken]
     set st($w,publishBusy) 0;set st($w,publishCancelled) 0;set st($w,publishJob) ""
     set st($w,groups) {};set st($w,groupNative) {};set st($w,nextGroup) 0;set st($w,objectSelection) {}
     set st($w,cadGroup) "";set st($w,cadGroupName) Group;set st($w,cadTarget) selected;set st($w,cadTool) none;set st($w,cadDrag) {}
     set st($w,cadObjectSnap) 0
-    set st($w,undo) {};set st($w,redo) {};set st($w,fragments) {};set st($w,bridge) 0
+    set st($w,fragments) {};set st($w,bridge) 0
     set st($w,bridgeKind) none;set st($w,bridgeSubdivisions) 32;set st($w,bridgeTolerance) 1e-9
     set st($w,previewBuild) {};set st($w,previewSignature) {}
     set st($w,previewNative) "";set st($w,previewBreaks) {}
@@ -217,8 +221,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set st($w,composeName) "Composed curve";set st($w,resultId) "edited_curve";set st($w,status) "Add an X/Y Dataset to begin."
     set st($w,preferredDataset) ""
     foreach key {dataset_id source_dataset_id} {if {[dict exists $context $key]} {set st($w,preferredDataset) [dict get $context $key]}}
-    # Keep the existing control frames and callbacks; share upper width with
-    # Workspace publication actions rather than reserving bottom toolbar rows.
+    # The existing menu controls use the full upper width. History stays below
+    # the expanding main pane; publication actions live in existing menus.
     ttk::frame $w.upper
     pack $w.upper -side top -fill x
     grid columnconfigure $w.upper 0 -weight 1
@@ -346,23 +350,9 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     canvas $w.right.viewport.canvas -background white -height 580 -highlightthickness 0;pack $w.right.viewport.canvas -fill both -expand 1
     ttk::label $w.right.residualLabel -text "Signed residual by reference X or path distance (maximum highlighted)";pack $w.right.residualLabel -fill x
     ttk::frame $w.right.residual -height 220;pack propagate $w.right.residual 0;pack $w.right.residual -in $w.right -fill x
-    ttk::frame $w.validation -padding 5
-    grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
-    ttk::label $w.validation.refLabel -text "Reference"
-    ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
-    ttk::combobox $w.validation.method -textvariable ::GX::CurveWorkbench::st($w,compareMethod) -values {x path} -state readonly -width 7
-    ttk::button $w.validation.compare -text "Compare / residuals" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_compare $w]]
-    ttk::label $w.validation.metricLabel -text "Metric"
-    ttk::combobox $w.validation.metric -textvariable ::GX::CurveWorkbench::st($w,metricLabel) -state readonly -width 20
-    bind $w.validation.metric <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateMetricSelect $w]]
-    ttk::label $w.validation.targetLabel -text "Target"
-    ttk::entry $w.validation.target -textvariable ::GX::CurveWorkbench::st($w,target) -width 12
-    ttk::button $w.validation.evaluate -text Evaluate -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_metrics $w]]
-    foreach key {refLabel reference method compare metricLabel metric targetLabel target evaluate} {pack $w.validation.$key -side left -padx 3}
-    bind $w.validation.reference <<ComboboxSelected>> [list ::GX::CurveWorkbench::_referenceSelect $w]
-    ttk::label $w.metric -textvariable ::GX::CurveWorkbench::st($w,metricText) -anchor w;pack $w.metric -fill x -padx 8
     ttk::frame $w.publish -padding 5
-    grid $w.publish -in $w.upper -row 0 -column 1 -sticky ne
+    # Keep original initialization/wiring order without allocating GUI space.
+    # _installCommands transfers these callbacks to menus and removes the frame.
     ttk::label $w.publish.idLabel -text "New Dataset ID"
     ttk::entry $w.publish.id -textvariable ::GX::CurveWorkbench::st($w,resultId) -width 22
     ttk::button $w.publish.go -text "Publish selected curve(s)" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_publishSelected $w]]
@@ -375,9 +365,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     pack $w.status -side bottom -fill x -padx 8 -pady 5
     # Only lightweight read-only feedback remains below the expanding pane.
     # Upper control frames retain their original widget paths and own layouts.
-    pack forget $w.main $w.metric $w.status
+    pack forget $w.main $w.status
     pack $w.status -side bottom -fill x -padx 8 -pady 5
-    pack $w.metric -side bottom -fill x -padx 8
     pack $w.main -side top -fill both -expand 1
     _cadGui $w
     bind $w.publish <Configure> [list ::GX::native2DToolbarLayout $w.publish %w]
@@ -389,7 +378,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     bind $w.right.viewport.canvas <MouseWheel> [list ::GX::CurveWorkbench::_wheel $w %x %y %D]
     bind $w.right.viewport.canvas <Button-4> [list ::GX::CurveWorkbench::_wheel $w %x %y 120]
     bind $w.right.viewport.canvas <Button-5> [list ::GX::CurveWorkbench::_wheel $w %x %y -120]
-    bind $w.right.viewport.canvas <Configure> [list ::GX::CurveWorkbench::_draw $w]
+    bind $w.right.viewport.canvas <Configure> [list ::GX::CurveWorkbench::_viewportDrawLater $w]
     bind $w.publish.external <Return> [list ::GX::CurveWorkbench::_save $w]
     wm protocol $w WM_DELETE_WINDOW [list ::GX::CurveWorkbench::_close $w]
     _selectionScene $w
@@ -398,6 +387,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
         set st($w,restoreError) "Workspace restore failed: $err. Saved workspace preserved; restore the source and reopen."
         set st($w,status) $st($w,restoreError)
     }
+    if {![info exists st($w,restoreFailed)]} {_historyAttach $w}
     _curveList $w;_pointList $w;_draw $w
     _sidebarFocusBindings $w $w.leftScroll.viewport.content
     _sidebarFocusBindings $w $w.leftScroll.viewport.content.compose

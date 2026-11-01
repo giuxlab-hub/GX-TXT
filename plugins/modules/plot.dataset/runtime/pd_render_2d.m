@@ -20,6 +20,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
   endif
 
   xdu=pd_x_display_unit(P,cfg,graph);
+  V=pd_project_x_tick_units(V,P,xdu);
   lvals=cell(1,numel(left));lunits=cell(1,numel(left));for j=1:numel(left),lvals{j}=series(left(j)).data.y;lunits{j}=series(left(j)).meta;endfor
   ymode=effective_axis_unit(V,'y_left',axis_mode(cfg,graph,'y'),core_axis_state,core_axis_enabled);[ydu,~]=pd_common_display_unit(lvals,lunits,ymode,'Y Left axis');
   y2du='';if(!isempty(right))
@@ -111,7 +112,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
   auto_place_single_labels(ax1,ax2,cfg,graph,pcfg);
   pd_region_selection_surface(ax1,ax2,legend_handle,fig);pd_region_diagnostic_pre(fig,graph,P);
   if(!isempty(right)),try axes(ax2);catch;end_try_catch;if(!isempty(legend_handle)),try if(strcmpi(get(legend_handle,'type'),'axes')),axes(legend_handle);endif;catch;end_try_catch;endif;endif
-  target=fullfile(outdir,file_name);gxtxt_print_png_atomic(fig,target,pcfg.dpi);pd_print_extra(fig,target,V);pd_region_diagnostic_post(target,graph);close(fig);
+  target=fullfile(outdir,file_name);gxtxt_print_png_atomic(fig,target,pcfg.dpi,png_options(fig,V,cfg));pd_print_extra(fig,target,V);pd_region_diagnostic_post(target,graph);close(fig);
   fprintf('[plot.dataset] rendered 2D graph=%s file=%s series=%d dual_y=%d plotspec_v2=%d core_axis_state=%d xunit=%s yunit=%s y2unit=%s\n',graph,target,n,!isempty(right),V.enabled,core_axis_state,xdu,ydu,y2du);
 endfunction
 
@@ -235,6 +236,7 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   % same layout instead of accumulating margins.
   pcfg0=pcfg;
   xdu=pd_x_display_unit(P,cfg,graph);
+  V=pd_project_x_tick_units(V,P,xdu);
   graph_kind=graph_default_kind(cfg,graph);
   order_mode=lower(strtrim(gxtxt_ini_get(cfg,['plot.' graph '.point_order'],'auto')));if(strcmp(order_mode,'auto')),order_mode='dataset_order';endif
   if(isfield(P,'mode')&&strcmp(P.mode,'graph_series')),order_mode='dataset_order';endif
@@ -442,7 +444,7 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   endfor
 
   create_shared_x_selection_frame(fig,primary);
-  target=fullfile(outdir,file_name);gxtxt_print_png_atomic(fig,target,pcfg.dpi);pd_print_extra(fig,target,V);
+  target=fullfile(outdir,file_name);gxtxt_print_png_atomic(fig,target,pcfg.dpi,png_options(fig,V,cfg));pd_print_extra(fig,target,V);
   write_shared_x_region_metadata(target,primary(end),P,xdu,xmeta_factor);
   pd_region_diagnostic_post(target,graph);close(fig);
   fprintf('[plot.dataset] rendered multi-panel 2D graph=%s file=%s panels=%d series=%d plotspec_v2=1 shared_x=1\n',graph,target,np,n);
@@ -1372,9 +1374,9 @@ endfunction
 function apply_axis_ticks(ax,a,which)
   if(!strcmp(which,'x')||!isfield(a,'tick_positions')||!isfield(a,'tick_labels')),return;endif
   positions=cellfun(@str2double,strsplit(a.tick_positions,';'));
-  labels=strsplit(a.tick_labels,';');labels=cellfun(@strtrim,labels,'UniformOutput',false);
+  labels=strsplit(a.tick_labels,';');
   if(isempty(positions)||numel(positions)!=numel(labels)||any(!isfinite(positions))),error('plot.dataset: invalid persistent X tick labels');endif
-  set(ax,'xtick',positions,'xticklabel',labels);
+  set(ax,'xtick',positions,'xticklabel',labels,'ticklabelinterpreter','none');
 endfunction
 
 function draw_v2_annotations(V,ax1,ax2)
@@ -1411,6 +1413,13 @@ function label_reference(ax,a,x,y,which)
       'horizontalalignment',align,'verticalalignment','top','clipping','on','interpreter','none');
   catch
   end_try_catch
+endfunction
+
+function options=png_options(fig,V,cfg)
+  options=struct();
+  if(strcmpi(graphics_toolkit(fig),'gnuplot')&&isfield(V.axes.x,'tick_labels')&&any(double(V.axes.x.tick_labels)>127))
+    options=struct('device','pngcairo','python_command',gxtxt_ini_get(cfg,'runtime.python_cmd','python3'));
+  endif
 endfunction
 
 function pd_print_extra(fig,png_path,V)

@@ -45,9 +45,9 @@ a changed scientific source is rejected before publication.
 
 ### `fit` (default)
 
-Optimizes the model parameters through the public numerical-service workflow. The selected solver optimizes the registered model parameters using the semantic model bindings `x`, `family`, and `y`.
+Preserves the established numerical fit workflow. The selected solver optimizes the registered model parameters using the semantic model bindings `x`, `family`, and `y`.
 
-Saved Sessions without `operation_mode` are interpreted as `fit`.
+Old sessions without `operation_mode` are interpreted as `fit`.
 
 Fit mode also builds a 2D convex hull in mathematical-model input space `(x, family)` and, when the hull is valid, writes the optional sidecar `fit_domain.csv`.
 
@@ -93,11 +93,11 @@ Frozen parameters can come from:
 - `parameter_source=manual` with `fixed_parameter_values` in expanded parameter order;
 - `parameter_source=csv` with `parameter_csv_path`.
 
-The CSV parameter path uses the framework's `type=file` field and Browse control.
+The CSV path is declared with the GX-TXT v0.7.8 generic `type=file` field and therefore uses the framework Browse control.
 
 ## Shared Parameter-Set API
 
-CSV parameter sets are read through the shared helper:
+CSV parameter sets are read through the v0.7.8 shared helper:
 
 ```text
 gxtxt_read_parameter_set()
@@ -124,7 +124,7 @@ parameter values `frozen`; these are not newly estimated quantities.
 
 ## Shared Model-Domain API
 
-The training-domain sidecar uses the public Model-Domain format:
+The training-domain sidecar uses the GX-TXT v0.7.8 Model-Domain format:
 
 ```csv
 # model_id=triode.koren_v1
@@ -147,9 +147,9 @@ The domain is always defined and classified in mathematical-model input space. M
 
 When Evaluate uses a parameter CSV, the plugin automatically looks for `fit_domain.csv` in the same directory. If no sidecar exists, evaluation continues with `domain_role=unknown` and the summary reports that the training domain is unavailable.
 
-An incompatible historical CurveFit domain file is not reinterpreted as a current Model-Domain file; it is ignored for classification with a warning, so frozen-parameter evaluation can still proceed safely.
+A legacy pre-v0.7.8 CurveFit domain file is not reinterpreted as a new Model-Domain file; it is ignored for classification with a warning, so frozen-parameter evaluation can still proceed safely.
 
-`fit_domain.csv` is intentionally **not** listed in `[outputs].files`, because it is a conditional sidecar: Fit normally creates it, while Evaluate of an old parameter set may legitimately have no training domain. The public output contract does not declare this optional sidecar as a mandatory file.
+`fit_domain.csv` is intentionally **not** listed in `[outputs].files`, because it is a conditional sidecar: Fit normally creates it, while Evaluate of an old parameter set may legitimately have no training domain. The v0.7.8 checked output contract has no conditional-output declaration.
 
 ## Domain roles and metrics
 
@@ -170,7 +170,7 @@ fit_metrics_by_domain.csv
 fit_metrics_by_family_domain.csv
 ```
 
-`fit_metrics_by_family.csv` is also published for the standard family-level summary.
+`fit_metrics_by_family.csv` remains unchanged for compatibility.
 
 ## Mathematical bindings vs presentation
 
@@ -254,7 +254,7 @@ Conditional Fit/domain sidecar:
 fit_domain.csv
 ```
 
-In Evaluate mode, `fit_predictions.csv` includes `domain_role`. Fit mode uses the standard prediction schema.
+In Evaluate mode, `fit_predictions.csv` includes `domain_role`. Fit mode keeps the historical prediction schema.
 
 ## Render cache and rerender
 
@@ -268,6 +268,18 @@ Historical caches without parameter state remain readable and do not create or
 update `curvefit.family.parameters`; any previously published parameter Dataset
 retains its own provenance. The actual model source is checked before/after model
 execution, alongside the canonical Dataset identity check.
+
+## Testing
+
+Focused source/transport and scientific integration fixtures are in
+[`validation/integrated_dev097`](../../../validation/integrated_dev097/).
+`global_family_transport.tcl` runs real Octave CSV/HDF5 Fit/Evaluate paths,
+source-row and cache-only checks with graphs disabled. `statistics_family.tcl`
+contains the earlier retained fitting/statistical/presentation evidence.
+Run from a complete framework tree so shared CORE and Numeric services resolve.
+`global_family_parameters*` verifies the joint map, independent covariance and
+frozen subset replay. `global_family_parameter_contracts.tcl` verifies normal
+runtime unit transport, all-fixed publication and historical-cache compatibility.
 
 <a id="statistical-interpretation-module-7"></a>
 ## Statistical interpretation

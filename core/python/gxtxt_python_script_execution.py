@@ -40,6 +40,13 @@ def main(runtime_path):
         "\npython_version=" + sys.version.split()[0] + "\n", encoding="utf-8")
     source = Path(settings["script_file"]).resolve()
     snapshot = outdir / "executed_script.py"
+    project = None
+    if config.has_section('script_project'):
+        from script_project import verify
+        project,_,_=verify(Path(config['script_project']['project_manifest']).parent)
+        if project['sha256'] != settings['script_sha256']:
+            raise ValueError('Whole-project execution snapshot differs')
+        snapshot = source
     started = timestamp()
     fields = {
         "Status": "FAIL", "Language": "Python", "Module ID": runtime.get("module_id", "analysis.python_script"),
@@ -68,15 +75,15 @@ def main(runtime_path):
         reference = settings.get("registered_script", "")
         if fields["Source mode"] == "registered_script" and reference != f"{settings.get('script_scope', '')}:{settings.get('script_id', '')}":
             raise ValueError("registered Python script identity is incomplete")
-        shutil.copyfile(source, snapshot)
+        if project is None: shutil.copyfile(source, snapshot)
         digest = hashlib.sha256(snapshot.read_bytes()).hexdigest()
         fields["Script SHA-256"] = digest
-        expected = settings.get("script_sha256", "").lower()
+        expected = config['script_project']['entrypoint_sha256'] if project else settings.get("script_sha256", "").lower()
         if expected and digest != expected:
             raise ValueError("registered Session Python script SHA-256 differs from its execution snapshot")
         execution = {
             "script_name": settings.get("script_name", source.name),
-            "script_sha256": digest,
+            "script_sha256": project['sha256'] if project else digest,
             "arguments_raw": settings.get("arguments", ""),
             "script_reference": reference,
             "script_id": settings.get("script_id", ""),
@@ -98,18 +105,36 @@ def main(runtime_path):
             working = settings.get("working_directory", "").strip()
             if working:
                 os.chdir(working)
+            project_paths = []
+            project_guard = None
+            if project:
+                from script_project import ProjectImportGuard
+                project_root=Path(config['script_project']['project_root']).resolve()
+                project_paths=[str(project_root)]
+                sys.path[:0]=project_paths
+                project_guard=ProjectImportGuard(project_root,project).__enter__()
             bundle_dir = settings.get("bundle_dir", "").strip()
             if bundle_dir:
                 bundle = Path(bundle_dir).resolve()
                 if not bundle.is_dir():
                     raise ValueError(f"packaged script bundle is missing: {bundle}")
                 sys.path.insert(0, str(bundle))
-            code = compile(snapshot.read_bytes(), str(snapshot), "exec")
-            namespace = {"__name__": "__main__", "__file__": str(snapshot), "__package__": None}
-            if config.getboolean('debug','enabled',fallback=False):
+            import builtins
+            export_sentinel = object(); previous_export = getattr(builtins, 'gxtxt_api_export', export_sentinel)
+            builtins.gxtxt_api_export = gxtxt.gxtxt_api_export
+            code = None if config.has_section("provided_api") else compile(snapshot.read_bytes(), str(snapshot), "exec")
+            package=Path(project['entrypoint']).parent.as_posix().replace('/','.') if project else '.'
+            namespace = {"__name__": "__main__", "__file__": str(snapshot), "__package__": None if package=='.' else package, 'gxtxt_parameter_declare':gxtxt.gxtxt_parameter_declare}
+            if config.has_section('provided_api'):
+                from gxtxt_script_provided_runtime import execute_python
+                execute_python(config, project, outdir)
+                fields['Provided operation'] = config['provided_api']['request_json']
+            elif config.getboolean('debug','enabled',fallback=False):
                 from gxtxt_python_debug import run_debug
                 breakpoints=[int(x) for x in config.get('debug','breakpoints',fallback='').split(';') if x]
-                run_debug(code,namespace,snapshot,breakpoints)
+                if project:
+                    breakpoints={config[s]['path']:[int(x) for x in config[s]['lines'].split(';') if x] for s in config.sections() if s.startswith('debug_file.')}
+                run_debug(code,namespace,snapshot,breakpoints,project_root if project else None,project['sha256'] if project else None)
             else:exec(code, namespace)
             if config.has_section('registered_callable'):
                 from gxtxt_registered_callable import execute
@@ -118,6 +143,12 @@ def main(runtime_path):
                 fields['Registered callable'] = invocation['callable_id']
                 fields['Callable declaration SHA-256'] = invocation['declaration_sha256']
         finally:
+            if 'export_sentinel' in locals():
+                if previous_export is export_sentinel: del builtins.gxtxt_api_export
+                else: builtins.gxtxt_api_export = previous_export
+            if locals().get('project_guard') is not None:project_guard.__exit__(None,None,None)
+            for path in locals().get('project_paths',[]):
+                if path in sys.path:sys.path.remove(path)
             if settings.get("bundle_dir", "").strip():
                 bundle_path = str(Path(settings["bundle_dir"]).resolve())
                 if bundle_path in sys.path:

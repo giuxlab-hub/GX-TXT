@@ -1,13 +1,17 @@
-# GX-TXT Python Script 1.1.0
+# GX-TXT Python Script 1.6.1
 
-The dedicated Python Script Workspace Viewer edits registered `.py` scripts in User or Session scope. It uses CORE Script Registry, Script Execution, and resource lifecycle; it remains separate from Octave Script Workspace.
+Python Script Workspace edits ordinary registered `.py` Scripts and complete
+multi-file Script Projects in User or Session scope. A common Source Surface tab
+controller retains per-file buffers, Undo/search/dirty state and historical
+read-only sources. Script Library owns creation, copy, assignment and portable
+Project import/export through the existing CORE Script Registry.
 
-`analysis.python_script` is a normal installable GX-TXT Analysis module. It
-selects a registered Session Python script by stable `session:<id>` reference.
-CORE Script Execution verifies its source hash, runs an exact snapshot using
-configured `runtime.python`, and records the runtime, script revision and API
-requirements with the Session. The same Script Library and Session Script
-Explorer serve Octave and Python.
+The existing Runner accepts typed source/editor declarations and manual
+invocation-only parameters, with optional canonical Parameter Dataset presets.
+The same managed Job/Bridge supervisor freezes whole-project sources and supports
+real file-aware Python debugging. Configured `runtime.python` supplies Python and
+approved packages; this module creates no additional Registry or Job service.
 
-See [the shared scripting guide](../../../docs/help/scripting.md) and
-[the Python client reference](../../../docs/api/PYTHON_SCRIPT_CLIENT_v1.md).
+See [manual](MANUAL.md), [editor API](PYTHON_SCRIPT_EDITOR_API_v1.md),
+[Project contract](../../../docs/api/SCRIPT_PROJECTS_v1.md) and
+[Python client](../../../docs/api/PYTHON_SCRIPT_CLIENT_v1.md).

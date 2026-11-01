@@ -29,6 +29,7 @@ proc ::GX::CurveWorkbench::_cooperativeBegin {w label} {
     variable st
     if {$st($w,publishBusy)} {error "Finish or cancel the current Workbench operation"}
     _cancelGesture $w;_save $w
+    if {$st($w,document) eq {}} {_flushWorkspace $w}
     set widgets [_publicationWidgets $w];set saved [dict create]
     foreach widget $widgets {
         if {$widget eq "$w.source.buttons.cancel"} continue
@@ -47,11 +48,15 @@ proc ::GX::CurveWorkbench::_cooperativeEnd {w frozen} {
     if {[winfo exists $w]} {$w configure -cursor $oldCursor}
 }
 proc ::GX::CurveWorkbench::_publicationRunTransform {w manifest} {
-    set frozen [_cooperativeBegin $w {Dataset publication}]
+    variable st
+    set outer [expr {[info exists st($w,publicationBatchActive)] && $st($w,publicationBatchActive)}]
+    if {!$outer} {set frozen [_cooperativeBegin $w {Dataset publication}]}
     try {
-        return [::GX::datasetTransformExecuteResponsive [_session] $manifest [dict create progress_command [list ::GX::CurveWorkbench::_publicationProgress $w] cancel_command [list ::GX::CurveWorkbench::_publicationCancelled $w] chunk_rows 8192]]
+        set command ::GX::datasetTransformExecuteResponsive
+        if {[info exists st($w,publicationPrepareOnly)] && $st($w,publicationPrepareOnly)} {set command ::GX::datasetTransformPlanResponsive}
+        return [$command [_session] $manifest [dict create progress_command [list ::GX::CurveWorkbench::_publicationProgress $w] cancel_command [list ::GX::CurveWorkbench::_publicationCancelled $w] chunk_rows 8192]]
     } finally {
-        _cooperativeEnd $w $frozen
+        if {!$outer} {_cooperativeEnd $w $frozen}
     }
 }
 proc ::GX::CurveWorkbench::_sourceLoadProgress {w source event} {
@@ -71,6 +76,7 @@ proc ::GX::CurveWorkbench::_sourceClose {w} {
 }
 rename ::GX::CurveWorkbench::_sourceAdd ::GX::CurveWorkbench::_sourceAdd_geometry_base
 proc ::GX::CurveWorkbench::_sourceAdd {w} {
+    if {![_timelineEditable $w]} return
     variable st
     set frozen [_cooperativeBegin $w {curve loading}]
     try {_sourceAdd_geometry_base $w} on error {message options} {

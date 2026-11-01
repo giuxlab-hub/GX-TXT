@@ -64,3 +64,78 @@ set state [::GX::moduleAnalysisStatus $viewerId [dict get $receipt module_id] [d
 
 Supply a valid variables-table snapshot when the selected module requires one.
 The generic operations do not guess scientific input Variables or alter units.
+
+## Restricted C++ native form (additive DEV111-P035)
+
+The reviewed native client is separately admitted as
+`MODULE_TARGETED_ANALYSIS_API_v1@1 / analysis_command`; host catalog discovery
+does not grant it. `Host::analysis_command(form, operation)` accepts only
+`discover`, `submit`, `status`, `cancel`, `candidates`, `add_candidate`, with no
+arbitrary request, paths, source body, scheduler or scientific implementation.
+`Host::analysis_result()` receives the next-event typed status/error/result.
+
+Declare a Viewer section with `analysis_module` (registered target module),
+`analysis_dataset` (Dataset selector), `analysis_bindings` (declared binding role
+to Variable-choice component), `analysis_config` (descriptor parameter to value
+control), `analysis_status` (log), `analysis_candidates` (table),
+`analysis_candidate` (stable rank choice), `analysis_comparison_form` (existing
+Comparison section) and `analysis_commands` (handler to finite operation map).
+Optional `analysis_page` selects a zero-based page of25 result rows. Submission
+and cancellation require exact explicit mutating handlers; consultation and
+adding a transient comparison reference use presentation handlers. Current
+module, package, source, window, Session and event authority are rechecked.
+No operation enables a module or commits configuration overrides.
+
+Canonical ranked-reference projection is opt-in by the Analysis producer. Its
+descriptor `[analysis_result.ranked_references]` declares
+`role=ranked_references_v1`, `columns` (<=32), `rank_column`, `library_id_column`,
+`library_version_column`, `library_content_hash_column`, `entry_id_column`.
+Publication must identify `analysis_result_role=ranked_references_v1` and actual
+`source_dataset_id`, `source_sha256`, `source_revision_sha256`,
+`source_schema_sha256` provenance. CORE finds actual producer-owned Datasets,
+never Dataset suffixes/display labels; it verifies payload/revision/schema and
+current source. Tables contain at most100 ranked rows and expose25 per page.
+Table selection maps host-owned row IDs to actual stable ranks, never parses
+visible text. Result receipts contain source/result identity pins and bounded
+string-valued records; no filesystem paths or implicit capability.
+
+`add_candidate` adds only the selected current Library reference to the declared
+Comparison form, validating its recorded Library version/content hash against
+current provider provenance and the ordinary scientific source pin. The original
+measured query remains an explicit Dataset source selection. Processed or
+normalized Analysis output is a distinct scientific source and is never silently
+substituted for the query or a raw reference. Comparison meaning/unit rules,
+explicit display normalization and the last valid frame remain unchanged.
+Similarity scores are not probabilities or independent identification evidence.
+
+### Ordinary Builder authoring
+
+Select a section and choose **Design → Targeted Analysis profile…** after
+creating the source/Variable/configuration controls, result table/rank choice,
+status log and Comparison form. The dialog maps their stable IDs. Its existing
+public model operation `analysis_profile SECTION PROPERTY_MAP` creates the six
+finite handlers, primary Analysis menu and design API requirement in one
+validated undoable edit. SDK requests in the C++ project remain a separate
+explicit admission step. No runtime authority follows from the design.
+
+The generic `comparison_browser_only SECTION GROUP` model operation and ordinary
+**Design → Use shared Library Browser…** dialog atomically remove the two legacy
+Library/Entry references and `add_library` mapping. The author then removes
+unused controls/menu entries normally. This permits genuine native authoring
+without an invalid intermediate dependent profile or private model edits.
+
+Ranked-result receipts additionally expose `source_variable_ids` as an actual
+ordered array of stable canonical Variable IDs from the published result's
+`source_variable_ids` metadata (distinct, enabled, at most32). These identities
+are never inferred from names or replaced with the form's current editable
+bindings. Source Dataset payload/revision/schema pins and result pins are checked
+before/after read; full processing provenance remains inspectable on the actual
+result Dataset through the existing public metadata services.
+
+At composition, CORE initializes the declared role/rank controls from actual
+canonical state: no source yields empty Variable choices, and no read result
+means empty candidate choices/table. Palette demo labels are not scientific
+identities. Configuration values remain authored; normal Workspace/History
+restoration follows initialization. Discover refreshes the same role choices,
+including clearing an absent source, without starting Analysis or enabling a
+module. Users explicitly choose actual Variables and submit a scientific run.

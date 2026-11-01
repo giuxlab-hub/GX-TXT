@@ -3,7 +3,9 @@
 namespace eval ::GX::CurveWorkbench {variable parameterCapability [::GX::parameterModuleRegister {}]}
 proc ::GX::CurveWorkbench::_parameterBind {w} {
     variable st;variable parameterCapability
-    if {$st($w,document) eq {}} return
+    if {$st($w,document) eq {}} {
+        if {[info exists st($w,historyReady)] && $st($w,historyReady)} {_flushWorkspace $w} else {return}
+    }
     if {[info exists st($w,parameterContext)]&&![catch {set info [::GX::parameterContextInfo $st($w,parameterContext)]}]&&[dict get $info workspace] eq $st($w,document)} {return $st($w,parameterContext)}
     set st($w,parameterContext) [::GX::parameterContext $parameterCapability $st($w,document)]
     set st($w,previousParameters) [::GX::parameterDefinitions $st($w,parameterContext)]
@@ -13,7 +15,7 @@ proc ::GX::CurveWorkbench::_parameterBind {w} {
 proc ::GX::CurveWorkbench::_parameterRecalculate {w token} {
     variable st
     if {![winfo exists $w]||![info exists st($w,parameterContext)]||$st($w,parameterContext) ne $token} {::GX::parameterUnsubscribe $token;return {}}
-    set before [_snapshotIds $w [dict keys $st($w,curves)]];set expressions {}
+    set before [_snapshotIds $w [dict keys $st($w,curves)]];set expressions {};set previousParameters $st($w,previousParameters)
     dict set before @cad parameter_definitions $st($w,previousParameters)
     dict for {id record} $st($w,constraints) {
         if {[dict exists $record expression]&&![::GX::datasetPublicationV2DictDefault [dict get $record definition] driven 0]} {dict set expressions [dict get $record native] [dict get $record expression]}
@@ -33,21 +35,32 @@ proc ::GX::CurveWorkbench::_parameterRecalculate {w token} {
         }
         _constraintCapture $w;_selectionScene $w
         if {(![info exists st($w,importTransaction)] || !$st($w,importTransaction)) && ![info exists st($w,historyRestoring)]} {
-            if {$st($w,scientificRecipe) ne {}} {
-                set previous [dict get $st($w,scientificRecipe) base]
-                foreach step [dict get $st($w,scientificRecipe) steps] {set previous [::GX::scientificRecipeApplyPatch $previous [dict get $step patch]]}
+            if {$st($w,historyReady)} {
+                set previous [::GX::scientificHistoryViewerState $w]
                 if {[dict exists $previous @cad parameter_definitions]} {dict set before @cad parameter_definitions [dict get $previous @cad parameter_definitions]}
             }
             if {$before ne [_snapshotIds $w [dict keys $st($w,curves)]]} {
-                _history $w $before [dict keys $st($w,curves)]
+                if {$::GX::Parameters::publicationPhase eq {prepare}} {
+                    lappend ::GX::Parameters::deferredHistory [list ::GX::CurveWorkbench::_parameterCommitPrepared $w $st($w,token) [winfo id $w] $before [_snapshotIds $w [dict keys $st($w,curves)]]]
+                } else {_history $w $before [dict keys $st($w,curves)]}
             }
         } elseif {$before ne [_snapshotIds $w [dict keys $st($w,curves)]]} {_changed $w}
     } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,previousParameters) [::GX::parameterDefinitions $token]
-    return [list ::GX::CurveWorkbench::_restoreSnapshot $w $before]
+    return [list ::GX::CurveWorkbench::_parameterRollbackPrepared $w $before $previousParameters]
+}
+proc ::GX::CurveWorkbench::_parameterCommitPrepared {w token incarnation before after} {
+    variable st
+    if {![winfo exists $w] || [winfo id $w] != $incarnation || $token ne [::GX::interactiveDocumentSessionToken] || $st($w,token) ne $token || [_snapshotIds $w [dict keys $st($w,curves)]] ne $after} {error {Curve Workbench changed during Parameter preparation}}
+    return [_history $w $before [dict keys $st($w,curves)]]
+}
+proc ::GX::CurveWorkbench::_parameterRollbackPrepared {w before previousParameters} {
+    variable st
+    _restoreSnapshot $w $before
+    set st($w,previousParameters) $previousParameters
 }
 proc ::GX::CurveWorkbench::_parametersOpen {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     ::GX::sessionWorkspaceActionInvoke $st($w,document) parameters
 }
 proc ::GX::CurveWorkbench::parametersAction {workspace context} {

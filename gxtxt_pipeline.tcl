@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-111"
+    variable version "0.9.8.10-dev-112"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -140,6 +140,7 @@ namespace eval ::GX {
     variable legendPickActive 0
 }
 
+source [file join $::GX::scriptDir core tcl framework_identity_v1.tcl]
 source [file join $::GX::scriptDir app configuration_manifest.tcl]
 source [file join $::GX::scriptDir app module_catalog.tcl]
 source [file join $::GX::scriptDir app legacy_session_runtime.tcl]
@@ -249,6 +250,7 @@ source [file join $::GX::scriptDir app gui script_library_dialog.tcl]
 source [file join $::GX::scriptDir app gui resource_lifecycle_dialog.tcl]
 source [file join $::GX::scriptDir app acquisition_workflow.tcl]
 source [file join $::GX::scriptDir app script_workspace_surface.tcl]
+source [file join $::GX::scriptDir app script_project_canvas.tcl]
 source [file join $::GX::scriptDir app script_jobs_surface.tcl]
 source [file join $::GX::scriptDir core tcl script_source_declaration_api_v1.tcl]
 source [file join $::GX::scriptDir app gui documentation_browser.tcl]
@@ -259,6 +261,7 @@ source [file join $::GX::scriptDir core tcl graph_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl portable_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl graph_renderer_dispatch_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_catalog_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_group_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_preview_paging_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_transform_api_v1.tcl]
@@ -266,15 +269,35 @@ source [file join $::GX::scriptDir core tcl dataset_transform_responsive_v1.tcl]
 source [file join $::GX::scriptDir core tcl viewer_gui_transform_v1.tcl]
 source [file join $::GX::scriptDir core tcl ui_field_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl viewer_gui_host_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl gui_update_scheduler_v1.tcl]
 source [file join $::GX::scriptDir core tcl curve_source_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl curve_source_async_v1.tcl]
+source [file join $::GX::scriptDir core tcl comparison_plot_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_presentation_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_grid_presenter_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_sprite_scene_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_cad_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_cad_canvas_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_cad_tools_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_cad_tools_constraints_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_cad_projection_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl session_workspace_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl native_workspace_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_workspace_native_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_scientific_codecs_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_scene3d_codecs_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_statistics_codecs_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_statistics_variants_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_history_archives_v1.tcl]
+source [file join $::GX::scriptDir core tcl workspace_print_v1.tcl]
+::GX::_printWorkspaceProviderEnsure
+source [file join $::GX::scriptDir core tcl viewer_workspace_sdk_v1.tcl]
 source [file join $::GX::scriptDir core tcl file_publication_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_tex_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v2.tcl]
+source [file join $::GX::scriptDir core tcl native3d_cad_surface_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_video_export_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl statistical_result_semantics_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_geometry_api_v1.tcl]
@@ -291,6 +314,11 @@ source [file join $::GX::scriptDir core tcl native2d_preview_v1.tcl]
 source [file join $::GX::scriptDir core tcl workbench_extension_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_recipe_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_recipe_gui_v1.tcl]
+source [file join $::GX::scriptDir core tcl stderr_diagnostics_v1.tcl]
+source [file join $::GX::scriptDir core tcl stderr_diagnostics_integration_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_gui_diagnostics_v1.tcl]
+source [file join $::GX::scriptDir core tcl native_cad_sketch_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_gui_cad_sketch_v1.tcl]
 source [file join $::GX::scriptDir core tcl workbench_extension_gui_v1.tcl]
 source [file join $::GX::scriptDir core tcl workbench_recovery_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_lifecycle_v1.tcl]
@@ -308,6 +336,10 @@ proc ::GX::main {} {
     ::GX::loadModuleCatalog
 
     set args $::argv
+    if {$args eq {--version}} {
+        puts [::GX::frameworkDisplayVersion]
+        return 0
+    }
     if {[lsearch -exact $args --help] >= 0 || [lsearch -exact $args -h] >= 0} {
         ::GX::usage
         return 0
@@ -340,6 +372,10 @@ source [file join $::GX::scriptDir core tcl dataset_preview_cache.tcl]
 source [file join $::GX::scriptDir core tcl dataset_scientific_profile_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_series_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_preview_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_provider_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_native_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_gui_v1.tcl]
+source [file join $::GX::scriptDir core tcl contract_visualizer_api_v1.tcl]
 
 source [file join $::GX::scriptDir core tcl mesh_dataset_viewer_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_compact_preview_v1.tcl]
@@ -363,6 +399,9 @@ source [file join $::GX::scriptDir core tcl project_experiment_management_v1.tcl
 source [file join $::GX::scriptDir core tcl scientific_origin_v1.tcl]
 source [file join $::GX::scriptDir core tcl project_portable_api_v1.tcl]
 source [file join $::GX::scriptDir app project_experiment_browser.tcl]
+source [file join $::GX::scriptDir core tcl framework_maintenance_api_v1.tcl]
+source [file join $::GX::scriptDir app gui framework_maintenance.tcl]
+if {[file isfile [file join $::GX::scriptDir app gui framework_maintenance_catalog.tcl]]} {source [file join $::GX::scriptDir app gui framework_maintenance_catalog.tcl]}
 
 # Source-safe entry point: tests and external tools may source this file in place
 # without relocating it and therefore without corrupting ::GX::scriptDir.

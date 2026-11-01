@@ -4,7 +4,7 @@ namespace eval ::GX::SpectrumImportAPIv1 { variable apiVersion 1 }
 
 proc ::GX::SpectrumImportAPIv1::apiInfo {} {
     variable apiVersion
-    return [dict create api_name SCIENTIFIC_SPECTRUM_IMPORT_API_v1 api_version $apiVersion formats {csv jcamp}]
+    return [dict create api_name SCIENTIFIC_SPECTRUM_IMPORT_API_v1 api_version $apiVersion formats {csv jcamp} native_value_owner SCIENTIFIC_SPECTRUM_API_v1 host_validation_operation validateSource]
 }
 
 proc ::GX::SpectrumImportAPIv1::_helper {} {
@@ -36,6 +36,18 @@ proc ::GX::SpectrumImportAPIv1::parse {format path options} {
 
 proc ::GX::SpectrumImportAPIv1::parseCsv {path options} { return [parse csv $path $options] }
 proc ::GX::SpectrumImportAPIv1::parseJcamp {path options} { return [parse jcamp $path $options] }
+
+# Host-only projection over the existing parser AND Spectrum value owner. The
+# Acquisition owner supplies the already admitted source path, never the worker.
+proc ::GX::SpectrumImportAPIv1::validateSource {format path options expectedHash expectedCount} {
+    if {![regexp {^[0-9a-f]{64}$} $expectedHash] || ![string is wideinteger -strict $expectedCount] || $expectedCount<2} {error {Scientific source validation requires exact SHA and sample count}}
+    if {[::GX::sha256File $path] ne $expectedHash} {error {Scientific source changed before value validation}}
+    set value [parse $format $path $options]
+    if {[dict get $value source_hash] ne $expectedHash || [dict get $value sample_count]!=$expectedCount || [::GX::sha256File $path] ne $expectedHash} {error {Scientific source changed during value validation}}
+    set result {}
+    foreach key {sample_count spectrum_hash source_hash x_ordering x_min x_max} {dict set result $key [dict get $value $key]}
+    return $result
+}
 
 proc ::GX::SpectrumImportAPIv1::importOneToLibrary {libraryId format path options} {
     set spectrum [parse $format $path $options]

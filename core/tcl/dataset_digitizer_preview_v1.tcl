@@ -366,7 +366,7 @@ proc ::GX::_datasetDigitizerPreviewCollect {session id ids columns raster filter
     dict for {curve data} $curves {dict set data points [lsort -integer -index 0 [dict get $data points]];dict set curves $curve $data}
     return [dict create curves $curves unique_point_count $count]
 }
-proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {processedSelection {}}} {
+proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {processedSelection {}} {nativeOverlay {}}} {
     set manifest [datasetPreviewCurveManifest $id]
     if {$manifest eq {}} {return {}}
     set md [datasetMetadataRead $::GX::currentSession $id]
@@ -479,7 +479,20 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
     }
     set filters [graphSeriesNormalizeFilters $id $filters]
     foreach filter $filters {set vid [dict get $filter filter_variable_id];if {$vid ni $ids} {lappend ids $vid}}
-    set collected [_datasetDigitizerPreviewCollect $::GX::currentSession $id $ids $columns $raster $filters]
+    set collected {}
+    # Reuse the actual native common-owner result only when all of this
+    # publication's semantic roles and predicates still match. Image/source
+    # verification above remains the sole authority for aligned presentation.
+    if {$nativeOverlay ne {} && ![catch {
+        if {[dict get $nativeOverlay dataset_id] ne $id || [dict get $nativeOverlay columns] ne $columns ||
+            [dict get $nativeOverlay raster]!=$raster || [dict get $nativeOverlay filters] ne $filters ||
+            ![datasetPreviewNativeReceiptCurrent $id [dict get $nativeOverlay native_provider]]} {error {Native overlay identity changed}}
+        set collected [dict get $nativeOverlay result]
+        dict get $collected curves;dict get $collected unique_point_count
+    }]} {dict set result overlay_preparation native} else {
+        set collected [_datasetDigitizerPreviewCollect $::GX::currentSession $id $ids $columns $raster $filters]
+        dict set result overlay_preparation core
+    }
     set curves [dict get $collected curves];set count [dict get $collected unique_point_count]
     dict set result curves $curves;dict set result unique_point_count $count
     modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_QUALITY_API_v2

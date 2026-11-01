@@ -67,7 +67,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
   from training diagnostics and retain undefined/empty subset states.
 - Reuse global and group estimates for the matching all-domain rows.
 
-# Version 6
+# Version 6 — 2026-10-01
 
 - Resolve primary Analysis Source binding prefixes before matching the
   Dataset CSV header in a normal GUI run.

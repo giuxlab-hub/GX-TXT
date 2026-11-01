@@ -10,19 +10,19 @@ proc ::GX::CurveWorkbench::_commandSelection {w} {
 proc ::GX::CurveWorkbench::_deleteCurve {w} {
     variable st
     set ids [_commandSelection $w];set before [_snapshotIds $w $ids]
-    set undo $st($w,undo);set redo $st($w,redo)
+
     try {
         foreach id $ids {_removeRecord $w $id}
         _semanticApply $w {} add
         if {$st($w,active) eq {}} {set st($w,active) [lindex [dict keys $st($w,curves)] 0]}
         _selectionScene $w;_history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Deleted [llength $ids] selected objects."
 }
 proc ::GX::CurveWorkbench::_duplicate {w} {
     variable st
     set parents [_commandSelection $w];set before [_snapshotIds $w {}]
-    set undo $st($w,undo);set redo $st($w,redo);set ids {};set members {}
+    set ids {};set members {}
     foreach parent $parents {_sourceSnapshotRequire $w [_record $w $parent]}
     try {
         foreach parent $parents {
@@ -40,7 +40,7 @@ proc ::GX::CurveWorkbench::_duplicate {w} {
         _semanticApply $w $members
         set st($w,active) [lindex $ids 0];_selectionScene $w
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Duplicated [llength $ids] objects; exact retained definitions and Dataset bindings preserved."
 }
 proc ::GX::CurveWorkbench::_reverseSelection {w} {
@@ -50,7 +50,7 @@ proc ::GX::CurveWorkbench::_reverseSelection {w} {
         set record [_record $w $id]
         if {[dict exists $record sketch_definition]&&[dict get $record sketch_definition family] in {point construction_line}} {error {Select finite curves with a traversal direction. No objects changed.}}
     }
-    set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         foreach id $ids {
             set native [dict get [_record $w $id] native]
@@ -58,7 +58,7 @@ proc ::GX::CurveWorkbench::_reverseSelection {w} {
             ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create forward [expr {![dict get $marker forward]}]]
         }
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Reversed the intended traversal of [llength $ids] objects. Publication follows this direction; definitions and source data are preserved."
 }
 proc ::GX::CurveWorkbench::_setVisibility {w {visible {}}} {
@@ -83,7 +83,7 @@ proc ::GX::CurveWorkbench::_setLock {w {locked {}}} {
 }
 proc ::GX::CurveWorkbench::_objectFlag {w ids flag value} {
     variable st
-    set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         foreach id $ids {
             set record [_record $w $id]
@@ -91,7 +91,7 @@ proc ::GX::CurveWorkbench::_objectFlag {w ids flag value} {
             dict set record $flag $value;dict set st($w,curves) $id $record
         }
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_commandRegister {w id label shortcut requirement handler {icon {}}} {
     variable st
@@ -103,7 +103,15 @@ proc ::GX::CurveWorkbench::_commandEnabled {w id} {
     set requirement [dict get $st($w,commands) $id requirement]
     switch $requirement {
         selection {return [expr {[llength $st($w,objectSelection)]>0}]}
-        undo - redo {return [expr {[llength $st($w,$requirement)]>0}]}
+        undo - redo {
+            if {![info exists st($w,historyReady)] || !$st($w,historyReady)} {return 0}
+            set state [::GX::scientificHistoryViewerStatus $w]
+            if {[_historyBrowsing $w]} {
+                set index [dict get [::GX::scientificHistoryViewerRestoreContext $w] cursor]
+                return [expr {$requirement eq {undo} ? $index>0 : $index<[dict get $state count]}]
+            }
+            return [expr {$requirement eq {undo} ? [dict get $state cursor]>0 : [dict get $state cursor]<[dict get $state count]}]
+        }
         default {return 1}
     }
 }
@@ -119,6 +127,10 @@ proc ::GX::CurveWorkbench::_commandMenu {w menu ids} {
     foreach id $ids {
         if {$id eq "-"} {$menu add separator;continue}
         set command [dict get $st($w,commands) $id]
+        if {[dict exists $command submenu]} {
+            $menu add cascade -label [dict get $command label] -menu [dict get $command submenu] -state [expr {[_commandEnabled $w $id]?"normal":"disabled"}]
+            continue
+        }
         $menu add command -label [dict get $command label] -accelerator [dict get $command shortcut] -state [expr {[_commandEnabled $w $id]?"normal":"disabled"}] -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]
     }
 }
@@ -151,7 +163,22 @@ proc ::GX::CurveWorkbench::_installCommands {w} {
     foreach widget {undo redo} id {history.undo history.redo} {$w.toolbar.$widget configure -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]}
     $w.sketchbar.select configure -command [list ::GX::CurveWorkbench::_commandInvoke $w select]
     $w.sketchbar.dimension configure -command [list ::GX::CurveWorkbench::_commandInvoke $w constraint.dimension]
-    $w.publish.save configure -command [list ::GX::CurveWorkbench::_commandInvoke $w workspace.save]
+    set saveIndex [lsearch -exact [dict get $::GX::SessionWorkspace::menus $w.toolbar.workspace.menu actions] save]
+    $w.toolbar.workspace.menu entryconfigure $saveIndex -accelerator [dict get $st($w,commands) workspace.save shortcut]
+    # Retain every existing publication choice/callback. The registered
+    # object.publish command remains the separate-output operation and its
+    # enabled-state owner; the menu entry now exposes all choices as a cascade.
+    set publication $w.toolbar.objects.menu.publish
+    menu $publication -tearoff 0
+    set source $w.publish.batch.menu
+    for {set i 0} {$i<=[$source index end]} {incr i} {
+        set callback [$source entrycget $i -command]
+        if {[lindex [lindex $callback end] 0] eq {::GX::CurveWorkbench::_publishBatchOpen}} {set callback [list ::GX::CurveWorkbench::_commandInvoke $w object.publish]}
+        $publication add command -label [$source entrycget $i -label] -command $callback
+    }
+    dict set st($w,commands) object.publish submenu $publication
+    $w.toolbar.settings.menu add command -label {Publication settings…} -command [$w.publish.options cget -command]
+    destroy $w.publish
     $w.sketchbar.create.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.create.menu {create.line create.rectangle create.circle create.arc create.spline create.quadratic_bezier create.cubic_bezier create.polyline create.ellipse create.point create.construction_line - create.numeric create.scientific}]
     $w.sketchbar.modify.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.modify.menu {transform.translate transform.rotate object.parameters object.units object.declare_axes object.spline_line - object.duplicate object.reverse object.split - object.join object.combine object.separate - object.native_tools}]
 }
@@ -233,8 +260,8 @@ proc ::GX::CurveWorkbench::_installCommandTools {w} {
         $widget configure -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]
         bind $widget <Button-3> [list ::GX::CurveWorkbench::_toolPopup $w $id %X %Y]
         bind $widget <Enter> [list ::GX::CurveWorkbench::_commandTooltip $w $widget $id]
-        bind $widget <Leave> {catch {destroy .gxViewportTip}}
-        bind $widget <ButtonPress> {catch {destroy .gxViewportTip}}
+        # native2DViewportTooltipShow installs the shared target lifecycle.
+        # Keep its ownership instead of destroying its window independently.
     }
     set pan [::GX::native2DViewportPanelWidget $w.right.viewport.canvas controls].body.pan
     bind $pan <Enter> [list ::GX::CurveWorkbench::_commandTooltip $w $pan view.pan]

@@ -3,7 +3,7 @@
 # view state; semantic anchors are resolved only in device/widget coordinates.
 namespace eval ::GX::ViewportHost {variable hosts {};variable tips {};variable serial 0;variable toggles}
 source [file join [file dirname [info script]] native2d_diagram_viewport_v1.tcl]
-proc ::GX::native2DViewportHostCreate {container canvas scene changed} {
+proc ::GX::native2DViewportHostCreate {container canvas scene changed {options {}}} {
     variable ::GX::ViewportHost::hosts
     # Chrome must share the canvas's actual geometry owner. Sibling overlays
     # across pack -in ancestry can obscure their children until hover on X11.
@@ -16,7 +16,8 @@ proc ::GX::native2DViewportHostCreate {container canvas scene changed} {
         }
     }
     if {[winfo toplevel $container] ne $toplevel} {error {Viewport canvas belongs to another window}}
-    dict set hosts $canvas [dict create container $container scene $scene changed $changed panels {}]
+    foreach key [dict keys $options] {if {$key ne {presentation_bounds}} {error {Unknown viewport host option}}}
+    dict set hosts $canvas [dict create container $container scene $scene changed $changed panels {} presentation_bounds [datasetPublicationV2DictDefault $options presentation_bounds {}]]
     bind $canvas <Configure> +[list ::GX::native2DViewportInvalidate $canvas]
     bind $container <Configure> +[list ::GX::native2DViewportConfigure $canvas $container %W]
     bind $canvas <Destroy> +[list ::GX::native2DViewportDispose $canvas %W]
@@ -39,7 +40,32 @@ proc ::GX::native2DViewportDispose {host widget} {
     if {[dict exists $hosts $host target_session_trace]} {trace remove variable ::GX::currentSession {write unset} [dict get $hosts $host target_session_trace]}
     if {[dict exists $hosts $host curve]} {_native2DViewportCurveDispose $host}
     native2DRasterCanvasDispose $host
-    if {[dict exists $hosts $host]} {native2DRasterSceneDispose [dict get $hosts $host scene];dict unset hosts $host}
+    if {[dict exists $hosts $host]} {
+        dict for {id panel} [dict get $hosts $host panels] {if {[winfo exists [dict get $panel widget]]} {destroy [dict get $panel widget]}}
+        if {[dict get $hosts $host scene] ne {}} {native2DRasterSceneDispose [dict get $hosts $host scene]}
+        dict unset hosts $host
+    }
+}
+proc ::GX::native2DViewportPanelDestroy {host id} {
+    variable ::GX::ViewportHost::hosts
+    if {![dict exists $hosts $host panels $id]} return
+    set widget [dict get $hosts $host panels $id widget]
+    dict unset hosts $host panels $id
+    if {[winfo exists $widget]} {destroy $widget}
+    native2DViewportInvalidate $host
+}
+proc ::GX::_native2DViewportPresentationBounds {host} {
+    set state [dict get $::GX::ViewportHost::hosts $host]
+    if {[dict exists $state cad_canvas]} {
+        set cadHost [dict get $state cad_canvas]
+        if {[llength [info commands $cadHost]] && ![dict get [$cadHost state] attached]} {return [list [winfo width $host] [winfo height $host] 0 0 0 0]}
+    }
+    if {[dict get $state scene] ne {}} {return [::GX::Native2D::core view [dict get $state scene]]}
+    # A Plot surface already owns scientific axes and navigation. Reuse only
+    # shared panel/chrome layout; do not allocate a synthetic geometry scene.
+    set command [dict get $state presentation_bounds]
+    if {$command ne {}} {return [uplevel #0 $command]}
+    return [list [winfo width $host] [winfo height $host] 0 0 0 0]
 }
 proc ::GX::native2DViewportPanelCreate {host id title anchor {options {}}} {
     variable ::GX::ViewportHost::hosts
@@ -204,9 +230,10 @@ proc ::GX::native2DViewportSyncControls {host} {
     variable ::GX::ViewportHost::hosts
     if {![dict exists $hosts $host]||![winfo exists $host]} return
     set state [dict get $hosts $host]
-    set signature [list [ttk::style theme use] [font actual TkDefaultFont] [tk scaling] [lrange [::GX::Native2D::core view [dict get $state scene]] 2 5]]
+    set signature [list [ttk::style theme use] [font actual TkDefaultFont] [tk scaling] [lrange [_native2DViewportPresentationBounds $host] 2 5]]
     if {![dict exists $state layout_signature]||[dict get $state layout_signature] ne $signature} {native2DViewportInvalidate $host}
     set scene [dict get $state scene]
+    if {$scene eq {}} return
     set hasGeometry [expr {[llength [::GX::Native2D::core ids $scene]]>0}]
     foreach {action key} {grid visible grid_snap snap_enabled} {
         set ::GX::ViewportHost::toggles($host,$action) [dict get [::GX::Native2D::core grid $scene] $key]
@@ -251,7 +278,7 @@ proc ::GX::native2DViewportLayout {host} {
     variable ::GX::ViewportHost::hosts
     if {![dict exists $hosts $host]||![winfo exists $host]} return
     if {[dict exists $hosts $host layout_pending]} {after cancel [dict get $hosts $host layout_pending];dict unset hosts $host layout_pending}
-    dict set hosts $host layout_signature [list [ttk::style theme use] [font actual TkDefaultFont] [tk scaling] [lrange [::GX::Native2D::core view [dict get $hosts $host scene]] 2 5]]
+    dict set hosts $host layout_signature [list [ttk::style theme use] [font actual TkDefaultFont] [tk scaling] [lrange [_native2DViewportPresentationBounds $host] 2 5]]
     set state [dict get $hosts $host]
     native2DViewportSyncControls $host
     set container [dict get $state container]
@@ -262,7 +289,7 @@ proc ::GX::native2DViewportLayout {host} {
     # Native view margins reserve the scientific graduation/title bands.
     # Semantic overlay anchors belong inside the plotting rectangle; they must
     # never cover those bands or change the native camera/coordinate mapping.
-    lassign [::GX::Native2D::core view [dict get $state scene]] nativeWidth nativeHeight left top right bottom
+    lassign [_native2DViewportPresentationBounds $host] nativeWidth nativeHeight left top right bottom
     if {$left>=0 && $top>=0 && $right>=0 && $bottom>=0 && $width>$left+$right && $height>$top+$bottom} {
         set x0 [expr {$x0+$left}];set y0 [expr {$y0+$top}]
         set width [expr {$width-$left-$right}];set height [expr {$height-$top-$bottom}]
@@ -329,6 +356,13 @@ proc ::GX::native2DViewportLayout {host} {
         # pack state. Measure the existing header/body directly when reopening.
         set requestedWidth [expr {max([winfo reqwidth $widget.header],[winfo reqwidth $widget.body])+8}]
         set requestedHeight [expr {[winfo reqheight $widget.header]+[winfo reqheight $widget.body]+8}]
+        if {[dict get $panel force_open] && !$collapsed && [winfo exists $widget.body.scroll]} {
+            # A just-repacked body can still request one pixel until geometry
+            # propagation. Its existing scroll canvas already has the intended
+            # extent, so do not publish another header-only placement meanwhile.
+            set requestedWidth [expr {max($requestedWidth,[winfo reqwidth $widget.body.scroll]+8)}]
+            set requestedHeight [expr {max($requestedHeight,[winfo reqheight $widget.header]+[winfo reqheight $widget.body.scroll]+8)}]
+        }
         set pw [expr {min($limitWidth,[dict get $panel max_width]*$scale,max([dict get $panel min_width],$requestedWidth))}]
         set ph [expr {min($limitHeight,[dict get $panel max_height]*$scale,$requestedHeight)}]
         if {$collapsed&&$id ne "controls"} {
@@ -354,13 +388,41 @@ proc ::GX::native2DViewportLayout {host} {
             set x [expr {max($margin,min($width-$pw-$margin,$x))}]
             set y [expr {max($margin,min($height-$ph-$margin,$y))}]
         }
+        set preferred [list $x $y $pw $ph]
         # Deterministic stacking uses font-scaled lanes. If a lane cannot fit,
         # reduce to its header rather than obscure every scientific pixel.
         foreach rect $occupied {
             lassign $rect a b c d
             if {$x<$c&&$x+$pw>$a&&$y<$d&&$y+$ph>$b} {
                 if {$y<$b&&$b-$margin-$y>50} {set ph [expr {$b-$margin-$y}]} else {set y [expr {$d+$margin}];set ph [expr {min($ph,$height-$y-$margin)}]}
-                if {$ph<40||$y+$ph>$height-$margin} {pack forget $widget.body;set ph [winfo reqheight $widget.header];set y [expr {max($margin,$height-$ph-$margin)}];set x $margin}
+                if {$ph<40||$y+$ph>$height-$margin} {
+                    if {[dict get $panel force_open] && !$collapsed} {
+                        # An explicit inspect/open request must retain its
+                        # scrollable body. Find the largest free vertical lane
+                        # at its preferred horizontal position before using a
+                        # bounded overlay; automatic panels still use headers.
+                        lassign $preferred x y pw ph
+                        set intervals [list [list [expr {$height-$margin}] [expr {$height-$margin}]]]
+                        foreach used $occupied {
+                            lassign $used ua ub uc ud
+                            if {$x<$uc && $x+$pw>$ua} {lappend intervals [list $ub $ud]}
+                        }
+                        set edge $margin;set bestHeight 0;set bestY $margin
+                        foreach interval [lsort -real -index 0 $intervals] {
+                            lassign $interval start stop
+                            set gap [expr {$start-$margin-$edge}]
+                            if {$gap>$bestHeight} {set bestHeight $gap;set bestY $edge}
+                            set edge [expr {max($edge,$stop+$margin)}]
+                        }
+                        if {$bestHeight>[winfo reqheight $widget.header]+40} {set y $bestY;set ph [expr {min($ph,$bestHeight)}]} else {
+                            set ph [expr {min($ph,$limitHeight)}]
+                            set y [expr {max($margin,min($height-$ph-$margin,$y))}]
+                        }
+                        pack $widget.body -fill both -expand 1
+                        break
+                    }
+                    pack forget $widget.body;set ph [winfo reqheight $widget.header];set y [expr {max($margin,$height-$ph-$margin)}];set x $margin
+                }
             }
         }
         if {$targetPoint ne {} && [dict get $panel target kind] eq {annotation}} {
@@ -389,7 +451,24 @@ proc ::GX::native2DViewportLayout {host} {
     }
 }
 proc ::GX::native2DViewportTooltip {widget text} {
-    bind $widget <Enter> +[list ::GX::native2DViewportTooltipShow $widget $text]
+    variable ::GX::ViewportHost::tips
+    # One dispatcher per widget; repeat registration updates only its content.
+    dict set tips texts $widget $text
+    set script [list ::GX::_native2DViewportTooltipEnter $widget]
+    if {$script ni [split [bind $widget <Enter>] \n]} {bind $widget <Enter> +$script}
+    _native2DViewportTooltipTargetBind $widget
+}
+proc ::GX::_native2DViewportTooltipEnter {widget} {
+    if {[dict exists $::GX::ViewportHost::tips texts $widget]} {
+        native2DViewportTooltipShow $widget [dict get $::GX::ViewportHost::tips texts $widget]
+    }
+}
+proc ::GX::_native2DViewportTooltipTargetBind {widget} {
+    variable ::GX::ViewportHost::tips
+    if {![dict exists $tips targets $widget]} {
+        foreach event {Leave ButtonPress Unmap Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
+        dict set tips targets $widget 1
+    }
 }
 proc ::GX::native2DViewportTooltipHide {{widget {}}} {
     variable ::GX::ViewportHost::tips
@@ -399,12 +478,31 @@ proc ::GX::native2DViewportTooltipHide {{widget {}}} {
 }
 proc ::GX::_native2DViewportTooltipTargetEvent {widget event actual} {
     if {$actual ne $widget} return
+    # Native toolbar reflow can queue Leave/Unmap before restoring the same
+    # control beneath an unchanged pointer. Consult current widget ownership.
+    if {$event in {Leave Unmap} && [_native2DViewportTooltipHovered $widget]} return
     native2DViewportTooltipHide $widget
-    if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips targets $widget}}
+    if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips targets $widget};catch {dict unset ::GX::ViewportHost::tips texts $widget}}
+}
+proc ::GX::_native2DViewportTooltipHovered {widget} {
+    if {![winfo exists $widget] || ![winfo ismapped $widget]} {return 0}
+    set actual [winfo containing -displayof $widget [winfo pointerx $widget] [winfo pointery $widget]]
+    expr {$actual eq $widget || [string match ${widget}.* $actual]}
 }
 proc ::GX::_native2DViewportTooltipOwnerEvent {owner event actual} {
     if {$actual ne $owner} return
-    if {[dict exists $::GX::ViewportHost::tips current owner] && [dict get $::GX::ViewportHost::tips current owner] eq $owner} {native2DViewportTooltipHide}
+    if {[dict exists $::GX::ViewportHost::tips current owner] && [dict get $::GX::ViewportHost::tips current owner] eq $owner} {
+        # FocusOut/NotifyInferior is also sent when focus moves from the
+        # toplevel to its own canvas. It is not a Viewer deactivation.
+        if {$event eq {FocusOut}} {
+            set focused [focus -displayof $owner]
+            if {$focused ne {} && [winfo exists $focused] && [winfo toplevel $focused] eq $owner} return
+        }
+        # A real ConfigureNotify may describe stacking only (including raising
+        # a transient tooltip), not a move away from the hovered control.
+        if {$event eq {Configure} && [winfo ismapped $owner] && [_native2DViewportTooltipHovered [dict get $::GX::ViewportHost::tips current target]]} return
+        native2DViewportTooltipHide
+    }
     if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips owners $owner}}
 }
 proc ::GX::native2DViewportTooltipShow {widget text} {
@@ -414,24 +512,41 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     set focused [focus -displayof $widget]
     # A delayed legacy toolbar request must not reappear after a window switch.
     if {$focused eq {} || [winfo toplevel $focused] ne $owner} return
+    if {[dict exists $tips current] && [dict get $tips current target] eq $widget && [dict get $tips current text] eq $text && [winfo exists .gxViewportTip]} return
     native2DViewportTooltipHide
     if {![dict exists $tips owners $owner]} {
         foreach event {FocusOut Deactivate Unmap Destroy Configure} {bind $owner <$event> +[list ::GX::_native2DViewportTooltipOwnerEvent $owner $event %W]}
         dict set tips owners $owner 1
     }
-    if {![dict exists $tips targets $widget]} {
-        foreach event {Leave ButtonPress Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
-        dict set tips targets $widget 1
-    }
+    _native2DViewportTooltipTargetBind $widget
     # Position while withdrawn: the first visible frame must already belong to
     # the hovered control's window, rather than briefly mapping at the root.
-    toplevel .gxViewportTip;wm withdraw .gxViewportTip
+    # The override-redirect surface must own its opaque background, including
+    # the server-cleared area before the child receives its first Expose.
+    set background [ttk::style lookup TLabel -background]
+    if {$background eq {} || [catch {winfo rgb $widget $background}]} {set background #ffffe0}
+    set foreground [ttk::style lookup TLabel -foreground]
+    if {$foreground eq {} || [catch {winfo rgb $widget $foreground}]} {set foreground [uiFieldColorReadableText $background]}
+    set opaque [configurationGet ui.x11_tooltip_opaque]
+    set premap [configurationGet ui.x11_tooltip_premap]
+    toplevel .gxViewportTip -background $background
+    if {$premap} {wm withdraw .gxViewportTip}
     wm overrideredirect .gxViewportTip 1;wm transient .gxViewportTip $owner
     set left [winfo vrootx $widget];set top [winfo vrooty $widget]
     set width [winfo vrootwidth $widget];set height [winfo vrootheight $widget]
     set pad [expr {max(4,int(5*max(1.0,[tk scaling]/1.333333)))}]
-    ttk::label .gxViewportTip.text -text $text -padding $pad -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad))}]
-    pack .gxViewportTip.text
+    # One ordinary Tk label paints background, border, padding and text into
+    # the same drawable, independent of a theme's parent-background elements.
+    if {$opaque} {
+    label .gxViewportTip.text -text $text -background $background -foreground $foreground \
+        -font TkDefaultFont -borderwidth 1 -relief solid -highlightthickness 0 \
+        -padx $pad -pady $pad -justify left \
+        -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad-2))}]
+    } else {
+        ttk::label .gxViewportTip.text -text $text -padding $pad -justify left \
+            -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad-2))}]
+    }
+    pack .gxViewportTip.text -fill both -expand 1
     update idletasks
     if {![winfo exists $widget] || ![winfo ismapped $widget] || ![winfo exists .gxViewportTip]} {native2DViewportTooltipHide;return}
     set tw [winfo reqwidth .gxViewportTip];set th [winfo reqheight .gxViewportTip]
@@ -439,8 +554,10 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     set y [expr {[winfo rooty $widget]+[winfo height $widget]+$pad}]
     if {$y+$th>$top+$height} {set y [expr {[winfo rooty $widget]-$th-$pad}]}
     set y [expr {max($top,min($top+$height-$th,$y))}]
-    wm geometry .gxViewportTip [format {%+d%+d} $x $y]
-    dict set tips current [dict create target $widget owner $owner]
+    # Send the complete negotiated rectangle before mapping, not only position.
+    if {$premap} {wm geometry .gxViewportTip [format {%dx%d%+d%+d} $tw $th $x $y]
+    } else {wm geometry .gxViewportTip [format {%+d%+d} $x $y]}
+    dict set tips current [dict create target $widget owner $owner text $text]
     wm deiconify .gxViewportTip
     raise .gxViewportTip
 }
@@ -610,7 +727,7 @@ proc ::GX::native2DViewportPanelContent {host id widget} {
 }
 
 proc ::GX::native2DViewportHostApiInfo {} {
-    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_target panel_content panel_show panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy diagram_create diagram_command diagram_edit diagram_describe diagram_hit_test raster_attach raster_describe raster_tool raster_command} tooltip_commands {native2DViewportTooltip native2DViewportTooltipShow native2DViewportTooltipHide} tooltip_owner hovered_toplevel diagram_commands {native2DGeometryDiagramViewportCreate native2DGeometryDiagramViewportCommand native2DGeometryDiagramViewportEdit native2DGeometryDiagramViewportDescribe native2DGeometryDiagramViewportHitTest} diagram_events {before_edit committed tool_changed probe} diagram_hit_kinds {terminal wire} diagram_authority INTERACTIVE_DOCUMENT_API_v1 diagram_renderer NATIVE2D_API_v1]
+    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create associate_scene panel_create panel_widget panel_target panel_content panel_show panel_destroy panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy diagram_create diagram_command diagram_edit diagram_describe diagram_hit_test raster_attach raster_describe raster_tool raster_command} scene_commands {native2DViewportHostScene} tooltip_commands {native2DViewportTooltip native2DViewportTooltipShow native2DViewportTooltipHide} tooltip_owner hovered_toplevel diagram_commands {native2DGeometryDiagramViewportCreate native2DGeometryDiagramViewportCommand native2DGeometryDiagramViewportEdit native2DGeometryDiagramViewportDescribe native2DGeometryDiagramViewportHitTest} diagram_events {before_edit committed tool_changed probe} diagram_hit_kinds {terminal wire} diagram_authority INTERACTIVE_DOCUMENT_API_v1 diagram_renderer NATIVE2D_API_v1]
 }
 
 # Public state-managed existing ttk controls; caller supplies controller truth.
@@ -640,3 +757,13 @@ proc ::GX::native2DViewportToolState {widget active} {
 
 source [file join [file dirname [info script]] native2d_viewport_curve_source.tcl]
 source [file join [file dirname [info script]] native2d_viewport_raster_v1.tcl]
+
+# Reassociate an embedded scientific owner without rebuilding chrome/bindings.
+proc ::GX::native2DViewportHostScene {canvas scene {changed __keep__}} {
+    variable ::GX::ViewportHost::hosts
+    if {![dict exists $hosts $canvas]} {error {Unknown viewport host}}
+    if {$scene ne {}} {native2DEnsure;::GX::Native2D::core view $scene}
+    if {$changed ne {__keep__}} {llength $changed;dict set hosts $canvas changed $changed}
+    dict set hosts $canvas scene $scene
+    return $scene
+}

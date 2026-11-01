@@ -51,4 +51,4 @@ The helper reuses Portable Session path, SHA and symlink rules. Complete declara
 | Plugin ZIP | Executable/installable plugin package. |
 | HTML ZIP | Read-only presentation that cannot be imported as scientific Session state. |
 
-See [Portable Session API](PORTABLE_SESSION_API_v1.md) and the [user guide](../guides/PORTABLE_RESOURCE_EXPORT_IMPORT.md).
+See [Portable Session API](PORTABLE_SESSION_API_v1.md) and the [current Dataset/Group user guide](PORTABLE_RESOURCE_GROUP_GUIDE_P028.md).

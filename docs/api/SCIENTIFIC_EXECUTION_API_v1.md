@@ -223,7 +223,7 @@ source between preparation/submissions rejects; partial admissions remain real
 Jobs and must be shown/recovered rather than erased. GUI/SDK exposure and actual
 concurrency/scientific acceptance require separate evidence.
 
-## dev111 experimental discrete-device source contracts
+## dev111 discrete-device source candidate (acceptance pending)
 
 The existing `electrical.basic` source candidate adds `nmos`, `pmos`, `spst`
 and `spdt` through the same Diagram Document, Scientific Execution worker,

@@ -1,0 +1,8 @@
+{
+  "schema": "gxtxt.viewer_generation.v1",
+  "generated_changes": [],
+  "handwritten_handlers_sha256": "fb871db97fc651290cab553472fbb2c92360f63d8877a538c99b3a9ae003e43c",
+  "handwritten_handlers_overwritten": false,
+  "gui_owner": "VIEWER_GUI_HOST_API_v1",
+  "source_directory": "/srv/gxtxt/agents/scratch/DEV111-P028-PREVIEW/framework/examples/oscilloscope_waveform_preview/project"
+}

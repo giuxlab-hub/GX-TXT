@@ -1,0 +1,31 @@
+# Modules dev109 bounded frontend batch
+
+This batch extends the existing two-column cards from cd032ff and the e351332 baseline. It does not replace the module catalog, activation registry, dependency mutator, manual index or renderer. MAIN exclusively integrates and independently accepts it. Branch implementation is IMPLEMENTED_AWAITING_MAIN_INTEGRATION.
+
+## Design rationale
+
+The actual registered group is the card heading. The switch remains at the left of each readable name; state and Help stay aligned at the right. The explicit state distinguishes CORE analyses and always-available services. A disabled checked switch preserves the visual connection to the truthful Always available text. The familiar native controls remain keyboard focusable where actionable. State color supplements text.
+
+The baseline's fixed 900px breakpoint and fixed 210px reserved control width worked at ordinary fonts, but clipped names at font size 15/scaling 2. The repaired breakpoint measures the actual toggle/state/Help requested widths plus a useful name width. Label wrapping uses those same actual controls. Each column stacks its cards independently, removing the large empty inter-card regions caused by giving a short and tall neighbouring group the same grid-row height. The unused second column is hidden and loses its weight/uniform membership in the narrow layout, preserving the previous successful full-width repair. Toolkit geometry, fonts, labels and scrolling remain owned by Tk/CORE UI Field. The toolbar now reflows with measured button widths and wraps its selected name instead of hiding or clipping it.
+
+A feedback line belongs to the action, rather than adding a second prose/details pane. It reports actual canonical flag differences after mutation. The frontend's direct-dependency lookup is advisory confirmation only; it uses public moduleField/splitList/moduleIsEnabled and never computes or applies an alternative dependency closure. Every accepted mutation still goes through moduleSetEnabled. The frontend resets the checkbutton projection before the modal so Cancel never leaves a speculative state. Empty feedback occupies no space. Session writes coalesce into an idle catalog refresh, using the same observation/disposal pattern as the existing API Browser; this also updates switches when Modules stays visible during Session creation. Feedback is invalidated when the Session or canonical flags change. Activation errors and subsequent presentation errors have different messages; the latter must not imply rollback of a committed selection.
+
+The public pluginRuntimeInfo status is separate from enablement; only its actual restart-required status produces the extra badge. There is no guest/security policy added. The existing per-module documentationBrowserOpenModuleWindow dispatch remains unchanged.
+
+Alternatives rejected: returning to the raw tree/right prose view conflicts with the request; fixed pixels at another threshold reproduce the same font problem; always using one column wastes ordinary desktop width; locally applying dependency state or rolling back private arrays would create another state authority. No search field, visible version/ID columns or embedded manual pane is added.
+
+## Integration contract
+
+Only existing app/gui/modules_page.tcl and app/modules_page_controller.tcl change, plus new validation/modules_dev109 and docs/modules_dev109. No new public API family, compiler/header/library/SDK support, scientific behavior, module descriptors, Session Generator code or Inspector assets change. C++ debugger use is NOT USED: this is a Tcl CORE frontend assignment.
+
+Root SCRIPT_CATALOG addition to merge: register validation/modules_dev109/CATALOG.md and its exact helper hashes from the SSD INTEGRATION.json. The local catalog explains arguments, allowed display/paths, side effects, first failures and author-verification limits. Existing SCRIPT-NEXT-002/005 desktop/spool/native/close patterns are reused with narrower assignment paths.
+
+MAIN should integrate the coherent branch commit(s), then perform a focused independent installed check of ordinary/narrow/large and larger-font layouts, a locked switch, a normal switch round trip, real dependency Cancel/Accept and the selected manual. Runtime-update and backend-error component tests use explicit doubles and are not evidence of actual package update/failed backend activation. Consult the SSD RESULTS.md and GAP_REPORTS.json before acceptance; any external backend gap remains owned by MAIN. No integration, deployment or final #7/all-15 acceptance is asserted here.
+
+## Confirmed external blocker
+
+The real native three-link test (Plot Dataset → IR waveform → IR identification) demonstrates that disabling Plot Dataset only disables direct consumers. IR identification remains ON while its IR waveform prerequisite is OFF. The owning moduleSetEnabled implementation calls direct consumers with cascade=0. MAIN must fix transitive disable in that existing owner and repeat the failed canonical chain. This batch deliberately displays the actual result and contains no replacement dependency mutator. Full REG-0354 and #7 acceptance remain open. The separate direct-dependency Cancel/Accept cases restore every prepared private flag exactly.
+
+## Proposed root SCRIPT_CATALOG entry
+
+MODULES-DEV109-SPECIALIST-02: `validation/modules_dev109/CATALOG.md` indexes the bounded #7 author tests and preserved first failures. `env DISPLAY=:126 XAUTHORITY=/home/giu/.Xauthority tclsh validation/modules_dev109/desktop.tcl OWN_DISPOSABLE_INSTALL NEW_OWN_SSD_GUI_OUTPUT` creates a private profile and normal desktop; `python3 -B validation/modules_dev109/spool.py GUI_OUTPUT REVIEWED_LOCAL_TCL` queues only the scoped checks listed there. Reuses SCRIPT-NEXT-002/005. `tclsh validation/modules_dev109/controller_contract.tcl FRAMEWORK` tests explicit service doubles, not installed error/update behavior. Own :126 and assignment paths only; public fixture Session creation is separately documented. No scientific Jobs/builds, actual user config or official install writes. Normal closure, owner hashes, native screenshots and canonical receipts are required. MAIN integration and independent installed QA remain separate; CORE-MODULE-ACTIVATION-01 is OPEN. Exact source/catalog hashes accompany SSD INTEGRATION.json.

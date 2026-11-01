@@ -2,7 +2,9 @@
 # Datasets, coordinate snapshots and Graph Metadata; no FEM solver or store.
 # SPDX-License-Identifier: GPL-3.0-or-later
 proc ::GX::PlotDatasetAPIv4::validateSpec {spec} {
-    _ready;set result [::GX::PlotDatasetAPIv2::validateSpec $spec];_cellFieldBindings $spec;return $result
+    _ready
+    if {[dict exists $spec comparison]} {::GX::comparisonPlotValidate [dict get $spec comparison]}
+    set result [::GX::PlotDatasetAPIv2::validateSpec $spec];_cellFieldBindings $spec;return $result
 }
 proc ::GX::PlotDatasetAPIv4::cellFieldSpec {dataset xVariable yVariable binding {title {Cell-associated field}}} {
     set s [dict create id cell_field dataset_id $dataset x_variable_id $xVariable y_variable_id $yVariable kind scatter axis left label $title cell_field $binding]

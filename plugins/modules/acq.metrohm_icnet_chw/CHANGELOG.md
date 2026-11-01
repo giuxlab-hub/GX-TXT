@@ -1,6 +1,6 @@
-## 0.2.2
+## 0.2.2 (2026-10-21)
 
-## 0.3.0 — native C development candidate
+## 0.3.0 — native C development candidate, 2026-10-22
 
 - Move file reading, differential decoding, trace/peak CSV and bounded worker bulk processing to prebuilt C; retain minimal public Acquisition Handler Tcl adapter.
 - Preserve original selected basename independently of renamed RAW, checked source scale/time, exact integer ADCs and optional peak records.
@@ -11,14 +11,21 @@
 
 # Changelog
 
-## 0.2.1
+## 0.4.0 — 2026-10-28
+
+- Declare an optional first-class `chromatography.measurement` Dataset Group with
+  the actual trace, optional original integration peaks and optional source
+  container. All three output profiles retain their existing scientific bytes.
+  CORE owns the atomic descriptor, RAW identity, namespace and portable lifecycle.
+
+## 0.2.1 (2026-10-21)
 - Decode the RAW CHW once per import callback and produce canonical signal CSV and metadata from that same decode; eliminate duplicate helper subprocess and repeated reads.
 - Preserve full 0.2.0 behavior in the default `complete` profile; add `trace_and_peaks` and `trace_only` profiles for less expensive bulk publication.
 - Clean up incomplete newly created CSV output on parser failure without touching pre-existing targets.
 - Add regression and timing tests; no CORE modifications.
 
 
-## 0.2.0
+## 0.2.0 — 2026-10-21
 
 - Reverse engineered the CHW T-section differential codec with block run modes
   0/3/4/5 (zero, signed 8/16/32-bit deltas).
@@ -33,7 +40,7 @@
 - Added codec mode, bounds, sample-count, overflow, write-safety tests.
 - Same external-plugin API and stable ID; no GX-TXT CORE changes.
 
-## 0.1.0
+## 0.1.0 — 2026-10-21
 
 - Initial Metrohm IC Net CHW structural importer; opaque preservation and
   provisional integrated peak metadata without signal decoding.

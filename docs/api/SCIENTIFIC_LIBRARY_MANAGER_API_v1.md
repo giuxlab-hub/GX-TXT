@@ -1,85 +1,23 @@
 # Scientific Library Manager API v1
 
-## Step5 bounded source extension — adoption and runtime gated
+CORE owns scientific-library registry, package integrity, provider dispatch,
+normalized content and credentials. `library.reference.json` supports explicit
+external JSON/HTTPS consultation with operation-scoped policy and optional cache.
+Managed IR/NMR providers reuse immutable `.gxsrl` owners and bounded content reads.
+See [source and domain contracts](SCIENTIFIC_LIBRARY_P025_SOURCES_v1.md).
+Scientific Libraries is the primary management Viewer. The deprecated Reference
+Library and Library Manager preserve saved open routes; specialized IR/NMR
+Viewers retain scientific presentation ownership.
 
-MAIN503/523 and MAIN638 decision003 authorize bounded source implementation
-under this same Library owner. The three restricted Script aliases remain
-credential_status, credential_unlock and credential_lock;21 Script operations
-are prepared in total and the original18 retain their behavior. The unshipped
-secret-bearing Tcl credentialUnlock and credentialProfileAdmin create/replace
-forms are superseded and return fixed unavailable responses. They are not
-successful pending aliases. Profile administration and the three CORE-only
-phase routes below remain absent from ordinary Script operations and grants.
-Source registration is not feature adoption or actual native/runtime acceptance.
+## Registry and storage
 
-The outward Script credential_unlock(library_id,unlock_credential,
-lifetime_seconds=300) remains one synchronous final result. The lifetime must
-be an integer from 1 through 900: pass Python `30` (an `int`) or Octave
-`int64(30)`. Ordinary Octave `30` is a double and is rejected, as are Python
-booleans, Octave logicals, null and zero. Omitting the lifetime argument uses
-the binding's integer default of 300.
-
-Its binding calls
-credentialPrepare unlock with exact nonsecret library_id/lifetime_seconds,
-captures its validated operation reference, calls the native credentialSubmit
-directly, lets that COMPLETE Tcl invocation return to Python, then calls
-nonsecret credentialFinish with the captured reference. No Tcl catch/uplevel
-wrapper surrounds protected Submit. References from Submit/Finish responses
-cannot retarget cleanup. Failed or malformed Submit always invokes exact-owner
-quarantine and Finish; failed Finish or final typed validation quarantines that
-same captured operation. No automatic resubmission or library-only replacement
-lock is used. Status/lock keep their existing final result contract.
-
-MAIN accepts the complete Tcl-return boundary, not return of the enclosing
-external Python JSON/module.invoke request. Python arguments/request/memory
-remain; no Python/Tcl zeroization, arbitrary observer or unexpected diagnostic
-erasure guarantee is made. The binding raises fixed BridgeErrors outside caught
-exception handlers and never forwards raw error text/context/cause/traceback.
-
-Runtime status fields are library_id, configured(bool|null),
-authentication_required(bool|null), authentication_status, expires_in_seconds
-(integer0..900), cleanup_pending(bool). States not_required/unconfigured/locked/
-unlocked/failed/unavailable/unknown/revoking are specific to this NEW result;
-old capability.v1 authentication enums are unchanged. Authoritative result_json
-retains JSON null/bool/integer types despite Tcl text mirrors. Unlock's default
-TTL300/max900 means a CORE grant, never a fabricated remote login success.
-
-The Step5 Script lock result needs two genuine nullable fields. TASK210's
-registered continuation exposed the shared Bridge's missing encoding for Python
-`None`; the explicit one-key null envelope now has a source correction in the
-server and matching clients. Python receives `None`; Octave receives `[]` and
-must retain `result_json` as authoritative for null identity. Ordinary Octave
-empty-array arguments retain their previous encoding. This is a transport
-correction to the existing Step5 contract, separate from the unchanged Step4
-content projections below. Source review and actual validation status belong to
-the current TASK210 receipts; neither the failed continuation nor whole Step5
-is promoted by this correction.
-
-Exact CORE signatures, finite administration/CAS, protected raw32KiB and
-final64KiB frame limits, provider-private scope preserving old hook signatures,
-lazy encrypted profile dependency and all unqualified lifetime/security gates
-are documented in
-public library source integration notes.
-Legacy nonprofile1MiB input stays unchanged. Profile-bound one-shot content
-fails locked before provider import; authorized sync/async calls must share the
-same owned private runtime. Failed durable admin/bind dispatch may have committed:
-mutation_outcome unknown requires read-only inspect/inspect_binding reconciliation
-using original expected revisions, without automatic retry or rollback.
-
-The source-only correction has not executed helpers, imports, dependency probes,
-provider calls, real scripts or GUI. Original scoped Step3/4 evidence is preserved;
-Step5/6/7 completion and release acceptance are not inferred.
-
-## Step 1 additive registry contract (dev-045)
-
-This is an additive v1 extension. Existing managed package installation,
-`listInstalledLibraries`, IR/NMR entry access, and saved schema-1 registries keep
-their prior behavior. `listInstalledLibraries` remains the managed-library view.
+Managed package installation, `listInstalledLibraries`, IR/NMR entry access
+and saved schema-1 registries use the same registry authority. `listInstalledLibraries` remains the managed-library view.
 The manager is CORE loaded and does not depend on Analysis execution state.
 
 `libraryRoot` returns the effective absolute GX-TXT Library Root. The persisted
 configuration key remains `libraries.scientific_root`; callers should use the
-public CORE method or `configurationGet`, not the internal environment compatibility mechanism.
+public CORE method or `configurationGet`, not the internal environment handoff.
 
 `listRegisteredLibraries` lists active managed, external and remote records.
 `getLibraryInfo` accepts each mode and removed tombstones. Every public record
@@ -100,8 +38,7 @@ Providers may declare `REGISTRATION_SCHEMA` in their Python entrypoint as a
 mapping from mode to `{required: [...], optional: [...]}` and optionally
 `validate_registration(mode, configuration)`. CORE checks keys and delegates
 semantic validation; it does not interpret endpoint or local database formats.
-Secret-like configuration keys are rejected. Credential profiles and operational
-access to external/remote entries are later-step work.
+Secret-like configuration keys are rejected. Operational access uses the provider content and credential contracts below.
 
 Provider discovery in the Tcl host uses the loaded module catalog descriptors,
 including independently installed provider-only plugins. A provider-only module
@@ -111,7 +48,7 @@ uses `kind=service`, `runner=service`, `selectable=0`, and a
 Analysis jobs. Direct standalone invocation of the Python helper retains its
 bundled-descriptor fallback for compatibility.
 
-GX-TXT 0.9.8.06 manages scientific data libraries independently of the framework and executable plugins. CORE verifies the data-only package, stores its payload, tracks versions and checksums, and resolves an installed Library Type Provider. The provider validates scientific meaning and exposes entries. CORE contains no IR-specific parser.
+GX-TXT manages scientific data libraries independently of the framework and executable plugins. CORE verifies the data-only package, stores its payload, tracks versions and checksums, and resolves an installed Library Type Provider. The provider validates scientific meaning and exposes entries. CORE contains no IR-specific parser.
 
 ## Public Tcl API
 
@@ -141,9 +78,9 @@ A Library Type Provider may declare both `entry_viewer_module` and `entry_viewer
 
 The ZIP contains exactly `library.ini`, `SHA256SUMS.txt` and `payload/library.gxsrl`. The manifest declares library ID, type, version, provider requirement, format version, name, description, license and origin. `SHA256SUMS.txt` binds the payload bytes. The manager rejects extra paths, directories, links, oversized members, checksum mismatch, unsafe IDs and incompatible providers. It never executes content from a data package. Provider validation runs before the registry commit.
 
-The first independently distributed type is `spectroscopy.ir.reference`, served by the separately installable `library.spectroscopy.ir.reference` plugin. The IR provider validates the Scientific Reference Library database, IR spectral semantics, stable spectrum IDs and provenance. The Scientific Spectral Library viewer offers **Install library...** when its reference list is empty, then discovers the installed logical ID through this API. Existing user-authored reference libraries remain visible.
+An independently distributed type is `spectroscopy.ir.reference`, served by the separately installable `library.spectroscopy.ir.reference` plugin. The IR provider validates the Scientific Reference Library database, IR spectral semantics, stable spectrum IDs and provenance. The Scientific Spectral Library viewer offers **Install library...** when its reference list is empty, then discovers the installed logical ID through this API. Existing user-authored reference libraries remain visible.
 
-Task 006 adds `spectroscopy.nmr.reference` with a managed Cambridge 1-D NMR library. The generic `viewer.reference_library` handles installation, search, version and provenance. Its selected-entry action calls `openLibraryEntry`, which routes to the provider-declared `viewer.nmr_reference`; NMR ppm/nucleus presentation stays in that specialized viewer. The current IR viewer continues to serve its established comparison and ranking workflow.
+`spectroscopy.nmr.reference` provides a managed Cambridge 1-D NMR library. The unified `viewer.scientific_library_workspace` handles installation, entry search, version and provenance. The deprecated `viewer.reference_library` retains saved compatibility routes. Its selected-entry action calls `openLibraryEntry`, which routes to the provider-declared `viewer.nmr_reference`; NMR ppm/nucleus presentation stays in that specialized viewer. The current IR viewer continues to serve its established comparison and ranking workflow.
 
 Install or update the provider through Plugin Install API v1, then install a data package through this manager. A library can be updated or removed without updating the framework, the provider, or the viewer. Removing a package leaves a tombstone so a saved ID reports a stale reference rather than resolving to different content.
 
@@ -156,8 +93,7 @@ the delegated registry/package/provider implementation is CORE's
 `core/python/scientific_library_manager.py`. Consumers call the facade, not
 private helper functions or its internal wire format.
 
-All commands below are in `::GX::ScientificLibraryManagerAPIv1`. The original
-Step1 commands in this table have no optional Tcl arguments/defaults. IDs and type IDs are
+All commands below are in `::GX::ScientificLibraryManagerAPIv1`. The registry commands in this table have no optional Tcl arguments/defaults. IDs and type IDs are
 strings matching `[A-Za-z0-9][A-Za-z0-9._-]*`, excluding `.` and `..`.
 
 | Tcl signature | Exact facade result / context |
@@ -223,7 +159,7 @@ are synchronous host calls unless explicitly submitted using the additive
 each record through the helper. Do not present them as asynchronous Job APIs.
 
 This family is discoverable through the existing CORE API owner. It has no
-automatic Python/Octave grant from this host surface. The reviewed Step4 subset
+automatic Python/Octave grant from this host surface. The reviewed Script subset
 is specified below. Restricted C++ has the three
 typed catalog methods described below. Do not call `gxtxt_api_call` with this family
 solely because a catalog row exists. The Python helper is an implementation
@@ -240,16 +176,12 @@ foreach type $types {
 }
 ```
 
-These signatures describe the inspected implementation. Runtime/provider,
-authentication and scientific acceptance are independent gates; later planned
-Library steps are not implied by this reference.
+Runtime/provider availability and authentication remain explicit operation checks; discovery does not establish scientific access.
 
-## Step2 catalog, capability declarations and provider delegation (dev109)
+## Catalog, capability declarations and provider delegation
 
-This additive contract reuses the same registry, package verifier, provider
-discovery, ScriptJob/Resource owners and specialized Viewers. It does not
-implement progression Steps3–7: normalized scientific entry/search/mutation,
-Script Bridge, credentials, network protocols or new domain parsers. A registered
+This contract reuses the same registry, package verifier, provider discovery,
+ScriptJob/Resource owners and specialized Viewers. A registered
 remote reference is not proof of connectivity or authentication. Existing
 `openLibrary` remains an ID resolver; use the distinct `openLibraryViewer` for
 normal registered-Viewer dispatch. IR's library Viewer and NMR's entry Viewer
@@ -259,7 +191,7 @@ remain the owners of scientific presentation.
 | --- | --- |
 | `getProviderCapabilities libraryType` | Flat scalar dict with schema `gxtxt.library_capabilities.v1`, provider/type/version, `supported_modes`, declaration source, `capability.*`, `extra_actions`, `extra.ID.*` and `registration.MODE.required/optional`. Does not probe a library. |
 | `getLibraryCapabilities libraryId` | Same declaration plus current record policy/status, effective `action.*` flags, `reason.*`, `library_id` and SHA256 of exact current registry bytes. Absent provider gives explicit unavailable status with inspection/refresh/unregistration availability; it is not an empty successful query. |
-| `libraryCatalogPage ?options?` | Options dict: `mode all|managed|external|remote` (default all), `query` (default empty, at most1024 characters), `offset` (default0, nonnegative integer), `limit` (default100, 1–200). Result: schema `gxtxt.library_catalog_page.v1`, registry SHA, mode/query/offset/limit, total/count and `records` list of public record dicts. Filters active installed records by ID/name/type/origin/provider; single registry read. Each public record is bounded to128KiB. No scientific entry search. |
+| `libraryCatalogPage ?options?` | Options dict: `mode all|managed|external|remote` (default all), `query` (default empty, at most1024 characters), `offset` (default0, nonnegative integer), `limit` (default100, 1–200), `library_type` (default empty; exact installed provider type). Mode/query/type filters apply together before pagination; unknown types error. Result: schema `gxtxt.library_catalog_page.v1`, registry SHA, mode/query/offset/limit/library_type, total/count and `records` list of public record dicts. Filters active installed records by ID/name/type/origin/provider; single registry read. Each public record is bounded to128KiB. No scientific entry search. |
 | `openLibraryViewer libraryId ?context?` | Optional context dict accepts only `entry_id`. Current capability/policy checked; explicit entry must belong to the managed library. Prefer actual descriptor `library_viewer_module/id`; otherwise use declared entry Viewer and the first actual managed entry if no explicit entry supplied. Result dict: `status opened`, `dispatch_kind library_viewer|entry_viewer`, library/entry IDs and public `viewerOpen` result. Missing/unsupported/unavailable/auth-blocked actions error. |
 | `invokeLibraryAction libraryId actionId ?parameters?` | Only a currently declared, enabled provider extra-action ID; defaults empty dict. At most32 safe parameter keys, each value at most4096 characters. Calls the provider's fixed `library_action` hook, returns at most128 scalar fields/128KiB plus actual library/action/provider IDs. No arbitrary function name. |
 | `libraryRequest operation arguments callback` | Returns the existing ScriptJob asynchronous request ID. Callback receives common `ok` plus `result` or `error` response. Fixed operations listed below; `arguments` is the operation's positional list, not shell text. |
@@ -271,8 +203,8 @@ additional script operations.
 
 `libraryRequest` accepts `catalog_page`, `library_capabilities`,
 `provider_capabilities`, `library_action`, `info`, `entries`, `verify`, `install`,
-`update`, `remove`, `register`, `unregister`, `provider`, `types`, `open`.
-`catalog_page` positional arguments are mode/query/offset/limit;
+`update`, `remove`, `register`, `unregister`, `provider`, `types`, `open`, `content`.
+`catalog_page` positional arguments are mode/query/offset/limit and an optional fifth exact library type; the four-argument form remains valid;
 `library_capabilities`, info/entries/verify/remove/unregister/open take one ID;
 provider/provider_capabilities take one type; install takes package path; update
 takes ID/path; register takes alternating public field/value pairs;
@@ -365,6 +297,8 @@ registration controls. Each finite action requires its exact manager operation:
 open/entry_open→openLibraryViewer, verify→verifyLibrary, install→installLibrary,
 update→updateLibrary, remove→removeLibrary, register_external/register_remote→
 registerLibrary, unregister→unregisterLibrary, extra_action→invokeLibraryAction.
+Entry search requires searchLibraryEntries; next/previous require libraryEntriesPage;
+entry_info requires getLibraryEntryInfo. Declared entry-search forms require all three grants.
 No generic invoke, Tcl callback, registry/path access or provider import is given
 to the author. `refresh` uses catalog_refresh; it is not a catalog_action string.
 
@@ -377,8 +311,16 @@ command handler). Optional catalog_entries(list), catalog_extra_action(choice/
 combobox), catalog_page(entry/field, positive integer) enable managed entries,
 declared provider actions and100-record pages. Mode values are the public mode
 strings; filter text remains a registry filter. Shared tables are read-only;
-managed entry consultation shows at most1000 IDs with explicit shown/total count.
-No search/mutation is implied. Raw facts are labeled registry.*; operational
+legacy ID-only entry consultation shows at most1000 IDs with explicit shown/total count.
+A form declaring catalog_entry_filter(entry/field), catalog_entry_info(table)
+and catalog_entry_count(status/label) uses normalized provider search/info.
+Empty query lists entries; nonempty query is an explicit JSON string sent to
+search_entries. Pages contain at most100 records and preserve provider continuation
+identity and original query across next/previous. Entry selection displays exact
+metadata/provenance/result_json through entry_info. Errors remain errors rather
+than successful empty pages. Optional catalog_type(choice/combobox) selects an
+exact type before pagination; catalog_providers(table) displays installed type
+capability declarations and registration schemas. No scientific mutation is implied. Raw facts are labeled registry.*; operational
 status facts retain status.*. Capability table action rows use actual action
 gates; a Viewer row also requires that specific Viewer kind to be declared (NMR
 Open's first-entry fallback does not declare a library-level Viewer). Non-action
@@ -416,14 +358,10 @@ Registration uses ordinary UI Field forms and provider-declared non-secret
 configuration fields; unsupported operational modes are labeled registration-only.
 Opening delegates to the registered domain Viewer through the same manager.
 
-## Step3 normalized content operations (dev110 candidate)
+## Normalized content operations
 
-This additive v1 contract extends the existing Python/Tcl manager. MAIN's
-independent proposal review accepted the bounded content/provider design; actual
-release/milestone acceptance remains separate. Step3 introduced no script grant.
-The separately reviewed Step4 subset below reuses these owners through its
-API-owned binding; no credential facility, provider registry or scientific store
-is added.
+The API-owned Tcl and Python manager owns provider dispatch, normalized results,
+policy and integrity. The reviewed Script subset reuses this same owner.
 
 ### Exact public host signatures
 
@@ -521,7 +459,7 @@ are validated before selection; a corrupt empty provider ID cannot rebind the
 current type provider via a legacy optional-ID fallback. Provider inputs are
 copied; a hook cannot mutate CORE's in-memory registration or requested identity.
 
-New managed content reads reuse existing package/payload SHA, provider scientific
+Managed content reads reuse existing package/payload SHA, provider scientific
 validation and exact stable-entry index verification inside the existing local
 registry lock, before and after the content hook. Detected postflight changes
 discard unreturned data. External/remote requests do not hold that lock across
@@ -577,30 +515,10 @@ remains the accepted managed-only ID-list route; use libraryEntriesPage for the
 new normalized all-mode operation. Existing --request operations still decode
 through their old paths.
 
-### Developer evidence and remaining acceptance
+## Python and GNU Octave Bridge subset
 
-`validation/task210/library_step3/` records purpose/arguments/version/sideeffects
-in CATALOG_ADDITION.md for MAIN's operational catalog. It installs a real
-synthetic generic-science fixture through existing managed lifecycle, exercises
-actual external mutable/read-only and controlled remote dispatch, and runs the
-actual sync facade plus existing scriptJobAsync pipes/callbacks. Typed JSON
-roundtrip, normalized failures, pre/post integrity, mutation ambiguity, legacy
-wire and final response bounds are developer-checked. These checks do not prove
-production remote service, domain IR/NMR, GUI or ordinary Script Bridge support.
-MAIN accepted bounded Step3 through the preserved development source integration. The
-Step4 implementation below still requires real registered Python/Octave runtime
-validation and MAIN milestone acceptance. Steps5–7 remain unfinished in order;
-no credential mechanism is inferred here.
-
-
-## Step4 intentional Python/GNU Octave Bridge subset
-
-MAIN independently approved the exact design on2026-10-22, including its closed
-projections and fixed eighteen operations. Implementation is in the existing
-API-owned `core/script_bindings/scientific_library_manager.py`; no shared Bridge,
-client, runner or scientific registry was extended. Registered real-language
-runtime validation and milestone acceptance remain pending. Design approval is
-not a scientific/runtime PASS.
+The API-owned `core/script_bindings/scientific_library_manager.py` provides
+closed projections and finite operation grants through the common Bridge.
 
 Both languages use `gxtxt_api_call("SCIENTIFIC_LIBRARY_MANAGER_API_v1", operation,
 args)` with positional list/cell arguments. The exact callable surface is:
@@ -627,8 +545,13 @@ args)` with positional list/cell arguments. The exact callable surface is:
 | remove_entry | library_id, entry_id | removeLibraryEntry, existing mutable library |
 
 `paging` accepts only `limit`1–200 and bounded opaque `continuation`.
+The Script `catalog_page` options also accept `library_type`: empty selects all
+types; a nonempty value must name an installed provider type (at most128
+characters). The same existing manager applies mode/query/type filters before
+pagination and returns the effective `library_type`. This is read-only discovery,
+not a provider option or administrative grant.
 `catalog_page` accepts only mode(all/managed/external/remote), query<=1024
-characters, nonnegative integer offset, and limit1–200. Every other argument
+characters, nonnegative integer offset, limit1–200 and this exact type filter. Every other argument
 is a string. query_json and entry_json are explicit JSON **text**, retaining the
 provider's scientific meaning and the accepted1MiB complete-input bound.
 Finite integral Octave paging numbers normalize to exact integers; logical,
@@ -655,9 +578,10 @@ in addition to existing manager input/result/wire bounds.
 
 api_info validates the existing host identity/version/schema, then returns only
 api_name/version/registry_version/capability_schema, intentional_subset exposure,
-fixed CORE provider identity, exact eighteen script aliases, and capabilities
+fixed CORE provider identity, exact script aliases, and capabilities
 library_discovery/public_status/explicit_json_results/data_return_export/
-conditional_entry_mutation. It never returns the unrestricted host operations.
+conditional_entry_mutation/restricted_credential_runtime. It never returns the
+unrestricted host operations.
 
 Library info/catalog records admit only library_id/library_type/provider_id/
 provider_version/display_name/version/mode/state/read_only/availability/
@@ -666,37 +590,318 @@ rights/installed_at/updated_at/sha256 when actually present. Configuration,
 managed/package storage locations, implementation paths and profile fields are
 excluded. effective_root is the deliberately approved read-only path query.
 
-The complete exact capability/status keys, types, finite enums and two safe fixed
-reason fields are in
-private implementation projection inventory.
-There are sixteen fixed technical capability boolean keys; no wildcard capability
-or provider status.reason is forwarded. Unknown optional fields stay absent;
-invalid selected values reject rather than guessing authenticated/false/unknown.
-A technical host/Viewer capability is not a script operation grant.
+The Script capability projection admits only the fields below. Optional absent
+fields remain absent; selected malformed values reject. Provider free-text status
+reasons, implementation paths and arbitrary capability keys are excluded.
+
+| Fields | Exact Script value |
+| --- | --- |
+| `capability_schema` | String `gxtxt.library_capabilities.v1`. |
+| `library_type`, `library_id`, `provider_id`, `provider_version` | Text, at most4096 UTF8 bytes each. |
+| `supported_modes` | Nonempty list of unique strings from `managed`, `external`, `remote`. |
+| `mode` | String `managed`, `external` or `remote`. |
+| `registry_state` | String `installed`, `removed` or `unknown`. |
+| `declaration_source` | String `provider_declaration` or `legacy_managed_contract`. |
+| `status_source` | String `registration_metadata_not_probed`, `provider_status` or `provider_unavailable`. |
+| `capability.NAME` | Boolean, for exactly the sixteen names below. |
+| `status.availability` | Library projection only: string `available`, `unavailable`, `unknown` or `temporarily_unavailable`. |
+| `status.read_only`, `status.authentication_required` | Library projection only: string `0`, `1` or `unknown`; these status tokens remain distinct from capability booleans. |
+| `status.authentication_status` | Library projection only: string `not_required`, `unknown`, `locked`, `unlocked`, `authenticated`, `failed` or `authentication_failed`. |
+| `status.entry_count` | Library projection only: exact nonnegative decimal text, or string `unknown`. |
+| `reason.inspect`, `reason.refresh` | Library projection only: inspect is empty text or `Library was removed`; refresh is empty text. |
+
+The sixteen `capability.NAME` suffixes are `list_entries`, `entry_info`,
+`search_entries`, `read_entry`, `add_entry`, `remove_entry`, `export_entry`,
+`verify`, `mutable`, `read_only`, `remote`, `external`, `offline_available`,
+`authentication_required`, `library_viewer` and `entry_viewer`. A technical
+host/Viewer capability does not grant a Script operation. These fixed projection
+rules belong to the existing Scientific Library Script binding, alongside the
+finite aliases documented above; consumers do not import its implementation.
 
 Normalized content failures raise `GXTXT:ScientificLibrary:<code>` with a bounded
 JSON error message containing code/message and available retry_after_seconds,
-provider_code or mutation_outcome. Existing finite Step3 codes remain unchanged.
+provider_code or mutation_outcome. The finite normalized content codes above apply.
 Input schema/arity failures use existing InvalidArguments; unregistered methods
 use UnknownOperation. Failed search remains an error. A mutation whose result
 cannot be returned reports mutation_outcome unknown: reconcile provider state
 before retrying; no automatic retry or rollback is claimed.
 
-The exact classification of all31 public methods (apiInfo plus30 listed host
-operations) is
-private implementation operation classification.
+The complete current host `apiInfo` declaration enumerates37 host operations,
+plus `apiInfo` itself. The Script aliases above are its intentional subset; the
+host discovery list is not an additional grant. Its
+seven credential operations are `credentialStatus`, `credentialLock`,
+`credentialProfileAdmin`, `bindLibraryCredentialProfile`, `credentialPrepare`,
+`credentialSubmit` and `credentialFinish`; their access rules are documented below.
 The thirteen host/module-only methods are resolveLibraryProvider, installLibrary,
 updateLibrary, removeLibrary, verifyLibrary, openLibrary, openLibraryEntry,
 readLibrarySpectrum, registerLibrary, unregisterLibrary, openLibraryViewer,
 invokeLibraryAction and libraryRequest. Domain spectral workflows retain their
 existing dedicated Reference Library bindings. Whole-library/provider/root/
-credential administration is excluded; credential unlock/lock waits for the
-ordered Step5 vault/protected path.
+credential administration is excluded. Explicit credential_status, credential_unlock
+and credential_lock use the protected credential contract below.
 
-The catalogued `validation/task210/library_step4/contract.tcl FRAMEWORK BASELINE
-NEW_OUTPUT` prepares one private0700 candidate and runs one real registered Python
-and one GNU Octave script via existing Script Registry+scriptExecutionRun. It
-checks actual discovery/read/export/mutable add-remove/readonly and policy denial,
-auth/rate/unavailability errors, exact JSON and absent administrative routes.
-MAIN routes execution after exact helper/source/catalog review. No such run or
-Step4 PASS is claimed by this implementation transfer.
+## Protected credentials
+
+The Script aliases credential_status, credential_unlock and credential_lock
+reuse the existing native credential owner. Profile administration and the
+CORE-only prepare/submit/finish routes are not ordinary Script grants.
+credential_unlock(library_id, unlock_credential, lifetime_seconds=300) returns
+one synchronous final result. Lifetime must be an integer from1 through900:
+Python `30` or Octave `int64(30)`. Booleans, logicals, null, double-valued Octave
+`30`, zero and out-of-range values reject. Omission uses integer300.
+
+The binding calls credentialPrepare unlock with exact nonsecret identity and
+lifetime, captures the operation reference, calls native credentialSubmit directly,
+lets the complete Tcl invocation return to Python, then calls nonsecret
+credentialFinish with that captured reference. No Tcl catch/uplevel wrapper surrounds
+protected Submit. Reply references cannot retarget cleanup. Failed/malformed Submit
+invokes exact-owner quarantine and Finish; failed Finish or final typed validation
+quarantines that captured operation. There is no automatic resubmission.
+
+Python arguments/request/memory remain; no Python/Tcl zeroization, arbitrary observer
+or diagnostic-erasure guarantee is made. The binding raises fixed BridgeErrors outside
+caught handlers and does not forward raw exception context, cause or traceback.
+Runtime fields are library_id, configured(bool|null), authentication_required(bool|null),
+authentication_status, expires_in_seconds(integer0..900), cleanup_pending(bool).
+States are not_required/unconfigured/locked/unlocked/failed/unavailable/unknown/revoking.
+Authoritative result_json preserves null/bool/integer types. Python receives None;
+Octave receives [] for null and must retain result_json for exact null identity.
+The lifetime is a CORE grant, not proof of successful remote authentication.
+
+### Trusted-host credential signatures and lifetime
+
+These commands use the same `::GX::ScientificLibraryManagerAPIv1` owner. Profile
+administration, binding and Prepare/Submit/Finish are CORE host operations; they
+have no Script phase, operation-reference, administration or callback alias.
+
+| Host signature | Current contract |
+| --- | --- |
+| `credentialStatus libraryId` | Final `gxtxt.library_credential_response.v1` envelope with closed status fields and authoritative `result_json`. |
+| `credentialLock libraryId` | Revokes that library's existing owned contexts; `revoking` with `cleanup_pending=true` is distinct from completed drain. |
+| `credentialPrepare operation metadata` | Operations `unlock`, `profile_create`, `profile_replace`; reserves one nonsecret operation and returns schema `gxtxt.library_credential_operation.v1`, `ok=1`, `operation_ref` and `state=prepared`, or a fixed failure envelope. |
+| `credentialSubmit operationRef unlockCredential ?providerSecret?` | Direct native invocation: one protected value for unlock, two for create/replace. Successful `state=submitted` means channel acceptance, not authentication or durable commit. |
+| `credentialFinish operationRef ?callback?` | Receives/validates the final result only after the complete protected Submit invocation returns. The optional bounded callback selects managed asynchronous completion; pending is not completion. |
+| `credentialProfileAdmin list` | Nonsecret profile inventory. |
+| `credentialProfileAdmin inspect profileId` | Nonsecret profile metadata/revision. |
+| `credentialProfileAdmin inspect_binding libraryId` | Current nonsecret binding and library-record CAS revision. |
+| `credentialProfileAdmin delete profileId expectedRevision` | Exact expected-profile-revision delete; stale CAS refuses. |
+| `bindLibraryCredentialProfile libraryId profileId expectedLibraryRevision expectedProfileRevision` | Exact library/profile CAS binding. Unbind uses empty `profileId` and profile revision `none`. |
+
+Prepare metadata is exactly `library_id lifetime_seconds` for unlock, with
+canonical integer lifetime1..900 (callers resolve default300). For profile create/
+replace it is exactly `profile_id expected_revision provider_id`: create requires
+revision `absent`, replace requires the exact64-character lowercase SHA256 revision.
+An operation reference contains exactly `context_id`, `generation`, `operation_id`;
+the generation is32 lowercase hex characters. It conveys no path, secret or
+independent authority. Completion and failure cleanup retain the original captured
+reference rather than a reply-selected target.
+
+The caller prepares and prearms its nonsecret completion/cleanup before reading
+protected input. Submit runs directly, without a Tcl catch/uplevel wrapper or
+yield/modal validation around that invocation. Receive/decode/cleanup occurs after
+its complete return. Secret-bearing Tcl `credentialUnlock` and profile-admin
+create/replace forms return fixed unavailable responses; use the admitted native
+sequence rather than those convenience forms.
+
+The existing credential owner bounds complete protected arguments to32768 UTF8
+bytes, the credential/admin subset to16384 bytes, and the encoded frame including
+newline and pending bytes to65536. Envelope overhead can refuse a legal-sized
+individual field. Unlock credentials admit12..1024 UTF8 bytes and provider secrets
+1..4096 UTF8 bytes. The complete encrypted profile record is bounded to16384
+bytes, so JSON escaping can reject otherwise admitted individual secret text.
+No truncation or alternate serializer is used. Nonprofile1MiB
+input remains supported. Encrypted ProfileStore support is loaded lazily for
+protected operations. Profile-bound content fails locked before provider import;
+authorized synchronous/asynchronous calls share the same owned private runtime.
+Each request rechecks library, provider/source and profile identities. Provider
+readiness and source policy remain necessary after successful decryption; a grant
+does not establish remote authentication. Provider-private secret use stays inside
+the scoped callback. The existing TTL and managed process/drain owners control
+retirement, with no zeroization or hostile-provider sandbox guarantee.
+
+Failed durable administration/binding may have committed: mutation_outcome unknown
+requires read-only inspect/inspect_binding reconciliation with original expected
+revisions, without automatic retry or rollback.
+
+### Offline manual candidate selection (P028 revision 2, additive)
+
+Host `domainRequest manual_candidates` accepts `{record_type,text}` with literal TSV
+(256KiB UTF-8, header plus1–20 rows). `candidate_id` is required and distinct;
+other columns are installed schema field names, optional `label`/`source_id`.
+Non-string typed fields use JSON scalar/array/object syntax. No lookup or writes.
+
+`manual_prepare` / `manual_import` additionally accept destination `library_id`,
+optional `expected_version`, and optional `suggestions` dictionary. Its `include`
+boolean defaults false. If true, specify `text` (or structured `candidates`),
+`selected_ids`, provider-declared `relation_type`, `source_id`, `assertion_kind`
+(`user` or `source`), and literal `evidence`. Structured rows contain
+`candidate_id`, `fields`, optional `label`, `source_id`, `original_text`.
+Only relations explicitly declaring `manual_suggestion: true` and compatible
+source/target types are offered/admitted. Existing source connectors are unchanged.
+No validated equivalence assertion or recursive selection is produced.
+
+Preview returns `expected_version` and `selected_suggestions`, with exact candidate
+entries and new/reused status. No persistent write occurs. Stable candidate IDs
+are hashes of record type, source identity and literal candidate key. Existing
+exact typed records are reused; conflicting content under the same key is refused.
+Candidates and primary directed edges commit through one existing immutable Library
+transaction. Destination version comparison occurs again inside the registry lock.
+A reviewed stale primary revision/hash or destination version is refused. The
+original primary fields/resources/provenance remain unchanged when only links are
+added. Every target pins actual Library/Entry/revision/content SHA, preserves source
+assertion/evidence/original paste, and declares compatibility unverified.
+
+The import receipt retains `entries` and zero `session_datasets_created`, and adds
+`primary_entry_id` plus `selected_suggestions` candidate/entry/status rows. A duplicate
+selection reuses existing entries/edges. Browser Cancel/review performs no commit;
+only explicit Save writes. Session acquisition remains a separate action. No
+network, credentials, automated API caching or supplier-specific CORE UI is involved.
+
+Manual suggestion previews are bounded to2MiB of selected candidate/edge data
+(including retained original input); reduce the paste or checked subset if needed.
+Quoted TSV and multiline/CRLF original rows are retained exactly. An explicit
+changed original paste is retained as `provenance.original_text` and creates a new
+revision even when typed fields match; absent paste preserves prior provenance
+when only suggestion links are added. Candidate inspectors and selected-review
+fields show full typed identity values and source assertions, with no JSON editor
+required for the normal scalar component workflow.
+
+
+## Unified Viewer presentation bridge
+
+The existing `viewer.scientific_library_workspace/scientific_library_workspace`
+uses three Builder-declared `library_browser` components in one group: `records`,
+`sources`, and `manual`. Existing catalog/administration remains in the same
+Viewer. `VIEWER_GUI_HOST_API_v1` owns component admission and finite page focus.
+This trusted presentation bridge is not a Script data or arbitrary GUI factory API.
+
+After constructing all declared page frames, the GUI Host calls
+`::GX::LibraryBrowser::mountPages window group pages statusCommand` once. `pages`
+is exactly records/sources/manual mapped to existing empty native frames owned
+by that Viewer. The host derives the status command; authored callback strings
+are not accepted. The result is a controller bound to the existing Viewer lifetime.
+`focusPage controller page` selects the declaring native page and its normal input.
+`canClose controller` returns a strict boolean after reviewing an unsaved draft;
+it does not destroy the Viewer or mutate a Workspace. Forced parent destruction
+retains captured PDF retirement callbacks until reader processes are drained and
+resource leases can be released. Draft values and credentials are not captured
+as Workspace interface values.
+
+The formerly internal `LibraryBrowser::open ?parent?` compatibility route opens
+or focuses the existing Viewer through its normal provider identity and the
+public Host page-focus operation. It creates no standalone Browser top-level.
+A legacy module without declared embedded pages receives an explicit upgrade
+error; there is no fallback parallel workspace. All data operations retain the
+existing manager, graph, source, Resource and Acquisition APIs described above.
+
+
+The Records page makes acquisition selection explicit: **Import selected records**
+uses only the current left-list selection; **Import displayed record** uses the
+exact currently displayed reference after Follow/Back/Forward. **Import selected
+related entries** reviews a bounded selected subset (1..100 rows), resolves the
+other endpoint of incoming/outgoing assertions, and deduplicates identical pinned
+Library entries. Stale, missing, external and canonical-Dataset edges are refused
+for this Library-entry import action; they are not automatically downloaded or
+converted. Every chosen Library entry still receives the existing representation
+and compatible Acquisition Handler review before a separate Session/Namespace
+confirmation. Cancelling review publishes nothing. **Edit displayed record**
+also follows the visibly displayed identity, rather than an earlier list row.
+
+### Declarative Library view scopes (P028 continuation)
+
+The host-only `describeScope parametersJson` operation delegates to the existing
+`domainRequest scope_describe`. Parameters are `{"scope": {...}}`; the scope may
+also be omitted. Its result has schema `gxtxt.library_scope.v1`, canonical `scope`,
+`restricted`, `eligible_record_types`, scoped domain `catalog`, eligible connector
+`connectors`, registered remote `sources` (at most100), `source_total`,
+`source_limit`, and bounded identity-availability `diagnostics`. Discovery does
+not connect to a provider. Provider IDs identify actual domain-schema providers,
+not Library Type Providers or a particular Viewer. Any compatible Viewer can use
+this data contract.
+
+Optional `scope` is accepted by existing domain operations `schemas`,
+`connectors`, `search`, `resolve_external_id`, `detail`, `related`, `stage`,
+`manual_candidates`, `manual_prepare`, and `manual_import`. Content operations
+accept it inside their existing `options` object (`options_json` on the Tcl
+facade); `importSourceSelection` accepts a top-level `scope`. Empty or absent
+scope preserves unfiltered operation. Explicit null, unknown dimensions,
+duplicate IDs and malformed values are rejected.
+
+Supported dimensions are `library_types`, `record_types`, `library_ids`,
+`provider_ids`, and `source_ids`. Each is a JSON list of at most64 distinct literal
+IDs, ORed within the dimension and ANDed across dimensions. Empty lists are
+removed, keys/values sorted, and canonical UTF8 JSON limited to32768bytes.
+Non-source IDs use the existing safe-ID grammar
+`^[A-Za-z0-9][A-Za-z0-9._-]*$`. Source IDs are exact nonempty Unicode strings of
+at most512characters without CR/LF/NUL. They match entry
+`provenance.source_id`; Source choices match exact connector IDs. Labels,
+registered Library IDs, supplier names, substrings and inferred equivalence are
+not substituted for source identities.
+
+Cross-Library search and qualified external-ID resolution apply predicates in
+the existing disposable index before counts, offsets and limits. Pinned detail,
+resource staging and manual saves validate the same scope. Related assertions
+remain visible with exact target identities and evidence, including
+`scope_status=outside_scope`/`scope_reason` when the other endpoint cannot establish
+the scope; opening or importing that content is refused. These are presentation
+selectors, not access grants or security policy.
+
+Source declarations may provide finite `record_types` in addition to
+`library_types`. A record/provider-restricted view offers only connectors with an
+actual matching declaration; a third provider sharing a Library type does not
+inherit another connector's supported schemas. Upstream search/suggestions are
+external identities awaiting explicit inspection: their paging remains honestly
+upstream identity paging. Typed preview entries/media are filtered before their
+public count/selection, and selected records/destinations are checked again before
+existing explicit Library publication. No fetch-all scan infers scientific types.
+The unchanged Mouser API channel remains transient consultation only.
+
+The embedded controller accepts optional trailing scope on
+`LibraryBrowser::mountPages window group pages statusCommand ?scope?`; existing
+four-argument callers retain default unfiltered operation. All page state shares
+one canonical scope. Successful pinned navigation alone advances Back/Forward;
+failed or outside-scope reads preserve current display/history. External anchors
+resolve only through scoped local exact-identity candidates, with no implicit
+remote fetch. Canonical Dataset anchors with record/provider/type-only selectors
+use their declared target type as presentation context and the existing
+`datasetViewerOpenReference` as actual exact Session/SHA admission. Library-ID or
+source-ID restrictions cannot be established for such a Dataset anchor and leave
+it unavailable. This does not reinterpret scientific Dataset types or provenance.
+
+Representation review displays full Library/entry/revision/content pins and
+original resource hashes; the next review displays the actual staged bytes SHA,
+MIME, content contract and recognized compatible handlers. The final existing
+Session/Namespace form retains each chosen handler and all exact pins, explaining
+independent per-entry outcomes. Related rows include exact other-end identities,
+direction, attribution, resolution and view-scope status. Review data is transient
+UI state; the same Acquisition dispatcher remains the only publication owner.
+
+Related-table target columns are anchor-neutral: `target_kind`,
+`target_container`, `target_id`, `revision`, and `target_sha256`. Their values are
+respectively Library ID/entry ID/content SHA for a Library entry, exact Session
+path/Dataset ID/payload SHA for a canonical Dataset, and source ID/external ID
+for an external entity (unknown SHA remains blank). The anchor kind labels the
+meaning; a Dataset or source identity is never presented as a Library ID.
+A bounded caption displays selector counts, while an explicit read-only inline
+scope view retains every literal ID and availability diagnostic. Scoped typed
+source previews retain `source_record_sha256` from their original primary record
+before filtering, preserving the existing source-change review pin even when the
+primary scientific record type is outside the view.
+
+An embedded Browser retains its provider-backed draft editors. If the loaded
+Manager's admitted provider set, enabled state, descriptor identity or version
+changes while it is open, further Browser operations clearly request an explicit
+Viewer reopen to load current schemas/connectors. Editors and unsaved literal
+values remain intact; normal close review still lets the user retain or discard
+the draft. The Browser neither silently rebuilds a dirty form nor substitutes
+unrestricted types. This is cache invalidation using the existing Manager
+provider admission, not another provider registry or a permission check.
+
+Native Manual schema/template selection checks that provider snapshot before
+changing draft widgets or rows. Because a combobox updates its displayed value
+before its callback, refusal restores the last accepted schema and template as
+well as retaining every field. Re-selecting the same accepted schema/template is
+idempotent. Deliberate internal initialization for Edit and explicit Cancel uses a
+separate reset argument; ordinary selector callbacks cannot request it. A pending
+technical-row form also checks the provider context before committing parent rows;
+the existing UI Field form displays a refusal while retaining its unsaved input.

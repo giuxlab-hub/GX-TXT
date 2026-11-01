@@ -25,6 +25,8 @@ proc ::GX::defaults_v052_api {} {
     ::GX::defaults_v048
     set cfg(acquisition_module) "acq.rigol_csv"
     set cfg(session_mode) "measurement"
+    # Session presentation preference; execution selections remain independent.
+    set cfg(analysis_hidden_modules) {}
     array unset moduleCfg *
     array unset moduleEnabled *
     array unset moduleRun *
@@ -152,9 +154,9 @@ proc ::GX::moduleConfigKeys {id} {
     return $keys
 }
 
-# Preview activation remains the ordinary Module selection, not provider admission.
-# The first supported Preview storage is the exact per-ID moduleEnabled owner;
-# arbitrary legacy cfg aliases cannot prove exclusive ownership of their field.
+# Framework Configuration owns Preview activation, separately from Session
+# selection and provider admission. moduleEnabled is only its live projection;
+# legacy cfg aliases cannot prove exclusive ownership of a Preview field.
 proc ::GX::_modulePreviewSelectionIds {} {
     variable moduleOrder
     set ids {}
@@ -173,6 +175,41 @@ proc ::GX::_modulePreviewSelectionIds {} {
 proc ::GX::_moduleDefaultEnabled {id} {
     if {[moduleField $id kind {}] eq {preview}} {return 0}
     return [expr {[moduleField $id default_enabled 0] ? 1 : 0}]
+}
+proc ::GX::_modulePreviewChoicesValidate {value} {
+    if {[string bytelength $value]>65536 || [catch {llength $value} n] || $n%2 || $n>1024} {error {Preview framework choices must be a bounded ID/boolean dictionary}}
+    set choices {}
+    foreach {id enabled} $value {
+        if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,191}$} $id] || [dict exists $choices $id] || ![string is boolean -strict $enabled]} {error {Invalid or duplicate Preview framework choice}}
+        dict set choices $id [expr {!!$enabled}]
+    }
+    set result {}
+    foreach id [lsort [dict keys $choices]] {dict set result $id [dict get $choices $id]}
+    return $result
+}
+proc ::GX::_modulePreviewChoices {} {
+    if {![info exists ::GX::configurationValues] || ![dict exists $::GX::configurationValues preview.module_enabled]} {return {}}
+    return [dict get $::GX::configurationValues preview.module_enabled]
+}
+proc ::GX::_modulePreviewEnabled {id} {
+    set choices [_modulePreviewChoices]
+    return [expr {[dict exists $choices $id] && [dict get $choices $id]}]
+}
+proc ::GX::_modulePreviewRequireHost {} {
+    if {[info exists ::GX::DatasetPrivate::activeContext] && $::GX::DatasetPrivate::activeContext ne {}} {error {Framework Preview activation requires user/host authority}}
+}
+proc ::GX::_modulePreviewSyncProjection {} {
+    foreach id [_modulePreviewSelectionIds] {set ::GX::moduleEnabled($id) [_modulePreviewEnabled $id]}
+}
+proc ::GX::_modulePreviewDependencyReadiness {id} {
+    set graph [_modulePreviewDependencyPaths $id]
+    if {[llength [dict get $graph cycles]]} {return [dict create ready 0 reason {Preview dependency cycle}]}
+    foreach dependency [dict keys [dict get $graph paths]] {
+        if {$dependency eq $id} continue
+        if {$dependency ni $::GX::moduleOrder} {return [dict create ready 0 reason "Preview dependency '$dependency' is not installed"]}
+        if {![moduleIsEnabled $dependency]} {return [dict create ready 0 reason "Preview dependency '$dependency' is unavailable in the current Session"]}
+    }
+    return [dict create ready 1 reason {}]
 }
 
 # Finite inert dependency projection. Stop at always-available modules exactly
@@ -199,7 +236,7 @@ proc ::GX::_modulePreviewValidateSelection {raw} {
     if {![llength $previews]} {return $raw}
     set selected [splitList $raw]
     foreach root $selected {
-        if {$root ni $moduleOrder || [moduleIsAlwaysAvailable $root]} continue
+        if {$root ni $moduleOrder || $root in $previews || [moduleIsAlwaysAvailable $root]} continue
         set graph [_modulePreviewDependencyPaths $root]
         set relevant 0
         foreach id $previews {if {[dict exists $graph paths $id]} {set relevant 1;break}}
@@ -209,9 +246,9 @@ proc ::GX::_modulePreviewValidateSelection {raw} {
                 "Cyclic dependency involving Preview selection from '$root'."
         }
         dict for {id path} [dict get $graph paths] {
-            if {$id in $previews && $id ni $selected} {
+            if {$id in $previews && ![_modulePreviewEnabled $id]} {
                 return -code error -errorcode {GX MODULE PREVIEW_DEPENDENCY} \
-                    "Selected '$root' requires explicitly selected Preview '$id' ([join $path { -> }])."
+                    "Selected '$root' requires framework-enabled Preview '$id' ([join $path { -> }])."
             }
             if {$id ni $moduleOrder} {
                 foreach preview $previews {
@@ -226,8 +263,8 @@ proc ::GX::_modulePreviewValidateSelection {raw} {
     return $raw
 }
 proc ::GX::_modulePreviewReset {} {
-    set ids [_modulePreviewSelectionIds]
-    foreach id $ids {moduleSetEnabled $id 0}
+    # Compatibility hook: a Session reset never changes framework activation.
+    _modulePreviewSyncProjection
 }
 proc ::GX::_modulePreviewOpenPreflight {sessionPath} {
     # With no Preview installed, preserve the historical Manifest-error handling
@@ -243,70 +280,14 @@ proc ::GX::_modulePreviewOpenPreflight {sessionPath} {
 # Pure preflight is shared by real Session open and direct/configuration loads.
 # No defaults or Module/Session mutation may precede these compatibility guards.
 proc ::GX::_modulePreviewLoadProjection {purpose data} {
-    variable moduleOrder
     if {$purpose ni {session configuration}} {error {Invalid private Module load purpose}}
-    set ids [_modulePreviewSelectionIds]
-    set mode off;set expected {}
-    if {[dict exists $data module_state.enabled]} {
-        set selected [splitList [_modulePreviewValidateSelection [dict get $data module_state.enabled]]]
-        set mode selection
-    } elseif {$purpose eq {configuration}} {set mode preserve}
-    foreach id $ids {
-        switch -- $mode {
-            selection {dict set expected $id [expr {$id in $selected}]}
-            preserve {dict set expected $id [moduleIsEnabled $id]}
-            off {dict set expected $id 0}
-        }
-    }
-    set legacy [expr {![dict exists $data pipeline.format] || [dict get $data pipeline.format] ne {2}}]
-    if {$legacy && [dict exists $data modules.selected]} {
-        set earlier [splitList [_modulePreviewValidateSelection [dict get $data modules.selected]]]
-        dict for {id on} $expected {
-            if {($id in $earlier) != $on} {
-                return -code error -errorcode {GX MODULE PREVIEW_LEGACY_SELECTION} \
-                    "Legacy modules.selected conflicts with authoritative Preview '$id' selection."
-            }
-        }
-    }
-    set resetsActivation $legacy
-    if {$mode eq {preserve} && [dict size $expected] && !$resetsActivation &&
-        [dict exists $data experiment_preparation.definitions]} {
-        set preparation [dict get $data experiment_preparation.definitions]
-        if {[dict exists $preparation policy_api] && [dict exists $preparation policy_version] &&
-            [dict get $preparation policy_api] eq {EXPERIMENT_DUPLICATION_POLICY_API_v1} &&
-            [dict get $preparation policy_version] eq {1}} {set resetsActivation 1}
-    }
-    if {$mode eq {preserve} && $resetsActivation && [dict size $expected]} {
-        dict for {id on} $expected {
-            if {!$on} continue
-            set graph [_modulePreviewDependencyPaths $id]
-            dict for {dep depPath} [dict get $graph paths] {
-                if {$dep ne $id && ![moduleIsAlwaysAvailable $dep]} {
-                    return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
-                        "Resetting configuration cannot preserve ON Preview with selectable dependency: [join $depPath { -> }]."
-                }
-            }
-        }
-    }
-    if {$mode eq {preserve} && [dict size $expected]} {
-        foreach consumer $moduleOrder {
-            if {[moduleIsAlwaysAvailable $consumer]} continue
-            set key [moduleField $consumer enabled_key {}]
-            if {$key eq {} && (!$resetsActivation || ![_moduleDefaultEnabled $consumer])} continue
-            set graph [_modulePreviewDependencyPaths $consumer]
-            dict for {id on} $expected {
-                if {!$on && [dict exists $graph paths $id]} {
-                    if {$key ne {}} {
-                        return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
-                            "Configuration without selection cannot project cfg-aliased consumer '$consumer' requiring preserved-OFF Preview '$id'."
-                    }
-                    return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
-                        "Resetting configuration default consumer '$consumer' requires preserved-OFF Preview '$id' ([join [dict get $graph paths $id] { -> }])."
-                }
-            }
-        }
-    }
-    return [dict create mode $mode expected $expected]
+    # Legacy Manifest selections retain their non-Preview meaning only. Neither
+    # a Session nor an experiment-configuration import owns global Preview ON/OFF.
+    if {[dict exists $data module_state.enabled]} {_modulePreviewValidateSelection [dict get $data module_state.enabled]}
+    if {(![dict exists $data pipeline.format] || [dict get $data pipeline.format] ne {2}) && [dict exists $data modules.selected]} {_modulePreviewValidateSelection [dict get $data modules.selected]}
+    set expected {}
+    foreach id [_modulePreviewSelectionIds] {dict set expected $id [_modulePreviewEnabled $id]}
+    return [dict create mode preserve expected $expected]
 }
 
 # Dynamic loader context, always restored in finally. This is neither persisted
@@ -323,31 +304,21 @@ proc ::GX::_modulePreviewWithLoadContext {path purpose data script} {
     }
 }
 proc ::GX::_modulePreviewPreservedDefaults {} {
-    variable modulePreviewLoadContext
-    if {[info exists modulePreviewLoadContext] && [dict get $modulePreviewLoadContext mode] eq {preserve}} {
-        return [dict get $modulePreviewLoadContext expected]
-    }
-    return {}
+    set result {}
+    foreach id [_modulePreviewSelectionIds] {dict set result $id [_modulePreviewEnabled $id]}
+    return $result
 }
-proc ::GX::_modulePreviewRestoreDefaults {} {
-    variable moduleEnabled
-    dict for {id state} [_modulePreviewPreservedDefaults] {set moduleEnabled($id) $state}
-}
+proc ::GX::_modulePreviewRestoreDefaults {} {_modulePreviewSyncProjection}
 proc ::GX::_modulePreviewSelectionLoaded {} {
     variable modulePreviewLoadContext
-    if {[dict get $modulePreviewLoadContext mode] eq {off}} {
-        # A legacy defaults reset can seed a consumer again. The ordinary OFF
-        # cascade reconciles just those consumers without full Run reapplication.
-        _modulePreviewReset
-    }
     foreach id [_modulePreviewSelectionIds] {
-        set expected 0
-        if {[dict exists $modulePreviewLoadContext expected $id]} {set expected [dict get $modulePreviewLoadContext expected $id]}
-        if {[moduleIsEnabled $id] != $expected} {
+        if {[dict exists $modulePreviewLoadContext expected $id] &&
+            [_modulePreviewEnabled $id] != [dict get $modulePreviewLoadContext expected $id]} {
             return -code error -errorcode {GX MODULE PREVIEW_SELECTION_CHANGED} \
-                "Loaded Preview selection differs for '$id'."
+                "Framework Preview choice changed while loading '$id'; no Session override was applied."
         }
     }
+    _modulePreviewSyncProjection
     _modulePreviewValidateSelection [join [selectedModuleIds] ,]
 }
 
@@ -402,7 +373,7 @@ proc ::GX::moduleOperationalInfo {id} {
 proc ::GX::moduleIsEnabled {id} {
     variable cfg
     variable moduleEnabled
-    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds}
+    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds;return [_modulePreviewEnabled $id]}
     set selectable [moduleField $id selectable 1]
     if {[moduleIsAlwaysAvailable $id]} { return 1 }
     set key [moduleField $id enabled_key ""]
@@ -434,12 +405,36 @@ proc ::GX::moduleSetRunSelected {id state} {
     if {$key ne ""} { set cfg($key) $v } else { set moduleRun($id) $v }
 }
 
-proc ::GX::selectedRunModuleIds {} {
+proc ::GX::moduleAnalysisIsShown {id} {
+    variable cfg
+    if {![moduleAnalysisEligible $id]} {return 0}
+    return [expr {![info exists cfg(analysis_hidden_modules)] || $id ni $cfg(analysis_hidden_modules)}]
+}
+
+proc ::GX::moduleSetAnalysisShown {id shown} {
+    variable cfg
+    if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {return}
+    if {![info exists cfg(analysis_hidden_modules)]} {set cfg(analysis_hidden_modules) {}}
+    set index [lsearch -exact $cfg(analysis_hidden_modules) $id]
+    if {$shown && $index >= 0} {
+        set cfg(analysis_hidden_modules) [lreplace $cfg(analysis_hidden_modules) $index $index]
+    } elseif {!$shown && $index < 0} {
+        lappend cfg(analysis_hidden_modules) $id
+    }
+}
+
+# Whole-Run admission differs from the persisted execution preference. An
+# explicit targeted API invocation continues to use its existing admission.
+proc ::GX::moduleRunIsAdmitted {id} {
+    expr {[moduleIsEnabled $id] && [moduleAnalysisIsShown $id] && [moduleRunIsSelected $id]}
+}
+
+proc ::GX::selectedRunModuleIds {{admittedOnly 0}} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
         if {![moduleAnalysisEligible $id]} continue
-        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id]} { lappend out $id }
+        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id] && (!$admittedOnly || [moduleAnalysisIsShown $id])} { lappend out $id }
     }
     return $out
 }
@@ -448,6 +443,7 @@ proc ::GX::selectedModuleIds {} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
+        if {[moduleField $id kind {}] eq {preview}} continue
         if {[moduleIsAlwaysAvailable $id]} continue
         if {[moduleIsEnabled $id]} { lappend out $id }
     }
@@ -458,9 +454,36 @@ proc ::GX::moduleSetEnabled_v081_before_contract_registry {id state {cascade 1}}
     variable cfg
     variable moduleEnabled
     variable moduleOrder
-    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds}
-    if {[moduleIsAlwaysAvailable $id]} { return }
     set v [expr {$state ? 1 : 0}]
+    set loading [expr {[info exists ::GX::modulePreviewLoadContext] || [info exists ::GX::modulePreviewSelectionApplying]}]
+    if {$v} {
+        set graph [_modulePreviewDependencyPaths $id]
+        set previews [_modulePreviewSelectionIds]
+        set relevant 0;set proposed [_modulePreviewChoices]
+        dict for {dependency path} [dict get $graph paths] {
+            if {$dependency ni $previews} continue
+            set relevant 1
+            if {$loading && ![_modulePreviewEnabled $dependency]} {error "A Session cannot enable framework Preview '$dependency'"}
+            if {![_modulePreviewEnabled $dependency]} {_modulePreviewRequireHost}
+            dict set proposed $dependency 1
+        }
+        if {$relevant} {
+            if {[llength [dict get $graph cycles]]} {error {Preview activation has a dependency cycle}}
+            foreach dependency [dict keys [dict get $graph paths]] {if {$dependency ni $moduleOrder} {error "Preview dependency '$dependency' is not installed"}}
+            _modulePreviewChoicesValidate $proposed
+        }
+    }
+    if {[moduleField $id kind {}] eq {preview}} {
+        _modulePreviewSelectionIds
+        if {$loading} {
+            if {!$v} {return}
+        } else {
+            _modulePreviewRequireHost
+            set choices [_modulePreviewChoices];dict set choices $id $v
+            configurationSet preview.module_enabled $choices
+        }
+    }
+    if {[moduleIsAlwaysAvailable $id]} { return }
     set key [moduleField $id enabled_key ""]
     if {$key ne ""} { set cfg($key) $v } else { set moduleEnabled($id) $v }
     moduleSetRunSelected $id $v
@@ -482,13 +505,20 @@ proc ::GX::moduleSetEnabled_v081_before_contract_registry {id state {cascade 1}}
 proc ::GX::applyModuleSelection_v078_workspace {raw} {
     variable moduleOrder
     _modulePreviewValidateSelection $raw
+    set existed [info exists ::GX::modulePreviewSelectionApplying]
+    if {$existed} {set prior $::GX::modulePreviewSelectionApplying}
+    set ::GX::modulePreviewSelectionApplying 1
+    try {
     foreach id $moduleOrder {
+        if {[moduleField $id kind {}] eq {preview}} continue
         if {[moduleField $id selectable 1]} { moduleSetEnabled $id 0 0 }
     }
     foreach id [splitList $raw] {
+        if {[moduleField $id kind {}] eq {preview}} continue
         if {[lsearch -exact $moduleOrder $id] >= 0} { moduleSetEnabled $id 1 0 }
     }
     foreach id $moduleOrder {
+        if {[moduleField $id kind {}] eq {preview}} continue
         # Always-available UI/service providers are not a saved scientific
         # activation. Their optional consumers must not resurrect modules that
         # the user explicitly left OFF. Selected modules still resolve their
@@ -496,6 +526,9 @@ proc ::GX::applyModuleSelection_v078_workspace {raw} {
         if {![moduleIsAlwaysAvailable $id] && [moduleIsEnabled $id]} {
             foreach dep [splitList [moduleField $id depends ""]] { moduleSetEnabled $dep 1 0 }
         }
+    }
+    } finally {
+        if {$existed} {set ::GX::modulePreviewSelectionApplying $prior} else {unset ::GX::modulePreviewSelectionApplying}
     }
 }
 
@@ -2096,6 +2129,13 @@ proc ::GX::_moduleLoadManifestPreviewBody {path d} {
     } elseif {[dict get $::GX::modulePreviewLoadContext mode] eq {off}} {
         _modulePreviewReset
     }
+    # Missing in older Sessions means all eligible panes are shown. Reset on
+    # every load, including configuration imports, rather than inheriting the
+    # previous Session's visibility. Keep unknown IDs for reversible upgrades.
+    set ::GX::cfg(analysis_hidden_modules) {}
+    if {[dict exists $d module_state.analysis_hidden]} {
+        set ::GX::cfg(analysis_hidden_modules) [lsort -unique [splitList [dict get $d module_state.analysis_hidden]]]
+    }
     if {[dict exists $d pipeline.format] && [dict get $d pipeline.format] eq "2"} {
         loadManifestV2 $path
     } else {
@@ -2207,15 +2247,18 @@ proc ::GX::rebuildNativeAcquisitionGui {} {
     foreach column {0 1 2 3} {grid columnconfigure $f $column -weight 0 -minsize 0}
     grid columnconfigure $f 0 -weight 1
     grid columnconfigure $f 1 -minsize 310
-    grid rowconfigure $f 2 -weight 1
+    grid rowconfigure $f 2 -weight 1 -minsize 150
+    bind $f <Configure> [list ::GX::acquisitionOptionsViewportLayout %w %h]
     ttk::frame $f.heading
     ttk::label $f.heading.name -textvariable ::GX::ui(acquisitionName) -font TkHeadingFont
-    ttk::label $f.heading.description -textvariable ::GX::ui(acquisitionDescription) -wraplength 550 -justify left
-    ttk::label $f.heading.steps -text {Choose an importer → set options → add files → review Preview / Variables → import. Changing importer clears pending files.} -wraplength 550 -justify left
+    ttk::label $f.heading.description -textvariable ::GX::ui(acquisitionDescriptionCompact) -width 1 -justify left
+    ttk::label $f.heading.steps -text {Options in Acquisition menu; review sources.} -wraplength 550 -justify left
     pack $f.heading.name $f.heading.description $f.heading.steps -anchor w -fill x -pady 3
+    native2DViewportTooltip $f.heading.steps {Choose an importer, set its options, add files, review Preview and Variables, then import into the current Session. Changing importer clears pending files. Full importer identity and description are available in About and Help.}
     grid $f.heading -row 0 -column 0 -sticky ew -padx 8 -pady 5
     bind $f.heading <Configure> [list ::GX::acquisitionHeadingLayout %w]
-    ttk::frame $f.cfg; grid $f.cfg -row 1 -column 0 -sticky ew -padx 5 -pady 4; grid columnconfigure $f.cfg 0 -weight 1
+    ttk::frame $f.cfg -width 1 -height 190; grid $f.cfg -row 1 -column 0 -sticky nsew -padx 5 -pady 4
+    grid propagate $f.cfg 0; grid columnconfigure $f.cfg 0 -weight 1; grid rowconfigure $f.cfg 0 -weight 1
     acquisitionBrowserBuild
     refreshNativeAcquisitionConfig
 }
@@ -2225,10 +2268,15 @@ proc ::GX::refreshNativeAcquisitionConfig_v081_before_v082_batch {} {
     set f .top.nb.acq.cfg
     if {![winfo exists $f]} return
     destroyChildren $f
-    ttk::labelframe $f.box -text "$cfg(acquisition_module) configuration"
-    grid $f.box -row 0 -column 0 -sticky ew
-    grid columnconfigure $f.box 1 -weight 1
-    buildStandardConfigFrame $f.box $cfg(acquisition_module)
+    set content [uiFieldScrollableCreate $f.options]
+    grid $f.options -row 0 -column 0 -sticky nsew
+    set box $content.box
+    ttk::labelframe $box -text {Importer options}
+    pack $box -fill x
+    buildStandardConfigFrame $box $cfg(acquisition_module)
+    bind $f.options.scroll <Configure> +[list ::GX::acquisitionOptionsFieldsLayout $box %w]
+    acquisitionOptionsFieldsLayout $box [winfo width $f.options.scroll]
+    acquisitionOptionsVisibility
 }
 
 proc ::GX::moduleIsRunnableAnalysis {id} {
@@ -2374,7 +2422,7 @@ proc ::GX::refreshAnalysisStatus {} {
         $w insert end "SESSION: $currentSession\n"
         $w insert end "Datasets: [join [datasetRegistryIds] {, }]\n"
         $w insert end "Enabled standard analysis modules: [join [selectedModuleIds] {, }]\n"
-        $w insert end "Run now: [join [selectedRunModuleIds] {, }]\n"
+        $w insert end "Run now: [join [selectedRunModuleIds 1] {, }]\n"
     }
     $w configure -state disabled
 }
@@ -3085,6 +3133,7 @@ proc ::GX::manifestStringV2_v062_legend_base {} {
         foreach k {enabled source_column source_channel original_header canonical unit semantic_role instrument_id instrument_channel} { appendKV out $k $sourceVar($i,$k) }
     }
     append out "\n\[module_state\]\n"; appendKV out enabled [join [selectedModuleIds] ,]; appendKV out run [join [selectedRunModuleIds] ,]
+    appendKV out analysis_hidden [join $cfg(analysis_hidden_modules) ,]
     foreach id $moduleOrder {
         set keys [moduleConfigKeys $id]
         if {[llength $keys]} {
@@ -4050,17 +4099,17 @@ proc ::GX::buildStandardAnalysisQueue_before_plot_variant {{target ""}} {
     foreach id $owners {
         if {[moduleField $id kind ""] ne "analysis"} continue
         if {[moduleField $id runner ""] eq "script_module"} {
-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
             lappend q [scriptModuleBuildQueueItem $id]
             continue
         }
         if {$id eq "analysis.python_script" && [moduleField $id runner ""] eq "script_execution"} {
-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
             lappend q [scriptAnalysisBuildQueueItem $id]
             continue
         }
         if {[moduleField $id runner ""] ne "standard_octave"} continue
-        if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+        if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
         if {[moduleField $id ui_replaced_by_core 0] && (![info exists ::GX::cliMode] || !$::GX::cliMode)} continue
         if {$id eq "analysis.octave_script" && $::GX::moduleCfg($id,source_mode) eq "registered_script"} {
             lappend q [scriptAnalysisBuildQueueItem $id]
@@ -4783,6 +4832,7 @@ proc ::GX::contractCoreDescription {id} {
         curve_family.table { return "Canonical family-of-curves table." }
         spectrum.table { return "Canonical frequency-domain spectrum table (independent variable: frequency)." }
         spectrum.scientific { return "Generic one-dimensional scientific spectrum with arbitrary X and Y quantities/units." }
+        document.uml { return "Canonical UTF-8 UML source in an explicitly declared bounded profile; source bytes remain authoritative." }
         default { return "Plugin-declared dataset contract." }
     }
 }
@@ -4865,24 +4915,60 @@ proc ::GX::contractSatisfiesAny {actual expectedList} {
     return 0
 }
 
+proc ::GX::_contractRegistryNativeGraphVisit {graph id depth stateName} {
+    upvar 1 $stateName state
+    if {$depth>128} {error {Native contract parent graph exceeds the reviewed depth bound}}
+    set status [datasetPublicationV2DictDefault $state $id {}]
+    if {$status eq {visiting}} {error "Native contract parent graph contains a cycle at '$id'"}
+    if {$status eq {done}} return
+    dict set state $id visiting
+    foreach parent [datasetPublicationV2DictDefault $graph $id {}] {_contractRegistryNativeGraphVisit $graph $parent [expr {$depth+1}] state}
+    dict set state $id done
+}
+proc ::GX::contractRegistryNativePreflight {coreContracts coreParents} {
+    variable moduleOrder;variable moduleCatalog
+    set owners {};set graph $coreParents;set native {}
+    foreach cid $coreContracts {dict lappend owners $cid {GX-TXT core}}
+    foreach module $moduleOrder {
+        if {![info exists moduleCatalog($module,dict)]} continue
+        set descriptor $moduleCatalog($module,dict)
+        set provided [splitList [descriptorValue $descriptor contracts provided {}]]
+        if {[moduleField $module kind {}] eq {acquisition} && [descriptorValue $descriptor acquisition_handler runtime {}] eq {managed_cpp}} {
+            if {[llength $provided]!=[llength [lsort -unique $provided]]} {error {Native contract declarations contain duplicate identities}}
+            dict set native $module $provided
+        }
+        foreach cid $provided {
+            dict lappend owners $cid $module
+            set parents [descriptorValue $descriptor contract.$cid parents [descriptorValue $descriptor contract.$cid parent {}]]
+            if {[string trim $parents] ne {}} {dict set graph $cid [splitList $parents]}
+        }
+    }
+    dict for {module ids} $native {
+        foreach cid $ids {
+            foreach owner [dict get $owners $cid] {if {$owner ne $module} {error "Native contract '$cid' is already provided by '$owner'; use the existing contract without redefining it"}}
+            set state {};_contractRegistryNativeGraphVisit $graph $cid 0 state
+        }
+    }
+    # Declaration does not assert scientific validation or provider availability.
+    # All checks precede mutation of the existing shared Registry projection.
+}
 proc ::GX::refreshContractRegistry {} {
     variable contractRegistry
     variable contractOrder
     variable moduleOrder
     variable moduleCatalog
+    set coreContracts {raw.csv table.generic timeseries.table curve_family.table spectrum.table spectrum.scientific spectrum.family document.uml}
+    set coreParents [dict create timeseries.table table.generic curve_family.table table.generic spectrum.table table.generic spectrum.scientific table.generic spectrum.family curve_family.table document.uml document.text]
+    contractRegistryNativePreflight $coreContracts $coreParents
     array unset contractRegistry *
     set contractOrder {}
 
     # Stable framework contracts remain available even when no current plugin
     # happens to consume them. Plugin descriptors extend this registry.
-    foreach cid {raw.csv table.generic timeseries.table curve_family.table spectrum.table spectrum.scientific spectrum.family} {
+    foreach cid $coreContracts {
         contractRegistryAddRole $cid providers "GX-TXT core"
     }
-    contractRegistrySetParents timeseries.table {table.generic}
-    contractRegistrySetParents curve_family.table {table.generic}
-    contractRegistrySetParents spectrum.table {table.generic}
-    contractRegistrySetParents spectrum.scientific {table.generic}
-    contractRegistrySetParents spectrum.family {curve_family.table}
+    dict for {cid parents} $coreParents {contractRegistrySetParents $cid $parents}
 
     foreach mid $moduleOrder {
         foreach cid [splitList [moduleField $mid inputs ""]] {
@@ -5234,7 +5320,7 @@ proc ::GX::buildGenericCsvBatchGui_v082_base {} {
     variable genericCsvBatchEnabled
     set host .top.nb.acq
     if {![winfo exists $host]} { return }
-    if {[winfo exists $host.cfg.box]} { $host.cfg.box configure -text "$::GX::cfg(acquisition_module) import options" }
+    if {[winfo exists $host.cfg.options.scroll.content.box]} { $host.cfg.options.scroll.content.box configure -text {Importer options} }
     catch {destroy $host.batch}
     ttk::labelframe $host.batch -text "Pending imports"
     grid $host.batch -row 2 -column 0 -sticky nsew -padx 5 -pady {2 6}
@@ -6501,7 +6587,7 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
 
     set row 0
     foreach id $moduleOrder {
-        if {[moduleField $id kind ""] ne "analysis"} continue
+        if {![moduleAnalysisEligible $id] || ![moduleAnalysisIsShown $id]} continue
         if {![moduleIsEnabled $id]} continue
         ensureModuleAnalysisSourceDefaults $id
 
@@ -6558,8 +6644,8 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
 
     if {$row == 0} {
         ttk::frame $host.empty
-        ttk::label $host.empty.title -text "No analysis modules are active in this experiment." -font TkHeadingFont
-        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then select them for Run in Modules." -wraplength 800 -justify left
+        ttk::label $host.empty.title -text "No analysis modules are shown in this experiment." -font TkHeadingFont
+        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then show their panes in Modules. Select Run / recalculate now in Analysis to calculate." -wraplength 800 -justify left
         grid $host.empty.title -row 0 -column 0 -sticky w -pady {0 5}
         grid $host.empty.help -row 1 -column 0 -sticky w
         grid $host.empty -row 0 -column 0 -sticky nw -padx 12 -pady 12

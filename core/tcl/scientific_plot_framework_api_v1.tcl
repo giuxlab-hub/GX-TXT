@@ -391,6 +391,7 @@ proc ::GX::globalGraphicsDialog {} {
     ::GX::globalGraphicsDialog_v0933_before_3d
     set w .globalgfx
     if {![winfo exists $w]} return
+    if {[winfo exists $w.viewport.canvas.body]} {set w $w.viewport.canvas.body}
     set r [expr {[lindex [grid size $w] 1] + 1}]
     ttk::labelframe $w.plot3d -text "3D view and color defaults"
     grid $w.plot3d -row $r -column 0 -columnspan 3 -sticky ew -padx 10 -pady 6
@@ -587,6 +588,8 @@ proc ::GX::axisConfigBuildPanelControls {w panels} {
     axisConfigPanelBind $w
 }
 
+source [file join [file dirname [info script]] scientific_plot_axis_ticks_v1.tcl]
+
 # Replace the common Axes dialog with an additive version including Z/view/color.
 proc ::GX::axisConfigDialog_before_level_scale {} {
     variable ui; variable axisOverride
@@ -673,6 +676,11 @@ proc ::GX::axisConfigDialog_before_level_scale {} {
     ttk::label $body.common.al -text "Align Y labels"; ttk::combobox $body.common.a -textvariable ::GX::ui(axisEdit,align_ylabels) -values {inherit 1 0} -state readonly -width 10; ttk::label $body.common.gml -text "XY grid"; ttk::combobox $body.common.gm -textvariable ::GX::ui(axisEdit,grid_mode) -values {both vertical horizontal none inherit} -state readonly -width 12; ttk::label $body.common.ysl -text "Y grid source"; ttk::combobox $body.common.ys -textvariable ::GX::ui(axisEdit,ygrid_source) -values {inherit left right none} -state readonly -width 10; ttk::label $body.common.gcl -text "Grid color"; ttk::entry $body.common.gc -textvariable ::GX::ui(axisEdit,grid_color) -width 12
     grid $body.common.al -row 0 -column 0 -sticky e -padx 3; grid $body.common.a -row 0 -column 1 -sticky w -padx 3; grid $body.common.gml -row 0 -column 2 -sticky e -padx 3; grid $body.common.gm -row 0 -column 3 -sticky w -padx 3; grid $body.common.ysl -row 0 -column 4 -sticky e -padx 3; grid $body.common.ys -row 0 -column 5 -sticky w -padx 3; grid $body.common.gcl -row 0 -column 6 -sticky e -padx 3; grid $body.common.gc -row 0 -column 7 -sticky w -padx 3
     set nextRow 6
+    if {$ui(axisSharedXRef) ne {}} {
+        axisTickDraftInit $w $ui(axisSharedXRef) $shared $body.ticks
+        grid $body.ticks -row $nextRow -column 0 -sticky ew -padx 8 -pady 5
+        incr nextRow
+    }
     if {[llength $panels] > 1} {
         # plot.dataset multi-panel: reuse CORE panel override state for every stacked artifact discovered by stackedGraphPanels().
         axisConfigBuildPanelControls $body $panels
@@ -692,6 +700,7 @@ proc ::GX::axisConfigDialog {} { ::GX::axisConfigDialog_before_level_scale }
 proc ::GX::axisConfigResetUi {w} {
     variable ui
     ::GX::axisConfigResetUi_v0933_before_3d $w
+    axisTickDraftAutomatic $w
     foreach {f v} [plot3dAxisFieldDefaults] {set ui(axisEdit,$f) $v}
     if {[info exists ui(axisSharedXRef)] && $ui(axisSharedXRef) ne ""} {
         set ui(axisEdit,x_scale) linear
@@ -711,6 +720,10 @@ proc ::GX::axisConfigSave {w gk path rerender} {
     if {$sharedRef ne ""} {
         set sharedFields [dict create scale [string tolower $ui(axisEdit,x_scale)] \
             major_step [string trim $ui(axisEdit,x_step)] minor_grid [string tolower $ui(axisEdit,x_minor_grid)]]
+        if {[catch {
+            set sharedFields [dict merge $sharedFields [axisTickDraftFields $w]]
+            ::GX::PlotDatasetAPIv2::_sharedXAxisFieldsApply [::GX::PlotDatasetAPIv2::loadSpec $sharedRef 1] $sharedFields
+        } message]} {tk_messageBox -parent $w -icon error -message $message;return}
         if {[dict get $sharedFields scale] ni {linear log} ||
             [dict get $sharedFields minor_grid] ni {off auto} ||
             ([dict get $sharedFields major_step] ne "" &&

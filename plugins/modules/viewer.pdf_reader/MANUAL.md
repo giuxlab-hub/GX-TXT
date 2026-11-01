@@ -146,5 +146,21 @@ Historical failures remain preserved:
   whole-reader layout acceptance. Later genuine unobscured03/04 frames supplied
   that evidence without replacing the original images.
 
+The sealed independent handoff is `PDF_FINAL_INDEPENDENT_REVIEW_03.md`,
+SHA256 `f5eefa7bd1db1ec2f06cc81b66847df779aab73eb38a4601c7e8d489cd64104a`.
+Its326-file `PDF_FINAL_EVIDENCE_MANIFEST_03.json` has SHA256
+`3ca6e2377e13d71c6a385c65f4280ad81cd6ba5790f98820431c0f300002d96a`.
+These external acceptance artifacts retain exact evidence/source identities;
+they are not additional installed manual images or executable examples.
 
-Runtime limitations and verified scientific source identities are described in the public sections above. Local development acceptance evidence is not part of the distributable user manual.
+The integrated C++ debugger was available and encouraged but **NOT USED**:
+no author-code defect required debugging. No new header, library, compiler
+option, dependency or CPP_DEBUGGER_BUG was requested. Viewing historical PDFs
+containing Print graphs adds no new scientific plotting path and declares no
+deprecated Plot v3 operation.
+
+MAIN retains final framework activation, installed-release checks, whole-catalog
+theme/DPI integration, final documentation-package attachment if required, and
+source/checksum/archive/restore/delivery gates. This scoped PDF handoff does not
+claim completion of the five-Viewer family, the integrated15-workstream task or
+a final release.

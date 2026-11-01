@@ -2,12 +2,12 @@
 
 - Delegate the retained estimator to public Numeric and interpret once through CORE.
 - Preserve scientific Dataset/Variable identities, add captured metadata and validated reports.
--
+- Targeted module acceptance is recorded separately; packaging follows frozen acceptance.
 
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Changelog — analysis.fft_spectrum
 
-## 2.2.0
+## 2.2.0 — 2026-09-26
 
 - Use the public `NUMERIC_API_v1` binding for FFT, window, detrend and median primitives. Preserve spectrum-specific scaling and selection rules.
 

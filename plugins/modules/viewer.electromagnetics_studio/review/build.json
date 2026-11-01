@@ -4,11 +4,11 @@
   "binary_sha256": "cdcccffc89b34cb9b6113e62d0e4fb8fa7e7ac4531331da3cb49945c55924cb4",
   "build_dependencies": {
     "files": {
-      "[PRIVATE_SOURCE_PATH_REDACTED_e3fa0230e757]": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
-      "[PRIVATE_SOURCE_PATH_REDACTED_71269bd1a8b4]": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
-      "[PRIVATE_SOURCE_PATH_REDACTED_25a65f6867b8]": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
-      "[PRIVATE_SOURCE_PATH_REDACTED_30286cd64722]": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
-      "[PRIVATE_SOURCE_PATH_REDACTED_17adf677e1a5]": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
+      "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/policy_v1.json": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+      "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+      "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+      "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/toolchain/clang-19": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+      "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/toolchain/manifest.json": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
     },
     "flags": [
       "--no-default-config",
@@ -111,8 +111,8 @@
   "compiler_version": "19.1.7",
   "debug_symbols": false,
   "header_dependencies": {
-    "[PRIVATE_SOURCE_PATH_REDACTED_71269bd1a8b4]": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
-    "[PRIVATE_SOURCE_PATH_REDACTED_25a65f6867b8]": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
+    "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+    "/home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_gxtxt_next/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
   },
   "link_policy": "fixed SDK adapter; reviewed system C/C++ runtime, math and pthread; no undefined symbols; extra libraries/options require review",
   "log": "\n\n",

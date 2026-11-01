@@ -261,7 +261,9 @@ proc ::GX::MathematicsExplorer::_uiSave {w} {
     variable ui
     if {[catch {
         set state [_uiReadState $w]
-        set ui($w,doc_id) [saveDocument $state $ui($w,doc_id) $ui($w,session_token)]
+        set receipt [saveWorkspace $state $ui($w,doc_receipt) $ui($w,session_token) $ui($w,workspace_name)]
+        set ui($w,doc_id) [dict get $receipt id]
+        set ui($w,doc_receipt) $receipt
         set ui($w,saved_state) $state
         _status $w "Saved Session document: $ui($w,doc_id)"
     } message]} {_notify $w $message; return 0}
@@ -271,12 +273,14 @@ proc ::GX::MathematicsExplorer::_uiNew {w} {
     variable ui
     if {![_uiConfirmDiscard $w]} return
     set ui($w,doc_id) ""
+    set ui($w,doc_receipt) {};set ui($w,workspace_name) {}
     _uiSetState $w [initialState]
     set ui($w,saved_state) [_uiReadState $w]
     _uiSchedule $w
 }
 proc ::GX::MathematicsExplorer::_uiConfirmDiscard {w} {
     variable ui
+    if {[dict exists $::GX::SessionWorkspace::adapters $w]} {return [::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $w] continuing]}
     if {[catch {set now [_uiReadState $w]}]} {set now changed}
     if {$now eq $ui($w,saved_state)} {return 1}
     set decision [tk_messageBox -parent $w -title {Unsaved mathematics work} \
@@ -316,11 +320,12 @@ proc ::GX::MathematicsExplorer::_uiOpenSelection {w d} {
     if {$index eq ""} return
     if {![_uiConfirmDiscard $w]} return
     set id [lindex $ui($w,document_ids) $index]
-    if {[catch {set state [readDocument $id $ui($w,session_token)]} message]} {
+    if {[catch {set state [readDocument $id $ui($w,session_token) receipt]} message]} {
         _notify $w $message; return
     }
     _uiSetState $w $state
     set ui($w,doc_id) $id
+    set ui($w,doc_receipt) $receipt;set ui($w,workspace_name) [dict get $receipt name]
     set ui($w,saved_state) $state
     destroy $d
     _uiSchedule $w
@@ -362,6 +367,10 @@ proc ::GX::MathematicsExplorer::_uiClose {w} {
     variable ui
     if {![winfo exists $w]} return
     if {![_uiConfirmDiscard $w]} return
+    _uiDispose $w
+}
+proc ::GX::MathematicsExplorer::_uiDispose {w} {
+    variable ui
     if {[info exists ui($w,pending)] && $ui($w,pending) ne ""} {catch {after cancel $ui($w,pending)}}
     if {[info exists ui($w,photo)] && $ui($w,photo) ne ""} {catch {image delete $ui($w,photo)}}
     catch {::GX::PlotDatasetAPIv4::widgetDestroy $w.right.plot.native}
@@ -381,6 +390,17 @@ proc ::GX::MathematicsExplorer::open {{context {}}} {
     package require Tk
     set token [sessionToken]
     set w .gx_mathematics_explorer
+    if {[dict exists $context workspace_id]} {
+        set requested [dict get $context workspace_id]
+        if {$requested ne {new}} {dict set context document_id $requested}
+        if {[winfo exists $w] && ($requested eq {new} || $ui($w,doc_id) ne $requested)} {
+            if {![_uiConfirmDiscard $w]} {return $w}
+            _uiDispose $w
+        }
+    } elseif {[dict exists $context document_id] && [winfo exists $w] && $ui($w,doc_id) ne [dict get $context document_id]} {
+        if {![_uiConfirmDiscard $w]} {return $w}
+        _uiDispose $w
+    }
     if {[winfo exists $w]} {
         if {$ui($w,session_token) ne $token} {error "Existing Mathematics Explorer is bound to another Session. Close it first."}
         raise $w; focus $w; return $w
@@ -391,6 +411,7 @@ proc ::GX::MathematicsExplorer::open {{context {}}} {
     wm minsize $w 1000 620
     set ui($w,session_token) $token
     set ui($w,doc_id) ""; set ui($w,photo) ""; set ui($w,pending) ""
+    set ui($w,doc_receipt) {};set ui($w,workspace_name) [::GX::datasetPublicationV2DictDefault $context workspace_name {}]
     set ui($w,saved_state) [initialState]
     set ui($w,status) {Choose a function and parameters, then Plot.}
     set ui($w,integral) {Integral not calculated}
@@ -505,16 +526,38 @@ proc ::GX::MathematicsExplorer::open {{context {}}} {
     set ui($w,saved_state) [_uiReadState $w]
     if {[dict exists $context document_id]} {
         set id [dict get $context document_id]
-        if {[catch {set restored [readDocument $id $token]} reason]} {
+        if {[catch {set restored [readDocument $id $token receipt]} reason]} {
             destroy $w
             error "Failed to restore the requested Mathematics Document: $reason"
         }
         _uiSetState $w $restored
         set ui($w,doc_id) $id
+        set ui($w,doc_receipt) $receipt;set ui($w,workspace_name) [dict get $receipt name]
         set ui($w,saved_state) $restored
     }
+    ttk::menubutton $w.top.workspace -text Workspace -menu $w.top.workspace.menu
+    menu $w.top.workspace.menu -tearoff 0
+    pack $w.top.workspace -side left -padx 3
+    ::GX::sessionWorkspaceViewerMenu $w.top.workspace.menu mathematics_explorer [_workspaceCallbacks $w] $w
+    ::GX::sessionWorkspaceViewerTitle $w {Mathematics Explorer} [list set ::GX::MathematicsExplorer::ui($w,doc_id)]
     _uiSchedule $w
     return $w
+}
+proc ::GX::MathematicsExplorer::_workspaceDirty {w} {
+    variable ui
+    if {[catch {set state [_uiReadState $w]}]} {return 1}
+    return [expr {$state ne $ui($w,saved_state)}]
+}
+proc ::GX::MathematicsExplorer::_workspaceSave {w} {if {![_uiSave $w]} {error {Mathematics Workspace was not saved}}}
+proc ::GX::MathematicsExplorer::_workspacePrepare {w action} {variable ui;if {$ui($w,session_token) ne [sessionToken]} {error {Session changed; reopen Mathematics Explorer}}}
+proc ::GX::MathematicsExplorer::_workspaceMetadataAdvanced {w before after} {
+    variable ui;set held $ui($w,doc_receipt)
+    if {$held eq {}} return
+    foreach field {id generation revision} {if {[dict get $held $field] ne [dict get $before $field]} return}
+    set ui($w,doc_receipt) $after;set ui($w,workspace_name) [dict get $after name]
+}
+proc ::GX::MathematicsExplorer::_workspaceCallbacks {w} {
+    return [dict create current [list set ::GX::MathematicsExplorer::ui($w,doc_id)] save [list ::GX::MathematicsExplorer::_workspaceSave $w] close [list ::GX::MathematicsExplorer::_uiClose $w] discard [list ::GX::MathematicsExplorer::_uiDispose $w] open ::GX::MathematicsExplorer::open dirty [list ::GX::MathematicsExplorer::_workspaceDirty $w] prepare [list ::GX::MathematicsExplorer::_workspacePrepare $w] metadata_advanced [list ::GX::MathematicsExplorer::_workspaceMetadataAdvanced $w]]
 }
 proc ::GX::MathematicsExplorer::viewerDispatch {action scene} {
     if {$action ni {open rerender}} {error "Unsupported viewer dispatch '$action'."}

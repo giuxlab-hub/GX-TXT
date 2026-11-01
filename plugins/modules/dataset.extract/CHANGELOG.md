@@ -8,7 +8,7 @@ Common Dataset Transform/selection authority with complete multi-source tuples/l
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-## 1.2.0
+## 1.2.0 — 2026-09-19
 
 - Raised the minimum framework version to GX-TXT 0.9.7.19.
 - Adopted the actual Dataset Publication API v1 schema-inheritance interface implemented by GX-TXT 0.9.7.19: `schema_source_dataset_id` plus ordered `schema_source_variable_ids`.
@@ -23,7 +23,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Kept one canonical source per run, Dataset Selection API v1 semantics, source read-only behavior, and all six row/variable workflows unchanged.
 - No interpolation, resampling, alignment, sorting, join, averaging, consensus operation, unit conversion, or synthetic-point generation was added.
 
-## 1.1.0
+## 1.1.0 — 2026-09-18
 
 - Kept the 1.0.0 scientific architecture unchanged: canonical source -> row filter -> column projection -> new canonical derived dataset.
 - Made `row_mode=all` fully independent of Dataset Selection state; no selection is parsed or required for this mode.
@@ -39,7 +39,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - Documented the Standard Module API conditional-field presentation gap without adding host-specific GUI code.
 - No interpolation, resampling, alignment, sorting, join, consensus operation, unit conversion, or synthetic-point generation was added.
 
-## 1.0.0
+## 1.0.0 — 2026-09-18
 
 - Initial release.
 - Added materialization of Dataset Selection API v1 `x_range` and `rectangle` resources.

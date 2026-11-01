@@ -1,5 +1,12 @@
 # Octave Script Bridge API v1
 
+`gxtxt_parameter_declare(name, type, 'option', literalValue, ...)` is a
+runtime-safe public declaration. Registry saving statically discovers native
+literal arguments from every admitted Project source. Read the effective value
+from `gxtxt_context().parameters`; the declaration does not assign a variable or
+mutate the Registry at execution. See [declaration examples and constraints](SCRIPT_PARAMETER_DECLARATIONS_v1.md)
+and [native Octave Project/helper execution](SCRIPT_PROJECTS_v1.md).
+
 SPDX-License-Identifier: GPL-3.0-or-later
 
 `OCTAVE_SCRIPT_BRIDGE_API_v1` lets a user-authored GNU Octave `.m` script

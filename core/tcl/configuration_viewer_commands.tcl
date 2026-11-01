@@ -319,8 +319,24 @@ proc ::GX::viewerCommandMenuTrack {window menu index id} {
     dict set ::GX::ViewerCommands::windows $window menus [list $menu $index] $id
     viewerCommandMenusRefresh $window
 }
+# Bounded synchronous composition only: defer repeated presentation refresh,
+# never command admission or scientific mutation validation.
+proc ::GX::viewerCommandMenuBatchBegin {window} {
+    if {![dict exists $::GX::ViewerCommands::windows $window]} {error {Command owner is unavailable}}
+    set depth [datasetPublicationV2DictDefault [dict get $::GX::ViewerCommands::windows $window] menu_batch 0]
+    if {$depth>=16} {error {Command menu composition nesting exceeds16}}
+    dict set ::GX::ViewerCommands::windows $window menu_batch [expr {$depth+1}]
+}
+proc ::GX::viewerCommandMenuBatchEnd {window} {
+    if {![dict exists $::GX::ViewerCommands::windows $window]} return
+    set depth [datasetPublicationV2DictDefault [dict get $::GX::ViewerCommands::windows $window] menu_batch 0]
+    if {$depth<1} {error {Command menu composition was not started}}
+    dict set ::GX::ViewerCommands::windows $window menu_batch [incr depth -1]
+    if {!$depth} {viewerCommandMenusRefresh $window}
+}
 proc ::GX::viewerCommandMenusRefresh {window} {
     if {![dict exists $::GX::ViewerCommands::windows $window]} return
+    if {[datasetPublicationV2DictDefault [dict get $::GX::ViewerCommands::windows $window] menu_batch 0]} return
     # History and field changes already refresh this owner. Update mounted
     # toolbar states too, without triggering another layout/menu refresh.
     viewerCommandToolbarStatesRefresh $window

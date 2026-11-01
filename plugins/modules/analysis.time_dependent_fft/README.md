@@ -4,14 +4,9 @@ External GX-TXT analysis plugin for dataset-native time-dependent FFT processing
 
 Minimum framework: **GX-TXT 0.9.7.97** (public dependency metadata).
 
-## Numerical and graphics architecture
+## Migration status
 
-The FFT kernel uses public `NUMERIC_API_v1` operations. The current static
-result-graph implementation uses its own compact scientific render cache and
-is not yet fully integrated with the shared `plot.dataset` renderer. This
-limitation does not change the authoritative time-frequency Dataset or the
-module's documented cache-reuse behavior. See `MANUAL.md` for supported
-calculation, presentation and export operations.
+This is a partial numerical-stage checkpoint. The FFT kernel uses public NUMERIC_API operations. The existing compact-cache renderer remains legacy code awaiting public plot.dataset migration; this module is not fully compliant yet. See `MIGRATION_REMAINING.md`. Real Octave and large-session validation remain pending.
 
 ## Main behavior
 

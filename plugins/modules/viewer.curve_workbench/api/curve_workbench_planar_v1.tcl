@@ -3,6 +3,7 @@
 proc ::GX::CurveWorkbench::_planarIntake {w document mode} {
     variable st
     if {![_coordinateWorkspaceEmpty $w]} {error {Physical planar intake requires a genuinely empty workspace}}
+    set before [_snapshotIds $w {}]
     set begin [::GX::native3DPlanarEditBegin $document $mode]
     set payload [dict get $begin payload]
     set units [lrepeat 2 [dict get $payload working_unit]]
@@ -23,7 +24,10 @@ proc ::GX::CurveWorkbench::_planarIntake {w document mode} {
             _addRecord $w $record $native
         }
     } finally {set st($w,importTransaction) 0}
-    _save $w
+    set ids [dict keys $st($w,curves)]
+    foreach id $ids {dict set before $id {}}
+    _history $w $before $ids
+    _flushWorkspace $w
     set ref [dict get $payload reference];set public [::GX::native2DGeometryOpen $st($w,document)]
     try {
         set image [::GX::native2DGeometryCall $public image_attach [dict create resource [dict get $ref resource] working_unit $st($w,sketchUnit) state [dict create scale [dict get $ref scale] translation [dict get $ref translation] opacity [dict get $payload presentation reference_opacity]]]]

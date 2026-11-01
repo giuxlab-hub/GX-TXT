@@ -131,7 +131,7 @@ proc ::GX::_viewerGuiTeXOpen {window form document} {
     _viewerGuiTeXRemember $window $form $item
     _viewerGuiTeXRefresh $window $form
     viewerGuiDesignValueSet $window [dict get [_viewerGuiTeXForm $window $form] tex_projects] $document
-    if {$associationChanged && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {Open article association}}
+    if {$associationChanged && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window {Open article association}}
     if {[dict get $r build_state] ne {idle}} {_viewerGuiTeXAwait $window $form}
     return [dict create status opened document_id $document source_revision [dict get $item payload source_revision]]
 }

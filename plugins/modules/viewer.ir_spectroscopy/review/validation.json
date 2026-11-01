@@ -1,0 +1,192 @@
+{
+  "admitted_headers": [
+    "algorithm",
+    "array",
+    "assert.h",
+    "atomic",
+    "cassert",
+    "cerrno",
+    "chrono",
+    "condition_variable",
+    "cstddef",
+    "cstdint",
+    "cstdio",
+    "cstdlib",
+    "cstring",
+    "deque",
+    "errno.h",
+    "exception",
+    "functional",
+    "limits",
+    "list",
+    "map",
+    "memory",
+    "mutex",
+    "new",
+    "pthread.h",
+    "queue",
+    "set",
+    "stack",
+    "stddef.h",
+    "stdexcept",
+    "stdint.h",
+    "stdio.h",
+    "stdlib.h",
+    "string",
+    "string.h",
+    "string_view",
+    "sys/types.h",
+    "sys/wait.h",
+    "thread",
+    "tuple",
+    "type_traits",
+    "typeinfo",
+    "unistd.h",
+    "unordered_map",
+    "unordered_set",
+    "utility",
+    "vector"
+  ],
+  "architecture_review": "Language admission is not approval of alternate canonical Dataset/Job/Workspace/Plot ownership; review author data flows separately.",
+  "author_ast_kinds": [
+    "BinaryOperator",
+    "CStyleCastExpr",
+    "CXXBindTemporaryExpr",
+    "CXXCatchStmt",
+    "CXXConstructExpr",
+    "CXXDefaultArgExpr",
+    "CXXDestructorDecl",
+    "CXXForRangeStmt",
+    "CXXFunctionalCastExpr",
+    "CXXMemberCallExpr",
+    "CXXOperatorCallExpr",
+    "CXXRecordDecl",
+    "CXXTemporaryObjectExpr",
+    "CXXThrowExpr",
+    "CXXTryStmt",
+    "CallExpr",
+    "CompoundStmt",
+    "DeclRefExpr",
+    "DeclStmt",
+    "ElaboratedType",
+    "EnumType",
+    "ExprWithCleanups",
+    "FieldDecl",
+    "FunctionDecl",
+    "IfStmt",
+    "ImplicitCastExpr",
+    "InitListExpr",
+    "IntegerLiteral",
+    "MaterializeTemporaryExpr",
+    "MemberExpr",
+    "NamespaceDecl",
+    "ParmVarDecl",
+    "ReturnStmt",
+    "StringLiteral",
+    "TypeAliasDecl",
+    "UnaryOperator",
+    "UsingDirectiveDecl",
+    "VarDecl"
+  ],
+  "canonical_lifecycle_scope": "declared canonical Viewer state through existing guarded Workspace/History owners",
+  "code_generation_invoked": false,
+  "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+  "compiler_version": "19.1.7",
+  "design_sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+  "diagnostics": [],
+  "functions": [
+    "on_event"
+  ],
+  "language_support": {
+    "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation",
+    "features": [
+      "functions",
+      "pointers/references",
+      "classes/structs/enums/unions",
+      "inheritance/virtual dispatch/RTTI",
+      "overloads/templates",
+      "recursion",
+      "callbacks/lambdas",
+      "malloc/free/new/delete/RAII",
+      "containers/algorithms",
+      "preprocessing/macros/assert",
+      "exceptions",
+      "threads/synchronization",
+      "fork/wait"
+    ],
+    "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
+    "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
+    "standard": "C++17 including C facilities"
+  },
+  "native_client_grants": {
+    "COMPARISON_PLOT_API_v1": [
+      "comparison_command"
+    ],
+    "MODULE_TARGETED_ANALYSIS_API_v1": [
+      "analysis_command"
+    ],
+    "NUMERIC_API_v1": [
+      "comparison_curves"
+    ],
+    "PLOT_DATASET_API_v4": [
+      "widgetCreate"
+    ],
+    "PREVIEW_COMPONENT_GUI_API_v1": [],
+    "SCIENTIFIC_LIBRARY_MANAGER_API_v1": [
+      "getLibraryCapabilities",
+      "getLibraryEntryInfo",
+      "getLibraryInfo",
+      "libraryCatalogPage",
+      "libraryEntriesPage",
+      "readLibraryEntry"
+    ],
+    "SCRIPT_LIBRARY_API_v1": []
+  },
+  "native_client_module": "viewer.ir_spectroscopy",
+  "policy_sha256": "9be634bd797e7d8d04f051129d0ff084cc191fc2215a0958806ebeb3929f055a",
+  "profile": "cpp_view_v1",
+  "project_digest_sha256": "2dbaa662f7b87eef10b9a0fd636033a2d8ff65ccb2fb7fd65dd137688f08d9a3",
+  "project_profile": "scientific_view_v1",
+  "project_sha256": "1cbb442cb0ec3b9686f4ecd57b61d42e3bc588444f5fad7ffcefbf0af94e3bf5",
+  "schema": "gxtxt.cpp_validation.v1",
+  "sdk_calls": [
+    "analysis_command",
+    "analysis_result",
+    "comparison_command",
+    "comparison_result",
+    "data",
+    "text"
+  ],
+  "sdk_sha256": "cadcfcaf2f4e36e5159f782d248478dc4f49101c793564cabeffe30b0b68c816",
+  "source_manifest": [
+    {
+      "bytes": 470,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7"
+    },
+    {
+      "bytes": 266,
+      "path": "include/ir_viewer_client.hpp",
+      "role": "header",
+      "sha256": "a77b6a89f3f21baefe9540928f1d1b451bdad8a4f33dadf1819179fe1f64009b"
+    },
+    {
+      "bytes": 4553,
+      "path": "src/ir_viewer_client.cpp",
+      "role": "translation_unit",
+      "sha256": "cb3f8abd3243ae63e917f4f4d0e756de9f0b81cb0939baf507aacededb787e50"
+    }
+  ],
+  "source_sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7",
+  "source_tree_sha256": "5006af1a70d2b0c453800e5186edb425be5d8434d7168e351cde7f45a97426f2",
+  "stages": [
+    "clang_raw_lexer",
+    "clang_resolved_ast",
+    "clang_raw_lexer",
+    "clang_resolved_ast"
+  ],
+  "status": "PASS",
+  "workspace_callback_contract_sha256": "6659657362facb977637f1024c0877837db489634258ea346aca7931c21f2d69",
+  "workspace_hooks": []
+}

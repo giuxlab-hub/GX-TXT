@@ -7,7 +7,7 @@ REGISTRATION = {
     'api_id': 'SCRIPT_EXECUTION_API_v1', 'api_version': 1,
     'provider_kind': 'core', 'provider_id': 'script_execution',
     'documentation_ref': 'docs/api/SCRIPT_EXECUTION_API_v1.md',
-    'capabilities': ['registered_callable_declarations', 'supervised_callable_identity', 'owned_job_dependency_wait', 'supervised_job_submission'],
+    'capabilities': ['registered_callable_declarations', 'supervised_callable_identity', 'owned_job_dependency_wait', 'supervised_job_submission', 'provided_function_jobs_v1', 'provided_bridge_control_arrays_v1'],
     'operations': {name: {'name': name, 'summary': 'Registered Script ' + name,
         'arguments': [{'name': arg, 'kind': {'parameters': 'dictionary', 'timeout_seconds': 'integer'}.get(arg, 'string'), 'required': True} for arg in args],
         'argument_convention': ', '.join(args),

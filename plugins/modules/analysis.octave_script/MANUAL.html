@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>GX-TXT Octave Script Manual</title>
+  <title>analysis.octave_script</title>
   <style>
     html {
       color: #1a1a1a;
@@ -234,147 +234,452 @@
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">GX-TXT Octave Script Manual</h1>
+<h1 class="title">analysis.octave_script</h1>
 </header>
 <h1 id="gx-txt-octave-script-manual">GX-TXT Octave Script — Manual</h1>
-<p>SPDX-License-Identifier: GPL-3.0-or-later</p>
-<p><strong>Module:</strong> <code>analysis.octave_script</code>
-1.3.0<br />
-<strong>Editor API:</strong>
-<code>OCTAVE_SCRIPT_EDITOR_API_v1</code><br />
-<strong>Execution:</strong> CORE Script Registry and
-<code>OCTAVE_SCRIPT_BRIDGE_API_v1</code></p>
-<h2 id="purpose">Purpose</h2>
-<p>The Octave Script Workspace edits GNU Octave <code>.m</code> programs
-that run against registered GX-TXT public APIs. Script Registry is the
-authoritative executable identity. The Workspace, Script Library,
-Session Script Explorer and normal Octave Analysis selector see the same
-registered source.</p>
-<p>The bridge is not a sandbox. Scripts run as researcher-authored code
-with the current user’s local permissions. Use trusted source and review
-its required APIs and input parameters before execution.</p>
-<h2 id="create-and-run-a-session-script">Create and run a Session
-script</h2>
-<ol type="1">
-<li>Open a Session and enable the <strong>Octave Script</strong>
-module.</li>
-<li>Open <strong>Viewers → Octave Script Workspace</strong> and choose
-<strong>New</strong>.</li>
-<li>Choose <strong>Session</strong> scope, enter a stable Script ID and
-name, write the source, then choose <strong>Save</strong>.</li>
-<li>The saved script is immediately listed as
-<code>session:&lt;script_id&gt;</code> in Script Library, Session Script
-Explorer and the normal <code>analysis.octave_script</code>
-registered-script selector.</li>
-<li>In Analysis choose <code>source_mode=registered_script</code>,
-select the Session script, set any input aliases and parameters, then
-run.</li>
-<li>Save and reopen the Session to reuse the same identity and source. A
-run uses an immutable verified copy and records its source SHA-256 in
-execution provenance.</li>
-</ol>
-<p>Choose <strong>User</strong> scope for a reusable
-<code>user:&lt;script_id&gt;</code> Library script. A user script is
-separate from Session identity. Assign it to a Session through Script
-Library when it should become a Session input. Editing a user script
-never silently rewrites a Session copy.</p>
-<h2 id="edit-copy-and-remove">Edit, copy and remove</h2>
-<p>Selecting a registered script in the Workspace loads its current
-name, description and code. <strong>Save</strong> updates that exact
-registered identity and its ordinary revision and SHA-256. Metadata such
-as language, semantic version, required APIs and typed parameters
-remains under Script Registry authority. Concurrent edits are checked
-against the previously loaded SHA-256; reload before retrying a stale
-save.</p>
-<p><strong>Save copy</strong> creates a new Script ID.
-<strong>Delete</strong> removes the selected registered record after
-confirmation. Script Library and Session Script Explorer reflect normal
-registry changes. Scope and stable ID of an existing record cannot be
-changed in place; create a copy or assign a user script to the
-Session.</p>
-<h2 id="legacy-workspace-documents">Legacy Workspace documents</h2>
-<p>Documents saved by older versions through
-<code>INTERACTIVE_DOCUMENT_API_v1</code> remain visible in the Workspace
-with a <code>legacy:</code> reference. They are readable without
-changing their Session identity. Select one and choose <strong>Register
-as Session Script</strong> or <strong>Register as User Script</strong>
-to create a new executable registry record from its source. The legacy
-document remains until explicitly deleted. New Workspace saves use
-Script Registry and do not create a legacy Interactive Document.</p>
-<h2 id="import-and-export">Import and export</h2>
-<p><strong>Import .m</strong> loads UTF-8 source into the editor. Choose
-a scope and Script ID, then Save to register it. <strong>Export
-.m</strong> writes the current source as an external Octave file.
-Import/export is useful for interchange and is not required between
-Workspace and Analysis. The Analysis <code>external_file</code> mode can
-run a standalone <code>.m</code> when intentionally selected.</p>
-<h2 id="workspace-editing-controls">Workspace editing controls</h2>
-<p>The editor provides line numbers, syntax coloring, search
-next/previous, go-to-line, undo/redo, UTF-8 source, a bridge template
-and snippets. Its list shows registered Session and User scripts plus
-readable legacy documents. The Workspace requires an open Session for
-Session scope; user scope uses the user’s Script Registry library.</p>
-<h2 id="script-source-and-public-apis">Script source and public
-APIs</h2>
-<p>A script can call <code>gxtxt_context()</code> to inspect Session
-context and aliases. Use <code>gxtxt_api_list()</code>,
-<code>gxtxt_api_describe()</code>, <code>gxtxt_api_require()</code> and
-<code>gxtxt_api_call()</code> for public API discovery and invocation.
-The editor and runner contain no private Dataset, Plot Dataset,
-numerical or publication adapter. API arguments and results use the
-documented Script Bridge typed-node contract.</p>
-<p>Example:</p>
+<h2 id="script-projects-and-independent-source-tabs">Script Projects and
+independent source tabs</h2>
+<p>In <strong>Script Library</strong>, choose the intended
+scope/language, <strong>New Project</strong>, enter an ID/name and
+<strong>Save</strong>. <strong>Open Workspace</strong> opens its real
+entrypoint. The project file tree navigates the project. The
+<strong>Project</strong> menu opens/adds files, renames or moves paths,
+removes non-entrypoint files and selects the main entrypoint. Source
+subfolders are supported. Python projects import admitted
+helpers/packages; Octave helper functions use their actual matching
+<code>.m</code> filenames.</p>
+<p>Each file has its own source buffer, dirty star, Undo/Redo, caret,
+scroll and Find. The primary menu is <strong>File / Edit / Project /
+View / Run / Help</strong>. Use the <strong>Project</strong> menu for
+project file operations; the file tree navigates sources. F10 focuses
+the primary menu row; Left/Right choose a menu and Space/Down open it.
+Alt+F/E/P/V/R/H open File/Edit/Project/View/Run/Help directly. Escape
+returns to the source. The same arrows navigate adjacent open primary
+menus. <strong>File → Save</strong> saves the active Script or its
+complete Project transaction; <strong>File → Save All</strong>
+(Ctrl+Shift+S) saves every writable dirty Script/Project. Separate
+Scripts remain independent records, and a stale source or metadata
+revision refuses saving while preserving unsaved buffers.</p>
+<p>Click the <strong>×</strong> at the right of a source tab to close
+that exact file, including an inactive tab. Dirty sources offer Save /
+Don’t Save / Cancel. Cancel preserves the original active file and
+focus. <strong>File → Close tab</strong> (Ctrl+W) closes the active tab;
+<strong>File → Close</strong> closes the Workspace. Closing the final
+source tab creates a fresh unsaved draft. No extra toolbar or source
+selector is needed.</p>
+<p>Ctrl+Tab/Ctrl+Shift+Tab cycle all open files. When tabs exceed the
+available width, the tab strip’s <strong>…</strong> menu lists their
+complete qualified identities; Alt+Down on the notebook opens that same
+list. Selecting a hidden file brings its tab into view. Duplicate paths
+in separate Scripts show their distinct references. The project file
+tree remains available. On small screens or at large fonts, use
+<strong>View → Focus source / restore panes</strong> or hide optional
+side panes and script properties; these commands preserve their
+contents.</p>
+<p><strong>Assign to Session</strong> freezes every admitted source.
+<strong>Export</strong> writes one integrity-checked Project ZIP,
+including source and saved parameter/API metadata; <strong>Import
+Project ZIP</strong> creates a new reviewed identity. Run and Debug use
+the existing Runner/Job supervisor and freeze the entire tree again.
+Helper-file breakpoints and native stack navigation use physical
+file/line and the frozen whole-project SHA. Job details <strong>Open
+source files</strong> opens verified historical sources in read-only
+tabs, separate from today’s editable Registry record.</p>
+<figure>
+<img src="images/script-project-tabs.png"
+alt="Native P029 private-fixture Project tree and closable file tabs in Focus source mode; optional outer panes remain available through View." />
+<figcaption aria-hidden="true">Native P029 private-fixture Project tree
+and closable file tabs in Focus source mode; optional outer panes remain
+available through View.</figcaption>
+</figure>
+<h2 id="source-declarations-and-invocation-parameters">Source
+declarations and invocation parameters</h2>
+<p>Declare typed parameters directly in source using literal
+arguments:</p>
 <div class="sourceCode" id="cb1"><pre
-class="sourceCode octave"><code class="sourceCode octave"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ctx <span class="op">=</span> gxtxt_context()<span class="op">;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>api <span class="op">=</span> gxtxt_api_require(<span class="st">&#39;NUMERIC_API_v1@1:math.numeric&#39;</span>)<span class="op">;</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>value <span class="op">=</span> gxtxt_api_call(<span class="st">&#39;NUMERIC_API_v1&#39;</span><span class="op">,</span> <span class="st">&#39;array_unary.abs&#39;</span><span class="op">,</span> <span class="op">...</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  {<span class="fu">struct</span>(<span class="st">&#39;kind&#39;</span><span class="op">,</span><span class="st">&#39;array&#39;</span><span class="op">,</span><span class="st">&#39;shape&#39;</span><span class="op">,</span>[<span class="fl">1</span> <span class="fl">1</span>]<span class="op">,</span><span class="st">&#39;real&#39;</span><span class="op">,-</span><span class="fl">2</span>)})<span class="op">;</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">disp</span>(value)<span class="op">;</span></span></code></pre></div>
-<p>Required API preflight combines the registered script’s declared
-required APIs with the optional Analysis configuration list. Missing or
-incompatible APIs fail before the script runs. Script Library can edit
-semantic version, description, required APIs and typed parameter
-declarations for the same Script Registry identity.</p>
-<h2 id="analysis-configuration">Analysis configuration</h2>
-<ul>
-<li><strong>Script source mode:</strong> <code>registered_script</code>
-for a Session record, or <code>external_file</code> for a standalone
-<code>.m</code>.</li>
-<li><strong>Session registered script:</strong>
-<code>session:&lt;script_id&gt;</code>; the selector lists current
-Session Octave scripts.</li>
-<li><strong>Working directory:</strong> optional explicit execution
-directory. Leave empty to use the Session directory.</li>
-<li><strong>Include script directory:</strong> opt in when helper
-<code>.m</code> files beside an external script are needed.</li>
-<li><strong>Arguments:</strong> module-specific text passed to the
-script execution context.</li>
-<li><strong>Required APIs:</strong> optional additional API
-preflight.</li>
-</ul>
-<p>The runner writes <code>executed_script.m</code> and
-<code>octave_script_run_report.txt</code> for each Analysis run. The
-snapshot and report identify the exact source used. Script Library Run
-and Session Script Explorer Run use CORE Script Execution with the same
-registry identity rules.</p>
-<h2 id="troubleshooting">Troubleshooting</h2>
-<p>If a new Workspace script is absent from Analysis, check that its
-scope is <strong>Session</strong>, its language is Octave and the module
-is enabled; the selector intentionally excludes user-only scripts. If
-Save reports a changed source SHA-256, reopen the record and reapply the
-edit. A legacy document must be explicitly registered before it is an
-Analysis input. If public API preflight fails, inspect required API IDs
-and versions in Script Library.</p>
-<h2 id="references">References</h2>
-<ul>
-<li><code>OCTAVE_SCRIPT_EDITOR_API_v1.md</code> for the Workspace
-activation and persistence contract.</li>
-<li>CORE <code>SCRIPT_REGISTRY_API_v1</code>,
-<code>SCRIPT_EXECUTION_API_v1</code>,
-<code>OCTAVE_SCRIPT_BRIDGE_API_v1</code> and
-<code>VIEWER_PROVIDER_API_v1</code> documentation.</li>
-<li><code>examples/</code> for executable Bridge examples.</li>
-</ul>
-<section><h2>Combined stabilization API additions (dev-051)</h2><p>Use gxtxt_api_call for graph presentation (equal aspect and transparent background), annotations, Graph Notes, Graph Metadata, explicit Dataset publish_series / completed-file publish_auto, and Numerical curve_model_fit/evaluate/project. Runnable Python and Octave examples are in examples/scripts/combined_stabilization.*. Portable Resource ZIP operations are host-only. Namespaced metadata keys are preserved; Octave uses dynamic field access.</p><p>See docs/api/OCTAVE_SCRIPT_BRIDGE_API_v1.md and SCRIPT_BRIDGE_COVERAGE_v1.json for operation contracts.</p></section>
+class="sourceCode octave"><code class="sourceCode octave"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>gxtxt_parameter_declare(<span class="st">&#39;gain&#39;</span><span class="op">,</span> <span class="st">&#39;double&#39;</span><span class="op">,</span> <span class="st">&#39;default&#39;</span><span class="op">,</span> <span class="fl">2.0</span><span class="op">,</span> <span class="op">...</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>                       <span class="st">&#39;min&#39;</span><span class="op">,</span> <span class="fl">0.0</span><span class="op">,</span> <span class="st">&#39;description&#39;</span><span class="op">,</span> <span class="st">&#39;Signal multiplier&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>ctx <span class="op">=</span> gxtxt_context()<span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>gain <span class="op">=</span> ctx.parameters.gain<span class="op">;</span></span></code></pre></div>
+<p>Saving inspects declarations without running imports or scientific
+source, including every admitted project helper. Distinct source and
+editor metadata names combine; conflicts and nonliteral declarations
+refuse saving. Change a source-declared definition in its source. The
+runtime declaration has no side effects and does not assign the
+effective value to a language variable.</p>
+<p>The shared Runner always offers <strong>Add parameter</strong>,
+including an empty schema. Invocation-only rows have typed values,
+<strong>Edit</strong> and <strong>Remove</strong>, and do not change
+saved declarations. Optional <strong>Save parameters as Dataset</strong>
+/ <strong>Load parameters</strong> preserves mixed definitions and exact
+typed values; loaded values remain editable before Run. No declaration
+or Dataset is required merely to add an invocation parameter.
+Source/revision, effective schema, origins and values remain in the
+immutable Job provenance.</p>
+<p>See <a href="../../../docs/api/SCRIPT_PROJECTS_v1.md">Project
+contract</a> and <a
+href="../../../docs/api/SCRIPT_PARAMETER_DECLARATIONS_v1.md">source
+declaration contract</a> for exact path, type, constraint, runtime and
+host API rules.</p>
+<p>SPDX-License-Identifier: GPL-3.0-or-later</p>
+<p>Module: <code>analysis.octave_script</code>. Editor:
+<code>OCTAVE_SCRIPT_EDITOR_API_v1</code>. Execution uses CORE Script
+Registry, Script Execution and
+<code>OCTAVE_SCRIPT_BRIDGE_API_v1</code>.</p>
+<h2 id="source-identity-and-saving">Source identity and saving</h2>
+<p>Open <strong>Viewers → Octave Script Workspace</strong>. The editor
+works without an open Session: New defaults to User scope. A User script
+belongs to Script Library; a Session script belongs to the current
+Session. Assigning a User script to a Session creates a separate source
+identity. Later User edits do not change that Session copy. Script
+Registry owns executable source, revision, metadata and SHA. The
+editor’s name “Workspace” does not create a scientific Session
+Workspace.</p>
+<p>Choose New, a stable Script ID, Name, Scope and Description, then
+edit and Save. Save updates the selected registered identity after a
+held source-SHA check. Save copy creates a new identity. Delete requires
+confirmation and respects active dependencies. Copy ID copies the
+registered reference. Scope/ID of an existing record cannot change in
+place. Use a copy or Library assignment.</p>
+<p>Session scripts appear as <code>session:&lt;script_id&gt;</code> in
+Library, Session Script Explorer and the ordinary Octave Analysis
+selector. User-only scripts do not appear in that Session selector.
+Save/reopen preserves the registered source; a run uses a verified
+immutable snapshot and records its SHA in provenance.</p>
+<p>Obsolete Interactive Document editor Workspaces cannot be read,
+restored, registered, converted or written by this editor. Metadata-only
+Session inspection and explicitly confirmed resource-safe deletion
+remain available in the common Workspace manager. New source is saved
+only through Script Registry.</p>
+<p><strong>Import .m / Ctrl+O</strong> loads UTF-8 source into an
+unregistered editor buffer. Choose scope/ID and Save to register it.
+<strong>Export .m</strong> writes the current buffer through the save
+chooser, without execution or Registry assignment. Source import/export
+retains BOM/newline information represented by that contract.
+Unsupported encodings or metadata errors require correction. A stale
+buffer can be exported before reopening the actual registered
+identity.</p>
+<p>The Octave metadata panel has Scope, Script ID, Name, Default
+arguments and Description. Version, additional API requirements and
+typed parameter schemas are edited in <strong>Run → Script
+Library</strong>. Reopen the editor identity after a Library metadata
+change. Default arguments is inert single-line UTF-8 text, at most 4096
+bytes without NUL. It is available as
+<code>gxtxt_context().arguments_raw</code>, not interpreter
+<code>argv()</code> or a shell command. Typed named values are in
+<code>ctx.parameters</code>. Literal
+<code>gxtxt_api_require('API_ID')</code> requirements are discovered on
+Save; additional requirements/version constraints belong to Library.</p>
+<h2 id="editing-and-layout">Editing and layout</h2>
+<p>File, Edit, View, Run and Help form the compact menu row. Explorer
+opens registered identities, source is central and Bridge Snippets is at
+the right. Insert places the selected public example at the insertion
+point; it does not execute it. Review source and required APIs before
+running.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Ctrl+N / Ctrl+S</td>
+<td>New buffer / save checked Registry revision.</td>
+</tr>
+<tr class="even">
+<td>Ctrl+A / C / X / V</td>
+<td>Select/copy/cut/paste in the focused editable control.</td>
+</tr>
+<tr class="odd">
+<td>Ctrl+Z / Ctrl+Y</td>
+<td>Local undo/redo in multiline source/Text controls. Entry fields have
+no undo history.</td>
+</tr>
+<tr class="even">
+<td>Ctrl+F / F3 / Shift+F3</td>
+<td>Find / next / previous literal source match. Escape returns to
+source.</td>
+</tr>
+<tr class="odd">
+<td>Ctrl+G</td>
+<td>Go to physical source line, including a folded line.</td>
+</tr>
+<tr class="even">
+<td>F9 / Ctrl+Shift+F9</td>
+<td>Toggle breakpoint / clear all breakpoints.</td>
+</tr>
+<tr class="odd">
+<td>F1</td>
+<td>Open this integrated searchable manual.</td>
+</tr>
+</tbody>
+</table>
+<p>Pasting over selected source is one local undo transaction.
+Copying/selecting read-only values does not mark source dirty or write a
+Registry revision. Line numbers and reference text are read-only.</p>
+<p>View independently controls Explorer, Snippets, Debugger, Call Stack,
+Variables, Debug Output and Breakpoints. Focus source is reversible;
+Reset layout restores standard panes and proportions. Script properties
+collapses other metadata. View → Parameters independently hides/restores
+declarations without changing values, source, dirty state or debugger
+state. Drag splitter sashes to resize. Visibility and proportions are
+user presentation preferences. Font changes apply after restarting
+GX-TXT. Narrow debugger buttons retain icons and tooltips. Tab/Shift+Tab
+moves focus; Space/Return invokes an enabled focused control.</p>
+<figure>
+<img src="images/debugger-paused.png"
+alt="Editor panes and native debugger." />
+<figcaption aria-hidden="true">Editor panes and native
+debugger.</figcaption>
+</figure>
+<h2 id="run-and-analysis">Run and Analysis</h2>
+<p><strong>Run → Open Script Runner</strong> opens review for a clean
+saved identity; it does not submit a Job. With a dirty registered
+buffer, Yes saves first, No reviews the last saved revision while
+keeping edits, and Cancel returns to editing. Unsaved anonymous source
+must be registered first. The Runner identifies the actual scope, ID,
+version and SHA. A changed source is identified and stale saves
+fail.</p>
+<p>Review typed invocation values and saved inert argument text. Each
+<strong>Add input Dataset</strong> row has its own
+<strong>Namespace</strong> and <strong>Dataset ID</strong> selectors, a
+unique semantic alias and optional display label. Namespace changes
+clear only that row; Session Current and other rows stay unchanged.
+Selection captures the Dataset revision; changed or moved inputs require
+explicit reselection. <strong>Remove input</strong> removes only that
+request. Parameter-only scripts need no Dataset.</p>
+<p><strong>Parameter Dataset</strong> accepts a canonical preset ID in
+this Session. <strong>Save parameters as Dataset</strong> creates a new
+typed canonical Dataset; <strong>Load parameters</strong> checks
+Script/schema/source/revision and payload integrity before applying all
+values. Numeric, string, boolean and choice types and stable Variable
+IDs are preserved. Loaded values remain editable. Neither action changes
+Registry metadata or executes a Job. A changed preset or Script requires
+fresh review.</p>
+<p><strong>Output request</strong> declares an optional ID/label and
+deliberate owned replacement. Publication defaults to the script
+producer’s private namespace; input namespaces grant no write rights.
+Only an actual Publication commit creates output. <strong>Validate
+review</strong> checks without execution; <strong>Run Job</strong>
+submits the immutable Script/input/parameter snapshot.
+<strong>Close</strong> dismisses review and does not cancel an admitted
+Job. The actions/status remain visible while the form scrolls;
+Tab/Shift+Tab reaches fields, Ctrl+Return submits and Escape closes
+review. Script Jobs reports actual completion, cancellation and
+committed outputs.</p>
+<p>In ordinary Analysis choose
+<code>source_mode=registered_script</code>, select the Session script,
+input aliases and parameters, then Run. <code>external_file</code>
+intentionally runs a standalone <code>.m</code>. Optional working
+directory defaults to the Session; Include script directory opts into
+neighboring external helpers. Required APIs add preflight constraints.
+Each Analysis run retains <code>executed_script.m</code> and
+<code>octave_script_run_report.txt</code>, identifying its exact
+source.</p>
+<p>Scripts use <code>gxtxt_context()</code>,
+<code>gxtxt_api_list()</code>, <code>gxtxt_api_describe()</code>,
+<code>gxtxt_api_require()</code> and <code>gxtxt_api_call()</code>.
+Arguments/results follow the public Bridge typed-node contract. Native
+scientific Workspaces use <code>NATIVE_WORKSPACE_API_v1</code>, explicit
+node kinds and held generation/revision receipts. Missing required APIs
+fail before execution. Scripts run as trusted researcher code with the
+local user’s permissions.</p>
+<h2 id="native-debugging">Native debugging</h2>
+<p>Debug requires an open Session and clean saved Session source. Open
+View → Debugger or Run → Debug Session script, set a valid breakpoint
+and press Start Debug. Debug runs the immutable registered source/SHA.
+The gutter has independent breakpoint, execution-arrow and fold lanes
+plus physical line numbers. Filled red dots are enabled, hollow dots
+disabled, yellow arrows show the selected paused native frame. Folding
+does not edit source or toggle a neighboring breakpoint. Non-executable
+breakpoint targets are refused. Editing invalidates old source
+positions; breakpoint changes are locked during an active managed Debug
+Job.</p>
+<p>Continue resumes. Step Into enters a language function, Step Over
+completes the statement, and Step Out returns to a caller. Select Call
+Stack rows to inspect that native frame and its locals; this does not
+change the interpreter’s top execution frame. Locals/Globals are bounded
+read-only type/shape/value summaries, not a Watch/eval console. External
+frames show their own path and line. Folded current source is revealed.
+The script editor does not bind F5/F10/F11 to stepping; use the named
+toolbar controls or Tab/Space.</p>
+<p>GNU Octave asynchronous Pause is unsupported and disabled with an
+explanation; use breakpoints and steps. Stop requests owned-Job
+cancellation. Hiding Debug retains the Job; Close/cancel Debug asks
+before cancelling an active one. Completion, cancellation and failure
+clear the active stack/arrow. Both native language adapters have a
+600-second inspection lease; inspect the actual terminal state and
+diagnostics instead of assuming every failure is a time limit.</p>
+<p>Caught Octave user errors retain their actual message and native
+origin stack through Step Over/Continue and durable Job failure. An
+unwound origin frame is not a selectable live frame. “Last paused”
+variables are the last observed snapshot, not live post-error values.
+This does not promise pre-unwind exception locals. Changed source
+prevents a stale source highlight and stepping.</p>
+<figure>
+<img src="images/caller-frame.png"
+alt="Native caller frame and synchronized source." />
+<figcaption aria-hidden="true">Native caller frame and synchronized
+source.</figcaption>
+</figure>
+<h2 id="jobs-output-and-publication">Jobs, output and publication</h2>
+<p>Library organizes User/Session scripts, assignments and canonical
+metadata. Jobs Manager opens existing durable Jobs and logs.
+Reconnect/Refresh reads the same execution; explicit Rerun reviews and
+creates another Job while preserving the historical one. Cancellation is
+asynchronous. A closed window does not resubmit or erase a completed
+Job.</p>
+<p>Manager History hides/restores finished rows reversibly; Include
+hidden shows them. View selects scope, filters, columns and pages of at
+most 500 Jobs. Manager Workspace saves its presentation
+filters/scope/layout only. Settings opens the shared admission policy.
+These actions do not modify scripts, scientific outputs, execution state
+or retained logs.</p>
+<p>Execution details show source/Job identities, parameters, runtime,
+resource policy/usage, diagnostics and committed publication IDs.
+Program output selects stdout, Program stderr its separate stream,
+Diagnostic log trusted runtime messages, and Legacy combined stream an
+available older combined log. Debug Output contains debugger control
+receipts, distinct from program streams.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Output control</th>
+<th>Operation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Copy Script ID / Job ID / details</td>
+<td>Copy the named identity or complete displayed upper details.</td>
+</tr>
+<tr class="even">
+<td>Copy selection / Select visible page</td>
+<td>Copy selected text / select the current lower page and suspend
+following.</td>
+</tr>
+<tr class="odd">
+<td>Copy entire source</td>
+<td>Copy the selected retained stream across pages, up to 32 MiB. Here
+“source” means the output stream.</td>
+</tr>
+<tr class="even">
+<td>Save source to file…</td>
+<td>Atomically export the complete selected stream; use this for larger
+output.</td>
+</tr>
+<tr class="odd">
+<td>First / Previous / Next / Latest</td>
+<td>Navigate 64 KiB byte pages with actual byte ranges.</td>
+</tr>
+<tr class="even">
+<td>Follow latest output</td>
+<td>Follow new output; selection, scrolling or manual navigation
+suspends it.</td>
+</tr>
+<tr class="odd">
+<td>Publish source as Dataset…</td>
+<td>Review and explicitly publish the selected stream as a canonical
+TEXT Dataset with original Job provenance.</td>
+</tr>
+<tr class="even">
+<td>Close</td>
+<td>Release owned readers/transfers; retain the durable Job and
+output.</td>
+</tr>
+</tbody>
+</table>
+<p>Replacement/shrinkage interrupts a transfer with an error; an
+interrupted export is incomplete. Publishing stdout as TEXT does not
+invent numerical columns or units. Use public Dataset/File Publication
+APIs with explicit schemas and completed-result guards for numerical
+tables. Reopen existing output from Jobs Manager and published text from
+Results without running the script again.</p>
+<p>Concurrency/resource policy controls concurrent Jobs, active+queued
+admission, threads, memory MiB, temporary disk MiB, processes and time
+seconds. Review actual effective limits. Saved policy applies to newly
+admitted Jobs, not retroactively to a running execution. Existing CORE
+supervision owns enforcement.</p>
+<h2 id="worked-example-and-help">Worked example and help</h2>
+<p>Import <code>examples/debug_temperature.m</code>, save/assign it as
+Session source, and require <code>NUMERIC_API_v1@1:math.numeric</code>.
+It converts 18, 20, 22, 21, 19 °C with 273.15 K to 291.15, 293.15,
+295.15, 294.15, 292.15 K, mean 293.15 K. Review and run it normally,
+then debug its immutable saved revision with a breakpoint before output.
+Inspect <code>celsius</code>, <code>kelvin</code>, <code>average</code>
+and compare normal/debug stdout. <code>examples/debug_nested.m</code>
+practices Step Into/Out/Over; adjusted values 1–5 sum to 15. Neither
+example publishes scientific data automatically.</p>
+<p><img src="images/dev108-worked-numeric-pause.png"
+alt="Public Numeric example paused before output." /> <img
+src="images/dev108-worked-output-publication.png"
+alt="Retained stdout and reviewed TEXT publication." /></p>
+<p>New/Import binds Session scope to the current Session lifetime. A
+buffer from A cannot save/delete/run into B; returning to A’s path is
+still a new lifetime. Export unsaved source, reopen the intended
+Session, then New/Import or select its current registered identity.
+Changing scope is not implicit adoption of a stale buffer. Closing the
+editor protects unsaved edits and an owned active Debug Job.</p>
+<p>Help → Viewer manual / Debugger guide and F1 open the rendered guide
+with Find, section links, Back/Forward and full-size images. Source
+examples are imported through File. About reads the installed
+module/provider/version/license/API metadata. For missing scripts check
+Session scope/language/module availability; for stale saves reopen the
+record; for disabled Debug check clean saved Session source and SHA; for
+lost panes use View/Reset. Inspect retained diagnostics and resolve
+missing public APIs through their documentation.</p>
+<h2 id="per-file-markdown-notes-dev111-p030">Per-file Markdown Notes —
+DEV111-P030</h2>
+<p>Use the primary <strong>Edit → Edit Notes</strong> command for the
+selected source file. <strong>View → Show Notes</strong> hides or shows
+the same adjacent note page; it retains the draft and its Undo/search
+state. Notes use the shared Markdown editor with Source, Rendered,
+Outline, Properties and Resources views. Insert images through its
+existing image command. Source and Rendered have independent selection
+and copy. Find and Focus Source act on the selected note. Python/Octave
+temporarily give Notes the source region and restore the prior code
+panels when returning to code.</p>
+<p>Explicit Save publishes the note as a canonical Markdown Dataset in
+the current Session. Without a Session, Save retains an explicit local
+note; attach it when a Session is available. Save All and portable
+Project export preserve per-file notes and their PNG resources through
+the existing source-owner snapshot. Save As/Save Copy create fresh
+source/note identities and preserve the original. Notes do not change
+source code, build inputs or scientific execution hashes. If another
+editor changes the source or note, saving refuses and retains the draft;
+review the current revision or use Publish New to preserve a separate
+copy.</p>
+<p>Opening an associated note from the Dataset Browser returns to that
+exact file’s Notes page when its source remains available. Otherwise
+Documents opens the same canonical Dataset. Associated Source is
+read-only and shows only the exact matching source, with an explicit
+diagnostic if it has changed or disappeared.</p>
+<figure>
+<img src="images/p030-notes.png"
+alt="Octave per-file Notes with independent Source and Rendered panes at font18." />
+<figcaption aria-hidden="true">Octave per-file Notes with independent
+Source and Rendered panes at font18.</figcaption>
+</figure>
+<p>Octave per-file Notes with independent Source and Rendered panes at
+font18.</p>
+<p>Formatting is in <strong>Edit → Note format</strong>, including
+headings, emphasis, code, lists, tables, links, quotes, rules and text
+color. <strong>Edit → Note images</strong> opens the shared PNG chooser
+and provides Replace/Remove for the selected managed resource.
+<strong>View → Note panes and zoom</strong> controls Source, Rendered
+preview, Outline, Properties and Resources independently, with zoom and
+layout reset. These groups act on the currently selected note and are
+unavailable on code pages. Portable images remain read-only until
+explicit Session attachment.</p>
 </body>
 </html>

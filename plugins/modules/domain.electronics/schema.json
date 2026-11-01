@@ -1,0 +1,341 @@
+{
+  "record_types": {
+    "electronics.component": {
+      "library_type": "electronics.components",
+      "label": "Manufacturer component",
+      "fields": {
+        "manufacturer": {
+          "type": "string",
+          "required": true,
+          "label": "Manufacturer"
+        },
+        "mpn": {
+          "type": "string",
+          "required": true,
+          "label": "Manufacturer part number"
+        },
+        "supplier": {
+          "type": "string",
+          "label": "Supplier / source"
+        },
+        "supplier_sku": {
+          "type": "string",
+          "label": "Supplier part code (for example Mouser SKU)"
+        },
+        "variant": {
+          "type": "string",
+          "label": "Variant / package"
+        },
+        "category": {
+          "type": "string",
+          "label": "Component category",
+          "editor": "choice",
+          "choices": [
+            "",
+            "Power connector",
+            "Capacitor",
+            "Memory IC",
+            "Other"
+          ]
+        },
+        "properties": {
+          "type": "array",
+          "label": "Technical specifications",
+          "editor": "table",
+          "columns": {
+            "source_name": {
+              "type": "string",
+              "label": "Property name",
+              "required": true
+            },
+            "source_value": {
+              "type": "scalar",
+              "label": "Original value",
+              "required": true
+            },
+            "value": {
+              "type": "number",
+              "label": "Numeric value (optional)"
+            },
+            "unit": {
+              "type": "string",
+              "label": "Unit",
+              "editor": "choice",
+              "choices": [
+                "",
+                "F",
+                "pF",
+                "nF",
+                "µF",
+                "V",
+                "A",
+                "mA",
+                "ohm",
+                "mΩ",
+                "Hz",
+                "kHz",
+                "MHz",
+                "°C",
+                "bit",
+                "kbit",
+                "Mbit",
+                "mm"
+              ]
+            },
+            "tolerance": {
+              "type": "string",
+              "label": "Tolerance (original)"
+            },
+            "conditions_text": {
+              "type": "string",
+              "label": "Test conditions / frequency (original)"
+            }
+          },
+          "skip_empty_field": "source_value"
+        },
+        "supplier_listings": {
+          "type": "array",
+          "label": "Additional supplier identities",
+          "editor": "table",
+          "columns": {
+            "supplier": {
+              "type": "string",
+              "label": "Supplier",
+              "required": true
+            },
+            "sku": {
+              "type": "string",
+              "label": "Supplier SKU",
+              "required": true
+            }
+          }
+        },
+        "notes": {
+          "type": "string",
+          "label": "Technical notes",
+          "editor": "multiline"
+        },
+        "original_text": {
+          "type": "string",
+          "label": "Original pasted specifications",
+          "editor": "multiline"
+        }
+      },
+      "paste": {
+        "target_field": "properties",
+        "name_key": "source_name",
+        "value_key": "source_value",
+        "original_field": "original_text"
+      },
+      "content_contract": "electronics.component.record",
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      },
+      "manual_templates": {
+        "General component": {
+          "fields": {},
+          "tables": {
+            "properties": []
+          }
+        },
+        "Power connector": {
+          "fields": {
+            "category": "Power connector"
+          },
+          "tables": {
+            "properties": [
+              {
+                "source_name": "Rated current",
+                "source_value": ""
+              },
+              {
+                "source_name": "Rated voltage",
+                "source_value": ""
+              },
+              {
+                "source_name": "Number of contacts",
+                "source_value": ""
+              },
+              {
+                "source_name": "Mounting",
+                "source_value": ""
+              },
+              {
+                "source_name": "Protection rating",
+                "source_value": ""
+              },
+              {
+                "source_name": "Connector family",
+                "source_value": ""
+              }
+            ]
+          }
+        },
+        "Capacitor": {
+          "fields": {
+            "category": "Capacitor"
+          },
+          "tables": {
+            "properties": [
+              {
+                "source_name": "Capacitance",
+                "source_value": ""
+              },
+              {
+                "source_name": "Rated voltage",
+                "source_value": ""
+              },
+              {
+                "source_name": "Tolerance",
+                "source_value": ""
+              },
+              {
+                "source_name": "Dielectric / technology",
+                "source_value": ""
+              },
+              {
+                "source_name": "ESR",
+                "source_value": ""
+              },
+              {
+                "source_name": "Ripple current",
+                "source_value": ""
+              },
+              {
+                "source_name": "Package",
+                "source_value": ""
+              }
+            ]
+          }
+        },
+        "Memory IC": {
+          "fields": {
+            "category": "Memory IC"
+          },
+          "tables": {
+            "properties": [
+              {
+                "source_name": "Capacity",
+                "source_value": ""
+              },
+              {
+                "source_name": "Interface",
+                "source_value": ""
+              },
+              {
+                "source_name": "Supply voltage",
+                "source_value": ""
+              },
+              {
+                "source_name": "Operating temperature",
+                "source_value": ""
+              },
+              {
+                "source_name": "Package",
+                "source_value": ""
+              },
+              {
+                "source_name": "ECC",
+                "source_value": ""
+              }
+            ]
+          }
+        }
+      },
+      "compatible_schema_sha256": [
+        "40055b9f0f306cfc5aec1b4572c7f9402bfe22b8b6f1596e1b4b51e6248a26a6"
+      ]
+    },
+    "electronics.supplier_listing": {
+      "library_type": "electronics.components",
+      "label": "Supplier listing / temporal offer",
+      "fields": {
+        "supplier": {
+          "type": "string",
+          "required": true
+        },
+        "sku": {
+          "type": "string",
+          "required": true
+        },
+        "manufacturer": {
+          "type": "string",
+          "required": true
+        },
+        "mpn": {
+          "type": "string",
+          "required": true
+        },
+        "url": {
+          "type": "string"
+        },
+        "offer": {
+          "type": "object"
+        },
+        "source_record": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      },
+      "compatible_schema_sha256": [
+        "40055b9f0f306cfc5aec1b4572c7f9402bfe22b8b6f1596e1b4b51e6248a26a6"
+      ]
+    }
+  },
+  "relations": {
+    "electronics.sold_as": {
+      "label": "Sold as supplier listing",
+      "from_types": [
+        "electronics.component"
+      ],
+      "to_types": [
+        "electronics.supplier_listing"
+      ]
+    },
+    "electronics.has_document": {
+      "label": "Technical document",
+      "from_types": [
+        "electronics.component",
+        "electronics.supplier_listing"
+      ],
+      "to_types": [
+        "technical.document"
+      ]
+    },
+    "electronics.has_media": {
+      "label": "Product image or technical drawing",
+      "from_types": [
+        "electronics.component",
+        "electronics.supplier_listing"
+      ],
+      "to_types": [
+        "technical.media"
+      ]
+    },
+    "electronics.source_suggests_alternative": {
+      "label": "Source suggests alternative (engineering compatibility unverified)",
+      "from_types": [
+        "electronics.component",
+        "electronics.supplier_listing"
+      ],
+      "to_types": [
+        "electronics.component",
+        "electronics.supplier_listing"
+      ],
+      "manual_suggestion": true
+    }
+  },
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "domain.electronics"
+}

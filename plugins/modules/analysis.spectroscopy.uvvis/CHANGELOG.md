@@ -3,7 +3,7 @@
 - Public CORE calibration interpretation with preserved source concentrations and physical units.
 - Reconciled module, package and current producer identities for this release.
 
-## 1.1.20
+## 1.1.2 — 2026-09-30
 
 - Open standalone runtime Session and inspect Dataset provenance through supported public APIs.
 

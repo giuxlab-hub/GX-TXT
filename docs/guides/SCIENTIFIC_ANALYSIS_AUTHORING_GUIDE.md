@@ -6,7 +6,7 @@ This guide is intended to be sufficient for writing a new analysis module **with
 
 ## Mandatory numerical architecture prerequisite
 
-Before implementing or modifying any scientific analysis module, read **[GX-TXT architecture overview](../../ARCHITECTURE.md)**. It is normative. Generic reusable mathematics belongs in `math.numeric` / `NUMERIC_API`; analysis modules retain scientific workflow and domain semantics. If a required generic primitive is missing, extend the public numerical API first rather than implementing a private copy in the consumer.
+Before implementing or modifying any scientific analysis module, read **[Mandatory Architecture Rule: `math.numeric` vs `analysis.*`](../architecture/NUMERIC_ANALYSIS_BOUNDARY_RULE.md)**. It is normative. Generic reusable mathematics belongs in `math.numeric` / `NUMERIC_API`; analysis modules retain scientific workflow and domain semantics. If a required generic primitive is missing, extend the public numerical API first rather than implementing a private copy in the consumer.
 
 ## Standard scientific renderer (GX-TXT 0.9.7.17+)
 
@@ -14,7 +14,7 @@ For every graph representable by the standard GX-TXT renderer, a new analysis mo
 
 Use the standard renderer for supported line plots, one or more Graph Series, multiple datasets, dual-Y axes, variants, and Level Scale presentation. Configure Level Scale through the public CORE Level Scale API; it is not an extra PlotSpec field. API v1 remains stable for existing consumers. Check `supports` or `requireCapability` before optional features. An unsupported capability must produce an explicit error; do not silently substitute legacy X/Y bindings, another interpretation, or a private renderer.
 
-For production scientific result plots, an unsupported standard visualization is **not** permission to create a private renderer. Extend `plot.dataset` / its public API with the smallest generic capability required, test it centrally, and then consume it from the module. Historical private renderers are migration targets, not precedent. See [PLOT_DATASET_API_v2](../api/PLOT_DATASET_API_v2.md) for discovery, Enabled behavior, PlotSpec, rendering and artifact retrieval. For supported Series editor capabilities, consult the public Plot Dataset API and current plugin documentation.
+For production scientific result plots, an unsupported standard visualization is **not** permission to create a private renderer. Extend `plot.dataset` / its public API with the smallest generic capability required, test it centrally, and then consume it from the module. Historical private renderers are migration targets, not precedent. See [PLOT_DATASET_API_v2](../api/PLOT_DATASET_API_v2.md) for discovery, Enabled behavior, PlotSpec, rendering and artifact retrieval. The [standard Series editor gap](../audits/CORE_SERIES_EDITOR_EXTENSION_GAP.md) is known and non-blocking; no style/kind controls are added to that CORE dialog in this release.
 
 Normative specifications:
 
@@ -27,7 +27,7 @@ docs/api/RENDER_CACHE_API_v1.md
 docs/api/DOCUMENTATION_API_v1.md
 docs/api/UNIT_DIMENSION_API_v1.md
 docs/api/UNCERTAINTY_POLICY_v1.md
-ARCHITECTURE.md
+docs/architecture/NUMERIC_ANALYSIS_BOUNDARY_RULE.md
 ```
 
 ## 1. Mandatory plugin documentation
@@ -620,4 +620,4 @@ The minimal policy authorizes no custom configuration copies. Only explicitly cl
 
 Do not implement private filesystem copying or ask CORE to recognize a module by name. Use capability/version discovery and the public `EXPERIMENT_DUPLICATION_POLICY_API_v1` validation contract. Generic scientific field types and declared bindings are excluded even when named `input`. Unlisted configuration resets; selectors and paths start empty. Module execution is explicitly reconfigured on fresh data.
 
-See [Experiment Duplication Policy API](../api/EXPERIMENT_DUPLICATION_POLICY_API_v1.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.
+See [the policy author guide](../developer/EXPERIMENT_DUPLICATION_POLICY.md) and runnable `examples/experiment_duplication_policy/` Python/Octave Builder projects. Builder 1.2.0 uses the same flat descriptor policy contract, preserves schema-version-1 A/B/W project fields and unchanged script bytes, and supplies a minimal policy on rebuild. Old generated ZIPs remain valid without rebuilding.

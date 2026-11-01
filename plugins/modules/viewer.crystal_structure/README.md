@@ -52,7 +52,7 @@ scene persist across Session save/reopen.
 
 `library/index.tsv` records every original CIF/CUBE file's URL, citation,
 rights and SHA-256. COD states the database is CC0; each CIF also carries its
-original author and publication. The dataset authors release the computed
+original author and publication. GX-TXT Task 006 authors release the computed
 CUBE output data under CC0-1.0. The exact PySCF input script and solver logs
 are in `library/density/`; `crystal_data.py` performs CUBE Bohr-to-ångström
 coordinate conversion and VTI/VTP display conversion. The original density

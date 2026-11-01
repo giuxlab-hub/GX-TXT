@@ -1,6 +1,60 @@
 # Script Module Builder
 
-## Viewer interface profile (1.3.0)
+## Whole-project source and automatic provided APIs
+
+Use **File → New from registered Script / Project…** to choose an existing
+qualified User or Session source through the public Registry. The Builder takes
+the exact saved entrypoint and all language helpers, including a normal
+multifile Project. A standalone unsaved draft has no Registry identity: save it
+in the existing Python/Octave editor first. **New from script…** remains a saved
+file workflow and explicit bundle files can be added without registration.
+
+The **Source files** page shows every relative path, role, byte count and saved
+SHA-256. **Sources → Open source Workspace** and Enter on a source use the same
+language editor, SourceSurface, Project, Notes, dirty review and Undo owners.
+Registered add/remove/rename/entrypoint changes are made there; use **Sources →
+Refresh saved project / inventory** after Save All. This is a saved snapshot,
+not an overlay of unsaved editor buffers. A changed source/record/authority
+refuses validation until explicitly refreshed and reviewed; drafts are retained.
+
+The **Public APIs** page automatically calls the existing CORE static inventory
+for the complete source closure. PROVIDED APIs and CONSUMED requirements are
+separate. Operation details expose the implementation file/function/line/SHA,
+typed arguments and result, units, read-only/effects/capabilities and dependencies.
+Enter opens the actual saved implementation through the source Workspace. Static
+inspection does not import or execute researcher code and grants no capability.
+The language editor Project menu also offers saved inventory and an explicitly
+labelled unsaved-draft preview; draft inventory cannot publish a Builder API.
+
+Declare `gxtxt_api_export` literals using the existing
+[provided API source contract](../../../docs/api/SCRIPT_PROVIDED_API_RUNTIME_v1.md).
+Declarations may live in distinct helpers and refer to their actual functions.
+The Builder preserves relative main/helper paths under `bundle/` and emits the
+exact `gxtxt.script_provided_api_inventory.v1` at `api/provided_operations.json`,
+its SHA and original relative entrypoint in `[script]`, and actual method names
+in each `[public_api.API]` section. No hand-retyped operation schema is needed.
+Invalid nonempty PROVIDED declarations refuse Build as a whole; empty legacy
+inventories retain the existing Analysis A/B/W behavior and explicit manual API.
+Binary assets retain the ordinary bundle SHA owner.
+
+**Run → Validate / Build ZIP** use bounded asynchronous CORE auxiliary requests;
+**Cancel current request** cancels only that owned request and waits for cleanup.
+Build rechecks saved Project/source/full Registry record identity and the reviewed
+inventory. Closing or changing a draft cannot apply an old inspection to a new
+project. Existing versioned ZIP/checksum targets are never overwritten. A built
+package is installed by normal Plugin Install; the Builder does not install it.
+
+Generated callable bindings require `SCRIPT_EXECUTION_API_v1@1` capabilities
+`provided_function_jobs_v1` and `provided_bridge_control_arrays_v1`. They check
+those capabilities before lazily importing the shared declared-schema argument
+adapter. Existing Bridge numeric/resource arrays keep their shape/type and bounds;
+unknown/older runtime capabilities refuse explicitly. Actual functions run only
+through the normal managed language runner with the exact manifest/source pins,
+permissions, cancellation and strict structured-result checks. The main Analysis
+entrypoint is not a substitute for the declared function.
+
+
+## Interface design profile
 
 The standard Viewer Interface Builder uses this tool's `viewer-build PROJECT
 SOURCE_DIRECTORY OUTPUT_DIRECTORY` CLI. PROJECT is an inert CORE Viewer design,
@@ -11,6 +65,8 @@ map, exact handler contracts and a generated-asset change report. Handwritten
 handlers are preserved byte-for-byte. Existing ZIP/checksum destinations are
 refused. The package uses public CORE constructors; scientific callbacks require
 explicit action invocation. See [the public design contract](../../../docs/api/VIEWER_GUI_DESIGN_v1.md).
+
+A design with `target=preview` generates a selectable `kind=preview`, `runner=service` package using public Preview descriptor/GUI callbacks. It preserves editable design and handwritten `(host, event)` callbacks, includes assets/checksums, and mounts inside Dataset Preview. The Builder layout display is a simulation; actual host acceptance requires an installed enabled package and compatible Dataset. Unsupported Viewer-only components are refused as CORE gaps.
 
 The existing Python/Octave A/B/W project formats and exact research-source
 packaging retain their behavior.
@@ -29,7 +85,7 @@ Open/import the same Python or Octave research script and choose **Workbench ext
 
 The script reads `WORKBENCH_EXTENSION_API_v1.script_context` and returns a bounded successful operation proposal through `return_result`. The generated normal module ZIP includes unchanged source bytes, bundle checksums, generated public API registration, extension descriptors, documentation and portable project. Install with Plugins, enable through Modules and invoke through the Workbench Extensions chooser. Mutating hosts validate/apply one transaction with one Undo/Redo; disabled, hash-invalid, stale or failed proposals reject/rollback. See the public Workbench Extension API for supported host operation contracts.
 
-## Standard authoring and Builder 1.2.0
+## Standard authoring
 
 New or substantially updated GX-TXT modules MUST declare an Experiment Duplication Policy using the public CORE contract when they introduce module-owned Session-persistent state. Modules with no additional privately owned persistent state SHOULD use the minimal explicit empty policy supported by the API.
 
@@ -65,4 +121,4 @@ The module ID must be `example.policy` for that preparation file root. Register 
 
 Runnable examples `examples/experiment_duplication_policy/policy_python.json` and `policy_octave.json` wrap `policy_author.py` and `.m`. Build with `python3 tools/gxtxt_module_builder.py build examples/experiment_duplication_policy/policy_python.json /tmp/new-policy-packages`; install the resulting ZIP normally, enable, choose a fresh primary Dataset and Run. They discover capabilities, inspect supported/absent policy, validate safe and unsafe flat descriptors and read the preparation receipt through actual `gxtxt_api_call`. Both also read canonical Dataset metadata and produce an ordinary output report. Use a new output directory for each immutable package build. `minimal_python.json`/`minimal_octave.json` demonstrate copying no settings; safe projects copy only reviewed gain. Neither source injects duplication logic.
 
-Builder requires the policy v1 capability and Python's standard tkinter/Tcl runtime (headless validation creates no Tk window). Execution validation discovers the public capability rather than pinning an exact framework release.
+Builder requires the policy v1 capability and Python's standard tkinter/Tcl runtime (headless validation creates no Tk window). Execution validation discovers the required capability; package descriptors declare compatibility bounds.

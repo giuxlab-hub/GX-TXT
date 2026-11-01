@@ -219,9 +219,12 @@ class Series:
     visible: bool = True
     color: str = "#d62728"
     points: list[DigitizedPoint] = field(default_factory=list)
+    y_axis_id: str = "y1"  # logical Y1/Y2, independent of geometric placement
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, *, include_axis_id: bool = False) -> dict[str, Any]:
+        if self.y_axis_id not in ("y1", "y2"):
+            raise CalibrationError(f"Unknown curve Y axis: {self.y_axis_id!r}")
+        result = {
             "id": self.id,
             "name": self.name,
             "parameter": {"name": self.parameter_name, "value": self.parameter_value, "unit": self.parameter_unit},
@@ -229,10 +232,16 @@ class Series:
             "color": self.color,
             "points": [p.to_dict() for p in self.points],
         }
+        if include_axis_id or self.y_axis_id != "y1":
+            result["y_axis_id"] = self.y_axis_id
+        return result
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Series":
         p = data.get("parameter", {})
+        y_axis_id = str(data.get("y_axis_id", "y1"))
+        if y_axis_id not in ("y1", "y2"):
+            raise CalibrationError(f"Unknown curve Y axis: {y_axis_id!r}")
         return cls(
             id=str(data.get("id", str(uuid.uuid4()))),
             name=str(data.get("name", "Series")),
@@ -242,6 +251,7 @@ class Series:
             visible=bool(data.get("visible", True)),
             color=str(data.get("color", "#d62728")),
             points=[DigitizedPoint.from_dict(x) for x in data.get("points", [])],
+            y_axis_id=y_axis_id,
         )
 
 
@@ -259,6 +269,7 @@ class Project:
     show_point_numbers: bool = False
     snap_enabled: bool = False
     snap_radius: int = 3
+    y2_axis: AxisConfig | None = None  # None preserves the legacy single-Y model
 
     def auto_calibrate_full_image(self, width: int, height: int, *, y_down: bool = False) -> None:
         """Calibrate every image pixel using the same four-corner homography.
@@ -335,97 +346,173 @@ class Project:
         if not self.calibration.is_complete():
             return False
         try:
-            self.x_axis.validate(); self.y_axis.validate(); self.calibration.matrix()
+            self.x_axis.validate(); self.y_axis.validate()
+            if self.y2_axis is not None: self.y2_axis.validate()
+            self.calibration.matrix()
         except CalibrationError:
             return False
         return True
 
-    def pixel_to_calibrated(self, pixel_x: float, pixel_y: float) -> tuple[float, float]:
+    def y_axis_for(self, y_axis_id: str = "y1") -> AxisConfig:
+        if y_axis_id == "y1": return self.y_axis
+        if y_axis_id == "y2" and self.y2_axis is not None: return self.y2_axis
+        raise CalibrationError(f"Unavailable or unknown Y axis: {y_axis_id!r}")
+
+    def pixel_to_calibrated(self, pixel_x: float, pixel_y: float,
+                            y_axis_id: str = "y1") -> tuple[float, float]:
+        # Exactly one four-corner homography H for all scientific axes.
+        y_axis = self.y_axis_for(y_axis_id)
         u, v = self.calibration.pixel_to_unit(pixel_x, pixel_y)
-        return self.x_axis.from_unit(u), self.y_axis.from_unit(v)
+        return self.x_axis.from_unit(u), y_axis.from_unit(v)
 
-    def calibration_linearization(self, pixels: Any) -> dict[str, Any]:
-        """Analytic physical Jacobians; dev097 science, current 2.0 model.
+    def calibration_linearization(
+        self, pixels: Any, axis_ids: Any = None
+    ) -> dict[str, Any]:
+        """Physical Jacobians on the unchanged common four-corner homography.
 
-        Outputs physical rows (N,2), local (2N,2) and shared (2N,12).
-        Shared 12 inputs are eight raster corners and four axis end-values.
-        This does not by itself estimate any uncertainty: operator supplies it.
+        Legacy Y1-only Project -> 12 calibration parameters (byte-compatible).
+        Y2-enabled Project -> 14 parameters: 8 shared raster corners,
+        2 shared X endpoints and 2 endpoints per logical Y1/Y2 axis.
+        All scientific output rows retain a 2-column physical X/Y shape.
         """
-        points=np.asarray(pixels)
-        if points.dtype.kind not in 'iuf' or points.ndim!=2 or points.shape[1]!=2 or not 1<=points.shape[0]<=4096:
-            raise CalibrationError('Linearization requires 1..4096 numeric raster point pairs.')
-        if points.dtype.kind in 'iu' and (np.any(points>2**53) or np.any(points < -2**53)):
-            raise CalibrationError('Pixel integers cannot lose binary64 precision.')
-        points=points.astype(float)
-        if not np.isfinite(points).all():raise CalibrationError('Pixel coordinates must be finite.')
-        self.x_axis.validate();self.y_axis.validate()
-        H,condition=self.calibration.matrix()
-        derivative=self.calibration.corner_derivatives(H)
-        coord=np.empty_like(points)
-        local=np.zeros((2*len(points),2))
-        shared=np.zeros((2*len(points),12))
-        for i,(px,py) in enumerate(points):
-            uv=np.asarray(self.calibration.transform_with_matrix(H,px,py))
-            denom=float(H[2]@[px,py,1.])
-            xyjac=(H[:2,:2]-uv[:,None]*H[2,:2])/denom
-            hjac=np.zeros((2,8))
-            hjac[0,:3]=np.array([px,py,1])/denom
-            hjac[1,3:6]=np.array([px,py,1])/denom
-            hjac[:,6:] = -uv[:,None]*np.array([px,py])/denom
-            for axis,definition in enumerate((self.x_axis,self.y_axis)):
-                value=definition.from_unit(float(uv[axis]))
-                coord[i,axis]=value
-                if definition.scale=='linear':
-                    scale=definition.maximum-definition.minimum
-                    ends=(1-uv[axis],uv[axis])
+        points = np.asarray(pixels)
+        if (points.dtype.kind not in "iuf" or points.ndim != 2
+                or points.shape[1] != 2 or not 1 <= len(points) <= 4096):
+            raise CalibrationError("Linearization requires 1..4096 numeric raster point pairs.")
+        if points.dtype.kind in "iu" and (
+                np.any(points > 2**53) or np.any(points < -(2**53))):
+            raise CalibrationError("Pixel integers cannot lose binary64 precision.")
+        points = points.astype(float)
+        if not np.isfinite(points).all():
+            raise CalibrationError("Pixel coordinates must be finite.")
+        self.x_axis.validate()
+        self.y_axis.validate()
+        dual = self.y2_axis is not None
+        if dual:
+            self.y2_axis.validate()
+            if axis_ids is None:
+                raise CalibrationError(
+                    "Y2 uncertainty requires a logical Y-axis ID for every published point.")
+            axes = [str(a).lower() for a in axis_ids]
+            if len(axes) != len(points) or any(a not in ("y1", "y2") for a in axes):
+                raise CalibrationError("Uncertainty point-to-Y-axis bindings are invalid.")
+        else:
+            axes = ["y1"] * len(points)
+            if axis_ids is not None and list(axis_ids) != axes:
+                raise CalibrationError("Legacy Y1 calibration cannot contain Y2 bindings.")
+        used_units = {self.y_axis_for(axis_id).unit or "1" for axis_id in axes}
+        if len(used_units) != 1:
+            raise CalibrationError(
+                "One canonical uncertainty linearization cannot mix physical Y units.")
+        nshared = 14 if dual else 12
+        H, condition = self.calibration.matrix()
+        derivative = self.calibration.corner_derivatives(H)
+        coord = np.empty_like(points)
+        local = np.zeros((2 * len(points), 2))
+        shared = np.zeros((2 * len(points), nshared))
+        for i, (px, py) in enumerate(points):
+            uv = np.asarray(self.calibration.transform_with_matrix(H, px, py))
+            denom = float(H[2] @ [px, py, 1.])
+            xyjac = (H[:2, :2] - uv[:, None] * H[2, :2]) / denom
+            hjac = np.zeros((2, 8))
+            hjac[0, :3] = np.array([px, py, 1]) / denom
+            hjac[1, 3:6] = np.array([px, py, 1]) / denom
+            hjac[:, 6:] = -uv[:, None] * np.array([px, py]) / denom
+            y_axis = self.y_axis_for(axes[i])
+            for axis, definition in enumerate((self.x_axis, y_axis)):
+                value = definition.from_unit(float(uv[axis]))
+                coord[i, axis] = value
+                if definition.scale == "linear":
+                    scale = definition.maximum - definition.minimum
+                    ends = (1 - uv[axis], uv[axis])
                 else:
-                    scale=value*(math.log(definition.maximum)-math.log(definition.minimum))
-                    ends=(value*(1-uv[axis])/definition.minimum,value*uv[axis]/definition.maximum)
-                local[2*i+axis]=scale*xyjac[axis]
-                shared[2*i+axis,:8]=scale*(hjac[axis]@derivative)
-                shared[2*i+axis,8+2*axis:10+2*axis]=ends
-        if not all(np.isfinite(arr).all() for arr in (coord,local,shared)):
-            raise CalibrationError('Non-finite calibration Jacobians.')
-        return dict(schema='gxtxt.digitization_linearization.v1',coordinates=coord,
-            point_jacobian=local,calibration_jacobian=shared,
-            coordinate_units=[self.x_axis.unit or '1',self.y_axis.unit or '1'],
-            calibration_ids=[f'{name}_{axis}' for name in CORNER_ORDER for axis in ('x','y')]+['x_minimum','x_maximum','y_minimum','y_maximum'],
-            calibration_units=['pixel']*8+[self.x_axis.unit or '1']*2+[self.y_axis.unit or '1']*2,
-            mapping='four_point_homography_then_declared_axis_scale',
-            jacobian_method='analytic_implicit_calibration_system',condition_number=condition)
+                    scale = value * (
+                        math.log(definition.maximum) - math.log(definition.minimum))
+                    ends = (value * (1 - uv[axis]) / definition.minimum,
+                            value * uv[axis] / definition.maximum)
+                local[2*i+axis] = scale * xyjac[axis]
+                shared[2*i+axis, :8] = scale * (hjac[axis] @ derivative)
+                if axis == 0:
+                    slot = 8
+                elif axes[i] == "y2":
+                    slot = 12
+                else:
+                    slot = 10
+                shared[2*i+axis, slot:slot+2] = ends
+        if not all(np.isfinite(a).all() for a in (coord, local, shared)):
+            raise CalibrationError("Non-finite calibration Jacobians.")
+        names = ([f"{name}_{axis}" for name in CORNER_ORDER for axis in ("x", "y")]
+                 + ["x_minimum", "x_maximum", "y_minimum", "y_maximum"])
+        units = (["pixel"]*8 + [self.x_axis.unit or "1"]*2
+                 + [self.y_axis.unit or "1"]*2)
+        if dual:
+            names.extend(("y2_minimum", "y2_maximum"))
+            units.extend([self.y2_axis.unit or "1"]*2)
+        result = dict(
+            schema="gxtxt.digitization_linearization.v1",
+            coordinates=coord,
+            point_jacobian=local,
+            calibration_jacobian=shared,
+            coordinate_units=[self.x_axis.unit or "1", next(iter(used_units))],
+            calibration_ids=names,
+            calibration_units=units,
+            mapping="four_point_homography_then_declared_axis_scale",
+            jacobian_method="analytic_implicit_calibration_system",
+            condition_number=condition,
+        )
+        return result
 
-    def update_point_calibration(self, point: DigitizedPoint) -> None:
+    def update_point_calibration(self, point: DigitizedPoint,
+                                 y_axis_id: str = "y1") -> None:
+        self.y_axis_for(y_axis_id)  # Never hide malformed bindings as nulls.
         try:
-            point.calibrated_x, point.calibrated_y = self.pixel_to_calibrated(point.pixel_x, point.pixel_y)
+            point.calibrated_x, point.calibrated_y = self.pixel_to_calibrated(
+                point.pixel_x, point.pixel_y, y_axis_id)
         except CalibrationError:
             point.calibrated_x = point.calibrated_y = None
 
     def recalculate_all_points(self) -> None:
         for s in self.series:
+            self.y_axis_for(s.y_axis_id)  # Fail before partially changing points.
+        for s in self.series:
             for p in s.points:
-                self.update_point_calibration(p)
+                self.update_point_calibration(p, s.y_axis_id)
 
     def find_series(self, series_id: str | None) -> Series | None:
         return next((s for s in self.series if s.id == series_id), None)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        axes = {"x": self.x_axis.to_dict(), "y": self.y_axis.to_dict()}
+        active = self.y2_axis is not None
+        if active:
+            self.y2_axis.validate()
+            axes["y2"] = self.y2_axis.to_dict()
+        for series in self.series: self.y_axis_for(series.y_axis_id)
+        result = {
             "format": "giux-curve-digitizer-project",
             "version": self.format_version,
             "image": {"path": self.image_path, "width": self.image_width, "height": self.image_height},
-            "axes": {"x": self.x_axis.to_dict(), "y": self.y_axis.to_dict()},
+            "axes": axes,
             "calibration": self.calibration.to_dict(),
-            "series": [s.to_dict() for s in self.series],
+            "series": [s.to_dict(include_axis_id=active) for s in self.series],
             "notes": self.notes,
             "display": {"show_point_numbers": self.show_point_numbers},
             "snap": {"enabled": self.snap_enabled, "radius": self.snap_radius},
         }
+        if active: result["axis_model_version"] = 2
+        return result
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Project":
         image, axes = data.get("image", {}), data.get("axes", {})
         display, snap = data.get("display", {}), data.get("snap", {})
-        return cls(
+        marker = data.get("axis_model_version")
+        has_y2 = "y2" in axes
+        if marker is not None and (marker != 2 or not has_y2):
+            raise CalibrationError("Unsupported or inconsistent axis_model_version.")
+        if has_y2 and not isinstance(axes["y2"], dict):
+            raise CalibrationError("Secondary Y axis declaration must be a dictionary.")
+        project = cls(
             format_version=str(data.get("version", "1.0")),
             image_path=str(image.get("path", "")),
             image_width=int(image.get("width", 0)),
@@ -438,4 +525,8 @@ class Project:
             show_point_numbers=bool(display.get("show_point_numbers", False)),
             snap_enabled=bool(snap.get("enabled", False)),
             snap_radius=max(0, int(snap.get("radius", 3))),
+            y2_axis=AxisConfig.from_dict(axes["y2"]) if has_y2 else None,
         )
+        if project.y2_axis is not None: project.y2_axis.validate()
+        for series in project.series: project.y_axis_for(series.y_axis_id)
+        return project

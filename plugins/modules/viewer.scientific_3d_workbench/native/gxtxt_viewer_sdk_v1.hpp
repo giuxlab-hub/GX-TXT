@@ -32,6 +32,13 @@ public:
     void tex_command(unsigned form, const char* operation) const;
     void em_command(unsigned form, const char* operation) const;
     void workbench_command(unsigned form, const char* operation) const;
+    // Immutable declared GUI values and typed CORE data for this event only.
+    const char* input(unsigned component) const;
+    const char* data() const;
+    void cad_command(unsigned component, const char* action) const;
+    void diagnostics_command(unsigned form, const char* operation, const char* request = "{}") const;
+    void text_runs(unsigned component, const char* runs_json) const;
+    void table(unsigned component, const char* rows_json) const;
     void catalog_refresh(unsigned form) const;
     void catalog_inspect(unsigned form) const;
     void catalog_action(unsigned form, const char* action) const;

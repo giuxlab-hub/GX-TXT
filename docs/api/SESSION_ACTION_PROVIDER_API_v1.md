@@ -40,4 +40,4 @@ The standard GUI presents discovered actions under `Session Tools`.
 
 ## Integrated dev-065 extension
 
-See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and [Native2D Geometry API](NATIVE_2D_GEOMETRY_API_v1.md) for exact topology/reference/constraint semantics.
+See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and [retained networks](NATIVE2D_NETWORK_dev065.md) for exact topology/reference/constraint semantics.

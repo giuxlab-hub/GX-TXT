@@ -204,7 +204,7 @@ Selection among a finite set of starts does not certify a global optimum.
 
 The catalog provides Octave `point_sequence_order(points, options)` for a
 finite 2..4096 by 2 or 3 matrix. `policy=x_monotone|geometry_auto` and an explicit
-zero-based `start_index` select a deterministic candidate. Results include
+zero-based `start_index` select a deterministic candidate. Result includes
 unchanged points, permutation/inverse, changed count, segment starts, ambiguity,
 coincident-point and 2-D crossing diagnostics. Geometry always requires review;
 when starting at ordinal zero, an exactly repeated final closing observation is
@@ -212,8 +212,8 @@ retained at the end with its distinct original identity. The receipt records
 `closed_endpoint_preserved` and algorithm `stable_x_or_greedy_nearest_v2`.
 This endpoint rule does not infer unique interior connectivity or close open paths;
 3-D topology cannot be inferred. It neither interpolates nor changes a Dataset.
-This is an Octave binding callable through the typed host dispatcher;
-no direct Python/Script Bridge binding is advertised for this operation.
+This is an Octave binding callable through the existing typed host dispatcher;
+no direct Python/Script Bridge binding is advertised for the new operation.
 
 `polar_coordinates(X,Y,options)` and
 `cartesian_coordinates(theta,radius,options)`, available in Octave and both
@@ -315,7 +315,7 @@ The Octave dispatcher additionally exposes callback-bearing operations: `nonline
 <a id="22-complex-linear-algebra-extension-mathnumeric-1100"></a>
 ## 2.2 Complex linear algebra
 
-`linear_matrix(action, A, B, options)` is a public `NUMERIC_API_v1` operation. It uses GNU Octave's LAPACK-backed matrix operations; no new native runtime or worker pool is introduced. `A` and optional `B` are nonempty finite two-dimensional real or complex numeric arrays in Octave. The Tcl facade and Script Bridge accept `{"real": matrix, "imaginary": matrix}`; `imaginary` may be omitted for real input. A right-hand-side vector is an `N x 1` matrix. Real and imaginary shapes must match. Empty matrices and NaN/Inf input are rejected. Inputs are dimensionless mathematical values: callers remain responsible for compatible physical units.
+`linear_matrix(action, A, B, options)` is an additive `NUMERIC_API_v1` operation. It uses GNU Octave's LAPACK-backed matrix operations; no new native runtime or worker pool is introduced. `A` and optional `B` are nonempty finite two-dimensional real or complex numeric arrays in Octave. The Tcl facade and Script Bridge accept `{"real": matrix, "imaginary": matrix}`; `imaginary` may be omitted for real input. A right-hand-side vector is an `N x 1` matrix. Real and imaginary shapes must match. Empty matrices and NaN/Inf input are rejected. Inputs are dimensionless mathematical values: callers remain responsible for compatible physical units.
 
 Octave: `gxtxt_numeric_v1('linear_matrix', action, A, B, options)`; pass `[]` for unused `B`. Tcl: `::GX::NumericAPIv1::linearMatrix $action $A ?$B? ?$options?`. Script Bridge in either language: `gxtxt_api_call('NUMERIC_API_v1', 'linear_matrix', {action, A, B})` (Python uses a list). For options without `B`, pass an empty second operand. `gxtxt_api_require('NUMERIC_API_v1@1:math.numeric+complex_linear_algebra')` provides preflight.
 
@@ -2507,3 +2507,20 @@ explicit pixel/calibration distributions; `digitization_covariance` materializes
 retained x/y/xy covariance without discarding shared dependencies. See the
 [public contract](../../../docs/api/DIGITIZATION_UNCERTAINTY_v1.md) for exact
 shapes, units, original row order, override meaning and first-order limitations.
+
+## Bounded scientific curve comparison (P034)
+
+Tcl: `::GX::NumericAPIv1::comparisonCurves mode x1 y1 x2 y2 options`.
+Octave: `gxtxt_numeric_v1('comparison_curves',mode,x1,y1,x2,y2,options)`.
+Modes: overlay, top_bottom, stacked, difference, ratio. Options are normalization
+none/minmax, finite display offset and nonnegative denominator_floor. Inputs have
+2–65536 samples, finite strictly monotonic X and explicit missing-Y gaps. Derived
+output uses the first grid's intersection and linear interpolation without
+extrapolation. Exact finite knots remain valid beside missing brackets. Ratio
+excludes zero/near-zero denominators. Results contain x/values, method/domain,
+normalization/offset/floor, invalid_count and canonical_values_modified=false.
+
+The existing Tcl worker transports the same controls to this Octave owner. CORE
+COMPARISON_PLOT_API_v1 separately admits units, physical meaning, source identity,
+revision/SHA/provenance and lifecycle; see that public API in the API Catalog.
+This numerical operation creates no Dataset or scientific identification claim.

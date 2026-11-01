@@ -1,0 +1,23 @@
+{
+  "source_manifest": [
+    {
+      "bytes": 683,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "6b28bf01026edd3b66142b448dfefcd47a75126d29b6d6d965780e6efe495c62"
+    },
+    {
+      "bytes": 332,
+      "path": "include/comparison_client.hpp",
+      "role": "header",
+      "sha256": "dbbb6de1cf3f1c6a2e27c04c66444cb38405871034646e056edc80c0d1fa9f4e"
+    },
+    {
+      "bytes": 5375,
+      "path": "src/comparison_client.cpp",
+      "role": "translation_unit",
+      "sha256": "faee83f792be03535b8bf911777d0d6a987a72d73be5fc0c4cf04d22c9b8d28f"
+    }
+  ],
+  "source_tree_sha256": "90e973ab0ea4830726c4a03b165771592c44f7678be53f5a8627be72feb1527f"
+}

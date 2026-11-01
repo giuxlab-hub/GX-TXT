@@ -46,6 +46,9 @@ void on_event(gx::Host& host, gx::State&, const gx::Event& event) {
         case 63: host.workbench_command(workbench::form, "redo"); break;
         case 64: host.workbench_command(workbench::form, "close"); break;
         case 136: host.workbench_command(workbench::form, "duplicate_object"); break;
+        case 137: host.workbench_command(workbench::form, "sketch_create"); break;
+        case 138: host.workbench_command(workbench::form, "sketch_open"); break;
+        case 139: host.workbench_command(workbench::form, "sketch_close"); break;
         default: break;
     }
 }

@@ -43,10 +43,26 @@ proc ::GX::PlotDatasetAPIv4::renderSnapshot {directory graph} {
     snapshotValidate $directory $graph
     set tcl [auto_execok tclsh];if {$tcl eq {}} {error {Native scientific snapshot rendering requires Tcl}}
     set script [file join [file dirname $apiDir] runtime native_v4_snapshot.tcl]
-    exec -- $tcl $script $::GX::scriptDir [file normalize $directory] $graph 2>@1
-    set artifact [file join $directory graph.png]
-    if {![file isfile $artifact]||[file size $artifact]<100} {error {Native scientific snapshot produced no graph}}
-    return $artifact
+    # The existing worker's profile/diagnostics are disposable process state,
+    # not scientific Session content. ResourceManagement owns the whole lease.
+    set allocation [::GX::resourceManagementAllocate plot_native_snapshot [dict create category temporary kind directory lifetime operation retention_seconds 0 descendant_lease 1]]
+    set savedEnvironment {}
+    foreach key {GXTXT_RESOURCE_ROOT GXTXT_RESOURCE_LEASE} {dict set savedEnvironment $key [expr {[info exists ::env($key)]?[list present $::env($key)]:[list absent]}]}
+    try {
+        set work [dict get $allocation path]
+        ::GX::stderrDiagnosticsDirectoryValidate [file join $work diagnostics]
+        set ::env(GXTXT_RESOURCE_ROOT) [::GX::resourceManagementRoot]
+        set ::env(GXTXT_RESOURCE_LEASE) [dict get $allocation id]
+        exec -- $tcl $script $::GX::scriptDir [file normalize $directory] $graph $work 2>@1
+        set artifact [file join $directory graph.png]
+        if {![file isfile $artifact]||[file size $artifact]<100} {error {Native scientific snapshot produced no graph}}
+        return $artifact
+    } finally {
+        foreach key {GXTXT_RESOURCE_ROOT GXTXT_RESOURCE_LEASE} {set saved [dict get $savedEnvironment $key];if {[lindex $saved 0] eq {present}} {set ::env($key) [lindex $saved 1]} else {unset -nocomplain ::env($key)}}
+        set id [dict get $allocation id]
+        ::GX::resourceManagementRelease $id verified_orphan 0
+        ::GX::resourceManagementCleanup [list $id]
+    }
 }
 proc ::GX::PlotDatasetAPIv4::snapshotPresentationFields {directory graph} {
     set m [snapshotValidate $directory $graph];set spec [dict get $m spec]

@@ -1,0 +1,46 @@
+{
+  "files": {
+    "handlers.cpp": {
+      "sha256": "e691530bbc808934be958bd72b38f79d84560575fc4cb9793f6ac2ad3662415f",
+      "size": 12227
+    },
+    "include/measurement.hpp": {
+      "sha256": "8354f9111e7021cbd800a1d7f6888c626d34a2595e5947f5642311596d7bc01a",
+      "size": 7297
+    },
+    "include/prf_decoder.hpp": {
+      "sha256": "4454d01f2ff9f814e6f9fd7a75634f624984519af86e803d08e41d4834783ddc",
+      "size": 995
+    },
+    "include/sif_decoder.hpp": {
+      "sha256": "f6824964c7eadb630de986c3a4d88ef1fa8b42393e04c46a5c8956e23f21db60",
+      "size": 12949
+    },
+    "include/source_metadata.hpp": {
+      "sha256": "98f27bede6d9de2d5a5a0df4be96ae53dcc395bb017e349f542473c29fe66837",
+      "size": 2056
+    },
+    "include/sp_decoder.hpp": {
+      "sha256": "50bc833087141896806db70e53310b763b1419d7277cdf20008c0d195a5a09f6",
+      "size": 10020
+    },
+    "src/prf.cpp": {
+      "sha256": "3cadea2d70e817508b319147dac76f178ae3c221f0493c4aac73b52bbab59c02",
+      "size": 7665
+    },
+    "src/prf_container.cpp": {
+      "sha256": "a815ec7fc2fc76ab62fd5b291437a46db2d7631fbe6dd0aa009274ee534cb36e",
+      "size": 14920
+    },
+    "src/sif.cpp": {
+      "sha256": "b8676a4cefc8cde5ae897fc8a6c2c58a6ee5806bd3629b3a08a181bc4ef2809d",
+      "size": 14387
+    },
+    "src/sp.cpp": {
+      "sha256": "25a8a05747359d043f64c909ee6b68c0520bcb87c0c1c8ae0ce0a5717d06c3b1",
+      "size": 8071
+    }
+  },
+  "schema": "gxtxt.acquisition_source_manifest.v1",
+  "source_tree_sha256": "0dff84bf0285505c9a1bc796beab922e0d15f855bbaa2c27a921a8996869a1e3"
+}

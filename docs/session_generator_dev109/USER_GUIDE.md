@@ -76,4 +76,4 @@ The offline HTML guide and IMAGE_PROVENANCE.json share these exact real images. 
 
 ## Scoped family acceptance
 
-MAIN accepted SESSION-GEN-BROWSER-01 through -07 on 2026-10-21 at unchanged CORE source33f301. See the seven-criterion matrix and acceptance provenance. Receipt: `MAIN_FAMILY_ACCEPTANCE87.json`, SHA256 `69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8`. Whole workstream6 and all15 release remain OPEN. This docs-only reconciliation awaits MAIN integration; the original native review receipts remain unchanged.
+MAIN accepted SESSION-GEN-BROWSER-01 through -07 on 2026-10-21 at unchanged CORE source33f301. See the [seven-criterion matrix and acceptance provenance](FINAL_FAMILY_MATRIX.md). Receipt: `MAIN_FAMILY_ACCEPTANCE87.json`, SHA256 `69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8`. Whole workstream6 and all15 release remain OPEN. This docs-only reconciliation awaits MAIN integration; the original native review receipts remain unchanged.

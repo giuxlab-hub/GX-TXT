@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "xy_plot": {
+      "title": "XY plot",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "dcecab36863917943110ec70231efd2f03f66f0dccfb010103208da6b1a443a2",
+      "png_sha256": "1db549d2c25c30a2fdbcd39ef92d639a4e36c0ccc5d0a4ba00704a5b7bd38c6f",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

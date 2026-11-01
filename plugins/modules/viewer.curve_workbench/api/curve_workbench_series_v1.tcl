@@ -21,7 +21,7 @@ proc ::GX::CurveWorkbench::_seriesCommit {w token container sources name paramet
         if {[_bulkRecord $record]} {error "Convert an explicit complete range to Native before series creation"}
         set native [dict get $record native];lappend nativeIds $native;dict set map $native $source
     }
-    set before [_snapshotIds $w $old];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w $old];
     set raw [::GX::native2DSeriesBuild $st($w,scene) $nativeIds $parameters $frame]
     set results {};set cells {};set ordinal 0
     try {
@@ -43,7 +43,7 @@ proc ::GX::CurveWorkbench::_seriesCommit {w token container sources name paramet
         _restoreSnapshot $w $before
         set live [::GX::Native2D::core ids $st($w,scene)]
         foreach native [dict get $raw object_ids] {if {$native in $live} {::GX::Native2D::core delete $st($w,scene) $native}}
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;_curveList $w;_pointList $w;_draw $w
+        _curveList $w;_pointList $w;_draw $w
         return -options $options $message
     }
     set st($w,status) "Parametric series $container committed: [llength $results] generated members, independent originals; one Undo action."
@@ -128,20 +128,20 @@ proc ::GX::CurveWorkbench::_seriesTransformApply {w token id values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen series transform"}
     _cancelGesture $w;_pointSyncApply $w
-    set record [dict get $st($w,seriesContainers) $id];set ids [dict get $record members];set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set record [dict get $st($w,seriesContainers) $id];set ids [dict get $record members];set before [_snapshotIds $w $ids];
     set all [concat [dict get $record sources] $ids];_coordinatePlaneAdmit $w $all
     if {![info exists st($w,seriesTransformKey)]||$st($w,seriesTransformKey) ne [list $id $record [_coordinateControlKey $w $all]]} {error {Series or coordinate frame changed; reopen series transform}}
     set matrix [::GX::Native2D::core rotation_matrix_degrees $st($w,scene) {0 0} [dict get $values angle]]
     lset matrix 4 [dict get $values dx];lset matrix 5 [dict get $values dy]
     set frame [::GX::native2DSeriesCompose $matrix [dict get $record frame]];set natives [lmap member $ids {dict get [_record $w $member] native}]
     if {$natives eq {}} {error "Empty series has no geometry to transform"}
-    try {::GX::Native2D::core affine $st($w,scene) $natives $matrix 0;foreach member $ids {_syncSamples $w $member};dict set st($w,seriesContainers) $id frame $frame;_history $w $before $ids} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {::GX::Native2D::core affine $st($w,scene) $natives $matrix 0;foreach member $ids {_syncSamples $w $member};dict set st($w,seriesContainers) $id frame $frame;_history $w $before $ids} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_seriesContainerRemove {w explode} {
     variable st
     _cancelGesture $w;_pointSyncApply $w
-    set id [_seriesContainerSelected $w];set members [dict get $st($w,seriesContainers) $id members];set ids [expr {$explode ? {} : $members}];set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
-    try {if {!$explode} {foreach member $members {_removeRecord $w $member}};dict unset st($w,seriesContainers) $id;_history $w $before $ids} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    set id [_seriesContainerSelected $w];set members [dict get $st($w,seriesContainers) $id members];set ids [expr {$explode ? {} : $members}];set before [_snapshotIds $w $ids];
+    try {if {!$explode} {foreach member $members {_removeRecord $w $member}};dict unset st($w,seriesContainers) $id;_history $w $before $ids} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
 }
 rename ::GX::CurveWorkbench::_changed ::GX::CurveWorkbench::_changed_series_base
 proc ::GX::CurveWorkbench::_changed {w} {_changed_series_base $w;_seriesManagerRefresh $w}

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 - 2026-09-23
 
 - Initial portable Session Generator API v1 release.
 - Added deterministic Smoothing example data for `demo.numeric.smoothing`.

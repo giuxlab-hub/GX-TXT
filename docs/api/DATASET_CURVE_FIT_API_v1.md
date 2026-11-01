@@ -106,7 +106,7 @@ Response models include linear, polynomial, exponential, power_law and gaussian.
 
 `accept` creates a separate CORE curve, without Dataset publication. Accepted records persist model state, points, grid/options, selected source points/filters/hash, residual convention and metrics through the GUI's Interactive Document lifecycle. `publishFitDataset` explicitly writes fitted X/Y and complete namespaced model/provenance metadata through Dataset Publication v2. CSV export writes the accepted curve and `<csv>.metadata.ini` with model/provenance and CSV SHA. A stale source/selection or duplicate acceptance is rejected. Sample, source Dataset, CORE fit and published Dataset identities remain distinct.
 
-See [viewer manual](../../plugins/modules/viewer.dataset_curve_fit/MANUAL.md), [publication](DATASET_PUBLICATION_API_v2.md) and [Canonical Dataset API](CANONICAL_DATASET_API_v2.md). Numeric model operations are separately callable by both Script Bridge languages; this does not expose arbitrary host file destinations through the viewer API.
+See [viewer manual](../../plugins/modules/viewer.dataset_curve_fit/MANUAL.md), [publication](DATASET_PUBLICATION_API_v2.md) and [API inventory](API_INVENTORY_v09806.md). Numeric model operations are separately callable by both Script Bridge languages; this does not expose arbitrary host file destinations through the viewer API.
 
 ## Dataset measurement bindings
 

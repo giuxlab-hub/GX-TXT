@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 — 2026-09-29
 
 - Read descriptor settings from the public Acquisition Handler inspect/import
   request. Preview and import use the same config without private CORE state.

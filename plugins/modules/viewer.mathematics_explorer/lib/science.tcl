@@ -211,32 +211,40 @@ proc ::GX::MathematicsExplorer::sessionToken {} {
     ::GX::sessionInspectionCurrentSession
     return [::GX::interactiveDocumentSessionToken]
 }
-proc ::GX::MathematicsExplorer::saveDocument {state currentId sessionToken} {
+proc ::GX::MathematicsExplorer::saveDocument {state currentId sessionToken {expected {}}} {
+    if {$currentId ne {} && ($expected eq {} || [dict get $expected id] ne $currentId)} {error {Save requires the receipt captured when this native Workspace was opened or last saved}}
+    return [dict get [saveWorkspace $state $expected $sessionToken] id]
+}
+proc ::GX::MathematicsExplorer::saveWorkspace {state expected sessionToken {name {}}} {
     validateState $state
     if {$sessionToken ne [sessionToken]} {error "Session changed. Work was not saved in another Session."}
-    set payload $state ;# Tcl dict is structured UTF-8 text, parsed as data (never eval'ed).
-    if {$currentId eq ""} {
-        set record [::GX::interactiveDocumentCreate viewer.mathematics_explorer mathematics_explorer gxtxt.mathematics_explorer.state 1 $payload]
+    if {$expected eq {}} {
+        if {$name eq {}} {set name [::GX::sessionWorkspaceAvailableName [dict get $state title]]}
+        set record [::GX::sessionWorkspaceCreate mathematics_explorer $name $state]
     } else {
-        set existing [::GX::interactiveDocumentRead $currentId]
+        set currentId [dict get $expected id]
+        if {![::GX::_nativeWorkspaceExists $currentId]} {error {Obsolete Mathematics Workspace cannot be updated. Create a new native Workspace.}}
+        set existing [::GX::nativeWorkspaceMetadata $currentId]
         if {[dict get $existing module_id] ne "viewer.mathematics_explorer" || [dict get $existing provider_id] ne "mathematics_explorer"} {
             error "Document belongs to another viewer."
         }
-        set record [::GX::interactiveDocumentUpdate $currentId $payload]
+        set record [::GX::sessionWorkspaceUpdate $currentId $state $expected]
     }
-    return [dict get $record id]
+    return $record
 }
-proc ::GX::MathematicsExplorer::readDocument {id sessionToken} {
+proc ::GX::MathematicsExplorer::readDocument {id sessionToken {receiptName {}}} {
     if {$sessionToken ne [sessionToken]} {error "Session changed. Choose a document from the current Session."}
+    if {![::GX::_nativeWorkspaceExists $id]} {error {Obsolete Mathematics Workspace cannot be restored. Create a new native Workspace.}}
     set record [::GX::interactiveDocumentRead $id]
     if {[dict get $record module_id] ne "viewer.mathematics_explorer" || \
         [dict get $record provider_id] ne "mathematics_explorer" || \
         [dict get $record format] ne "gxtxt.mathematics_explorer.state" || \
         [dict get $record format_version] ne "1"} {error "Document has the wrong owner or format."}
-    return [validateState [dict get $record payload]]
+    if {$receiptName ne {}} {upvar 1 $receiptName receipt;set receipt $record}
+    return [validateState [dict remove [dict get $record payload] workspace_metadata]]
 }
 proc ::GX::MathematicsExplorer::listDocuments {} {
-    return [::GX::interactiveDocumentList viewer.mathematics_explorer mathematics_explorer]
+    return [::GX::nativeWorkspaceQuery mathematics_explorer]
 }
 proc ::GX::MathematicsExplorer::publishComputed {state computed documentId sessionToken outputId} {
     if {$sessionToken ne [sessionToken]} {error "Session changed; publication refused."}

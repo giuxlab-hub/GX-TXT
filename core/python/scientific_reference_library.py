@@ -82,10 +82,11 @@ def write_wire(fields, metadata=None, provenance=None, data=None) -> None:
 
 
 @contextlib.contextmanager
-def connect_existing(path: Path):
+def connect_existing(path: Path, *, read_only=False):
     if not path.is_file():
         fail(f"reference library does not exist: {path}")
-    con = sqlite3.connect(f"file:{path}?mode=rw", uri=True)
+    con = sqlite3.connect(f"file:{path}?mode={'ro' if read_only else 'rw'}", uri=True)
+    if read_only:con.execute("PRAGMA query_only=ON")
     con.row_factory = sqlite3.Row
     if con.execute("PRAGMA user_version").fetchone()[0] != SCHEMA:
         con.close()
@@ -203,8 +204,8 @@ def list_libraries(root: str) -> None:
             continue
 
 
-def info(root: str, library_id: str) -> None:
-    with connect_existing(library_path(root, library_id)) as con:
+def info(root: str, library_id: str, *, _managed_path=None) -> None:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         write_wire(meta(con))
 
 
@@ -376,22 +377,22 @@ def remove_library(root: str, library_id: str) -> None:
     print(str(destination))
 
 
-def entities(root: str, library_id: str) -> None:
-    with connect_existing(library_path(root, library_id)) as con:
+def entities(root: str, library_id: str, *, _managed_path=None) -> None:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         for row in con.execute("SELECT entity_id FROM entities ORDER BY entity_id"):
             print(row[0])
 
 
-def entity(root: str, library_id: str, entity_id: str) -> None:
-    with connect_existing(library_path(root, library_id)) as con:
+def entity(root: str, library_id: str, entity_id: str, *, _managed_path=None) -> None:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         row = con.execute("SELECT metadata_json FROM entities WHERE entity_id=?", (safe_id(entity_id),)).fetchone()
         if row is None:
             fail("reference entity not found")
         write_wire(json.loads(row[0]))
 
 
-def spectra(root: str, library_id: str, entity_id: str = "") -> None:
-    with connect_existing(library_path(root, library_id)) as con:
+def spectra(root: str, library_id: str, entity_id: str = "", *, _managed_path=None) -> None:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         if entity_id:
             rows = con.execute("SELECT spectrum_id FROM spectra WHERE entity_id=? ORDER BY spectrum_id", (safe_id(entity_id),))
         else:
@@ -400,8 +401,8 @@ def spectra(root: str, library_id: str, entity_id: str = "") -> None:
             print(row[0])
 
 
-def spectrum(root: str, library_id: str, spectrum_id: str, include_data: bool) -> None:
-    with connect_existing(library_path(root, library_id)) as con:
+def spectrum(root: str, library_id: str, spectrum_id: str, include_data: bool, *, _managed_path=None) -> None:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         row = con.execute("SELECT * FROM spectra WHERE spectrum_id=?", (safe_id(spectrum_id),)).fetchone()
         if row is None:
             fail("reference spectrum not found")
@@ -410,15 +411,16 @@ def spectrum(root: str, library_id: str, spectrum_id: str, include_data: bool) -
         pairs = None
         if include_data:
             n = row["sample_count"]
+            if _managed_path is not None and n>32768:fail("Large managed spectra require the existing bounded Manager readLibraryEntry interface")
             x = struct.unpack("<" + "d" * n, row["x_payload"])
             y = struct.unpack("<" + "d" * n, row["y_payload"])
             pairs = zip(x, y)
         write_wire(fields, json.loads(row["metadata_json"]), json.loads(row["provenance_json"]), pairs)
 
 
-def search(root: str, library_id: str, query: str) -> None:
+def search(root: str, library_id: str, query: str, *, _managed_path=None) -> None:
     q = f"%{query.lower()}%"
-    with connect_existing(library_path(root, library_id)) as con:
+    with connect_existing(_managed_path or library_path(root, library_id), read_only=_managed_path is not None) as con:
         rows = con.execute(
             "SELECT s.spectrum_id FROM spectra s LEFT JOIN entities e ON s.entity_id=e.entity_id "
             "WHERE lower(s.spectrum_id) LIKE ? OR lower(s.fields_json) LIKE ? "
@@ -429,8 +431,8 @@ def search(root: str, library_id: str, query: str) -> None:
             print(row[0])
 
 
-def validate_file(path: Path, expected_id: str | None = None) -> dict[str, str]:
-    with connect_existing(path) as con:
+def validate_file(path: Path, expected_id: str | None = None, *, read_only=False) -> dict[str, str]:
+    with connect_existing(path, read_only=read_only) as con:
         result = con.execute("PRAGMA integrity_check").fetchone()[0]
         if result != "ok":
             fail(f"SQLite integrity check failed: {result}")
@@ -501,6 +503,25 @@ def import_package(root: str, package: str) -> None:
         if temp:
             Path(temp).unlink(missing_ok=True)
     print(library_id)
+
+
+def managed_read(path, registration, operation, arguments):
+    """Existing Reference reader, called only inside Manager's verified lock."""
+    library_id=registration['library_id']
+    if operation in {'info','validate'}:
+        if operation=='validate':information=validate_file(path,library_id,read_only=True)
+        else:
+            with connect_existing(path,read_only=True) as con:information=meta(con)
+        if information.get('library_id')!=library_id:fail('Managed reference identity differs')
+        # Package and scientific-data versions have distinct, real owners.
+        information=dict(information,scientific_version=information['version'],version=registration['version'],
+            managed_payload_sha256=registration['payload_sha256'],managed_package_sha256=registration['package_sha256'])
+        write_wire(information)
+        return
+    readers={'entities':entities,'entity':entity,'spectra':spectra,'spectrum-info':lambda root,lid,sid,**kw:spectrum(root,lid,sid,False,**kw),
+        'spectrum':lambda root,lid,sid,**kw:spectrum(root,lid,sid,True,**kw),'search':search}
+    if operation not in readers:fail('Unsupported managed Reference read operation')
+    readers[operation]('',library_id,*arguments,_managed_path=path)
 
 
 def main(argv: list[str]) -> None:

@@ -3,10 +3,15 @@
 
 Version **2.3.0** delegates the complete retained FFT lobe estimator to public `math.numeric`. CORE statistical semantics owns quality definitions, units, availability, metrics and reports. Normal and Temporal Set spectrum publications retain their canonical identities and capture source lineage plus the interpreted summary.
 
-It consumes the public Temporal Set API v1 and recalculates stable output IDs
-using Dataset Publication API v2 same-owner replacement. Publication is
-transactional and refuses output owned by another module. The normal
-full-record, fixed-block and Dataset Selection workflows remain available.
+Version **2.1.1** retains the Temporal Set support introduced in 2.1.0 and
+uses Dataset Publication API v2 same-owner replacement when recalculating its
+stable output IDs. Replacement is transactional and cannot overwrite output
+owned by another module.
+
+Version **2.1.0** added public Temporal Set API v1 consumption to the existing
+dataset-native FFT module. The FFT mathematics, normalization, window
+functions, fixed-block behavior, Dataset Selection behavior, and legacy output
+contract remain unchanged.
 
 This module remains a **single-frame FFT/spectrum analysis**. Processing a
 Temporal Window Set means running that same FFT independently for each resolved
@@ -16,7 +21,7 @@ time-varying spectrogram analysis remains the responsibility of
 
 ## Data flow
 
-Supported single-frame modes:
+Existing modes:
 
 ```text
 canonical timeseries.table

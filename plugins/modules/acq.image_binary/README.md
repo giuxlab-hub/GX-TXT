@@ -7,7 +7,7 @@ GX-TXT CORE module for importing binary raster image files.
 - Imports PNG, JPEG, BMP and TIFF as opaque `image.raster` binary Datasets.
 - Detects the format from content signatures rather than trusting the filename extension.
 - Re-validates the framework-owned RAW snapshot during import and keeps RAW bytes authoritative.
-- Publishes persistent structured metadata through Dataset Metadata API v1 using the Acquisition Handler `structured_metadata` transfer contract.
+- Publishes persistent structured metadata through Dataset Metadata API v1 using the Acquisition Handler `structured_metadata` handoff introduced in GX-TXT 0.9.7.38.
 - Reads technical metadata such as dimensions, mode, bands, frame count, alpha and DPI when available.
 - Reads available EXIF/TIFF tags, PNG textual metadata, IPTC fields, XMP packet data and selected container information.
 - Preserves common image fields with convenient aliases such as camera make/model, capture date, orientation, software, exposure, ISO and lens information when present.
@@ -48,3 +48,10 @@ Unknown or format-specific fields remain namespaced metadata; CORE does not inte
 ## License
 
 SPDX-License-Identifier: GPL-3.0-or-later
+
+
+P028 adds declarative PNG/JPEG/BMP/TIFF MIME capabilities matching the existing
+signature detector. Parsing, canonical image contract and ordinary Acquisition
+configuration remain the same. Generic Library Entry dispatch can therefore
+select this existing handler by real media/contract declarations and its actual
+inspection result, without guessing from extensions or adding an image parser.

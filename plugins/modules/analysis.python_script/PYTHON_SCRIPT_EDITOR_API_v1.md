@@ -2,10 +2,32 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-Provider: `analysis.python_script` 1.1.0. The lazy Tk **Python Script Workspace** is a separate Viewer from Octave Script Workspace. Its executable identity is the existing CORE Script Registry (`session:<id>` or `user:<id>`). The viewer adds no registry or execution engine.
+Provider `analysis.python_script` 1.6.0 uses the existing Script Registry,
+Source Surface, shared file-aware tab controller and managed Script Job owner.
+The lazy Tk Viewer dispatches `open`/`rerender` through
+`::GX::PythonScriptEditor::viewerDispatch`. User authoring works without a Session;
+Session persistence and execution require the reviewed Session lifetime.
 
-The Viewer Provider uses `python_script_editor_tk` and dispatches `open` and `rerender` to `::GX::PythonScriptEditor::viewerDispatch`. Opening requires a current Session. Discovery remains headless; Tk loads only when the viewer opens.
+The module's trusted host operations are:
 
-The module adapter provides `workspaceList`, `workspaceRead`, `workspaceSave`, and `workspaceDelete`. These are viewer integration procedures, not a replacement for `SCRIPT_EXECUTION_API_v1`. `workspaceList` and `workspaceRead` accept Python registry records only. `workspaceSave` writes UTF-8 source and metadata through `scriptRegistrySave` or `scriptRegistryUpdate`, preserving stable ID, revision, and SHA-256. It accepts User or Session scope, semantic version, description, required API declarations, and the Script Registry typed parameter dictionary. Updates require the exact prior SHA-256. `workspaceDelete` checks language and SHA-256, then uses Task 004 `resourceLifecycleDeleteScript`, including dependency refusal and preservation of historical execution snapshots.
+- `workspaceList`: language-filtered Registry Scripts/Projects.
+- `workspaceRead reference`: verified metadata plus UTF-8 entrypoint `code`;
+  Projects also expose their full admitted manifest/source identities.
+- `workspaceSave reference expectedSha scope scriptId name version description requiredApis parameters code ?expectedRevision?`:
+  compatible one-file create/update through the Registry. Optional revision pins
+  same-source metadata edits; ordinary UI callers supply it.
+- `workspaceDelete reference expectedSha`: language/SHA guarded removal through
+  the existing resource lifecycle, including active-dependency refusal.
 
-Run in the viewer opens the existing CORE registered-script run dialog; the Analysis `analysis.python_script` selector uses the same Session registry identity. The public Python `gxtxt` package is documented in [`PYTHON_SCRIPT_CLIENT_v1.md`](../../../docs/api/PYTHON_SCRIPT_CLIENT_v1.md).
+Project Save All uses `::GX::scriptRegistryProjectUpdate`, never a loop of
+one-file writes. Project creation/copy/import/export/assignment uses the same
+Registry owner. See [Project API](../../../docs/api/SCRIPT_PROJECTS_v1.md).
+The common tab controller retains independent source, Undo, find/caret, dirty
+baseline, exact source/composite identity and read-only historical snapshots.
+
+Run opens the shared Runner for the selected saved identity. It does not submit
+or start a separate process. Native Debug retains real helper-file frames and
+frozen source identity. Literal source parameters and typed manual invocation
+rows use the common Registry/Bridge/Job schema; see
+[parameter declarations](../../../docs/api/SCRIPT_PARAMETER_DECLARATIONS_v1.md)
+and [Python client](../../../docs/api/PYTHON_SCRIPT_CLIENT_v1.md).

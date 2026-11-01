@@ -70,62 +70,28 @@ The owning module is not installed.}}
     set ::GX::DocumentationManual::state($w,asset_root) $assetRoot
     set imageCallback [expr {$assetRoot ne {} ? [list ::GX::documentationBrowserManualImage $w] : {}}]
     foreach tag [$w tag names] {if {[string match gx_manual_image_* $tag]} {$w tag delete $tag}}
-    markupRenderStringToWidget $w $source $imageCallback
-    foreach tag [$w tag names] { if {[string match gx_doc_link_* $tag]} { $w tag delete $tag } }
-    set display [$w get 1.0 end-1c]
-    set at 0; set number 0;set textAt 1.0
-    while {[regexp -indices -start $at {\[[^]]+\]\([^)]+\)} $display match]} {
-        lassign $match first last
-        set markdown [string range $display $first $last]
-        if {[regexp {\[[^]]+\]\(([^)]+)\)} $markdown -> target]} {
-            set tag "gx_doc_link_[incr number]"
-            # Embedded images occupy Tk indices but are absent from Text.get.
-            set index [$w search -exact -- $markdown $textAt end]
-            if {$index eq {}} {set at [expr {$last+1}];continue}
-            set textAt "$index + [string length $markdown] chars"
-            $w tag add $tag $index $textAt
-            $w tag configure $tag -foreground #145da0 -underline 1
-            $w tag bind $tag <Button-1> [list ::GX::documentationBrowserFollow $target]
-        }
-        set at [expr {$last+1}]
-    }
+    set context [markdownNavigationContext documentation $id [dict create \
+        open_command ::GX::_documentationBrowserMainMarkdownOpen \
+        status_command [list set ::GX::documentationBrowserUi(status)]]]
+    markupRenderStringToWidget $w $source $imageCallback $context
     $w see 1.0
     if {[$tree exists $id]} { $tree selection set $id; $tree see $id }
 }
 
 proc ::GX::documentationBrowserFollow {target} {
-    variable documentationBrowserEntries
-    variable documentationBrowserUi
-    variable scriptDir
-    if {[string match "#*" $target]} {
-        set heading [string map {- " " _ ""} [string range $target 1 end]]
-        set w .top.nb.help.right.text
-        set location [$w search -nocase -- $heading 1.0]
-        if {$location ne ""} { $w see $location }
-        return
+    return [markupNavigationFollow .top.nb.help.right.text $target]
+}
+proc ::GX::_documentationBrowserMainMarkdownOpen {destination} {
+    if {[dict get $destination kind] ne {documentation}} {error {Documentation requires an indexed document target}}
+    if {[string tolower [file extension [dict get $destination path]]] in {.html .htm}} {
+        set owner [dict get $destination owner]
+        if {[moduleField $owner descriptor {}] eq {}} {error {Linked HTML requires its installed documentation module}}
+        set host [documentationBrowserOpenModuleWindow $owner]
+        documentationBrowserManualShow $host [dict get $destination path] [dict get $destination fragment]
+        return {anchor_handled 1}
     }
-    if {[regexp {^[a-zA-Z]+:} $target]} {
-        set documentationBrowserUi(status) "External link: $target"
-        return
-    }
-    set current [dict get $documentationBrowserEntries $documentationBrowserUi(current)]
-    if {[dict get $current path] eq ""} return
-    set target [lindex [split $target #] 0]
-    if {$target eq ""} return
-    set path [file normalize [file join [file dirname [dict get $current path]] $target]]
-    set root [file normalize $scriptDir]
-    if {[string first "$root/" "$path/"] != 0 || ![file isfile $path] ||
-        [string tolower [file extension $path]] ni {.md .markdown .txt .html .htm}} {
-        set documentationBrowserUi(status) "Internal document is unavailable: $target"
-        return
-    }
-    dict for {id entry} $documentationBrowserEntries {
-        if {[dict get $entry path] eq $path} { documentationBrowserShow $id; return }
-    }
-    set id "linked:[sha256File $path]"
-    documentationBrowserAdd $id {Linked document} [file tail $path] linked $path \
-        [dict get $current owner] [dict get $current version]
-    documentationBrowserShow $id
+    documentationBrowserShow [dict get $destination id]
+    return [dict create widget .top.nb.help.right.text]
 }
 
 proc ::GX::documentationBrowserSelected {} {

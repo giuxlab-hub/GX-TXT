@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Initial deterministic Root Finding Session Generator.
 - Added sampled cubic source data and independently documented analytical roots.

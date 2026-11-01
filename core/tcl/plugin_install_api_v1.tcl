@@ -11,6 +11,7 @@ namespace eval ::GX {
     variable pluginInstallApiVersion 1
     variable pluginRegistry
     variable pluginRegistryOrder {}
+    variable pluginManagerLayoutAfter {}
 }
 source [file join [file dirname [info script]] plugin_runtime_lifecycle_v1.tcl]
 
@@ -110,6 +111,89 @@ proc ::GX::pluginRegistryIsManaged {id} {
     return [expr {[info exists pluginRegistry($id,id)] ? 1 : 0}]
 }
 
+# Distribution overlays can deliver a complete external package without an
+# installer registry entry. Discovery never adopts it. Only an explicit Update
+# may adopt a verified non-CORE package in the ordinary installer transaction.
+proc ::GX::pluginUpdateTargetInfo {type id {explicitUpdate 0} {verifyContents 1}} {
+    set target [pluginTargetPath $type $id]
+    foreach directory [list [file dirname [file dirname $target]] [file dirname $target]] {
+        if {![file isdirectory $directory] || [file type $directory] eq {link}} {error {Installed plugin parent must be an ordinary canonical directory}}
+    }
+    if {![file isdirectory $target] || [file type $target] eq {link}} {error "Plugin '$id' has no ordinary installed directory"}
+    set descriptor [pluginDescriptorPath $target $type]
+    if {![file isfile $descriptor] || [file type $descriptor] eq {link}} {error "Plugin '$id' has no ordinary descriptor"}
+    set data [parseIni $descriptor]
+    if {[string trim [descriptorValue $data meta id {}]] ne $id || [descriptorValue $data meta api_version {}] ne {1}} {error "Installed plugin '$id' descriptor identity is invalid"}
+    set version [string trim [descriptorValue $data meta version {}]]
+    if {$version eq {}} {error "Installed plugin '$id' version is missing"}
+    set managed [pluginRegistryIsManaged $id]
+    if {$managed && [pluginInstalledField $id type] ne $type} {error "Installed plugin '$id' registry type conflicts with its target"}
+    set manifest [file join $target plugin-package.ini]
+    set identity [list descriptor [sha256File $descriptor]]
+    if {[file exists $manifest]} {
+        if {![file isfile $manifest] || [file type $manifest] eq {link}} {error "Installed plugin '$id' package manifest is invalid"}
+        set package [parseIni $manifest]
+        foreach {field expected} [list api_version 1 id $id type $type version $version] {
+            set observed [descriptorValue $package package $field {}]
+            # Match the existing package reader's normalization exactly.
+            if {$field in {id type version}} {set observed [string trim $observed]}
+            if {$field eq {type}} {set observed [string tolower $observed]}
+            if {$observed ne $expected} {error "Installed plugin '$id' package $field conflicts with its descriptor"}
+        }
+        lappend identity manifest [sha256File $manifest]
+    }
+    if {!$managed} {
+        if {!$explicitUpdate} {error "Plugin '$id' requires an explicit Update to adopt its packaged installation"}
+        if {[string tolower [string trim [descriptorValue $data meta core 0]]] in {1 true yes on}} {error "Unmanaged CORE plugin '$id' is distribution-protected"}
+        if {![file isfile $manifest]} {error "Installed plugin '$id' is not a standalone packaged installation"}
+        if {$verifyContents} {
+            pluginValidateTree $target
+            set info [pluginPackageRead $target]
+            if {[dict get $info id] ne $id || [dict get $info type] ne $type} {error "Installed plugin '$id' package identity conflicts with its target"}
+            lappend identity members [pluginVerifyInstalledInventory $target]
+        }
+    }
+    return [dict create version $version managed $managed target $target identity $identity]
+}
+
+proc ::GX::pluginVerifyInstalledInventory {root} {
+    set inventories {}
+    foreach name {SHA256SUMS.txt SHA256SUMS checksums.sha256} {
+        if {[file isfile [file join $root $name]]} {lappend inventories $name}
+    }
+    if {![llength $inventories]} {error {Adopting an installed package requires its SHA-256 file inventory}}
+    set baseline {}
+    set inventoryHashes {}
+    foreach inventory $inventories {
+        dict set inventoryHashes $inventory [sha256File [file join $root $inventory]]
+        set f [open [file join $root $inventory] r]
+        try {set lines [split [read $f] \n]} finally {close $f}
+        set entries {}
+        foreach line $lines {
+            if {[string trim $line] eq {}} continue
+            if {![regexp {^([0-9A-Fa-f]{64}) [ *](.+)$} $line -> sha relative]} {error {Malformed installed package checksum inventory}}
+            if {![pluginZipEntrySafe $relative] || [file pathtype $relative] ne {relative} || [string first {\\} $relative]>=0} {error {Unsafe installed package checksum path}}
+            foreach part [split $relative /] {if {$part in {{} . ..}} {error {Noncanonical installed package checksum path}}}
+            set path [file normalize [file join $root $relative]]
+            if {[string first "[file normalize $root]/" $path]!=0 || ![file isfile $path] || [dict exists $entries $relative]} {error {Invalid or duplicate installed package checksum member}}
+            set sha [string tolower $sha]
+            if {[sha256File $path] ne $sha} {error "Installed package checksum mismatch: $relative"}
+            dict set entries $relative $sha
+        }
+        set entries [lsort -stride 2 -index 0 $entries]
+        if {$entries eq {}} {error {Installed package checksum inventory is empty}}
+        if {$baseline ne {} && $entries ne $baseline} {error {Installed package checksum aliases disagree}}
+        set baseline $entries
+    }
+    foreach path [pluginWalkPaths $root] {
+        if {![file isfile $path]} continue
+        set relative [string range $path [expr {[string length $root]+1}] end]
+        if {$relative in $inventories} continue
+        if {![dict exists $baseline $relative]} {error "Installed package checksum inventory omits: $relative"}
+    }
+    return [dict create files $baseline inventories $inventoryHashes]
+}
+
 proc ::GX::pluginInstalledField {id field {default ""}} {
     variable pluginRegistry
     if {![info exists pluginRegistry($id,id)]} { pluginRegistryLoad }
@@ -145,6 +229,19 @@ proc ::GX::pluginIsCore {type id} {
     return [expr {$raw in {1 true yes on}}]
 }
 
+proc ::GX::nativeWorkspaceDescriptorAdmission {data {label {Plugin}}} {
+    foreach provider [splitList [descriptorValue $data workspaces ids {}]] {
+        set section workspace.$provider
+        if {[descriptorValue $data $section native_contract {}] ne {NATIVE_WORKSPACE_API_v1}} {error "$label Workspace provider '$provider' requires NATIVE_WORKSPACE_API_v1; obsolete providers are unsupported"}
+        foreach field {entrypoint type schema version validate open encode} {
+            if {[string trim [descriptorValue $data $section $field {}]] eq {}} {error "$label native Workspace provider '$provider' requires $field"}
+        }
+        if {![dict exists $data $section.native_required_fields]} {error "$label native Workspace provider '$provider' requires an explicit native_required_fields declaration"}
+        set required [descriptorValue $data $section native_required_fields {}]
+        if {[catch {dict size $required}]} {error "$label has an invalid native Workspace field declaration"}
+        dict for {field kind} $required {if {$kind ni {null text bool int real object array resource}} {error "$label has an unsupported native Workspace field kind '$kind'"}}
+    }
+}
 proc ::GX::pluginPackageRead {root} {
     variable version
     set mf [file join $root plugin-package.ini]
@@ -169,6 +266,7 @@ proc ::GX::pluginPackageRead {root} {
     set descriptor [pluginDescriptorPath $root $type]
     if {![file isfile $descriptor]} { error "Package $id does not contain the required [file tail $descriptor]" }
     set pd [parseIni $descriptor]
+    if {$type eq {module}} {nativeWorkspaceDescriptorAdmission $pd "Package $id"}
     set did [string trim [descriptorValue $pd meta id ""]]
     set dver [string trim [descriptorValue $pd meta version ""]]
     if {$did ne $id} { error "Package id '$id' does not match descriptor meta.id '$did'" }
@@ -193,7 +291,7 @@ proc ::GX::pluginPackageRead {root} {
             }
         }
     }
-    if {$type eq {module} && {RESTRICTED_VIEWER_CLIENT_API_v1} in [splitList [descriptorValue $pd public_apis ids {}]]} {
+    if {$type eq {module} && ({RESTRICTED_VIEWER_CLIENT_API_v1} in [splitList [descriptorValue $pd public_apis ids {}]] || ([descriptorValue $pd meta kind {}] eq {preview} && [descriptorValue $pd preview_provider runtime {}] eq {managed_cpp}))} {
         # An installable C++ Viewer supplies its binary. Admission verifies the
         # actual artifact and current SDK/runtime; it never invokes Build.
         viewerDevelopmentPackageVerify $root
@@ -218,6 +316,7 @@ proc ::GX::pluginValidateTree {root} {
     set r [file normalize $root]
     foreach p [pluginWalkPaths $r] {
         if {[file type $p] eq "link"} { error "Plugin packages may not contain symbolic links: $p" }
+        if {[file type $p] ni {file directory}} {error "Plugin packages may contain only ordinary files and directories: $p"}
         set n [file normalize $p]
         if {![string match "$r/*" $n] && $n ne $r} { error "Package path escapes package root: $p" }
     }
@@ -336,14 +435,17 @@ proc ::GX::pluginInstallPackage {source {mode auto} {expectedId ""}} {
         set newver [dict get $info version]
         if {$expectedId ne "" && $id ne $expectedId} { error "Selected package id '$id' does not match expected plugin '$expectedId'" }
         set target [pluginTargetPath $type $id]
-        set exists [file exists $target]
+        # A dangling link is still an existing protected filesystem entry.
+        # Following it with `file exists` would let rollback erase that entry.
+        set exists [expr {![catch {file lstat $target installedStat}]}]
         set managed [pluginRegistryIsManaged $id]
         if {$mode eq "install" && $exists} { error "Plugin '$id' is already installed" }
         if {$mode eq "update" && !$exists} { error "Plugin '$id' is not installed" }
-        if {$exists && !$managed} {
-            error "Plugin '$id' already exists but is not managed by Plugin Install API v1; refusing to overwrite it"
+        set oldver {}
+        if {$exists} {
+            set targetBefore [pluginUpdateTargetInfo $type $id [expr {$mode eq {update}}]]
+            set oldver [dict get $targetBefore version]
         }
-        set oldver [expr {$managed ? [pluginInstalledField $id version ""] : ""}]
         if {$exists && $oldver ne ""} {
             set cmp [pluginVersionCompare $newver $oldver]
             if {$mode eq "update" && $cmp <= 0} { error "Update must be newer than installed version $oldver (package is $newver)" }
@@ -354,12 +456,12 @@ proc ::GX::pluginInstallPackage {source {mode auto} {expectedId ""}} {
             pluginRuntimeTryPending $id
             if {[dict exists $::GX::pluginRuntimePending $id]} {error {This plugin already has a pending activation; close its editor or restart GX-TXT before another update.}}
         }
-        set plan [pluginRuntimePrepareUpdate $type $id $target]
-        set runtimeBefore [list $::GX::pluginRuntimeLoaded $::GX::pluginRuntimePending $::GX::pluginRuntimeReceipts]
         set reg [pluginRegistryPath]
         set registryExisted [file isfile $reg]
         set registryBytes {}
         if {$registryExisted} {set f [open $reg rb];set registryBytes [read $f];close $f}
+        set plan [pluginRuntimePrepareUpdate $type $id $target]
+        set runtimeBefore [list $::GX::pluginRuntimeLoaded $::GX::pluginRuntimePending $::GX::pluginRuntimeReceipts]
         set parent [file dirname $target]
         file mkdir $parent
         set stage [file join $parent ".gx-install-[pid]-[clock clicks]"]
@@ -374,8 +476,19 @@ proc ::GX::pluginInstallPackage {source {mode auto} {expectedId ""}} {
         }
         pluginValidateTree $stage
         pluginPackageRead $stage
+        # Revalidate after lifecycle callbacks/staging, before any replacement.
+        if {$exists && ([catch {pluginUpdateTargetInfo $type $id [expr {$mode eq {update}}]} targetNow] || $targetNow ne $targetBefore)} {
+            catch {file delete -force $stage}
+            error {Installed plugin changed while preparing its update}
+        }
+        set registryNow {}
+        if {[file isfile $reg]} {set f [open $reg rb];try {set registryNow [read $f]} finally {close $f}}
+        if {[file isfile $reg] != $registryExisted || $registryNow ne $registryBytes} {
+            catch {file delete -force $stage}
+            error {Installed plugin registry changed while preparing its update}
+        }
         set oldInstalledAt [expr {$managed ? [pluginInstalledField $id installed_at ""] : ""}]
-        set hadTarget [file exists $target]
+        set hadTarget $exists
         if {$hadTarget} { file rename -force $target $rollback }
         if {[catch {
             file rename -force $stage $target
@@ -429,12 +542,13 @@ proc ::GX::pluginUninstall {type id} {
     pluginRegistryLoad
     set id [pluginSafeId $id]
     if {$type eq "module" && ![moduleField $id selectable 1]} {
-        # Non-runnable provider services are independent installed plugins, not
-        # protected ALWAYS analyses. Keep the existing CORE check below.
+        # Acquisition availability is a runtime selection policy, not a ban on
+        # removing a non-CORE managed package. Keep CORE, ownership and live
+        # implementation/quiescence checks below, and the existing service rule.
         set libraryProvider [expr {[moduleField $id runner {}] eq {service} &&
             [info exists ::GX::moduleCatalog($id,dict)] &&
             [descriptorValue $::GX::moduleCatalog($id,dict) library_type_provider api_version {}] eq {1}}]
-        if {!$libraryProvider} {error "Module '$id' is ALWAYS and cannot be uninstalled."}
+        if {!$libraryProvider && [moduleField $id kind {}] ne {acquisition}} {error "Module '$id' is ALWAYS and cannot be uninstalled."}
     }
     if {[pluginIsCore $type $id]} { error "Plugin '$id' is CORE and cannot be uninstalled." }
     if {![pluginRegistryIsManaged $id]} { error "Plugin '$id' is not managed by Plugin Install API v1" }
@@ -496,8 +610,9 @@ proc ::GX::pluginInstallUiInstall_before_bundle_v1 {} {
 proc ::GX::pluginInstallUiUpdateSelected {} {
     set id [pluginManagerSelectedId]
     if {$id eq ""} { return }
-    if {![pluginRegistryIsManaged $id]} {
-        tk_messageBox -icon info -title "Plugin update" -message "The selected module is bundled or unmanaged and cannot be updated through Plugin Install API v1."
+    set type [lindex [.gxPluginManager.tree item [lindex [.gxPluginManager.tree selection] 0] -values] 1]
+    if {[catch {pluginUpdateTargetInfo $type $id 1} reason]} {
+        tk_messageBox -icon info -title "Plugin update" -message $reason
         return
     }
     set f [pluginInstallChoosePackage "Update $id"]
@@ -540,16 +655,27 @@ proc ::GX::pluginInstallRefreshButtons {} {
     if {![winfo exists .gxPluginManager.buttons.update]} return
     set id [pluginManagerSelectedId]
     set managed [expr {$id ne "" && [pluginRegistryIsManaged $id]}]
-    .gxPluginManager.buttons.update state [expr {$managed ? "!disabled" : "disabled"}]
+    set updateable 0
+    set updateReason {}
+    if {$id ne {}} {
+        set type [lindex [.gxPluginManager.tree item [lindex [.gxPluginManager.tree selection] 0] -values] 1]
+        # Selection is metadata-only. Full checksum/native package admission is
+        # reserved for the user's explicit Update, never a discovery side effect.
+        set updateable [expr {![catch {pluginUpdateTargetInfo $type $id 1 0} updateReason]}]
+        if {$updateable} {set updateReason {}}
+    }
+    .gxPluginManager.buttons.update state [expr {$updateable ? "!disabled" : "disabled"}]
     set removable $managed
     if {$managed} {
         set type [pluginInstalledField $id type]
-        if {[pluginIsCore $type $id] || ($type eq "module" && ![moduleField $id selectable 1])} {set removable 0}
+        if {[pluginIsCore $type $id] || ($type eq "module" && ![moduleField $id selectable 1] && [moduleField $id kind {}] ne {acquisition})} {set removable 0}
     }
     .gxPluginManager.buttons.remove state [expr {$removable ? "!disabled" : "disabled"}]
     if {$id ne {} && [winfo exists .gxPluginManager.status]} {
         set runtime [pluginRuntimeInfo $id]
-        set ::GX::ui(pluginManagerStatus) "[dict get $runtime status]: $id. Installed [dict get $runtime installed_version]; active [dict get $runtime active_version]. [dict get $runtime reason]"
+        set ownership [expr {$managed ? {Managed package} : {Bundled descriptor; registration occurs only after a successful explicit Update}}]
+        set row [.gxPluginManager.tree item [lindex [.gxPluginManager.tree selection] 0] -values]
+        set ::GX::ui(pluginManagerStatus) "$ownership. $id. Installed [lindex $row 2]; active [dict get $runtime active_version]. [dict get $runtime reason] $updateReason"
     } elseif {[winfo exists .gxPluginManager.status]} {
         set ::GX::ui(pluginManagerStatus) {Select an installed plugin to inspect its installed and active implementation versions.}
     }
@@ -571,13 +697,21 @@ proc ::GX::pluginManagerRefresh {} {
     foreach i [$t children {}] { $t delete $i }
     array unset ::GX::ui pluginManagerId,*
     set n 0
+    set records {}
+    foreach record [configurationInstalledPlugins] {dict set records [dict get $record id] $record}
     foreach id $pluginRegistryOrder {
+        if {![dict exists $records $id]} {dict set records $id [dict create id $id type [pluginInstalledField $id type] version [pluginInstalledField $id version] name [pluginInstalledField $id name]]}
+    }
+    foreach id [lsort -dictionary [dict keys $records]] {
+        set record [dict get $records $id]
         incr n
         set bid [pluginInstalledField $id bundle_id ""]
         set bver [pluginInstalledField $id bundle_version ""]
         set btxt [expr {$bid eq "" ? "" : "$bid $bver"}]
         set runtime [pluginRuntimeInfo $id]
-        set values [list $id [pluginInstalledField $id type] [pluginInstalledField $id version] $btxt [pluginInstalledField $id name] [dict get $runtime active_version] [dict get $runtime status]]
+        set status [dict get $runtime status]
+        if {![pluginRegistryIsManaged $id]} {set status {Bundled / not registered}}
+        set values [list $id [dict get $record type] [dict get $record version] $btxt [dict get $record name] [dict get $runtime active_version] $status]
         if {$query ne {} && [string first $query [string tolower [join $values { }]]]<0} continue
         $t insert {} end -id "p$n" -values $values
         set ::GX::ui(pluginManagerId,p$n) $id
@@ -594,6 +728,27 @@ proc ::GX::pluginManagerResetFilter {} {
 
 proc ::GX::pluginManagerResize {widget width} {
     if {$widget eq ".gxPluginManager"} {.gxPluginManager.status configure -wraplength [expr {max(220,$width-20)}]}
+}
+
+proc ::GX::pluginManagerTableSchedule {tree} {
+    if {![winfo exists $tree] || ![winfo ismapped $tree] || $::GX::pluginManagerLayoutAfter ne {}} return
+    set ::GX::pluginManagerLayoutAfter [after idle [list ::GX::pluginManagerTableLayout $tree [winfo id $tree]]]
+}
+proc ::GX::pluginManagerTableLayout {tree identity} {
+    set ::GX::pluginManagerLayoutAfter {}
+    if {![winfo exists $tree] || ![winfo ismapped $tree] || [winfo id $tree] ne $identity} return
+    _uiFieldTreeFontRows $tree GXPluginManager.Treeview
+    foreach column [$tree cget -columns] {
+        set minimum [expr {[font measure TkHeadingFont [$tree heading $column -text]]+22}]
+        if {[$tree column $column -minwidth]!=$minimum} {$tree column $column -minwidth $minimum}
+        if {[$tree column $column -width]<$minimum} {$tree column $column -width $minimum}
+    }
+}
+proc ::GX::pluginManagerTableDispose {tree actual} {
+    if {$tree eq $actual && $::GX::pluginManagerLayoutAfter ne {}} {
+        after cancel $::GX::pluginManagerLayoutAfter
+        set ::GX::pluginManagerLayoutAfter {}
+    }
 }
 
 proc ::GX::pluginManagerDialog {} {
@@ -615,6 +770,9 @@ proc ::GX::pluginManagerDialog {} {
     bind .gxPluginManager.search.query <Escape> ::GX::pluginManagerResetFilter
     grid .gxPluginManager.search -row 0 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 6
     ttk::treeview .gxPluginManager.tree -columns {id type version bundle name active status} -show headings -selectmode browse
+    _uiFieldTreeFontRows .gxPluginManager.tree GXPluginManager.Treeview
+    foreach event {<Map> <Configure> <<ThemeChanged>>} {bind .gxPluginManager.tree $event +[list ::GX::pluginManagerTableSchedule .gxPluginManager.tree]}
+    bind .gxPluginManager.tree <Destroy> +[list ::GX::pluginManagerTableDispose .gxPluginManager.tree %W]
     foreach {c title width} {id "Plugin ID" 200 type "Type" 80 version "Installed" 80 bundle "Bundle" 110 name "Name" 180 active "Active" 75 status "Activation" 190} {
         .gxPluginManager.tree heading $c -text $title
         .gxPluginManager.tree column $c -width $width -stretch 1
@@ -665,7 +823,9 @@ proc ::GX::scriptModuleBuilderOpen {} {
     set builder [file normalize [file join [file dirname $descriptor] $relative]]
     if {![string match "[file dirname $descriptor]/*" $builder]} { error "Unsafe Script Module Builder tool path." }
     if {![file isfile $builder]} { error "Script Module Builder is missing: $builder" }
-    exec $python -B $builder gui &
+    set command [list $python -B $builder gui]
+    if {[info exists ::GX::currentSession] && $::GX::currentSession ne {} && [file isdirectory $::GX::currentSession]} {lappend command --session [file normalize $::GX::currentSession]}
+    exec {*}$command &
 }
 
 # Surface package-management state in ordinary module details.

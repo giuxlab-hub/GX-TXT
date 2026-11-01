@@ -420,18 +420,22 @@ def library_extra_action(library_id, action, parameters):
     return dict(result, library_id=library_id, action=action, provider_id=provider['provider_id'])
 
 
-def library_catalog_page(mode, query, offset, limit):
+def library_catalog_page(mode, query, offset, limit, library_type=''):
     if mode not in {'all','managed','external','remote'} or not 0<=offset or not 1<=limit<=200 or len(query)>1024:
         fail('Library catalog requires mode, bounded filter and offset/limit (1-200)')
+    if library_type and library_type not in providers():
+        fail('Unknown scientific library type '+library_type)
     registry, fingerprint=registry_snapshot(managed_root())
     rows=[];needle=query.casefold().strip()
     for identifier, record in sorted(registry['libraries'].items()):
         if record.get('state')!='installed' or (mode!='all' and record.get('mode','managed')!=mode):continue
+        # Filter before slicing: a type selector must not hide matches on later pages.
+        if library_type and record.get('library_type')!=library_type:continue
         searchable=' '.join(str(record.get(key,'')) for key in ('library_id','display_name','library_type','origin','provider_id'))
         if needle and needle not in searchable.casefold():continue
         rows.append(record)
     out=dict(schema='gxtxt.library_catalog_page.v1',registry_sha256=fingerprint,
-             total=len(rows),offset=offset,limit=limit,mode=mode,query=query)
+             total=len(rows),offset=offset,limit=limit,mode=mode,query=query,library_type=library_type)
     selected=rows[offset:offset+limit];out['count']=len(selected)
     for index, record in enumerate(selected):
         info=public_info(record)
@@ -536,7 +540,7 @@ def select_provider(library_type, provider_id=None):
     return provider
 
 
-def install_or_update(command, package_path, expected_id=None):
+def install_or_update(command, package_path, expected_id=None, expected_version=None):
     root = managed_root()
     manifest, payload = read_package(package_path)
     provider = select_provider(manifest["library_type"], manifest["provider_id"])
@@ -546,6 +550,8 @@ def install_or_update(command, package_path, expected_id=None):
     with locked(root):
         registry = load_registry(root)
         previous = registry["libraries"].get(library_id)
+        if expected_version is not None and (previous or {}).get('version', '') != expected_version:
+            fail('Destination Library version changed; review selection again')
         if command == "install" and previous and previous["state"] == "installed":
             fail(f"scientific library {library_id} is already installed")
         if command == "update":
@@ -980,6 +986,19 @@ def _library_content(library_id, operation, parameters):
     parameters = _content_parameters(operation, parameters)
     root = managed_root()
     initial, _, _ = _content_resolve(root, library_id)
+    presentation_scope={}
+    options=parameters.get('options',{})
+    if 'scope' in options:
+        import scientific_library_graph as graph
+        if options['scope'] is None:fail('Library scope must be a typed dictionary')
+        presentation_scope=graph.normalize_scope(options['scope'])
+        parameters=dict(parameters,options={key:value for key,value in options.items() if key!='scope'})
+        if presentation_scope:
+            if initial.get('mode')=='remote':
+                if not graph.scope_source_allowed(presentation_scope,initial):fail('Source is outside this declared Browser scope')
+            elif operation in {'read_entry','entry_info','export_entry'}:
+                graph.read_pinned(dict(library_id=library_id,entry_id=parameters['entry_id']),presentation_scope)
+            else:fail('This scoped content operation requires a supported typed record or source')
     # Managed-local content serializes with normal install/update/remove. Remote
     # requests never hold the registry lock across provider/network calls.
     with locked(root) if initial.get('mode', 'managed') == 'managed' else contextlib.nullcontext():
@@ -991,12 +1010,121 @@ def _library_content(library_id, operation, parameters):
             with _credential_scope(record, provider):
                 result = _library_content_selected(root, record, provider, fingerprint, operation, parameters)
                 completed = True
+            if presentation_scope:
+                import scientific_library_graph as graph
+                if isinstance(result.get('payload'),dict) and result['payload'].get('schema')=='gxtxt.library_source_bundle.v1':result['payload']=graph.scope_bundle(result['payload'],presentation_scope)
+                if isinstance(result.get('metadata'),dict) and result['metadata'].get('schema')=='gxtxt.library_source_bundle.v1':result['metadata']=graph.scope_bundle(result['metadata'],presentation_scope)
+                result['scope']=presentation_scope
+                if operation in {'list_entries','search_entries'}:result['scope_note']='Eligible source identity search; exact typed content is scoped when explicitly previewed'
             return result
         except _ContentError as error:
             if completed and operation in {'add_entry', 'remove_entry'}:
                 # Scope exit/revalidation follows a potentially committed call.
                 error.details['mutation_outcome'] = 'unknown'
             raise
+
+
+def _managed_reference_read(operation, library_id, arguments):
+    """Finite read-only interop with the existing scientific Reference owner.
+
+    Logical IDs only at the public boundary. No alternate registry, flat-path
+    alias, data copy, scientific algorithm or mutation operation is introduced.
+    """
+    arity={'info':(0,0),'validate':(0,0),'entities':(0,0),'entity':(1,1),
+           'spectra':(0,1),'spectrum':(1,1),'spectrum-info':(1,1),'search':(1,1),'bulk-rank':(2,2)}
+    if operation not in arity or not arity[operation][0]<=len(arguments)<=arity[operation][1]:
+        fail('Unsupported managed Reference operation or arguments.')
+    if any(not isinstance(value,str) or len(value)>65536 or '\0' in value for value in arguments):
+        fail('Managed Reference arguments exceed their bounds.')
+    root=managed_root()
+    with locked(root):
+        record,provider,fingerprint=_content_resolve(root,library_id)
+        if record.get('mode','managed')!='managed' or getattr(provider['module'],'MANAGED_REFERENCE_READ_API',0)!=1:
+            fail('This registered provider has not admitted managed Reference read interoperability.')
+        with _credential_scope(record,provider):
+            content_operation='read_entry' if operation=='spectrum' else 'entry_info' if operation=='spectrum-info' else 'list_entries'
+            parameters=dict(entry_id=arguments[0]) if content_operation!='list_entries' else dict(limit=1)
+            parameters=_content_parameters(content_operation,parameters)
+            _content_gate(record,provider,content_operation,parameters)
+            try:_verify_managed_record(root,record,provider)
+            except Exception:fail('Managed Reference content failed integrity verification.')
+            path=storage_path(root,record)
+            if operation=='bulk-rank':
+                import tkinter
+                from scientific_reference_bulk_match import main as rank
+                parts=tkinter.Tcl().splitlist(arguments[1])
+                if len(parts)%2 or len(parts)!=2*len(set(parts[::2])):fail('Bulk rank options require unique dictionary keys.')
+                options=dict(zip(parts[::2],parts[1::2]))
+                fields=('experimental_representation','range_min','range_max','normalization','step','method','fingerprint_min','fingerprint_max','fingerprint_weight','limit')
+                if set(options)!=set(fields):fail('Bulk rank options differ from the existing Reference contract.')
+                # The public Reference wrapper owns this bounded temporary XY
+                # request; the module never receives the managed storage path.
+                experimental=Path(arguments[0])
+                if experimental.is_symlink() or not experimental.is_file() or experimental.stat().st_size>4*1024*1024:
+                    fail('CORE experimental bulk request is absent or exceeds 4 MiB.')
+                argv=['--library',str(path),'--experimental',str(experimental)]
+                for key in fields:argv.extend(['--'+key.replace('_','-'),options[key]])
+                rank(argv)
+            else:
+                from scientific_reference_library import managed_read
+                managed_read(path,record,operation,arguments)
+            try:_verify_managed_record(root,record,provider)
+            except Exception:fail('Managed Reference content changed while being read.')
+            current,current_fingerprint=registry_snapshot(root)
+            if current_fingerprint!=fingerprint or current['libraries'].get(library_id)!=record:
+                fail('Managed Reference registration changed during consultation.')
+
+
+def _managed_metadata_snapshot(library_id, expected_record):
+    """Fixed read-only Graph input, through the existing normalized content owner.
+
+    Verify the immutable package once on each side of the complete bounded
+    traversal, rather than rescanning a large scientific payload per page.
+    No scientific arrays, remote requests, mutation or new provider hook.
+    """
+    root = managed_root()
+    with locked(root):
+        record, provider, fingerprint = _content_resolve(root, library_id)
+        if record != expected_record or record.get('mode', 'managed') != 'managed':
+            fail('Managed metadata registration changed or is not local.')
+        with _credential_scope(record, provider):
+            _verify_managed_record(root, record, provider)
+            rows, identifiers, tokens = [], set(), set()
+            total, size, continuation = None, 0, ''
+            while True:
+                parameters = _content_parameters('list_entries', dict(limit=200, **(
+                    dict(continuation=continuation) if continuation else {})))
+                hook, policy = _content_gate(record, provider, 'list_entries', parameters)
+                page = _content_result(record, provider, 'list_entries', parameters,
+                    _content_provider_call(hook, _content_record_copy(record), parameters, FRAMEWORK), policy)
+                if total is None:
+                    total = page.get('total')
+                    if type(total) is not int or not 0 <= total <= 100000:
+                        fail('Managed metadata snapshot requires a bounded exact total.')
+                if page.get('total') != total:
+                    fail('Managed metadata total changed during traversal.')
+                for row in page['records']:
+                    identity = row['entry_id']
+                    if identity in identifiers:
+                        fail('Managed metadata contains duplicate entry identities.')
+                    identifiers.add(identity)
+                    size += len(json.dumps(row, ensure_ascii=False, allow_nan=False).encode('utf-8'))
+                    if len(identifiers) > total or size > 64 * 1024 * 1024:
+                        fail('Managed metadata snapshot exceeds its declared bounds.')
+                    rows.append(row)
+                continuation = page.get('continuation', '')
+                if not continuation:
+                    break
+                if not page['records'] or continuation in tokens or len(rows) >= total:
+                    fail('Managed metadata continuation does not make progress.')
+                tokens.add(continuation)
+            if len(rows) != total or identifiers != set(record['entry_ids']):
+                fail('Managed metadata traversal differs from the verified entry index.')
+            _verify_managed_record(root, record, provider)
+            current, current_fingerprint = registry_snapshot(root)
+            if current_fingerprint != fingerprint or current['libraries'].get(library_id) != record:
+                fail('Managed registration changed during metadata traversal.')
+            return rows
 
 
 def _library_content_selected(root, record, provider, fingerprint, operation, parameters):
@@ -1726,7 +1854,7 @@ def _credential_runtime_main():
                         _credential_error('integrity_failure')
                     if spec['role'] == 'runtime':
                         safe_id(spec['library_id'])
-                        if not spec['session'] or not Path(spec['session']).is_dir():
+                        if spec['session'] and not Path(spec['session']).is_dir():
                             _credential_error('invalid_request')
                     elif spec['library_id'] or spec['session']:
                         _credential_error('invalid_request')
@@ -1782,6 +1910,13 @@ def _credential_runtime_main():
                     with contextlib.redirect_stdout(captured):
                         emit_info(library_capabilities(args[0]))
                     emit({'ok': True, 'result': {'wire': captured.getvalue()}})
+                elif operation == 'source_import' and len(args)==2 and args[0]==context.specification['library_id']:
+                    context.arm(10)
+                    context.check_time()
+                    mutation=True
+                    result=import_source_selection(args[0],json.loads(args[1]))
+                    result['result_json']=json.dumps(result,ensure_ascii=False,allow_nan=False)
+                    emit({'ok':True,'result':{'wire':'G\t'+b64(tcl_result(result))}})
                 elif operation == 'content' and len(args) == 3 and args[0] == context.specification['library_id']:
                     context.arm(10)
                     context.check_time()
@@ -1819,12 +1954,70 @@ def _credential_runtime_main():
         output.close()
 
 
+def import_source_selection(library_id, parameters):
+    """Explicit Stage A only, with existing protected content owner admission."""
+    import scientific_library_graph as graph
+    if not isinstance(parameters,dict) or set(parameters)-{'entry_id','selected_ids','destinations','expected_source_sha256','download_assets','selected_alternatives','scope'}:
+        fail('Unknown source import selection fields')
+    if 'scope' in parameters and parameters['scope'] is None:fail('Library scope must be a typed dictionary')
+    scope=graph.normalize_scope(parameters.get('scope',{}))
+    source=require_installed(load_registry(managed_root()),library_id)
+    if scope and not graph.scope_source_allowed(scope,source):fail('Source is outside this declared Browser scope')
+    if source.get('mode')!='remote':fail('Choose a registered remote source Library')
+    import scientific_library_sources as sources
+    connector=sources.connectors().get(source.get('provider_config',{}).get('connector',''))
+    if not connector:fail('Source connector is absent or disabled')
+    if not connector['persistent_import_available']:
+        fail('This source API channel supports read-through consultation; independent user records and local files remain available through manual Library import')
+    options=dict(download_assets=parameters.get('download_assets',False),selected_ids=parameters['selected_ids'])
+    if scope:options['scope']=scope
+    result=_library_content(library_id,'read_entry',dict(entry_id=parameters['entry_id'],options=options))
+    bundle=result['payload']
+    # Review is bound to the exact source content seen by the user. Retrieval
+    # timestamps can differ, so connectors expose original response SHA.
+    expected=parameters.get('expected_source_sha256')
+    if not bundle.get('entries'):fail('No typed records from this source preview match the declared Browser scope')
+    actual=bundle.get('source_record_sha256',bundle['entries'][0]['entry']['provenance'].get('original_record_sha256'))
+    if expected and expected!=actual:fail('Source record changed after preview; review again')
+    alternatives=parameters.get('selected_alternatives',[])
+    if not isinstance(alternatives,list) or len(alternatives)>10 or len(set(alternatives))!=len(alternatives):
+        fail('Review at most 10 distinct source-suggested alternatives')
+    suggested={row['sku'] for row in bundle.get('suggestions',[])}
+    if set(alternatives)-suggested:fail('An alternative is not asserted by the primary source record')
+    for alternative in alternatives:
+        result=_library_content(library_id,'read_entry',dict(entry_id=alternative,options=options))
+        bundle['entries'].extend(result['payload']['entries'])
+    if scope:
+        selected=set(parameters['selected_ids'])
+        found=set()
+        for row in bundle['entries']:
+            entry=row['entry']
+            if entry['entry_id'] in selected:
+                graph.require_scope_entry(scope,parameters['destinations'].get(row['library_type'],''),entry,row['library_type'])
+                found.add(entry['entry_id'])
+        if selected-found:fail('Selected source records are outside the declared Browser scope or are unavailable')
+    return graph.import_bundle(bundle,parameters['selected_ids'],parameters['destinations'])
+
+
 def main(argv):
     if not argv:
         fail("missing Scientific Library Manager operation")
     action, *args = argv
     root = managed_root()
-    if action == 'content':
+    if action == 'domain' and len(args)==2:
+        import scientific_library_graph as graph
+        from gxtxt_job_supervisor import tcl_result
+        parameters=json.loads(args[1])
+        if not isinstance(parameters,dict):fail('Library domain request requires a typed object')
+        result=graph.operation(args[0],parameters)
+        result['result_json']=json.dumps(result,ensure_ascii=False,allow_nan=False)
+        print('G\t'+b64(tcl_result(result)))
+    elif action == 'source_import' and len(args)==2:
+        from gxtxt_job_supervisor import tcl_result
+        result=import_source_selection(args[0],json.loads(args[1]))
+        result['result_json']=json.dumps(result,ensure_ascii=False,allow_nan=False)
+        print('G\t'+b64(tcl_result(result)))
+    elif action == 'content':
         if not args:
             import tkinter
             text = sys.stdin.read(1048577)
@@ -1854,8 +2047,8 @@ def main(argv):
         emit_info(library_capabilities(args[0]))
     elif action == 'library_action' and len(args)>=2 and len(args)%2==0:
         emit_info(library_extra_action(args[0],args[1],dict(zip(args[2::2],args[3::2]))))
-    elif action == 'catalog_page' and len(args)==4:
-        emit_info(library_catalog_page(args[0],args[1],int(args[2]),int(args[3])))
+    elif action == 'catalog_page' and len(args) in {4,5}:
+        emit_info(library_catalog_page(args[0],args[1],int(args[2]),int(args[3]),args[4] if len(args)==5 else ''))
     elif action == "list" and not args:
         emit_list(sorted(library_id for library_id, record in load_registry(root)["libraries"].items()
                          if record["state"] == "installed" and record.get("mode", "managed") == "managed"))
@@ -1890,6 +2083,8 @@ def main(argv):
     elif action == "entries" and len(args) == 1:
         record = require_managed(require_installed(load_registry(root), args[0]), "listLibraryEntries")
         emit_list(record["entry_ids"])
+    elif action == "reference_read" and len(args) >= 2:
+        _managed_reference_read(args[0],args[1],args[2:])
     elif action == "spectrum" and len(args) == 2:
         record = require_managed(require_installed(load_registry(root), args[0]), "readLibrarySpectrum")
         if args[1] not in record["entry_ids"]:
@@ -1931,7 +2126,7 @@ if __name__ == "__main__":
                 if len(parts)!=6:fail('Library request requires operation, arguments and current provider descriptors')
                 request=dict(zip(parts[::2],parts[1::2]))
                 if set(request)!={'operation','arguments','provider_descriptors'}:fail('Invalid Library request fields')
-                allowed={'catalog_page','library_capabilities','provider_capabilities','library_action','info','entries','verify','install','update','remove','register','unregister','provider','types','open','content','root','list','registered','compatible','spectrum'}
+                allowed={'domain','source_import','catalog_page','library_capabilities','provider_capabilities','library_action','info','entries','verify','install','update','remove','register','unregister','provider','types','open','content','root','list','registered','compatible','spectrum','reference_read'}
                 if request['operation'] not in allowed:fail('Unsupported Library request operation')
                 os.environ['GXTXT_LIBRARY_PROVIDER_DESCRIPTORS']=os.pathsep.join(interpreter.splitlist(request['provider_descriptors']))
                 captured=io.StringIO()

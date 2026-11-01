@@ -77,7 +77,7 @@
   "code_generation_invoked": false,
   "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
   "compiler_version": "19.1.7",
-  "design_sha256": "67bba64ce21b2accea937632cef1e5bafe449f7b53a5829da54b0136492f3a24",
+  "design_sha256": "413e5b05f50bcc717bb2b13e475a45e986fcd655d3279b22167e55558847ef47",
   "diagnostics": [],
   "functions": [
     "on_event"
@@ -103,10 +103,11 @@
     "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
     "standard": "C++17 including C facilities"
   },
-  "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+  "policy_sha256": "19575e86f2f905f36e63bb6c7de08f66fa94924e97f6dc78073696c9745712f5",
   "profile": "cpp_view_v1",
+  "project_digest_sha256": "3543eb4d957c75b0cc879fd5af6418bc9ece22cb7169018f13df6c8dfbdf5c89",
   "project_profile": "document_view_v1",
-  "project_sha256": "452daca63e2e3e55da848639328d31e6b1050da722d48936bfe0c7118ec822c8",
+  "project_sha256": "62a3094c61704788f39fa4f664a8e059a29923bbef0e568e2acd75db85509e04",
   "schema": "gxtxt.cpp_validation.v1",
   "sdk_calls": [
     "catalog_action",
@@ -114,12 +115,22 @@
     "catalog_refresh",
     "number"
   ],
-  "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
-  "source_sha256": "de79e8b5a98c86dbe442048c97123462a55ee478841fa4a18396a49371c4747e",
+  "sdk_sha256": "b55073e021bc8b78f72758122418e17d7e4ca0a6f91f1e252858091932d8a74a",
+  "source_manifest": [
+    {
+      "bytes": 1988,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "e365580bf46ed4c4d4e99df567066bdb9b1b119868afb64178b7e57c7c13646a"
+    }
+  ],
+  "source_sha256": "e365580bf46ed4c4d4e99df567066bdb9b1b119868afb64178b7e57c7c13646a",
+  "source_tree_sha256": "98989a622b1e68905dbc4ffe52dcf8bdaf5efffc8e92e1158d1da5d19a7f517c",
   "stages": [
     "clang_raw_lexer",
     "clang_resolved_ast"
   ],
   "status": "PASS",
-  "workspace_callback_contract_sha256": "19ea4e52caa1379c7f682a2c5b8eeba8409b770151d93179e9a50006be242a67"
+  "workspace_callback_contract_sha256": "d86625489ae725c79cc9464dd619470df13b600cb28063ce8b1cb02f5323abd8",
+  "workspace_hooks": []
 }

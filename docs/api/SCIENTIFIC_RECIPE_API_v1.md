@@ -52,7 +52,7 @@ the proposal without mutating an unrelated GUI document. Builder profile W
 packages the identical source; invocation in the owning Workbench applies one
 transaction. Source bytes and SHA remain unchanged.
 
-## Explicit History rebase (dev094)
+## Explicit History rebase
 
 `scientificRecipeRebase(record, current_snapshot, context)` is a pure host operation
 on the same CORE authority. Context requires `owner`, `document_id` and
@@ -70,7 +70,7 @@ portable-backup navigation. Precommit failure preserves old live/saved History;
 a postcommit recovery warning reports the committed reset accurately. Undo/Redo
 restart empty; current scientific records, resources, parameters and notes survive.
 
-## Shared Workspace History host adapter (dev096)
+## Shared Workspace History host adapter
 
 `scientificHistoryCreate(owner, snapshot)`, `scientificHistoryAppend(owner,
 record, snapshot, description)`, `scientificHistoryNavigate(owner, record,
@@ -97,7 +97,20 @@ keyboard focus before the requested edit. Ordinary Undo/Redo/navigation still
 restore their target snapshots; a different checkpoint cannot use the retained
 native-state path. Cancelling a branch leaves the record and source unchanged.
 `ViewerClear` guards latest state and offers protected portable backup before
-calling Recipe Rebase. Export/publication side effects are outside local Undo.
+resetting the existing native History baseline. Export/publication side effects
+are outside local Undo.
+The host-only `scientificHistoryViewerClear(window, workspace)` accepts the
+adapter's actual bound Workspace ID or its empty unsaved-draft binding. Cancel
+preserves both. No on a draft resets and flushes its existing native History
+journal without creating a Workspace; its ordinary explicit Save later creates
+and binds the native identity. Yes selects a destination before using the
+registered Workspace Host Save and protected export owners, then resets History.
+The adapter is reacquired after Save changes its journal binding. A draft without
+a registered backup owner rejects a protected-backup request explicitly. Session,
+window incarnation, History handle/accepted revision and any saved Workspace
+generation/revision are checked again after modal review. Backup failure preserves
+the existing History. Current science and stored named archives survive Clear.
+These dialogs require the owning GUI; they do not grant Script/SDK access.
 The common `ViewerStrip` presents a compact Description/History selector and
 timeline, with Previous/Next/Return to latest/explicit restart context actions.
 This adapter is used only by History-capable hosts; Interactive Curve Builder
@@ -128,3 +141,5 @@ format. It does not validate an owner's scientific payload or execute it.
 `scientificRecipeDecode` retains the existing geometry/history validation.
 Fitter's distinct `gxtxt.fit_recipe.v1` contract is validated and executed only
 through its existing public `DATASET_CURVE_FIT_API_v1` owner.
+
+Trusted host adapters may provide an optional `before_transition` callback to `scientificHistoryViewerAttach`. The existing owner invokes it before PrepareEdit, navigation, browse, Clear and Flush so a host can finish a pending local capture before a state transition. It grants no Registry, Dataset, filesystem, Script Bridge or native capability. Existing hosts without the callback retain their behavior; the Script Library adapter uses it only for its declared local draft transport.

@@ -30,7 +30,10 @@ app.guide_points=[(5,120),(70,62),(145,55),(250,30)]
 app._finish_guided_proposal(None,'offline')
 assert app.assisted_proposal and len(app.assisted_proposal.segments)==3
 before=[list(z) for z in app.assisted_proposal.segments]
-app.mode.set('proposal_edit');app._begin_proposal_edit(100,44)
+# Select an ACTUAL generated raster vertex, not an arbitrary position
+# >6 source pixels from the proposal (which must now be rejected).
+near=min(app.assisted_proposal.segments[1][1:-1],key=lambda pt:abs(pt[0]-100))
+app.mode.set('proposal_edit');app._begin_proposal_edit(*near)
 assert app._assist_drag and app._assist_drag[0]=='insert'
 app._finish_proposal_edit(98,48)
 assert len(app.guide_points)==5

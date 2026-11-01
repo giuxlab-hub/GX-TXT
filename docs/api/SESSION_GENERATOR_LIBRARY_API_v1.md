@@ -316,7 +316,7 @@ open it in a normal browser. Its original real images and provenance are retaine
 MAIN remains the sole acceptance and release authority.
 
 MAIN accepted the seven SESSION-GEN-BROWSER criteria on 2026-10-21 at unchanged
-CORE source33f301. See the family acceptance matrix and provenance.
+CORE source33f301. See the [family acceptance matrix and provenance](../session_generator_dev109/FINAL_FAMILY_MATRIX.md).
 Receipt `MAIN_FAMILY_ACCEPTANCE87.json`, SHA256
 `69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8`.
 Whole workstream6 and all15 release remain OPEN.

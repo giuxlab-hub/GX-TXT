@@ -58,19 +58,7 @@ proc ::GX::OctaveScriptEditor::payloadDecode {payload} {
 }
 
 proc ::GX::OctaveScriptEditor::_ownedDocumentRead {documentId} {
-    variable moduleId
-    variable providerId
-    variable documentFormat
-    variable documentFormatVersion
-    requireSession
-    set full [::GX::interactiveDocumentRead $documentId]
-    if {[dict get $full module_id] ne $moduleId || [dict get $full provider_id] ne $providerId} {
-        error "Interactive Document '$documentId' is not owned by Octave Script Workspace."
-    }
-    if {[dict get $full format] ne $documentFormat || [dict get $full format_version] ne $documentFormatVersion} {
-        error "Interactive Document '$documentId' uses an unsupported Octave Script format/version."
-    }
-    return $full
+    error {Obsolete Octave Workspace documents cannot be opened or converted. Use the existing Script Registry editor for current scripts.}
 }
 
 proc ::GX::OctaveScriptEditor::documentList {} {
@@ -80,58 +68,37 @@ proc ::GX::OctaveScriptEditor::documentList {} {
     set out {}
     foreach item [::GX::interactiveDocumentList $moduleId $providerId] {
         set id [dict get $item id]
-        if {[catch {
-            set full [_ownedDocumentRead $id]
-            set decoded [payloadDecode [dict get $full payload]]
-            dict set item name [dict get $decoded name]
-            dict set item arguments [dict get $decoded arguments]
-            dict set item description [dict get $decoded description]
-        }]} {
-            dict set item name "$id (unreadable)"
-            dict set item arguments ""
-            dict set item description ""
-        }
+        dict set item name "$id (obsolete Workspace)"
+        dict set item restorable 0;dict set item writable 0
         lappend out $item
     }
     return $out
 }
 
 proc ::GX::OctaveScriptEditor::documentRead {documentId} {
-    set full [_ownedDocumentRead $documentId]
-    return [dict merge $full [payloadDecode [dict get $full payload]]]
+    tailcall _ownedDocumentRead $documentId
 }
 
 proc ::GX::OctaveScriptEditor::documentCreate {name arguments description code} {
-    variable moduleId
-    variable providerId
-    variable documentFormat
-    variable documentFormatVersion
-    requireSession
-    set payload [payloadEncode $name $arguments $description $code]
-    return [::GX::interactiveDocumentCreate $moduleId $providerId $documentFormat $documentFormatVersion $payload]
+    error {Obsolete Octave Workspace creation is unsupported. Save current executable sources through Script Registry.}
 }
 
 proc ::GX::OctaveScriptEditor::documentUpdate {documentId expectedSha name arguments description code} {
-    variable documentFormat
-    variable documentFormatVersion
-    set current [_ownedDocumentRead $documentId]
-    if {[string trim $expectedSha] ne "" && [string tolower [dict get $current sha256]] ne [string tolower [string trim $expectedSha]]} {
-        error "This script changed outside this window. Reload it before saving to avoid overwriting newer state."
-    }
-    set payload [payloadEncode $name $arguments $description $code]
-    return [::GX::interactiveDocumentUpdate $documentId $payload $documentFormat $documentFormatVersion]
+    error {Obsolete Octave Workspace updates are unsupported. No in-framework conversion is available.}
 }
 
-proc ::GX::OctaveScriptEditor::documentDelete {documentId expectedSha} {
-    set current [_ownedDocumentRead $documentId]
-    if {[string trim $expectedSha] ne "" && [string tolower [dict get $current sha256]] ne [string tolower [string trim $expectedSha]]} {
+proc ::GX::OctaveScriptEditor::documentDelete {documentId expectedSha {confirmed 0}} {
+    if {![string is boolean -strict $confirmed] || !$confirmed} {error {Obsolete Workspace deletion requires explicit confirmation}}
+    set current [::GX::interactiveDocumentMetadata $documentId]
+    if {[dict get $current module_id] ne {analysis.octave_script} || [dict get $current provider_id] ne {octave_script_editor} || [dict get $current format] ne {gxtxt.octave_script.document}} {error {Document belongs to another owner or format}}
+    if {$expectedSha eq {} || [string tolower [dict get $current sha256]] ne [string tolower [string trim $expectedSha]]} {
         error "This script changed outside this window. Reload it before deleting."
     }
     return [::GX::interactiveDocumentDelete $documentId]
 }
 
-# Registered scripts are the executable identity used by Library, Explorer and
-# Analysis. Legacy documents remain readable until the user converts one.
+# Registered scripts remain the existing executable source authority. Obsolete
+# prototype Workspace documents are metadata-only, with no conversion route.
 proc ::GX::OctaveScriptEditor::workspaceList {} {
     set out {}
     foreach m [::GX::scriptRegistryList] {
@@ -139,20 +106,11 @@ proc ::GX::OctaveScriptEditor::workspaceList {} {
         dict set m reference "[dict get $m scope]:[dict get $m id]"
         lappend out $m
     }
-    foreach d [expr {$::GX::currentSession eq {} ? {} : [documentList]}] {
-        dict set d reference "legacy:[dict get $d id]"
-        dict set d scope legacy
-        lappend out $d
-    }
     return $out
 }
 proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
     if {[string match legacy:* $reference]} {
-        set d [documentRead [string range $reference 7 end]]
-        dict set d reference $reference
-        dict set d scope legacy
-        dict set d script_id ""
-        return $d
+        error {Obsolete Octave Workspace restore/conversion is unsupported}
     }
     set m [::GX::scriptRegistryDescribe $reference]
     if {[dict get $m language] ne "Octave"} {error "This Workspace edits Octave scripts only."}
@@ -161,20 +119,30 @@ proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
     try {set bytes [read $ch]} finally {close $ch}
     set code [encoding convertfrom utf-8 $bytes]
     if {[encoding convertto utf-8 $code] ne $bytes} {error {Registered Octave source contains invalid UTF-8 bytes.}}
+    set expected [expr {[dict get $m kind] eq {project} ? [dict get $m entrypoint_sha256] : [dict get $m sha256]}]
+    if {[::GX::scriptRegistryHashBytes $bytes] ne $expected} {error {Source changed while opening the editor; reopen it}}
     dict set m reference $reference
     dict set m script_id [dict get $m id]
     dict set m code $code
     dict set m arguments [::GX::datasetPublicationV2DictDefault $m default_arguments {}]
     return $m
 }
-proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code {arguments {}}} {
+proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code {arguments {}} {properties {}}} {
     if {$scope ni {user session}} {error "Choose User or Session scope."}
     ::GX::scriptRegistryId $scriptId
-    if {$reference eq "" || [string match legacy:* $reference]} {
-        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict create language Octave description $description default_arguments $arguments]]
+    # Keep the original call signature compatible; only supplied editable fields
+    # augment the Registry update, which retains unrelated registered metadata.
+    set metadata [dict create description $description default_arguments $arguments]
+    foreach key [dict keys $properties] {
+        if {$key ni {version required_apis parameters expected_revision}} {error "Unsupported Workspace property '$key'."}
+        dict set metadata $key [dict get $properties $key]
+    }
+    if {[string match legacy:* $reference]} {error {Obsolete Workspace conversion is unsupported}}
+    if {$reference eq ""} {
+        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict merge $metadata [dict create language Octave]]]
     } else {
         if {$reference ne "$scope:$scriptId"} {error "Registered script scope and ID cannot change; use Save copy."}
-        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict create name $name description $description default_arguments $arguments] $code]
+        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict merge $metadata [dict create name $name]] $code]
     }
     dict set result reference "$scope:$scriptId"
     catch {::GX::sessionScriptExplorerPopulate}
@@ -183,10 +151,10 @@ proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope script
     return $result
 }
 proc ::GX::OctaveScriptEditor::workspaceDelete {reference expectedSha} {
-    if {[string match legacy:* $reference]} {return [documentDelete [string range $reference 7 end] $expectedSha]}
+    if {[string match legacy:* $reference]} {error {Use explicitly confirmed obsolete Workspace deletion; no legacy script operation is supported}}
     set current [::GX::scriptRegistryDescribe $reference]
     if {[dict get $current sha256] ne $expectedSha} {error "Script changed; reload before deleting."}
-    ::GX::scriptRegistryRemove $reference
+    ::GX::resourceLifecycleDeleteScript $reference
 }
 
 proc ::GX::OctaveScriptEditor::defaultCode {} {
@@ -215,6 +183,7 @@ fprintf('Available GX-TXT APIs: %d\n', numel(apis));
 
 proc ::GX::OctaveScriptEditor::_ensureUi {} {
     variable moduleRoot
+    if {![llength [info commands ::GX::scriptRegistryProjectSave]] || ![llength [info commands ::GX::scriptSourceTabsCreate]]} {error {This Workspace requires the matching CORE Script Projects and Source Tabs update.}}
     if {[llength [info commands ::GX::OctaveScriptEditorUI::open]]} { return }
     set adapter [file join $moduleRoot ui octave_script_editor_ui.tcl]
     if {![file isfile $adapter]} { error "Octave Script Workspace UI adapter is missing: $adapter" }

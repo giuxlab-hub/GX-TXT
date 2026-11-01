@@ -1,0 +1,302 @@
+{
+  "schema": "gxtxt.modules.criterion_matrix.v2",
+  "status": "FINAL_BOUNDED_VERIFICATION_COMPLETE_WITH_PERSISTENCE_FAILURE",
+  "candidate": "ec1a05aaaec36e8bce33448cfb34081aed3ddea0",
+  "rows": [
+    {
+      "id": "REG-0343",
+      "exact_text": "## 7. SEVENTH PRIORITY — Modules tab: genuinely graphical, two-column group boxes with per-module toggle, state and CORE manual button",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0345",
+      "exact_text": "**Real dev107 GUI screenshot (2026-10-18):** The existing Modules tab displays a large module table (Group/module, Status, Type, Ver., Stable ID) with a search/filter bar, plus an extensive right-hand prose/documentation pane. The user wants this layout substantially redesigned for usability, clear visual hierarchy, and direct actions rather than raw text.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0347",
+      "exact_text": "**Explicit requested layout and behavior:**",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0348",
+      "exact_text": "- REMOVE the visible `Ver.` and `Stable ID` columns from the main Modules presentation. They are implementation/catalog metadata, not primary information for module browsing.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict",
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_independent09/layout_normal.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0349",
+      "exact_text": "- REMOVE the current right-hand manual/description pane entirely: it consumes half the available area and duplicates the new CORE module-manual display.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.png"
+      ]
+    },
+    {
+      "id": "REG-0350",
+      "exact_text": "- The `Open module manual` capability must use GX-TXT's **existing new CORE documentation/manual window** and open **ONLY the selected module's manual in its own window**. Do not build an alternative manual renderer or embed a second documentation panel inside Modules.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/module_manual.tcldict",
+        "gui_final07/module_manual.png"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/manual_1.tcldict",
+        "gui_independent09/manual_2.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0351",
+      "exact_text": "- REMOVE the modules search/filter bar from this page as requested; browsing is organized by actual module groups rather than by a search field. Do not silently reinsert a new search control.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.png"
+      ]
+    },
+    {
+      "id": "REG-0352",
+      "exact_text": "- Use the reclaimed space for a **graphical two-column arrangement of group boxes/cards**. Each group should be clearly identified, with its modules presented compactly and legibly. Use the width naturally instead of retaining the old left-list/right-description split. Behave sensibly when the window becomes narrow, avoiding clipped names, controls, or inaccessible groups.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/modules_narrow.png",
+        "gui_font_final08/measured_narrow.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.tcldict",
+        "gui_independent09/layout_narrow.tcldict",
+        "gui_font_final08/measured_large.tcldict",
+        "gui_font_final08/measured_maximized.png"
+      ]
+    },
+    {
+      "id": "REG-0353",
+      "exact_text": "- **EACH module entry** must present its readable name, a clearly visible real enable/disable **toggle**, a dedicated **Help/manual** button, and an unambiguous activation-state indication. Distinguish activated/deactivated and any non-toggleable CORE or restricted module states truthfully. The user would also like visual differentiation of states by color, but **never rely on color alone**: retain state text/shape/icon for accessibility and avoid contradictory colors or stale state.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict",
+        "gui_final07/enable_accept.tcldict",
+        "gui_final07/session_boundary.tcldict",
+        "controller_contract_final_source.log"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_independent09/switch_restored.tcldict",
+        "gui_independent09/locked_rejection.tcldict",
+        "gui_mainfixed11/transitive_result.tcldict",
+        "gui_mainfixed12/reopened_projection02.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0354",
+      "exact_text": "- Reuse existing public GX-TXT Plugin/Module Registry, activation/configuration and CORE manual APIs. Changing toggle state must invoke the normal authoritative mechanism and accurately handle real dependencies, required restarts, errors, cancellation and unavailable operations; no faux/local-only state toggles or direct private file edits.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/dependency_restoration.tcldict",
+        "gui_fixed04/transitive_result.tcldict",
+        "GAP_REPORTS.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "TRANSITIVE_PASS_PERSISTENCE_FAIL_MAIN_POLICY_REVIEW",
+      "MAIN_backend_disposition": "CORE-MODULE-ACTIVATION-01 fixed by MAIN ec1a05a and independently verified once; native Save/cold Open enabled mismatch now separately reported without root-count claim",
+      "limitations": [
+        "Actual package-update/backend-error branches retain component/contract evidence only",
+        "Exact already-visible Modules Session change retains source/author-fixture evidence",
+        "Fresh default and manifest dependency-normalization policy remain unconfirmed and MAIN-owned",
+        "No frontend workaround; no re-save/toggle/chain replay after failure"
+      ],
+      "evidence": [
+        "gui_independent09/independent_cancel.tcldict",
+        "gui_final07/dependency_restoration.tcldict",
+        "controller_contract_final_source.log",
+        "gui_mainfixed11/transitive_result.tcldict",
+        "gui_mainfixed11/saved_manifest.tcldict",
+        "gui_mainfixed12/persistence_result02.tcldict",
+        "gui_mainfixed12/spool_error_1792553688853359.tcldict",
+        "gui_mainfixed12/persistence_failure_targets.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0355",
+      "exact_text": "- Preserve the underlying module identities, statuses and information even though `Ver.`, `Stable ID` and the raw descriptive pane disappear from the default screen. Where needed, the existing official module detail/manual facilities may still expose those values; do not erase them from the module metadata.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_final07/modules_catalog.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0357",
+      "exact_text": "**Mandatory real GUI quality review and rationale:**",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0358",
+      "exact_text": "- Design and document **WHY** the selected grouping, module card hierarchy, toggle position, manual affordance, state indicator/color, spacing, scrolling and narrow-window response improve the experience. Capture alternatives considered or any real framework constraints. Provide a design rationale in the delivery report, not merely screenshots or code diffs.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "docs/modules_dev109/DESIGN_AND_INTEGRATION.md"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "docs/modules_dev109/DESIGN_AND_INTEGRATION.md",
+        "batch02/PARENT_MANUAL_REVIEW.json"
+      ]
+    },
+    {
+      "id": "REG-0359",
+      "exact_text": "- Visually inspect and interact with the **actual Debian GUI after each significant UI change**, including many modules/groups, long names, OFF/ON/CORE restricted states, enable/disable flows, reopening and manual windows. Verify at typical, narrow and maximized sizes; exercise scrolling and make sure no overlap, truncation, excess whitespace or dead click areas remain.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/modules_narrow.png",
+        "gui_font_final08/measured_large.png",
+        "gui_final07/session_boundary.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "PRIOR_VISUAL_CASES_REUSED_FRESH_CHAIN_PASS_SAVE_OPEN_FAILURE_PRESERVED",
+      "evidence": [
+        "gui_independent09/layout_normal.png",
+        "gui_independent09/layout_narrow.png",
+        "gui_font_final08/measured_maximized.png",
+        "gui_independent09/after_session_ui.tcldict",
+        "gui_mainfixed11/transitive_all_off.png",
+        "gui_mainfixed12/persistence_failure_plot_on.png",
+        "gui_mainfixed12/persistence_failure_octave_on.png"
+      ]
+    },
+    {
+      "id": "REG-0360",
+      "exact_text": "- A test reporting PASS without a visibly well-organized, functional graphical Modules page and working CORE-only manual windows is NOT acceptance.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/module_manual.png"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "GRAPHICAL_AND_CORE_MANUAL_EVIDENCE_REUSED_NO_ACCEPTANCE",
+      "evidence": [
+        "gui_independent09/layout_normal.png",
+        "gui_independent09/manual_2.png"
+      ]
+    },
+    {
+      "id": "REG-0362",
+      "exact_text": "**Acceptance:** The main Modules page uses two columns of actual group boxes (responsive where necessary), no search bar, no `Ver.` or `Stable ID` main columns, no right-hand documentation pane; each module has comprehensible status and correct toggle/Help affordances, with proven functional CORE integration and an explicit documented UX/design rationale.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); fixed backend target ec1a05a",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "RESULTS.md",
+        "GAP_REPORTS.json"
+      ],
+      "independent_evidence": "batch02/reviewer01/QA_RESULTS.json reused at identical frontend hashes; batch03/reviewer02/QA_RESULTS.json focused fixed-Q cases only",
+      "latest_case_status": "OPEN_MAIN_ONLY_PERSISTENCE_FAILURE_NO_FULL7_PASS",
+      "evidence": [
+        "batch02/reviewer01/QA_RESULTS.json",
+        "batch03/reviewer02/QA_RESULTS.json",
+        "batch03/PARENT_REVIEW.json"
+      ]
+    }
+  ],
+  "authority": "MAIN alone accepts; all15 remain active",
+  "evidence_base": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02",
+  "repository_evidence_base": "/srv/gxtxt/agents/worktrees/dev109/core_modules",
+  "new_implementation_changes": [],
+  "four_frontend_roots": "MAIN_INTEGRATED_b99fc5f_PENDING_MAIN_ACCEPTANCE",
+  "backend_activation_disposition": "MAIN_FIXED_ec1a05a; original transitive chain independently PASS once on display126",
+  "persistence_observation": "Native Save acknowledged; cold native Open exact Session preserves manifest, all118 run flags and all118 switch/canonical projections; two of118 enabled flags change saved OFF→reopened ON. FAIL preserved; intended manifest/dependency policy MAIN-owned/unconfirmed. Not counted as a new unique root."
+}

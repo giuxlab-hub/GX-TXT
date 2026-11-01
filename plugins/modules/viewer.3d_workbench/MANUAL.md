@@ -267,3 +267,94 @@ See the [managed image, physical placement and limitations contract](../../../do
 and [managed raster composition](../../../docs/api/NATIVE2D_RASTER_COMPOSITION.md).
 Only one planar assignment per object is exposed here; curved wrapping and CAM
 are separate capabilities, not implied by this operation.
+
+### Native CORE History (DEV111-P017)
+
+The existing scientific Workbench owner now uses the public CORE History
+service. A successful operation is immediately accepted in RAM and available to
+Undo/Redo. Acceptance and durable persistence are distinct: the History status
+reports accepted and durable revisions, pending work and write errors. CORE
+persists ordered journals on its background worker. No Tcl/Tk or scientific
+Native3D callbacks run on that worker.
+
+The original manual Viewer places CORE's Description / History strip below its
+scientific view. It provides grouped operation rows, read-only browsing,
+Undo/Redo, return to latest, explicit branching, clear confirmation and Details.
+The sidebar visibility control restores a hidden strip. Generated scientific3D
+hosts retain their existing architecture and delegate scientific Undo/Redo to
+this same owner. The manual module does not own a second timeline or disk queue.
+
+Save and normal Close drain accepted work and project the compatible complete
+History into the existing Interactive Document. History retains every accepted
+step up to CORE's explicit 4,096-step / 8 MiB bound; it no longer drops steps at
+the former private 32-state Undo cap. Legacy checkpoints and recipe fields are
+imported, and the exact former payload is retained in a managed Document
+resource with its scientific dependencies. An import that exceeds the complete
+retention bound fails visibly while preserving the saved source; it never
+silently trims History. Explicit recovery can restore accepted journal state
+that was not yet projected into the saved Document.
+
+Native3D geometry hydration, scientific validation and current-state capture
+remain on their existing owning thread. Explicit recipe export, Save/Close,
+resource collection and legacy Workbench Extension revision handoffs can still
+perform synchronous work proportional to the retained data. These are explicit
+compatibility boundaries, rather than the ordinary GUI operation submission
+path. Executable recipe export follows the active cursor; full Workspace
+History still preserves Redo future steps.
+
+The public CORE integration uses `scientificHistoryContextAttach`,
+`scientificHistoryContextSetParent`, operation/state/status/navigation/flush
+APIs and `scientificHistoryContextClose`. See the framework's
+[CORE History service documentation](../../../docs/CORE_HISTORY_SERVICE_P017.md).
+
+## Editable Sketch on the 3D working plane (DEV111-P021)
+
+The Sketch menu creates or opens exact geometry directly inside the existing
+Native3D viewport. Choose the scientific working plane first. The transparent
+on-top grid, curves, controls, constraints and dimensions share that Canvas.
+There is no mandatory second planar window. CAD overlays are editing feedback,
+not depth-tested solids; the native Navigation Cube stays above them.
+
+Use the shared Sketch tools panel for construction, selection and editing.
+Finish completes an eligible construction and returns to Select. An incomplete
+proposal stays available for correction or Cancel. Escape cancels; Alt/Space-drag
+orbits, with Shift to pan; the wheel uses the existing native camera navigation.
+The native Fit operation focuses the declared plane when opening a Sketch.
+
+Undo/Redo and Save use P017 CORE History. Save rejects a pending edit rather
+than silently discarding it. Close offers Finish, discard staged edit, or keep
+open when necessary. The containing Workspace also detects a pending/dirty
+associated Sketch. The parent Document retains the Sketch Document identity.
+Length units and exact Native2D definitions remain authoritative.
+
+
+### Saved Sketch display (P022)
+
+Close Sketch saves the exact Document and keeps a derived, read-only 3D drawing
+in the existing viewport. The closed drawing uses Native3D depth and occlusion;
+active editing feedback remains the transparent, always-on-top CAD overlay.
+Open associated Sketch restores that Document's defining geometry and P017 History.
+Creating another Sketch retains the earlier saved drawing. Opening an already
+active Sketch leaves its editor and staged state in place.
+
+The display snapshot is prepared at close/Document restoration, never on pointer
+motion. It is bounded visual sampling of the exact source, not scientific export,
+measurement geometry or another canonical model. Source constraints and dimensions
+remain in the Sketch Document and appear when its editor is reopened.
+
+Close the Sketch editor before converting the Workbench length unit. Saved
+Sketch displays use the public CORE unit conversion. Editing a borrowed viewport
+requires matching working coordinate units; restore the original Workbench unit
+before editing a Sketch saved with another scale. No source unit is changed
+implicitly. Close with an unfinished construction still offers Finish, discard
+only the staged proposal, or Cancel.
+
+
+## DEV111-P023-EXP01 review-only integration
+
+Saved associated Sketches can remain selectable native scene resources while the
+editor is closed. Opening uses the same scientific Document. Native curves have
+scene depth; grid, handles and annotations remain editing overlays. Unsupported
+styles/high magnification use the existing faithful overlay. Consult the EXP01
+API/development reports for cache limits and known paint-latency/recovery gaps.
+This is an isolated experiment, not an installed or accepted production release.

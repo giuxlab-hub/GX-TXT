@@ -39,7 +39,7 @@ int viewportResize(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]
         check(gx3de_target_resize(state.target,w,h,w,h),"resize render target");
         check(gx3de_viewport_create(state.target,state.view,0,0,w,h,&state.viewport),"resize shared viewport");
         checkRender(state.target,gx3de_target_render(state.target),"render enlarged viewport");
-        check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write resized viewport");
+        check(presentationPng(state,str(args[3]).c_str()),"write resized viewport");
         Tcl_Obj* result=Tcl_NewDictObj();put(ip,result,"width",Tcl_NewIntObj(w));put(ip,result,"height",Tcl_NewIntObj(h));
         putRendererInfo(ip,result,state.target);Tcl_SetObjResult(ip,result);return TCL_OK;
     }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
@@ -53,7 +53,7 @@ int scientificAxes(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]
         if(!f.enabled)throw std::runtime_error("Scene has no calibrated scientific figure");
         f.axes_grid_visible=yes(str(args[1]));check(gx3de_view_scientific_figure_set(state.view,&f),"toggle scientific axes/grid");
         checkRender(state.target,gx3de_target_render(state.target),"render scientific presentation");
-        check(gx3de_target_write_png(state.target,str(args[2]).c_str()),"write scientific presentation");
+        check(presentationPng(state,str(args[2]).c_str()),"write scientific presentation");
         Tcl_Obj* result=Tcl_NewDictObj();put(ip,result,"axes_grid_visible",Tcl_NewIntObj(f.axes_grid_visible));
         putRendererInfo(ip,result,state.target);Tcl_SetObjResult(ip,result);return TCL_OK;
     }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}

@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # CORE owns scope identity and canonical persistence; C owns all expressions.
-namespace eval ::GX::Parameters {variable declarations {};variable contexts {};variable listeners {};variable state {};variable sessionToken {}}
+namespace eval ::GX::Parameters {variable declarations {};variable contexts {};variable listeners {};variable state {};variable sessionToken {};variable overrides {};variable publicationPhase {};variable deferredHistory {}}
 proc ::GX::parameterServiceInfo {} {return [dict create api_id CORE_PARAMETER_SERVICE_v1 authority portable_c scopes {session module workspace} namespace_assignment framework script_policy read_evaluate_only]}
 proc ::GX::_parameterEnsure {} {
     variable scriptDir
     if {![llength [info commands ::GX::Parameters::native]]} {load [file join $scriptDir core parameters gxparameters[info sharedlibextension]] Gxparameters}
     set token [interactiveDocumentSessionToken]
+    if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token}
     if {$token ne $::GX::Parameters::sessionToken} {
         set ::GX::Parameters::sessionToken $token;set ::GX::Parameters::state {};set ::GX::Parameters::contexts {};set ::GX::Parameters::listeners {};set ::GX::Parameters::readViews {}
+        if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token}
         if {$::GX::currentSession ne {}&&[file isfile [file join $::GX::currentSession metadata manifest.ini]]} {
             set ini [parseIni [file join $::GX::currentSession metadata manifest.ini]]
             set ::GX::Parameters::state [datasetPublicationV2DictDefault $ini core_parameters.state {}]
@@ -56,7 +58,7 @@ proc ::GX::parameterSessionList {} {return [_parameterEvaluate [parameterSession
 proc ::GX::parameterSessionEvaluate {expression} {return [_parameterEvaluate [parameterSessionDefinitions] {} $expression]}
 proc ::GX::parameterContext {capability {workspace {}}} {
     _parameterEnsure;set module [_parameterOwner $capability]
-    if {$workspace ne {}} {set doc [sessionWorkspaceGet $workspace];if {[dict get $doc module_id] ne $module} {error {Workspace belongs to another module}}}
+    if {$workspace ne {}} {set doc [sessionWorkspaceMetadata $workspace];if {![dict get $doc native_workspace] || ![dict get $doc compatible]} {error {Parameters require a compatible native Workspace}};if {[dict get $doc module_id] ne $module} {error {Workspace belongs to another module}}}
     set key [list $module $workspace];set token parameter#[parallelOctaveRandomToken]
     dict set ::GX::Parameters::contexts $token [dict create module $module workspace $workspace session [interactiveDocumentSessionToken] key $key]
     return $token
@@ -67,7 +69,7 @@ proc ::GX::_parameterContext {token} {
     set context [dict get $::GX::Parameters::contexts $token]
     if {$::GX::DatasetPrivate::activeContext ne {} && [dict get [datasetPrivateMetadataContext] module_id] ne [dict get $context module]} {error {Module cannot use another parameter context}}
     set workspace [dict get $context workspace]
-    if {$workspace ne {}&&[dict get [sessionWorkspaceGet $workspace] module_id] ne [dict get $context module]} {error {Parameter owner changed}}
+    if {$workspace ne {}&&[dict get [interactiveDocumentMetadata $workspace] module_id] ne [dict get $context module]} {error {Parameter owner changed}}
     return $context
 }
 namespace eval ::GX::Parameters {variable readViews {}}
@@ -81,7 +83,7 @@ proc ::GX::parameterDefinitions {token} {
     if {[dict exists $::GX::Parameters::readViews $token]} {return [dict get $::GX::Parameters::readViews $token definitions]}
     set context [_parameterContext $token];set module [dict get $context module];set workspace [dict get $context workspace]
     set defaults [datasetPublicationV2DictDefault $::GX::Parameters::declarations $module {}]
-    if {$workspace ne {}} {set metadata [dict get [interactiveDocumentRead $workspace] payload workspace_metadata];set stored [datasetPublicationV2DictDefault $metadata parameters {}]} else {set stored [datasetPublicationV2DictDefault $::GX::Parameters::state module.$module {}]}
+    if {$workspace ne {}} {set metadata [_parameterWorkspaceMetadata $workspace];set stored [datasetPublicationV2DictDefault $metadata parameters {}]} else {set stored [datasetPublicationV2DictDefault $::GX::Parameters::state module.$module {}]}
     return [dict merge $defaults $stored]
 }
 proc ::GX::parameterViewSessionDefinitions {token} {
@@ -93,21 +95,38 @@ proc ::GX::parameterEvaluate {token expression} {return [_parameterEvaluate [par
 proc ::GX::parameterContextInfo {token} {set c [_parameterContext $token];dict set c namespace module/[dict get $c module];return [dict remove $c key session]}
 proc ::GX::parameterSubscribe {token callback} {_parameterContext $token;dict set ::GX::Parameters::listeners $token $callback}
 proc ::GX::parameterUnsubscribe {token} {dict unset ::GX::Parameters::listeners $token}
+proc ::GX::_parameterPropertyWrite {workspace expected field value} {
+    if {![_nativeWorkspaceExists $workspace]} {error {Parameters require a native Workspace; obsolete Workspace writers are unsupported}}
+    set properties [lindex [nativeWorkspaceProperties $workspace] 1]
+    switch -- $field {
+        parameters {set shape {map {record {formula text label text description text unit text type text min scientific_real max scientific_real editable bool}}}}
+        parameter_bindings {set shape {map text}}
+        default {error {Unsupported Parameter Workspace property}}
+    }
+    set typed [nativeWorkspaceEncode $shape $value]
+    dict set properties $field $typed
+    set receipt [nativeWorkspaceSetProperties $expected [list object $properties]]
+    _nativeWorkspaceMetadataAdvanced $expected [nativeWorkspaceMetadata $workspace] {} [dict create $field $typed]
+    return $receipt
+}
 proc ::GX::_parameterWrite {token definitions} {
+    if {$::GX::Parameters::publicationPhase ne {}} {error {A Parameter publication is already being prepared}}
     if {[dict exists $::GX::Parameters::readViews $token]} {error {This parameter context is inspecting History and is read-only.}}
     _parameterDefinitionsValidate $definitions
-    set oldState $::GX::Parameters::state;set documents {};set applied {}
+    set definitions [nativeWorkspaceScientificDecode [nativeWorkspaceEncode {map {record {formula text label text description text unit text type text min scientific_real max scientific_real editable bool}}} $definitions]]
+    set oldState $::GX::Parameters::state;set documents {};set applied {};set written {};set pendingWrite {}
     if {$token eq "session"} {
         _parameterEvaluate $definitions {}
         # Validate dependencies of every stored Workspace before accepting a
         # Session change, including providers whose UI is currently closed.
         foreach workspace [sessionWorkspaceList] {
-            set doc [interactiveDocumentRead [dict get $workspace id]]
-            set local [datasetPublicationV2DictDefault [dict get $doc payload workspace_metadata] parameters {}]
+            if {![_nativeWorkspaceExists [dict get $workspace id]]} continue
+            set metadata [_parameterWorkspaceMetadata [dict get $workspace id]]
+            set local [datasetPublicationV2DictDefault $metadata parameters {}]
             set defaults [datasetPublicationV2DictDefault $::GX::Parameters::declarations [dict get $workspace module_id] {}]
             set local [dict merge $defaults $local]
             _parameterEvaluate $local $definitions
-            foreach expression [dict values [datasetPublicationV2DictDefault [dict get $doc payload workspace_metadata] parameter_bindings {}]] {_parameterEvaluate $local $definitions $expression}
+            foreach expression [dict values [datasetPublicationV2DictDefault $metadata parameter_bindings {}]] {_parameterEvaluate $local $definitions $expression}
         }
         dict for {scope local} $::GX::Parameters::state {if {[string match module.* $scope]} {_parameterEvaluate $local $definitions}}
         dict set ::GX::Parameters::state session $definitions
@@ -116,30 +135,49 @@ proc ::GX::_parameterWrite {token definitions} {
         set context [_parameterContext $token];_parameterEvaluate $definitions [parameterSessionDefinitions]
         set workspace [dict get $context workspace]
         if {$workspace eq {}} {dict set ::GX::Parameters::state module.[dict get $context module] $definitions} else {
-            set payload [dict get [interactiveDocumentRead $workspace] payload];dict set documents $workspace $payload
-            foreach expression [dict values [datasetPublicationV2DictDefault [dict get $payload workspace_metadata] parameter_bindings {}]] {_parameterEvaluate $definitions [parameterSessionDefinitions] $expression}
-            dict set payload workspace_metadata parameters $definitions
-            interactiveDocumentUpdate $workspace $payload
+            if {![_nativeWorkspaceExists $workspace]} {error {Obsolete Workspace parameters cannot be updated}}
+            set receipt [nativeWorkspaceMetadata $workspace]
+            set properties [nativeWorkspaceProperties $workspace]
+            dict set documents $workspace [dict create receipt $receipt properties $properties]
+            foreach expression [dict values [datasetPublicationV2DictDefault [nativeWorkspaceDecode $properties] parameter_bindings {}]] {_parameterEvaluate $definitions [parameterSessionDefinitions] $expression}
+            set proposed [nativeWorkspaceDecode $properties];dict set proposed parameters $definitions
+            set pendingWrite [list $workspace $receipt $proposed]
         }
         set targets {}
         dict for {candidate callback} $::GX::Parameters::listeners {if {[dict get [_parameterContext $candidate] key] eq [dict get $context key]} {lappend targets $candidate}}
     }
+    set ::GX::Parameters::publicationPhase prepare;set ::GX::Parameters::deferredHistory {}
+    if {$pendingWrite ne {}} {dict set ::GX::Parameters::overrides [lindex $pendingWrite 0] [lindex $pendingWrite 2]}
     try {
         foreach target $targets {
             if {![dict exists $::GX::Parameters::listeners $target]} continue
             set workspace [dict get [_parameterContext $target] workspace]
-            if {$workspace ne {}&&![dict exists $documents $workspace]} {dict set documents $workspace [dict get [interactiveDocumentRead $workspace] payload]}
             set callback [dict get $::GX::Parameters::listeners $target]
             set rollback [uplevel #0 [list {*}$callback $target]];lappend applied $rollback
         }
+        set ::GX::Parameters::publicationPhase commit
+        if {$pendingWrite ne {}} {lassign $pendingWrite workspace receipt;dict set written $workspace [_parameterPropertyWrite $workspace $receipt parameters $definitions]}
         if {$::GX::currentSession ne {}} {writeManifest [file join $::GX::currentSession metadata manifest.ini]}
+        foreach action $::GX::Parameters::deferredHistory {uplevel #0 $action}
     } on error {message options} {
         set ::GX::Parameters::state $oldState
-        foreach rollback [lreverse $applied] {if {$rollback ne {}} {uplevel #0 $rollback}}
-        dict for {id payload} $documents {interactiveDocumentUpdate $id $payload}
-        if {$::GX::currentSession ne {}} {writeManifest [file join $::GX::currentSession metadata manifest.ini]}
+        set ::GX::Parameters::publicationPhase rollback;set ::GX::Parameters::overrides {}
+        set recoveryErrors {}
+        foreach rollback [lreverse $applied] {if {$rollback ne {} && [catch {uplevel #0 $rollback} reason]} {lappend recoveryErrors $reason}}
+        dict for {id receipt} $written {
+            if {[catch {
+                set before [nativeWorkspaceMetadata $id]
+                nativeWorkspaceSetProperties $receipt [dict get $documents $id properties]
+                set restored [nativeWorkspaceMetadata $id]
+                set prior [lindex [dict get $documents $id properties] 1]
+                set delta [dict create parameters [expr {[dict exists $prior parameters]?[dict get $prior parameters]:{@gxtxt.workspace.property.remove}}]]
+                _nativeWorkspaceMetadataAdvanced $before $restored {} $delta
+            } reason]} {lappend recoveryErrors $reason}
+        }
+        if {$::GX::currentSession ne {} && [catch {writeManifest [file join $::GX::currentSession metadata manifest.ini]} reason]} {lappend recoveryErrors $reason}
+        if {$recoveryErrors ne {}} {dict set options -errorcode {GX PARAMETER RECOVERY_REQUIRED};append message "; parameter rollback requires recovery: [join $recoveryErrors {; }]"}
         return -options $options $message
-    }
+    } finally {set ::GX::Parameters::publicationPhase {};set ::GX::Parameters::overrides {};set ::GX::Parameters::deferredHistory {}}
     return [expr {$token eq "session"?[parameterSessionList]:[parameterList $token]}]
 }
 proc ::GX::_parameterChange {token name definition remove} {
@@ -179,7 +217,7 @@ proc ::GX::parameterApplyDimensions {token scene expressions} {
 
 # Read-only Bridge entry points do not return reusable administration tokens.
 proc ::GX::parameterWorkspaceRead {workspace {expression {}}} {
-    set doc [sessionWorkspaceGet $workspace];set metadata [dict get [interactiveDocumentRead $workspace] payload workspace_metadata]
+    set doc [sessionWorkspaceMetadata $workspace];set metadata [_parameterWorkspaceMetadata $workspace]
     set defaults [datasetPublicationV2DictDefault $::GX::Parameters::declarations [dict get $doc module_id] {}]
     set definitions [dict merge $defaults [datasetPublicationV2DictDefault $metadata parameters {}]]
     return [_parameterEvaluate $definitions [parameterSessionDefinitions] $expression]
@@ -191,8 +229,43 @@ proc ::GX::parameterBindingsSet {token bindings} {
     set context [_parameterContext $token];set workspace [dict get $context workspace]
     if {$workspace eq {}} {error {Consumer bindings require a Workspace context}}
     dict for {id expression} $bindings {parameterEvaluate $token $expression}
-    set payload [dict get [interactiveDocumentRead $workspace] payload]
-    if {[datasetPublicationV2DictDefault [dict get $payload workspace_metadata] parameter_bindings {}] eq $bindings} return
-    dict set payload workspace_metadata parameter_bindings $bindings
-    interactiveDocumentUpdate $workspace $payload
+    set receipt [nativeWorkspaceMetadata $workspace]
+    if {[datasetPublicationV2DictDefault [_parameterWorkspaceMetadata $workspace] parameter_bindings {}] eq $bindings} return
+    return [_parameterPropertyWrite $workspace $receipt parameter_bindings $bindings]
+}
+
+# Parameter definitions are a small independently owned Workspace metadata view.
+# Cache by canonical Document revision; a geometry edit's RAM History does not
+# alter those definitions and must not force History projection/hash/replay.
+namespace eval ::GX::Parameters {variable workspaceMetadata {}}
+proc ::GX::_parameterWorkspaceMetadata {workspace} {
+    if {[dict exists $::GX::Parameters::overrides $workspace]} {return [dict get $::GX::Parameters::overrides $workspace]}
+    set item [interactiveDocumentMetadata $workspace]
+    set key [list [interactiveDocumentSessionToken] $workspace]
+    set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
+    if {![dict exists $::GX::Parameters::workspaceMetadata $key] || [dict get $::GX::Parameters::workspaceMetadata $key stamp] ne $stamp} {
+        if {![_nativeWorkspaceExists $workspace]} {error {Obsolete Workspace parameter metadata is unsupported}}
+        set properties [nativeWorkspaceProperties $workspace]
+        set metadata [nativeWorkspaceDecode $properties]
+        if {[dict exists [lindex $properties 1] parameters]} {dict set metadata parameters [nativeWorkspaceScientificDecode [dict get [lindex $properties 1] parameters]]}
+        dict set ::GX::Parameters::workspaceMetadata $key [dict create stamp $stamp value $metadata]
+    }
+    return [dict get $::GX::Parameters::workspaceMetadata $key value]
+}
+
+# Seed only from an already published or SHA-verified payload. This avoids a
+# full History-bearing Document read on the first edit after explicit Save.
+proc ::GX::_parameterWorkspaceMetadataSeed {session item payload} {
+    if {![info exists ::GX::currentSession] || $::GX::currentSession eq {} || [file normalize $::GX::currentSession] ne $session} return
+    set token [interactiveDocumentSessionToken]
+    if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {
+        set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token
+    }
+    set key [list $token [dict get $item id]]
+    if {[catch {dict get $payload workspace_metadata} metadata]} {
+        if {[dict exists $::GX::Parameters::workspaceMetadata $key]} {dict unset ::GX::Parameters::workspaceMetadata $key}
+        return
+    }
+    set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
+    dict set ::GX::Parameters::workspaceMetadata $key [dict create stamp $stamp value $metadata]
 }

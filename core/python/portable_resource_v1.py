@@ -22,9 +22,11 @@ from pathlib import Path, PurePosixPath
 from session_portable_v1 import safe_rel_text, sha256_file, utc_timestamp, zip_entry_is_symlink
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "services" / "annotations"))
 from plot_annotation_bridge import validate_document as validate_annotations
+import portable_document_assets_v1 as document_assets
 
 MANIFEST = "gxtxt-resource-package.json"
 SCHEMA = "GXTXT_PORTABLE_RESOURCE_v1"
+GROUP_SCHEMA = "GXTXT_PORTABLE_RESOURCE_v2"
 MAX_ENTRIES = 10000
 MAX_UNCOMPRESSED = 4 * 1024**3
 MAX_ENTRY = 2 * 1024**3
@@ -97,7 +99,7 @@ def portable_presentation(payload: bytes, normalize: bool = False) -> bytes:
 
 
 class Builder:
-    def __init__(self, resource_type: str, version: str, session: Path, identity: dict):
+    def __init__(self, resource_type: str, version: str, session: Path, identity: dict, asset_plan=None):
         self.resource_type = resource_type
         self.version = version
         self.session = session
@@ -107,6 +109,7 @@ class Builder:
         self.dependencies: list[dict] = []
         self.external_dependencies: list[dict] = []
         self.warnings: list[str] = []
+        self.asset_plan = document_assets.load_plan(asset_plan)
 
     def add(self, path: str, role: str, payload: bytes | Path) -> None:
         safe_rel_text(PurePosixPath(path))
@@ -117,7 +120,7 @@ class Builder:
         self.content[path] = payload
         self.roles[path] = role
 
-    def dataset(self, dataset_id: str, prefix: str = "dataset") -> dict:
+    def dataset(self, dataset_id: str, prefix: str = "dataset", original_group: str = "") -> dict:
         if not valid_id(dataset_id):
             raise ValueError("invalid Dataset ID")
         registry = ini_sections(self.session / "metadata" / "datasets.ini").get(f"dataset.{dataset_id}")
@@ -159,6 +162,12 @@ class Builder:
             self.external_dependencies.append({"kind": "acquisition_raw", "dataset_id": dataset_id,
                                                "name": Path(registry["source_raw"]).name, "embedded": False})
         portable["id"] = dataset_id
+        if original_group:
+            if not valid_id(original_group):
+                raise ValueError("invalid original Dataset Group identity")
+            portable["original_group_id"] = original_group
+            portable["original_group_state"] = "DETACHED"
+            self.warnings.append("Individual member only; original Dataset Group is not reconstructed")
         portable["canonical_sha256"] = actual
         portable["sha256"] = actual
         variables = []
@@ -182,8 +191,12 @@ class Builder:
             sections = ini_sections(metadata_file)
             if sections.get("dataset_metadata", {}).get("dataset_id") != dataset_id:
                 raise ValueError("Dataset metadata identity mismatch")
-            metadata = sections.get("metadata", {})
+            metadata = dict(sections.get("metadata", {}))
+            # This revision-bound producer authorization belongs only to the
+            # source Dataset/Session; it is not portable provenance or data.
+            metadata.pop("_gxtxt.framework.file_edit_grant", None)
             self.add(f"{prefix}/metadata.json", "dataset_metadata", json_bytes(metadata))
+            document_assets.export(self, dataset_id, prefix, metadata, self.asset_plan)
         note_rel = f"notes/datasets/{dataset_id}.md"
         note = within(self.session, note_rel)
         if note.is_file():
@@ -215,7 +228,8 @@ class Builder:
                 size = payload.stat().st_size
             files.append({"path": path, "role": self.roles[path], "size": size,
                           "sha256": digest, "media_type": mimetypes.guess_type(path)[0] or "application/octet-stream"})
-        manifest = {"schema": SCHEMA, "schema_version": 1, "resource_type": self.resource_type,
+        group = self.resource_type == "dataset_group"
+        manifest = {"schema": GROUP_SCHEMA if group else SCHEMA, "schema_version": 2 if group else 1, "resource_type": self.resource_type,
                     "source_gxtxt_version": self.version, "created_at": utc_timestamp(),
                     "source_session_name": self.session.name, "resource_identity": self.identity,
                     "files": files, "dependencies": self.dependencies, "integrity_algorithm": "sha256",
@@ -260,9 +274,123 @@ def read_state_tsv(path: Path) -> dict:
     return state
 
 
+def group_plan(path: Path) -> dict:
+    """Decode CORE's bounded scalar plan; never evaluate transport content."""
+    if path.stat().st_size > 1024 * 1024:
+        raise ValueError("Dataset Group plan exceeds limit")
+    fields = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, encoded = line.split("\t", 1)
+        if key in fields:
+            raise ValueError("Duplicate Dataset Group plan field")
+        fields[key] = base64.b64decode(encoded, validate=True).decode("utf-8")
+    group = {key: fields[key] for key in ("group_id", "display_name", "group_contract", "primary_dataset_id", "namespace")}
+    group["revision"] = int(fields["revision"])
+    if "created_at" in fields:
+        group["created_at"] = int(fields["created_at"])
+    # Details stay an inert Tcl dictionary string. No interpreter/eval is used
+    # by the portable validator; host validates its bounded dictionary shape.
+    history_count = int(fields.get("history_count", "0"))
+    if not 0 <= history_count <= 128:
+        raise ValueError("Dataset Group history exceeds limit")
+    group["history"] = [dict(action=fields[f"history.{i}.action"],
+                             at=int(fields[f"history.{i}.at"]),
+                             revision=int(fields[f"history.{i}.revision"]),
+                             details=fields[f"history.{i}.details"])
+                        for i in range(1, history_count + 1)]
+    count = int(fields["member_count"])
+    if not 1 <= count <= 1000:
+        raise ValueError("Dataset Group requires 1..1000 members")
+    group["members"] = []
+    for index in range(1, count + 1):
+        member = {key: fields[f"member.{index}.{key}"] for key in ("dataset_id", "role", "contract", "canonical_sha256", "source_module", "source_sha256", "source_name")}
+        required = fields[f"member.{index}.required"]
+        if required not in {"0", "1"}:
+            raise ValueError("Dataset Group required flag must be boolean")
+        member["required"] = required == "1"
+        group["members"].append(member)
+    return group
+
+
+def validate_group_tree(zf: zipfile.ZipFile, manifest: dict) -> dict:
+    group = read_json_member(zf, "group/descriptor.json", 1024 * 1024)
+    if not isinstance(group, dict) or not valid_id(group.get("group_id")):
+        raise ValueError("Invalid Dataset Group identity")
+    if manifest.get("resource_identity", {}).get("group_id") != group["group_id"]:
+        raise ValueError("Dataset Group manifest identity mismatch")
+    if manifest.get("resource_identity", {}).get("group_contract") != group.get("group_contract"):
+        raise ValueError("Dataset Group manifest contract mismatch")
+    if type(group.get("revision")) is not int or group["revision"] < 1:
+        raise ValueError("Invalid Dataset Group revision")
+    if "created_at" in group and (type(group["created_at"]) is not int or group["created_at"] < 0):
+        raise ValueError("Invalid Dataset Group creation time")
+    history = group.get("history", [])
+    if not isinstance(history, list) or len(history) > 128:
+        raise ValueError("Invalid Dataset Group history")
+    for event in history:
+        if not isinstance(event, dict) or set(event) != {"action", "at", "revision", "details"}:
+            raise ValueError("Invalid Dataset Group history event")
+        if not isinstance(event["action"], str) or not re.fullmatch(r"[a-z][a-z0-9_.-]{0,63}", event["action"]):
+            raise ValueError("Invalid Dataset Group history action")
+        if any(type(event[k]) is not int or event[k] < 0 for k in ("at", "revision")) or not isinstance(event["details"], str) or len(event["details"]) > 16384 or "\x00" in event["details"]:
+            raise ValueError("Invalid Dataset Group history details/counters")
+    for key in ("display_name", "group_contract", "namespace", "primary_dataset_id"):
+        if not isinstance(group.get(key), str) or len(group[key]) > 512 or "\x00" in group[key]:
+            raise ValueError("Invalid Dataset Group declaration")
+    members = group.get("members")
+    if not isinstance(members, list) or not 1 <= len(members) <= 1000:
+        raise ValueError("Invalid Dataset Group membership")
+    seen = set()
+    prefixes = []
+    for member in members:
+        if not isinstance(member, dict) or not valid_id(member.get("dataset_id")):
+            raise ValueError("Invalid Dataset Group member")
+        dataset_id = member["dataset_id"]
+        if dataset_id in seen or type(member.get("required")) is not bool:
+            raise ValueError("Duplicate or invalid Dataset Group member")
+        if not isinstance(member.get("role"), str) or not VARIABLE_ID.fullmatch(member["role"]):
+            raise ValueError("Invalid Dataset Group role")
+        for key in ("contract", "canonical_sha256", "source_module", "source_sha256", "source_name"):
+            if not isinstance(member.get(key), str) or len(member[key]) > 1024:
+                raise ValueError("Invalid Dataset Group member provenance")
+        prefix = f"datasets/{dataset_id}"
+        registry = validate_dataset_tree(zf, manifest, prefix, dataset_id)["registry"]
+        if registry.get("canonical_sha256") != member["canonical_sha256"] or registry.get("contract", registry.get("kind", "")) != member["contract"]:
+            raise ValueError("Dataset Group member fingerprint/contract mismatch")
+        if registry.get("source_module", "") != member["source_module"] or registry.get("source_sha256", "") != member["source_sha256"]:
+            raise ValueError("Dataset Group source identity mismatch")
+        seen.add(dataset_id)
+        prefixes.append(prefix + "/")
+    if group["primary_dataset_id"] not in seen:
+        raise ValueError("Dataset Group primary is not a member")
+    for entry in manifest["files"]:
+        if entry["path"] == "group/descriptor.json" and entry["role"] == "dataset_group_descriptor":
+            continue
+        if not any(entry["path"].startswith(prefix) for prefix in prefixes):
+            raise ValueError("Undeclared Dataset Group resource")
+    return group
+
+
+def emit_group(path: Path) -> None:
+    group = json.loads(path.read_text(encoding="utf-8"))
+    fields = {key: str(group[key]) for key in ("group_id", "display_name", "group_contract", "primary_dataset_id", "namespace", "revision")}
+    fields["member_count"] = str(len(group["members"]))
+    if "created_at" in group:
+        fields["created_at"] = str(group["created_at"])
+    fields["history_count"] = str(len(group.get("history", [])))
+    for index, event in enumerate(group.get("history", []), 1):
+        for key, value in event.items():
+            fields[f"history.{index}.{key}"] = str(value)
+    for index, member in enumerate(group["members"], 1):
+        for key, value in member.items():
+            fields[f"member.{index}.{key}"] = str(int(value)) if isinstance(value, bool) else str(value)
+    for key, value in fields.items():
+        print(f"{key}\t{base64.b64encode(value.encode('utf-8')).decode('ascii')}")
+
+
 def export_graph(session: Path, artifact: Path, state_tsv: Path, note: str, metadata: str,
                  annotation: str, render_metadata: str, scientific: str, dependencies: str,
-                 archive: Path, version: str) -> dict:
+                 archive: Path, version: str, asset_plan=None) -> dict:
     session = session.resolve()
     artifact = artifact.resolve()
     if session not in artifact.parents or not artifact.is_file():
@@ -272,7 +400,7 @@ def export_graph(session: Path, artifact: Path, state_tsv: Path, note: str, meta
             raise ValueError("graph artifact is not a PNG")
     state = read_state_tsv(state_tsv)
     identity = {k: state.get(k, "") for k in ("kind", "module_id", "graph_id", "variant_id", "clone_id")}
-    builder = Builder("graph", version, session, identity)
+    builder = Builder("graph", version, session, identity, asset_plan)
     builder.add("graph/graph.png", "rendered_graph", artifact)
     builder.add("graph/graph-state.json", "graph_state", json_bytes(state))
     for source, name, role in ((note, "notes.md", "graph_notes"),
@@ -346,9 +474,10 @@ def inspect(archive: Path) -> dict:
         if MANIFEST not in names or zf.getinfo(MANIFEST).file_size > MAX_MANIFEST:
             raise ValueError("resource transport manifest is missing or oversized")
         manifest = read_json_member(zf, MANIFEST, MAX_MANIFEST)
-        if manifest.get("schema") != SCHEMA or manifest.get("schema_version") != 1:
+        is_group = manifest.get("schema") == GROUP_SCHEMA and manifest.get("schema_version") == 2 and manifest.get("resource_type") == "dataset_group"
+        if not is_group and (manifest.get("schema") != SCHEMA or manifest.get("schema_version") != 1):
             raise ValueError("unsupported resource package schema")
-        if manifest.get("resource_type") not in {"dataset", "graph", "workspace"}:
+        if manifest.get("resource_type") not in {"dataset", "graph", "workspace"} and not is_group:
             raise ValueError("unknown resource package type")
         if manifest.get("integrity_algorithm") != "sha256":
             raise ValueError("unsupported integrity algorithm")
@@ -380,6 +509,8 @@ def inspect(archive: Path) -> dict:
             validate_dataset_tree(zf, manifest, "dataset", manifest.get("resource_identity", {}).get("dataset_id"))
         elif manifest["resource_type"] == "graph":
             validate_graph_tree(zf, manifest)
+        elif is_group:
+            validate_group_tree(zf, manifest)
         else:
             identity = read_json_member(zf, "workspace/identity.json", MAX_MANIFEST)
             if identity != manifest.get("resource_identity"):
@@ -405,7 +536,7 @@ def validate_dataset_tree(zf: zipfile.ZipFile, manifest: dict, prefix: str, expe
     by_role: dict[str, list[str]] = {}
     for record in records:
         by_role.setdefault(record["role"], []).append(record["path"])
-    if any(role not in {"canonical_payload", "dataset_registry", "variable_schema_v3", "dataset_metadata", "dataset_notes", "schema_source_snapshot"} for role in by_role):
+    if any(role not in {"canonical_payload", "dataset_registry", "variable_schema_v3", "dataset_metadata", "dataset_notes", "schema_source_snapshot", "managed_document_assets", "managed_document_asset"} for role in by_role):
         raise ValueError("Dataset package has an unsupported role")
     for role in ("canonical_payload", "dataset_registry", "variable_schema_v3"):
         if len(by_role.get(role, [])) != 1:
@@ -468,10 +599,12 @@ def validate_dataset_tree(zf: zipfile.ZipFile, manifest: dict, prefix: str, expe
             declared_shape = tuple(int(s) for s in variable.get("shape", "").split(";") if s)
             if declared_shape and declared_shape != datasets[locator]:
                 raise ValueError(f"HDF5 Variable shape mismatch: {locator}")
+    metadata = {}
     if by_role.get("dataset_metadata"):
         metadata = read_json_member(zf, by_role["dataset_metadata"][0])
         if not isinstance(metadata, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in metadata.items()):
             raise ValueError("Dataset metadata is not a string dictionary")
+    document_assets.validate(zf, manifest, prefix, metadata)
     if by_role.get("dataset_notes"):
         if zf.getinfo(by_role["dataset_notes"][0]).file_size > 16 * 1024 * 1024:
             raise ValueError("Dataset note exceeds size limit")
@@ -654,7 +787,7 @@ def validate_graph_tree(zf: zipfile.ZipFile, manifest: dict) -> None:
     for record in manifest["files"]:
         roles.setdefault(record["role"], []).append(record["path"])
     graph_roles = {"rendered_graph", "graph_state", "graph_notes", "graph_metadata", "graph_annotations", "render_metadata", "scientific_snapshot"}
-    if any(role not in graph_roles | {"canonical_payload", "dataset_registry", "variable_schema_v3", "dataset_metadata", "dataset_notes", "schema_source_snapshot"} for role in roles):
+    if any(role not in graph_roles | {"canonical_payload", "dataset_registry", "variable_schema_v3", "dataset_metadata", "dataset_notes", "schema_source_snapshot", "managed_document_assets", "managed_document_asset"} for role in roles):
         raise ValueError("Graph package has an unsupported role")
     for role, path in (("rendered_graph", "graph/graph.png"), ("graph_state", "graph/graph-state.json")):
         if roles.get(role) != [path]:
@@ -812,10 +945,17 @@ def main() -> None:
     ds = sub.add_parser("export-dataset")
     for field in ("session", "dataset_id", "archive", "version"):
         ds.add_argument(field)
+    ds.add_argument("--original-group", default="")
+    ds.add_argument("--document-assets-plan")
+    group = sub.add_parser("export-group")
+    for field in ("session", "plan", "archive", "version"):
+        group.add_argument(field)
+    group.add_argument("--document-assets-plan")
     graph = sub.add_parser("export-graph")
     for field in ("session", "artifact", "state_tsv", "note", "metadata", "annotation",
                   "render_metadata", "scientific", "dependencies", "archive", "version"):
         graph.add_argument(field)
+    graph.add_argument("--document-assets-plan")
     workspace = sub.add_parser("export-workspace")
     for field in ("session", "plan", "archive", "version"):
         workspace.add_argument(field)
@@ -832,16 +972,25 @@ def main() -> None:
     deps.add_argument("path")
     state = sub.add_parser("emit-graph-state")
     state.add_argument("path")
+    group_fields = sub.add_parser("emit-group")
+    group_fields.add_argument("path")
     args = parser.parse_args()
     if args.op == "export-dataset":
         session = Path(args.session).resolve()
-        builder = Builder("dataset", args.version, session, {"dataset_id": args.dataset_id})
-        builder.identity.update(builder.dataset(args.dataset_id))
+        builder = Builder("dataset", args.version, session, {"dataset_id": args.dataset_id}, args.document_assets_plan)
+        builder.identity.update(builder.dataset(args.dataset_id, original_group=args.original_group))
+        result_lines(builder.finish(Path(args.archive).resolve()))
+    elif args.op == "export-group":
+        group = group_plan(Path(args.plan))
+        builder = Builder("dataset_group", args.version, Path(args.session).resolve(), {"group_id": group["group_id"], "group_contract": group["group_contract"]}, args.document_assets_plan)
+        for member in group["members"]:
+            builder.dataset(member["dataset_id"], f"datasets/{member['dataset_id']}")
+        builder.add("group/descriptor.json", "dataset_group_descriptor", json_bytes(group))
         result_lines(builder.finish(Path(args.archive).resolve()))
     elif args.op == "export-graph":
         result_lines(export_graph(Path(args.session), Path(args.artifact), Path(args.state_tsv),
                                   args.note, args.metadata, args.annotation, args.render_metadata,
-                                  args.scientific, args.dependencies, Path(args.archive).resolve(), args.version))
+                                  args.scientific, args.dependencies, Path(args.archive).resolve(), args.version, args.document_assets_plan))
     elif args.op == "export-workspace":
         session = Path(args.session).resolve()
         fields, blobs = {}, []
@@ -873,6 +1022,7 @@ def main() -> None:
         manifest = inspect(Path(args.archive))
         identity = manifest["resource_identity"]
         dependencies = manifest.get("dependencies", [])
+        group_info = {}
         # The completed native validator has already proved that these paths
         # exactly match the snapshot's Dataset identities and nested archives.
         # They remain Clone-owned resources, distinct from outer dependencies
@@ -892,6 +1042,14 @@ def main() -> None:
             provider = registry.get("storage_provider", "")
             capture_mode = ""
             variable_ids = ";".join(registry.get(f"var{i}_variable_id", "") for i in range(1, int(registry.get("var_count", "0")) + 1))
+        elif manifest["resource_type"] == "dataset_group":
+            contract = identity["group_contract"]
+            provider, capture_mode, variable_ids = "", "dataset_group", ""
+            with zipfile.ZipFile(args.archive) as zf:
+                group = read_json_member(zf, "group/descriptor.json", 1024 * 1024)
+            group_info = {"group_member_ids": ";".join(m["dataset_id"] for m in group["members"]),
+                          "group_member_count": len(group["members"]), "group_revision": group["revision"],
+                          "group_namespace": group["namespace"]}
         elif manifest["resource_type"] == "workspace":
             contract = identity["schema"]
             provider = identity["provider_id"]
@@ -911,6 +1069,8 @@ def main() -> None:
                       "file_count": len(manifest["files"]), "total_bytes": sum(x["size"] for x in manifest["files"]),
                       "resource_identity": json.dumps(identity, ensure_ascii=False),
                       "dataset_id": identity.get("dataset_id", ""), "module_id": identity.get("module_id", ""),
+                      "group_id": identity.get("group_id", ""),
+                      **group_info,
                       "graph_id": identity.get("graph_id", ""), "variant_id": identity.get("variant_id", ""),
                       "clone_id": identity.get("clone_id", ""), "contract": contract, "provider": provider,
                       "capture_mode": capture_mode,
@@ -933,6 +1093,8 @@ def main() -> None:
         emit_dependencies(Path(args.path))
     elif args.op == "emit-graph-state":
         emit_graph_state(Path(args.path))
+    elif args.op == "emit-group":
+        emit_group(Path(args.path))
 
 
 if __name__ == "__main__":

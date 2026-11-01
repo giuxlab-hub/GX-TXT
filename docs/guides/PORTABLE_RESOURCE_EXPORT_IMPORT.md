@@ -9,3 +9,19 @@ In **Plots**, select a base graph, Variant or Detached Clone and use **Export Gr
 **Notes...** opens the standard Markdown editor; Graph Info displays notes/metadata presence and descriptive keys. Variant create/duplicate and Clone creation copy existing notes/metadata; deleting a copy removes only that copy's resources. Save Config and reopen the Session to resume the graph state.
 
 Use a Portable Session ZIP for a whole Session backup. Resource ZIPs transfer individual scientific resources. Plugin ZIPs install code, while HTML export is a read-only publication. See [Portable Resource API](../api/PORTABLE_RESOURCE_API_v1.md) for format, collision and security details.
+
+# Dataset Groups
+
+The Dataset Browser shows an acquired Group under its Namespace, with each
+independent Dataset and its role beneath an expandable row. Selecting the Group
+does not activate its members for analysis. Use its context menu to inspect,
+move the whole Group, export one Group ZIP, or ungroup while keeping all data.
+A member's Move action moves the whole Group; explicitly Detach first to move
+just that Dataset. Ordinary member Preview and individual Dataset ZIP remain.
+
+Choose **Import Dataset Group ZIP…** from a Namespace context menu. Review the
+Group ID, destination Namespace and original/destination member IDs, then import
+the complete Group. Collisions refuse; edit the destination IDs explicitly.
+Import validates all member bytes/schema/SHA and commits them together. An
+individual member ZIP instead imports as a detached Dataset, retaining original
+Group provenance without claiming the missing members exist.

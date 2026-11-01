@@ -105,17 +105,23 @@ proc ::GX::printRecipeHistoryEdit {history recipe description} {
     return [scientificHistoryAppend framework.printing $history $recipe $description]
 }
 proc ::GX::printRecipeDocumentSave {recipe history {id {}} {expected {}}} {
+    _printWorkspaceProviderEnsure
     set recipe [printRecipeValidate $recipe];scientificHistoryValidate framework.printing $history
     set payload [dict create schema gxtxt.print_composition.v1 recipe $recipe history $history]
-    if {$id eq {}} {return [interactiveDocumentCreate framework.printing print_composition gxtxt.print_composition.v1 1 $payload]}
-    set current [interactiveDocumentRead $id]
-    if {[dict get $current module_id] ne {framework.printing} || [dict get $current provider_id] ne {print_composition} || $expected ne [list [dict get $current generation] [dict get $current revision] [dict get $current sha256]]} {error {Print composition changed in another editor; reopen before saving.}}
-    return [interactiveDocumentUpdate $id $payload]
+    if {$id eq {}} {
+        set receipt [sessionWorkspaceCreate print_composition [sessionWorkspaceAvailableName [dict get $recipe title]] $payload]
+    } else {
+        set current [nativeWorkspaceMetadata $id]
+        if {[dict get $current module_id] ne {framework.printing} || [dict get $current provider_id] ne {print_composition} || $expected ne [list [dict get $current generation] [dict get $current revision] [dict get $current sha256]]} {error {Print composition changed in another editor; reopen before saving}}
+        set receipt [sessionWorkspaceUpdate $id $payload $current]
+    }
+    return [nativeWorkspaceMetadata [dict get $receipt id]]
 }
 proc ::GX::printRecipeDocumentRead {id} {
-    set doc [interactiveDocumentRead $id]
-    if {[dict get $doc module_id] ne {framework.printing} || [dict get $doc provider_id] ne {print_composition} || [dict get $doc format] ne {gxtxt.print_composition.v1}} {error {This document is not a Print composition.}}
-    printRecipeValidate [dict get $doc payload recipe]
+    _printWorkspaceProviderEnsure
+    set doc [sessionWorkspaceGet $id]
+    if {[dict get $doc module_id] ne {framework.printing} || [dict get $doc provider_id] ne {print_composition} || [dict get $doc format] ne {gxtxt.print_composition.v1}} {error {This Workspace is not a Print composition}}
+    _printWorkspaceValidate [dict get $doc payload]
     return $doc
 }
 proc ::GX::printRecipeSourceSignature {kind id} {
@@ -178,7 +184,7 @@ proc ::GX::_printDocumentHostContracts {} {
         printRecipeValidate {recipe PrintRecipe {Inert gxtxt.print_recipe.v1 dictionary; bounded page, items, options, physical frames and styles.}} PrintRecipe {Validated recipe copy or Tcl error; does not resolve scientific sources or persist edits.} {No Session required.}
         printRecipeHistoryCreate {recipe PrintRecipe {Validated initial recipe.}} ScientificHistory {New framework.printing History with initial base, empty steps and cursor zero; not saved.} {Registers the existing Scientific Recipe host.}
         printRecipeHistoryEdit {history ScientificHistory {Existing framework.printing History.} recipe PrintRecipe {Validated new recipe snapshot.} description String {User-visible History step description.}} ScientificHistory {Appended History, branching first when its cursor precedes the end; no persistence.} {Existing Scientific Recipe owner.}
-        printRecipeDocumentSave {recipe PrintRecipe {Validated composition recipe.} history ScientificHistory {Validated framework.printing History.} id DocumentID {Empty creates a new document; otherwise updates that current-Session printing document.} expected DocumentStamp {For update, exact generation/revision/SHA list from current metadata; empty cannot authorize an existing-document overwrite.}} DocumentMetadata {Interactive Document metadata including ID, generation, revision and SHA; owner/stamp mismatch raises before update.} {Current Session required; existing Interactive Document authority.}
+        printRecipeDocumentSave {recipe PrintRecipe {Validated composition recipe.} history ScientificHistory {Validated framework.printing History.} id DocumentID {Empty creates a new document; otherwise updates that current-Session printing document.} expected DocumentStamp {For update, exact generation/revision/SHA list from current metadata; empty cannot authorize an existing-document overwrite.}} DocumentMetadata {Native Workspace metadata including ID, generation, revision and typed content SHA; owner/stamp mismatch raises before update.} {Current Session required; native Workspace authority and expected generation/revision.}
         printRecipeDocumentRead {id DocumentID {Current-Session printing composition ID.}} InteractiveDocument {Validated framework.printing/print_composition document including payload recipe and History; does not certify a prepared PDF current.} {Current Session and matching document owner/format.}
         printRecipeSourceSignature {kind SourceKind {dataset or graph.} id SourceReference {Canonical Dataset ID, or relative/absolute artwork path under the current Session analysis directory.}} SourceIdentity {Opaque complete scientific/artwork identity including relevant metadata, stat and dependencies; compare unchanged, never manufacture fields.} {Current Session and available original source.}
         printContentDescribe {kind SourceKind {dataset or graph.} id SourceReference {Canonical Dataset ID or current-Session Graph artwork path.}} ContentDescriptor {Actual supported representations, default, reason and source identity; Dataset schema/types/units and row count where available. Not materialization or remote transfer admission.} {Current Session and registered source.}

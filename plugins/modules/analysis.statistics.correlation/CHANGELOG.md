@@ -5,7 +5,7 @@
 - Public CORE statistical interpretation and persisted result records.
 - Reconciled module, package and current producer identities for this release.
 
-## 1.0.1
+## 1.0.1 — 2026-09-28
 
 - Classified the independently packaged module as a managed external plugin.
 

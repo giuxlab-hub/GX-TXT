@@ -256,4 +256,9 @@ proc ::GX::viewerGuiComponentGalleryOpen {{selected {}}} {
     return $w
 }
 proc ::GX::viewerGuiComponentGalleryGuide {} {set cap [dict get [viewerGuiComponentCapabilities] $::GX::ComponentDemo::selected];documentationBrowserOpenApi [dict get $cap api_id]}
-proc ::GX::viewerGuiComponentGalleryClose {} {catch {destroy .gxComponentDemo};catch {destroy .gxComponentGallery};if {[winfo exists .gxInterfaceDesigner]} {set ::GX::InterfaceBuilder::s(presentationMode) Design}}
+proc ::GX::viewerGuiComponentGalleryClose {} {
+    catch {destroy .gxComponentDemo};catch {destroy .gxComponentGallery}
+    # Closing an inert Gallery only finishes Demo presentation. A pending or
+    # established Runtime Test belongs to the Builder's handler-connection owner.
+    if {[winfo exists .gxInterfaceDesigner] && [info exists ::GX::InterfaceBuilder::s(presentationMode)] && $::GX::InterfaceBuilder::s(presentationMode) eq {Demo}} {set ::GX::InterfaceBuilder::s(presentationMode) Design}
+}

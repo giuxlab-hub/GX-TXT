@@ -1,0 +1,432 @@
+{
+  "capabilities": [
+    {
+      "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+      "operations": [
+        "source_info",
+        "source_read",
+        "cancelled",
+        "progress",
+        "prepare_output",
+        "output_write",
+        "output_finish",
+        "scientific_spectrum_parse",
+        "scientific_spectrum_read"
+      ],
+      "version": 1
+    }
+  ],
+  "config_fields": [
+    {
+      "default": "measurement",
+      "id": "spectrum_id",
+      "label": "Scientific identity",
+      "required": true,
+      "type": "string"
+    },
+    {
+      "default": "Scientific measurement",
+      "id": "display_name",
+      "label": "Display name",
+      "required": true,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "spectrum_kind",
+      "label": "Spectrum kind: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "x_quantity",
+      "label": "X quantity: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "x_unit",
+      "label": "X unit: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "y_quantity",
+      "label": "Y quantity: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "y_representation",
+      "label": "Y representation: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "y_unit",
+      "label": "Y unit: required CSV / JCAMP source consistency check",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "1",
+      "id": "x_column",
+      "label": "CSV X column name or 1-based index",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "2",
+      "id": "y_column",
+      "label": "CSV Y column name or 1-based index",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "auto",
+      "id": "delimiter",
+      "label": "CSV delimiter: auto / comma / semicolon / tab",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": true,
+      "id": "header",
+      "label": "CSV has column header",
+      "required": true,
+      "type": "boolean"
+    },
+    {
+      "default": "pixel",
+      "id": "sif_axis_mode",
+      "label": "SIF coordinate mode",
+      "required": true,
+      "type": "choice",
+      "values": [
+        "pixel",
+        "calibrated"
+      ]
+    },
+    {
+      "default": "",
+      "id": "sif_calibration_unit",
+      "label": "Explicit SIF physical calibration source unit",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "sif_calibration_quantity",
+      "label": "Explicit SIF physical calibration quantity",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "sif_unknown_y_unit",
+      "label": "Unknown SIF signal source unit",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "sif_unknown_y_quantity",
+      "label": "Unknown SIF signal quantity",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "sif_unknown_y_representation",
+      "label": "Unknown SIF signal representation",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "prf_time_unit",
+      "label": "Reviewed PRF numeric time unit s/min/h; no conversion",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "prf_signal_unit",
+      "label": "Reviewed PRF signal source unit; no inferred RMS unit",
+      "required": false,
+      "type": "string"
+    },
+    {
+      "default": "",
+      "id": "prf_signal_quantity",
+      "label": "Reviewed PRF signal source quantity",
+      "required": false,
+      "type": "string"
+    }
+  ],
+  "dependencies": [],
+  "description": "Explicit scientific CSV/JCAMP; qualified SIF65567 and PEPE SP; synthetic CFBv3 PRF subset, authentic PRF unverified.",
+  "formats": [
+    {
+      "capabilities": [
+        {
+          "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+          "operations": [
+            "source_info",
+            "source_read",
+            "cancelled",
+            "progress",
+            "prepare_output",
+            "output_write",
+            "output_finish",
+            "scientific_spectrum_parse",
+            "scientific_spectrum_read"
+          ],
+          "version": 1
+        }
+      ],
+      "dependencies": [],
+      "file_patterns": [
+        "*.csv",
+        "*.txt"
+      ],
+      "id": "spectral_csv",
+      "import": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "inspect": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "limits": {},
+      "mime_types": [
+        "text/plain"
+      ],
+      "name": "Explicit spectral CSV",
+      "output_contracts": [
+        "spectrum.scientific"
+      ],
+      "recognize": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "source_kind": "text"
+    },
+    {
+      "capabilities": [
+        {
+          "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+          "operations": [
+            "source_info",
+            "source_read",
+            "cancelled",
+            "progress",
+            "prepare_output",
+            "output_write",
+            "output_finish",
+            "scientific_spectrum_parse",
+            "scientific_spectrum_read"
+          ],
+          "version": 1
+        }
+      ],
+      "dependencies": [],
+      "file_patterns": [
+        "*.jdx",
+        "*.dx",
+        "*.jcamp"
+      ],
+      "id": "jcamp_dx",
+      "import": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "inspect": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "limits": {},
+      "mime_types": [
+        "text/plain"
+      ],
+      "name": "JCAMP-DX shared CORE source parser",
+      "output_contracts": [
+        "spectrum.scientific"
+      ],
+      "recognize": {
+        "file": "handlers.cpp",
+        "symbol": "scientific_measurement::parse"
+      },
+      "source_kind": "text"
+    },
+    {
+      "capabilities": [
+        {
+          "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+          "operations": [
+            "source_info",
+            "source_read",
+            "cancelled",
+            "progress",
+            "prepare_output",
+            "output_write",
+            "output_finish",
+            "scientific_spectrum_parse",
+            "scientific_spectrum_read"
+          ],
+          "version": 1
+        }
+      ],
+      "dependencies": [],
+      "file_patterns": [
+        "*.sif"
+      ],
+      "id": "andor_sif",
+      "import": {
+        "file": "src/sif.cpp",
+        "symbol": "scientific_measurement::sif_parse"
+      },
+      "inspect": {
+        "file": "src/sif.cpp",
+        "symbol": "scientific_measurement::sif_parse"
+      },
+      "limits": {},
+      "mime_types": [
+        "application/octet-stream"
+      ],
+      "name": "Andor SIF65567 primary float32",
+      "output_contracts": [
+        "spectrum.scientific",
+        "measurement.numeric_array"
+      ],
+      "recognize": {
+        "file": "src/sif.cpp",
+        "symbol": "scientific_measurement::sif_parse"
+      },
+      "source_kind": "binary"
+    },
+    {
+      "capabilities": [
+        {
+          "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+          "operations": [
+            "source_info",
+            "source_read",
+            "cancelled",
+            "progress",
+            "prepare_output",
+            "output_write",
+            "output_finish",
+            "scientific_spectrum_parse",
+            "scientific_spectrum_read"
+          ],
+          "version": 1
+        }
+      ],
+      "dependencies": [],
+      "file_patterns": [
+        "*.sp",
+        "*.SP"
+      ],
+      "id": "perkinelmer_sp",
+      "import": {
+        "file": "src/sp.cpp",
+        "symbol": "scientific_measurement::sp_parse"
+      },
+      "inspect": {
+        "file": "src/sp.cpp",
+        "symbol": "scientific_measurement::sp_parse"
+      },
+      "limits": {},
+      "mime_types": [
+        "application/octet-stream"
+      ],
+      "name": "PerkinElmer PEPE SP constant-interval absorbance",
+      "output_contracts": [
+        "spectrum.scientific"
+      ],
+      "recognize": {
+        "file": "src/sp.cpp",
+        "symbol": "scientific_measurement::sp_parse"
+      },
+      "source_kind": "binary"
+    },
+    {
+      "capabilities": [
+        {
+          "api_id": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+          "operations": [
+            "source_info",
+            "source_read",
+            "cancelled",
+            "progress",
+            "prepare_output",
+            "output_write",
+            "output_finish",
+            "scientific_spectrum_parse",
+            "scientific_spectrum_read"
+          ],
+          "version": 1
+        }
+      ],
+      "dependencies": [],
+      "file_patterns": [
+        "*.prf",
+        "*.PRF"
+      ],
+      "id": "perkinelmer_prf",
+      "import": {
+        "file": "src/prf.cpp",
+        "symbol": "scientific_measurement::prf_parse"
+      },
+      "inspect": {
+        "file": "src/prf.cpp",
+        "symbol": "scientific_measurement::prf_parse"
+      },
+      "limits": {},
+      "mime_types": [
+        "application/octet-stream"
+      ],
+      "name": "PRF CFBv3 numeric trace · authentic compatibility unverified",
+      "output_contracts": [
+        "timeseries.table"
+      ],
+      "recognize": {
+        "file": "src/prf.cpp",
+        "symbol": "scientific_measurement::prf_parse"
+      },
+      "source_kind": "binary"
+    }
+  ],
+  "helpers": [],
+  "input_contracts": [],
+  "language": "cpp",
+  "license": "GPL-3.0-or-later",
+  "module_id": "acq.scientific_measurement",
+  "name": "Scientific measurement importer",
+  "profile": "acquisition_v1",
+  "provenance": {},
+  "provided_contracts": [],
+  "schema": "gxtxt.acquisition_development_project.v1",
+  "source": "handlers.cpp",
+  "source_files": [
+    "handlers.cpp",
+    "include/measurement.hpp",
+    "include/sif_decoder.hpp",
+    "src/sif.cpp",
+    "include/sp_decoder.hpp",
+    "src/sp.cpp",
+    "include/source_metadata.hpp",
+    "include/prf_decoder.hpp",
+    "src/prf.cpp",
+    "src/prf_container.cpp"
+  ],
+  "tests": {},
+  "version": "1.0.2"
+}

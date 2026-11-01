@@ -74,10 +74,9 @@ proc ::GX::TableExtractor::_bootstrap {} {
         }
         lappend lines [_record DATASET $id [dict get $info contract] [dict get $info format] [dict get $info media_type] [dict get $info sha256] $title]
     }
-    foreach item [::GX::interactiveDocumentList viewer.table_extractor table_extractor] {
+    foreach item [::GX::nativeWorkspaceQuery table_extractor] {
         set id [dict get $item id]
-        set full [::GX::interactiveDocumentRead $id]
-        lappend lines [_record DOCUMENT $id [dict get $full payload] [dict get $full updated_at]]
+        lappend lines [_record DOCUMENT_INFO $id [dict get $item name] [dict get $item updated_at] [dict get $item generation] [dict get $item revision]]
     }
     return [join $lines "\n"]
 }
@@ -94,25 +93,32 @@ proc ::GX::TableExtractor::_sourcePayload {datasetId} {
     return [join $lines "\n"]
 }
 proc ::GX::TableExtractor::_documentCreate {payload} {
-    set result [::GX::interactiveDocumentCreate viewer.table_extractor table_extractor gxtxt.table_extractor.workspace 1.0 $payload]
-    return [dict get $result id]
+    set typed [::GX::nativeWorkspaceJsonDecode $payload]
+    set name [lindex [dict get [lindex $typed 1] name] 1]
+    set result [::GX::sessionWorkspaceCreate table_extractor $name [dict create json $payload]]
+    return [join [list [dict get $result id] [dict get $result generation] [dict get $result revision]] \t]
 }
-proc ::GX::TableExtractor::_documentUpdate {documentId payload sessionToken} {
+proc ::GX::TableExtractor::_documentUpdate {documentId payload sessionToken generation revision} {
     if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; this Table Extractor window is stale." }
-    set full [::GX::interactiveDocumentRead $documentId]
+    set full [::GX::nativeWorkspaceMetadata $documentId]
     if {[dict get $full module_id] ne "viewer.table_extractor" || [dict get $full provider_id] ne "table_extractor"} {
         error "Interactive Document '$documentId' is not owned by Table Extractor."
     }
-    set result [::GX::interactiveDocumentUpdate $documentId $payload gxtxt.table_extractor.workspace 1.0]
-    return [dict get $result id]
+    set result [::GX::sessionWorkspaceUpdate $documentId [dict create json $payload] [dict create id $documentId generation $generation revision $revision]]
+    return [join [list [dict get $result id] [dict get $result generation] [dict get $result revision]] \t]
 }
-proc ::GX::TableExtractor::_documentDelete {documentId sessionToken} {
+proc ::GX::TableExtractor::_documentDelete {documentId sessionToken generation revision} {
     if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; this Table Extractor window is stale." }
-    set full [::GX::interactiveDocumentRead $documentId]
+    set full [::GX::nativeWorkspaceMetadata $documentId]
     if {[dict get $full module_id] ne "viewer.table_extractor" || [dict get $full provider_id] ne "table_extractor"} {
         error "Interactive Document '$documentId' is not owned by Table Extractor."
     }
-    return [::GX::interactiveDocumentDelete $documentId]
+    return [::GX::sessionWorkspaceDelete $documentId 1 [dict create id $documentId generation $generation revision $revision]]
+}
+proc ::GX::TableExtractor::_documentRead {documentId} {
+    set full [::GX::sessionWorkspaceGet $documentId]
+    if {[dict get $full provider_id] ne {table_extractor}} {error {Workspace belongs to another provider}}
+    return [_record DOCUMENT $documentId [dict get $full payload json] [dict get $full updated_at] [dict get $full generation] [dict get $full revision]]
 }
 proc ::GX::TableExtractor::_parseTablePayload {payload} {
     set columns {}
@@ -223,6 +229,7 @@ proc ::GX::TableExtractor::_publishTable {args} {
     return [join [list [dict get $result dataset_id] [dict get $result path] [dict get $result sha256] table.generic] "\t"]
 }
 proc ::GX::TableExtractor::_handleRequest {channel line} {
+    ::GX::workspaceExternalHostCheck viewer.table_extractor $channel
     set fields [split $line "\t"]
     if {[llength $fields] < 3 || [lindex $fields 0] ne "REQ"} { error "Malformed Table Extractor backend request." }
     set requestId [lindex $fields 1]
@@ -241,13 +248,14 @@ proc ::GX::TableExtractor::_handleRequest {channel line} {
             set payload [_documentCreate [lindex $args 0]]
         }
         DOC_UPDATE {
-            if {[llength $args] != 3} { error "DOC_UPDATE requires document ID, payload and Session token." }
-            set payload [_documentUpdate [lindex $args 0] [lindex $args 1] [lindex $args 2]]
+            if {[llength $args] != 5} {error {DOC_UPDATE requires ID, JSON, Session token and expected generation/revision}}
+            set payload [_documentUpdate {*}$args]
         }
         DOC_DELETE {
-            if {[llength $args] != 2} { error "DOC_DELETE requires document ID and Session token." }
-            set payload [_documentDelete [lindex $args 0] [lindex $args 1]]
+            if {[llength $args] != 4} {error {DOC_DELETE requires ID, Session token and confirmed expected generation/revision}}
+            set payload [_documentDelete {*}$args]
         }
+        DOC_READ {if {[llength $args]!=1} {error {DOC_READ requires a native Workspace ID}};set payload [_documentRead {*}$args]}
         PUBLISH_TABLE { set payload [_publishTable {*}$args] }
         default { error "Unknown Table Extractor backend request '$command'." }
     }
@@ -257,11 +265,13 @@ proc ::GX::TableExtractor::_readable {channel} {
     variable processChannel
     variable processPid
     if {[eof $channel]} {
+        ::GX::workspaceExternalHostClosed $channel
         catch {close $channel}
         if {$processChannel eq $channel} { set processChannel ""; set processPid "" }
         return
     }
     if {[gets $channel line] < 0} { return }
+    if {[::GX::workspaceExternalHostReply $channel $line]} {return}
     if {[catch {lassign [_handleRequest $channel $line] requestId payload} failure options]} {
         set fields [split $line "\t"]
         set requestId [expr {[llength $fields] >= 2 ? [lindex $fields 1] : "0"}]
@@ -290,11 +300,13 @@ proc ::GX::TableExtractor::_dependenciesCheck {python} {
     }
     return 1
 }
-proc ::GX::TableExtractor::_launch {} {
+proc ::GX::TableExtractor::_launch {{context {}}} {
     variable processChannel
     variable processPid
     variable moduleRoot
     if {$processChannel ne ""} {
+        ::GX::workspaceExternalHostCheck viewer.table_extractor $processChannel
+        if {[dict exists $context workspace_id]} {return [dict create status [::GX::workspaceExternalHostOpen viewer.table_extractor [dict get $context workspace_id]] pid $processPid]}
         if {![catch {puts $processChannel "CONTROL\tFOCUS"; flush $processChannel}]} { return [dict create status focused pid $processPid] }
         catch {close $processChannel}; set processChannel ""; set processPid ""
     }
@@ -303,17 +315,20 @@ proc ::GX::TableExtractor::_launch {} {
     _dependenciesCheck $python
     set script [file join $moduleRoot python table_extractor.py]
     if {![file isfile $script]} { error "Table Extractor desktop adapter is missing: $script" }
-    set pipeline "|[list $python $script]"
+    set command [list $python $script --core-python [file join $::GX::scriptDir core python]]
+    if {[dict exists $context workspace_id]} {lappend command --workspace [dict get $context workspace_id]}
+    set pipeline "|$command"
     if {[catch {set channel [open $pipeline r+]} failure options]} { return -options $options "Unable to start Table Extractor desktop adapter: $failure" }
     fconfigure $channel -encoding utf-8 -translation lf -buffering line -blocking 0
     set processChannel $channel
     set processPid [pid $channel]
+    ::GX::workspaceExternalHostRegister viewer.table_extractor table_extractor $channel
     fileevent $channel readable [list ::GX::TableExtractor::_readable $channel]
     return [dict create status opened pid $processPid]
 }
 proc ::GX::TableExtractor::viewerDispatch {action scene} {
     switch -- $action {
-        open - rerender { return [_launch] }
+        open - rerender { return [_launch [::GX::datasetPublicationV2DictDefault $scene open_context {}]] }
         default { error "Unsupported Table Extractor action '$action'." }
     }
 }

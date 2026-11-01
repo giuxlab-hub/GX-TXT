@@ -1,0 +1,47 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "operations": [
+        "text_set",
+        "value_get"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "PREVIEW_COMPONENT_GUI_API_v1",
+      "operations": [
+        "scientific_preview_command",
+        "scientific_frame_bind"
+      ],
+      "version": 1
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "preview.scientific_frame",
+  "profile": "scientific_view_v1",
+  "provenance": {
+    "genuine_design_sha256": "b0b039451b2aff99660fd21d56c4e0b963d64ae266f0586779cafa488a6a21c9",
+    "scientific_source": null,
+    "template": "genuine_builder_scientific_frame_v1"
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "source_files": [
+    "handlers.cpp",
+    "include/scientific_preview_routing.hpp"
+  ],
+  "tests": {
+    "events": [
+      {
+        "component": 0,
+        "kind": 5,
+        "value": 0.0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  },
+  "version": "1.0.1"
+}

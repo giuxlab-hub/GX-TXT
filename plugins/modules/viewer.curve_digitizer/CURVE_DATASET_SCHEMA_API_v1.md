@@ -3,7 +3,7 @@
 SPDX-License-Identifier: GPL-3.0-or-later
 
 **Module:** `viewer.curve_digitizer`  
-**Minimum publication format:** curve schema version 1 (Curve Digitalizer 1.2.8)  
+**Supported publication formats:** validated schema 0, schema 1, and dual-axis schema 2  
 **Goal:** retrieve semantic role / Variable ID bindings for scientific curve
 Datasets using only the published Dataset ID. All public access goes through
 CORE Session Inspection, Dataset Metadata and Variable Schema v3 APIs.
@@ -31,7 +31,7 @@ set descriptor [::GX::CurveDigitizerDataset::schema]
 | Key | Type | Meaning |
 |---|---|---|
 | `api_version` | integer | Always 1 |
-| `curve_schema_version` | integer | 1; 0 for validated historical fallback |
+| `curve_schema_version` | integer | 0 (historical), 1, or 2 (logical Y-axis bindings) |
 | `dataset_id` | string | Canonical Dataset ID |
 | `contract` | string | `table.generic` or `curve_family.table` |
 | `mode` | string | `independent` or `numerical_family` |
@@ -256,3 +256,45 @@ selected for a publication. Selection provenance uses
 `curve_digitizer.publication_calibration_ids` (JSON list), and
 `curve_digitizer.publication_measurement_id` (primary measurement whose
 calibration is exposed by the default Calibration API `read` call).
+
+
+## Version 2.0.24 — Stable public metadata adapter
+
+The Dataset Schema API identifier stays CURVE_DIGITIZER_DATASET_SCHEMA_API_v1.
+The producer's internal curve schema may be 0, 1 or 2; all use existing
+canonical contracts table.generic or curve_family.table. A single numeric X/Y
+pair is retained per row; when Y1 and Y2 share a physical unit, the text
+y_axis_id column selects the logical Y transformation (y1 or y2). When
+units differ, two canonical datasets are emitted. No new CORE contract exists.
+
+Public calls:
+
+    ::GX::CurveDigitizerDataset::read datasetId ?session?
+    ::GX::CurveDigitizerDataset::column datasetId semanticRole ?session?
+    ::GX::CurveDigitizerDataset::axes datasetId ?session?
+    ::GX::CurveDigitizerDataset::curves datasetId ?session?
+    ::GX::CurveDigitizerDataset::datasetGroup datasetId ?session?
+    ::GX::CurveDigitizerDataset::describe datasetId ?session?
+
+The new text semantic role y_axis_id identifies scientific Y1/Y2 binding
+and is unrelated to an axis's geometric position on either side of a chart.
+The v2 axes result describes measurement-specific X, Y1, Y2 transformations
+and names/units/linear-log scales; it does not invent parameters absent
+from historical schema 0/1. The curves result lists stable curve ID,
+display name, logical axis, and points per calibration. A historical
+curve list is reconstructed by bounded canonical Dataset access without
+opening files, private Session paths or producer JSON.
+
+The datasetGroup method reads CORE DATASET_GROUP_API_v1 when available,
+returning grouped status, identity, primary member and member roles.
+The describe method combines normalized schema, axes, curves and Group
+context. Metadata is versioned by the producer, whose adapter remains
+responsible for reading older published versions: external consumers must
+not inspect internal axes_json/curves_json or infer fields from CSV headers.
+Unknown metadata versions and inconsistent bindings cause explicit errors.
+
+The optional Publish checkbox Group published Datasets is OFF by default.
+Two or more axis-/calibration-split datasets may be collected under one
+reviewed, producer-owned Dataset Group. Real framework-issued capability,
+current Session, dataset ownership, namespace and revision checks are
+enforced by CORE; a single Dataset is not wrapped unnecessarily.

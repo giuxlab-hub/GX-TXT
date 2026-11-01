@@ -1,0 +1,2028 @@
+{
+  "counts": {
+    "current_generator_ids": 39,
+    "excluded_historical_package_paths": 395,
+    "private_generator_ids_separate": 5,
+    "required_library_ids": 5,
+    "source_files": 296,
+    "source_libraries": 4,
+    "total_generator_ids_across_deliveries": 44
+  },
+  "qualification": "Public distribution: 39 complete public Generator IDs; five intact IR teaching Generators are delivered separately in the private owner workkit. Retained scientific source is unchanged. Only public subset Library name/version/index and packaging manifests are qualified. No Generator execution is inferred.",
+  "schema": "gxtxt.dev112.generator_coverage.v2",
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8",
+  "source_files": {
+    "session_generator_libraries/gxtxt.accepted_generators/INDEX.md": {
+      "mode": 420,
+      "sha256": "af7db40d70ab06bfcbb9c522ac56bce1eb24aec990e61691090a9986d9af9a4f",
+      "size": 2171
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "31008e3e3885beee19d79637d50c7c676e42385573da7e614a2ab311b76a9f39",
+      "size": 308
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/README.md": {
+      "mode": 420,
+      "sha256": "7b512303f3bedcc8419ea757bd001ad34475495a34db3343f48f16063cca5d3e",
+      "size": 713
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "d74065ddc9a7bfda2e1700d140b6890dccb4bc5cb34746f78ba55157f7ae7712",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "3485b38503386a4dc116fb7e05a3a5af17b6643a43bfb39a2e416bdb8d379d96",
+      "size": 732
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/complete.py": {
+      "mode": 420,
+      "sha256": "022e24382d005c11f7dfb489cd653dc091f4002f4b8d8ab98fd7f7d5796a1070",
+      "size": 1388
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/generate.py": {
+      "mode": 493,
+      "sha256": "521ac3037af86643f4c19d9b4df4ec03b4c8d76967ec48afbe17da4276a89fa8",
+      "size": 4482
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/generator.ini": {
+      "mode": 420,
+      "sha256": "8a711ec79ebd4709e116787a25771d19fab0925a950b6af7a5a832170ebac11a",
+      "size": 847
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/README.md": {
+      "mode": 420,
+      "sha256": "5b54ce3c6677d998ee61d8af0141ce961a999699c9a313513b1dd869d34f5b49",
+      "size": 565
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "0003552a6509adf05047bab39b98fe71d3f14db8a69b70b51dbeca8a8592b335",
+      "size": 392
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/generate.py": {
+      "mode": 420,
+      "sha256": "a6294e5c3620b6ea70c5d81650dc12fa0cd4e90f392c8a1c3669c5287cbb60ff",
+      "size": 4709
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/generator.ini": {
+      "mode": 420,
+      "sha256": "719202562815069eda7cd76ffef1ea50db433440d5cd54bc5d0a2de74fc6c897",
+      "size": 889
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/session_recipe.py": {
+      "mode": 420,
+      "sha256": "f07843025d25da58efaa84ba8a370da9e70fed8bd1aa8c6c7803e03190f04221",
+      "size": 4675
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "3f9283c008bb2cb5423da1abd0dec57461064bbf1faac0e7824c14481bdb1c00",
+      "size": 199
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/README.md": {
+      "mode": 420,
+      "sha256": "51a41c9f5c184e9cda12c8a49533936e28f540189af51067c0ff97612144a865",
+      "size": 1066
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "29de7447c4f842a5fb10e6033e4885a1491d6d2879548524cd728592e5d53e0a",
+      "size": 938
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/generate.py": {
+      "mode": 493,
+      "sha256": "8949f1d51841064405181f2b9e5428b4ef195b02c87f98aad19d65978cd585b0",
+      "size": 12114
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/generator.ini": {
+      "mode": 420,
+      "sha256": "443a3823c037c2de1ce4f6a2a096939b90d6b7a873c9fcfb41695fc893358237",
+      "size": 1149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "caf3242d29c44e8bb53ae2d1091ff3fb9e9d158b8bc59499c06a3c431d4f0411",
+      "size": 111
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/README.md": {
+      "mode": 420,
+      "sha256": "1dbdc391bc755dac187e5f810df458041ff1be118cb69b3af0ea1b88c78a45ed",
+      "size": 269
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/RIGHTS.md": {
+      "mode": 420,
+      "sha256": "717ce69d1f743641b9a56974b466cc1ccb83c789423dc3abf5bae70befdb5ed8",
+      "size": 596
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "0f97a0bb1d7f3c1ef8a24abe9677f25ad9b19caf4e2cc8439f22f343fe29ea31",
+      "size": 747
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/TEACHER_GUIDE.md": {
+      "mode": 420,
+      "sha256": "003007fe5634d46814b5a943abf27f00879e5b2597bb6053c4a9d7cbe833f96b",
+      "size": 1334
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/assets/climate_tables.pdf": {
+      "mode": 420,
+      "sha256": "64c11d080187f979152ab8d6fe64f32551120513c40688b882895d06723d92c4",
+      "size": 559680
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/assets/middlebrook_loop_gain.pdf": {
+      "mode": 420,
+      "sha256": "713f9111f6df7aa015c78159edf36143f441d55c83e37d0da3cc7f228c3f4f0d",
+      "size": 1702775
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/generate.py": {
+      "mode": 420,
+      "sha256": "796dd2954a4c285b87ea8f2e0f3087e9a9d6434f0e5bc745a9a9954f1d489975",
+      "size": 2466
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/generator.ini": {
+      "mode": 420,
+      "sha256": "130d027ea7c92e69fccee2e1acd73018ceac17da722f6125e651d71a8411b210",
+      "size": 724
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "62ff6acb937f91ffa0251d9ed2f42fc2cd15fe77740986282e6054b99d95df82",
+      "size": 210
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/LICENSE": {
+      "mode": 420,
+      "sha256": "59c41cb3fd0cfb16297467b54831c792595b349f4e22925a3fe9ab5dc8cbce95",
+      "size": 299
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/README.md": {
+      "mode": 420,
+      "sha256": "fbd7896d5e865f0751b9cf7cccaf97f6bc396ac59eb4180351badf2acc61fccf",
+      "size": 660
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "abc9f378b2c09d9df083524e73f6226f8b5157c78efc0d459e038e7d6b5c8029",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "f59224a899afa3d56728beb5edfa1af439734bab4aaffb7ab63de82b54d4b93a",
+      "size": 526
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/complete.py": {
+      "mode": 420,
+      "sha256": "0abf2f4f014cf09d0995fb12cd05ecee2732cb2ab062b575d998a80f2311b4c7",
+      "size": 1580
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/generate.py": {
+      "mode": 420,
+      "sha256": "9a74c5454d885c7631fe193163740cf9d5759696e474e3831a21b114a91cf2ac",
+      "size": 3582
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/generator.ini": {
+      "mode": 420,
+      "sha256": "82437ed072451d35116ede21b400840fdf429c9b51225bf72dd03c6bdacf8770",
+      "size": 863
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "3aa9c1a99fc82c8a193d89ce6be0eb559f937791655a0ce20ce3159d646fe48e",
+      "size": 192
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/LICENSE": {
+      "mode": 420,
+      "sha256": "59c41cb3fd0cfb16297467b54831c792595b349f4e22925a3fe9ab5dc8cbce95",
+      "size": 299
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/README.md": {
+      "mode": 420,
+      "sha256": "9448eea8e8d19346889a421d3bf176bc93c2374baf4a0e12274270860a199259",
+      "size": 635
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "9ea6205fe73311bfec12200fe9d9b76b6cd9604d5c8b58269f935b92cfa064f5",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "7608aafb104a9d81c312850c321183b4d3cc9e39b6ccf448b221a6e460fcc6e6",
+      "size": 527
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/complete.py": {
+      "mode": 420,
+      "sha256": "393d1a496f7bc6076325e3880fab96882d586175edef61def79e96a67dbf5fc7",
+      "size": 1284
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/generate.py": {
+      "mode": 493,
+      "sha256": "f5b8546996750c948564771a3f012159664a85d5cb0674519de7895dcb24a050",
+      "size": 3166
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/generator.ini": {
+      "mode": 420,
+      "sha256": "4675dc25f0b1ae13973a651111edb5dc21b7787f5e5105d8fc1eb455210a4bc1",
+      "size": 878
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "2c55b2c1ddcf6a2ed93384eecb5ff251f4ec0e53da1b09c743b3d61fda0a5874",
+      "size": 263
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/README.md": {
+      "mode": 420,
+      "sha256": "2d7fb84ddc87e1f24735afbff83bcf227fbd78feba53c010fad9d9bcc7786db0",
+      "size": 519
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "871ff1da44dc68bd68e851394b9a18369f7fa2d0e70e52d27c5771b8b73d00d5",
+      "size": 691
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/generate.py": {
+      "mode": 493,
+      "sha256": "0637cca180e1a5eac2f93b1363ad393c6bd78d9193a806851608af5ac6b3cb91",
+      "size": 14082
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/generator.ini": {
+      "mode": 420,
+      "sha256": "85715983ec92432b9f7ebaef0b8bb9f1f097b5ad802d8ac0f0bc609121279ce5",
+      "size": 1193
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "de9f55af08683fb4bbd78b601cd692b5249f420722a6b6831bf6650f1c4bd8ae",
+      "size": 393
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/README.md": {
+      "mode": 420,
+      "sha256": "45545ba9c396da4a264b865d1a04ce94af8d14e3e14e45bbb2b4f1d16e157330",
+      "size": 975
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "e7a21bef565a00424e50d5954b3c53ad016105dc7d16c9c6326313759c08b119",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "20ec441cdc1b057a1ee35f981988fd285d3ffffe41a310e99f4ea03ae57c3f43",
+      "size": 713
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/complete.py": {
+      "mode": 420,
+      "sha256": "5203ab8a81a6fec7fc2c91bada486ac8dd701d5850280facdfb109d0e43dbe98",
+      "size": 1663
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/generate.py": {
+      "mode": 493,
+      "sha256": "e7ee2289188a1bb757c8757276d441fe13f72c098ea0a7f908d76332c2a71a6b",
+      "size": 5992
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/generator.ini": {
+      "mode": 420,
+      "sha256": "cd0d6bf237f04219f4e300f6e04b635154fd5a31d7e9776648a08fecff80efc5",
+      "size": 830
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/README.md": {
+      "mode": 420,
+      "sha256": "ec9cb0afc85f5fed1cecf56c6d4e747e6f521a54503fad0cb5a7464fe4d4dcf6",
+      "size": 259
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "82976b008d5842efa6468ea382db42c032bc4e94ba6c044c09aa322064a3dcff",
+      "size": 392
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/generate.py": {
+      "mode": 420,
+      "sha256": "100183a78eeb118d48f31023e72980367d4dcf5cfa95a41adcb3b32cee7ad064",
+      "size": 4439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/generator.ini": {
+      "mode": 420,
+      "sha256": "d3344d8edc732692cc71704b70116c1f7831660c63cc12ce0dbdccd3660f4d9c",
+      "size": 739
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/FACULTY_GUIDE.md": {
+      "mode": 420,
+      "sha256": "49cca4ea899bf11044f4dbe1166c9c9fa30e854c64c26ab371920e26dd0d1782",
+      "size": 590
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/RIGHTS.md": {
+      "mode": 420,
+      "sha256": "ea38fbd68ff07a043ad475126443ea84a49a283a5e28c9c22ea5c0c1eb11bb37",
+      "size": 234
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "d17e161cdcb3453844afb9157c32161cd2f5cfe2c54b5161719a9837a4cca109",
+      "size": 1963
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/10.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "3120a0da672ab4d3abec92bf323e477e10ffbb9fe77fac5ca6aa85a4a7e0cee5",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/100% or 0 Absorbance Baseline.Correction.Raw.csv": {
+      "mode": 420,
+      "sha256": "0178d80b4aec7bbb5eef0a17a9834b201bf899b41499200fdfff8b68c7e6d866",
+      "size": 18309
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/11.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "5d2d511fde649f54af7410e28f599dce2828e0644833e0baf3e8cdb648881371",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/12.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "8f2e22ab6c58e8f4dfcabd5f2f55c3f4d5e046c0a88989662415089378b6506f",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/2022-01-31 - UV-Visible-Spectroscopy-for-concentration-calculation-I.pdf": {
+      "mode": 420,
+      "sha256": "7da1131489fc8460c5ecb7e19912ae51368c0ca825662e9b8a46b4bfbef74928",
+      "size": 78758
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/3.1.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "07811b46a6ed6cf4430985cdfa3d86ecc0624803948879f3ea9e6c5581d114e4",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/4.1.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "88e5fc33c435503c19beba782a25541e15ec75f820fb929258434601aa556ef7",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/5.1.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "3e362e2d04c0e1741f46d1c57fb57bf8a3883ff797e9e4b5e8af5824135c5131",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/6.1.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "999adb13436610cf94bb42ff9d3f689e84a0d527494347919f7c2dcdafbe2fa0",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/7.1.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "4b746d0338e0aecf7b3e93588923179373b97021f39bbe3bbbe43970aad932cc",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/8.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "fcc99f7a865babe0fb98eeb94eb8f63d0840307bef291c5e6928db03fe9360a8",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/9.Sample.Raw.csv": {
+      "mode": 420,
+      "sha256": "9182dc4b28f7bb68119a492444c42854f8aa949cfee1ee975356869916869ff3",
+      "size": 17630
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "1019f250aa74346d2541d26d75433a2e8f7621ded82543ad9092fe6541774fce",
+      "size": 1097
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/assets/manchester_uvvis_2022/article_metadata.json": {
+      "mode": 420,
+      "sha256": "93837c3e932f64b25b54f6a53503a59d8738b93fd239fa277456521c6df3d574",
+      "size": 11288
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/generate.py": {
+      "mode": 420,
+      "sha256": "56bc0d762665a160f3d904f142ae90b043d4ceedc12d626960ace73d9a479c67",
+      "size": 3261
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/generator.ini": {
+      "mode": 420,
+      "sha256": "b4f9ec7d88d8c4a8bcdb1cbb0d83296c0df659fee21560fa11b021b1f80a6057",
+      "size": 582
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "252975a032f7ccccffafe848554d48637e8f127f682d72fd48fd77182ed78b45",
+      "size": 230
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/README.md": {
+      "mode": 420,
+      "sha256": "550c10d8aba737fe1209a276d45ff2316ba2e20b568c9fcb5823dd6305cb7a8c",
+      "size": 1071
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "dd4ed20acfb5ec0458851e194dd9f863a03da47b8fa3445926aefc3a0078fad7",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "642f236ee9eb9f58f2cafe3ebe314e3b619e2148ba9f9935f22f1abad4e25617",
+      "size": 873
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/complete.py": {
+      "mode": 420,
+      "sha256": "e539a825bd3557ce3370bd165c15f5db1cbc65b3cdb155f1b61356a826d17e57",
+      "size": 1350
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/generate.py": {
+      "mode": 493,
+      "sha256": "85928ceb5a6749b6bc2140bda4ffbab72513a9d030121c4a760ec201c6229a95",
+      "size": 2020
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/generator.ini": {
+      "mode": 420,
+      "sha256": "dc3741d7ddb7612f57086c91a6aef1f023b28020e6a51749a23195b17a3dfbb6",
+      "size": 873
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "cae01b43eb4cdbaa96179ff9ac21d4b3cc40abbacfb5ce1a39ce30342bef13d3",
+      "size": 257
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/README.md": {
+      "mode": 420,
+      "sha256": "7cf4cb80ab80f69d267560ad906616d2db2f17f0799fc280c97bd5b4be7c2184",
+      "size": 977
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "16ae9152b42be943757b5e3e5945dea1937bb7720b5ee50039031b79e4a55fb1",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "b5ccecee69ed2ef477d11921ee555ea46a333e3f63b1c067be3f90a227db5a68",
+      "size": 830
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/complete.py": {
+      "mode": 420,
+      "sha256": "0e60614662388f61cd7e9459c3c78a000bd4ff9c7c3be1e1898cd07cfa3ea942",
+      "size": 1160
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/generate.py": {
+      "mode": 493,
+      "sha256": "3df38a423cfe8b8d2ba5cd9340a7aa59fb1ff7c8dfb363a6addad97dbc336199",
+      "size": 1643
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/generator.ini": {
+      "mode": 420,
+      "sha256": "82f609bab79d17e37a4d561fe02733683c25b35db6ef68026131854ca8f95b0a",
+      "size": 842
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/LICENSE": {
+      "mode": 420,
+      "sha256": "bebdaddf988847b072bff70c69ecda29eba2ca4368e5e641cf9b60350ad7f8b8",
+      "size": 228
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/README.md": {
+      "mode": 420,
+      "sha256": "5c3e0181550352ea2833076ce8e2b51f0c84ac5cf49947ac3aae2deb8ccfa2a7",
+      "size": 960
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "254d97b6e395b62888b969619b0f5fe7c684e1736d351712fb547a303dcf4fe7",
+      "size": 705
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/THIRD_PARTY_NOTICES.md": {
+      "mode": 420,
+      "sha256": "785c5eb2f40ded58ee3f6d7cd0eedf3dc0be46d4c8f1154a424249812fb99b12",
+      "size": 821
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/generator.ini": {
+      "mode": 420,
+      "sha256": "9cb3734d0503820ef081eb64b450a8d1df18af95dad466d2206e4a4cb1985efa",
+      "size": 954
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/template/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "3c6769b55c8e41393f59cc06add92c2aa511154ed546dbc52687b28f5dffe095",
+      "size": 2529
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/template/raw/HOH_ideal.sdf": {
+      "mode": 420,
+      "sha256": "df2920cc0a8f577693c9f48294ed44f0db9b8c3cef135465dcdf527d129bbbe9",
+      "size": 263
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/template/raw/TYR_ideal.sdf": {
+      "mode": 420,
+      "sha256": "b9d511ad72f509cb96cc6f483b9dc4b0153266d778ba8e128b596ca3dada07e9",
+      "size": 1710
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/template/reference/molecular_sources.json": {
+      "mode": 420,
+      "sha256": "dce26277cddf41e4ebdd8d1980147460fcf3ea71e980a3eeb549acb4668fdc31",
+      "size": 1766
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "a68271699a88df0e65206b3a9434d6f5b2157196bd8da8a779cf57c4730451ad",
+      "size": 117
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/README.md": {
+      "mode": 420,
+      "sha256": "961692756b180349f2f4ed08375bb38d3b704ce6e580bad21b37953c61c49cc6",
+      "size": 365
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/RIGHTS.md": {
+      "mode": 420,
+      "sha256": "2bc6bf5d83cd846b8fb6a05a0d90d01d0eecbc7ecc928b428581923796292139",
+      "size": 574
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "b00afa06e23ac1c74d1bce52521b08662838071aa386849b07c642a73fcad0c6",
+      "size": 655
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "87b92b4113558afda4a1d69d0337c374e90553f12d8a722e4a187141c0f8596f",
+      "size": 1796
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/assets/Occhi_Sul_Molo_lavoro.wav": {
+      "mode": 420,
+      "sha256": "09d2235cb618fd65d834124f7c0af1fa023d6ef3b579de60b45e0d538b26cdcc",
+      "size": 54604972
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/generate.py": {
+      "mode": 420,
+      "sha256": "8b5b95ee52df2e355c73901181804c61c1e6c3d45a0299716717f1549318aee6",
+      "size": 2326
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/generator.ini": {
+      "mode": 420,
+      "sha256": "0888b98b50117991ad818164080fbafd6ec848b8d3f9172826b3e052c6cfb2d9",
+      "size": 746
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/README.md": {
+      "mode": 420,
+      "sha256": "e810e3ee4c69ed9b670d2316789b7eba2a6156bf6c7a490dace193cf01f55c54",
+      "size": 301
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "fd59ecb38a066125f7a8098b37dc25e4dd8084f8ce1555e3baf2cb9aae0a9f18",
+      "size": 392
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/generate.py": {
+      "mode": 420,
+      "sha256": "7973c72ef7cfe1b08c81e9827a930e45e371efa21219aac725dbf1e730a373e6",
+      "size": 5059
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/generator.ini": {
+      "mode": 420,
+      "sha256": "d65e4c5efdf84c7af165c9be6c3bd81ccbba48d0b17322bbb63b8040d89c7496",
+      "size": 791
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "83abe5b42c76b1c6a3fc108215ea7b4bd4007fed788b8d0c419d76b1f068ddda",
+      "size": 250
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/README.md": {
+      "mode": 420,
+      "sha256": "766433b20f5f34ba7f34bdd1fa429dace1a4061a33247f8b3968d5f9f983a381",
+      "size": 1016
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "aef4ab3d6e0e51b5b2e0bbf14281dc0f9406b9ed3f11126498e11313524035a7",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "9a14959d9427266c31437184292c01e26acec1692c86db41d44d1b09ece920f5",
+      "size": 918
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/complete.py": {
+      "mode": 420,
+      "sha256": "9fb08e66c24a589cd0414557f31deb5ae3ef408949353a927aa818085e0aca1a",
+      "size": 1327
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/generate.py": {
+      "mode": 493,
+      "sha256": "9eb705aa54310a59a65d459e3a469fb344c2fc253d8387ffeb422c7bfa27cbd3",
+      "size": 1575
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/generator.ini": {
+      "mode": 420,
+      "sha256": "6993bf1d5c85892a54c0c816918d4098cf68d1f121af11833ff707d8c56f95ec",
+      "size": 753
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/README.md": {
+      "mode": 420,
+      "sha256": "db7df51c390cb2e17fd53f2f02c2cd9aa208b36bc1ca8f21531783890888f825",
+      "size": 328
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "b6d7e65dfb38b3f44762989de0a85b25b9020a36229ac3650c3194f96982e62d",
+      "size": 695
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/data/2D21-cal1-tagged-shuffled.csv": {
+      "mode": 420,
+      "sha256": "2ea8a49aafa48a81bb909a7528a27b4b8a33591644fe18a033a1c346b98a0f90",
+      "size": 13125
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/data/2D21-cal2-tagged-shuffled.csv": {
+      "mode": 420,
+      "sha256": "ad86bb54e041064abbbd269337ac1ea9d8128d78cfa5b260f2b097af05fca582",
+      "size": 13232
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/data/2D21-cal3-tagged-shuffled.csv": {
+      "mode": 420,
+      "sha256": "fd822e5c53b20b00ccca1bef95407c28740dbdaf89934dde51ed421a3c823faa",
+      "size": 13242
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/generate.py": {
+      "mode": 420,
+      "sha256": "939a2d5cebc30c8175aff1c927b4f207143b9f7c764417f4d34039b99cdd93d7",
+      "size": 4106
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/generator.ini": {
+      "mode": 420,
+      "sha256": "384d6584c3c8c679ca3d343ac86b1d38e35fa87a3adfbff86202cd99b9ab3d60",
+      "size": 831
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "5f67a904fc31f78330164453713cd2d26cb9c879b55a794040b35cd31a31d1ae",
+      "size": 300
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/README.md": {
+      "mode": 420,
+      "sha256": "485091194e2d92689097b27b5431d5f2c56ed7592feaf67b418340bd1435bd20",
+      "size": 1066
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "4cf3a3c2088318da8918c699d9b99be9f748a6b575457ff07948b3578658bafd",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "c8e0dabab62df7b737c0ca60d7aaaf8bf488c46b75c98c529f330ae4b82f8483",
+      "size": 871
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/complete.py": {
+      "mode": 420,
+      "sha256": "e0ca20fcfd2ecd13fa7f77eb52a557223038421c5ae86fa2054d00d1ee1c8cab",
+      "size": 1134
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/generate.py": {
+      "mode": 493,
+      "sha256": "acb28adf2b484214b120881596b781f5cc6e0cec2927d9d414f110f63c4ec1ed",
+      "size": 1652
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/generator.ini": {
+      "mode": 420,
+      "sha256": "b3cb903001e075b7a1e0dcdf83ae1435c72afc79ddc6d34fb9649f8d2f2f5dbf",
+      "size": 797
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/sardinia_levoglucosan_campaign/generate.py": {
+      "mode": 493,
+      "sha256": "053abbfeb848a6bae8c18aba5f8f621f337b8436b53ae7bd920294fcc5d8ffae",
+      "size": 24658
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/sardinia_levoglucosan_campaign/generator.ini": {
+      "mode": 420,
+      "sha256": "876d2e3e225719861360f5822530d1a4cb15395fc540fc39fa82475b2734e301",
+      "size": 1314
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "9bfffe26ee77fdccd87f11b3ef8c4614657194df32ba7db565582a9589a64de3",
+      "size": 438
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/README.md": {
+      "mode": 420,
+      "sha256": "f871d849688763fab1529d4c69d1da5c38be1acd70f271cf66bbdf967fed7793",
+      "size": 1428
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "bf2bd6da6bb291362ec385c538d3aa58adabd6c6cfb3029955447602dc687696",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "91f6a42e30796d53721d265aa425272462cb34334112c35c0eade8e6be0b76d1",
+      "size": 1477
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/complete.py": {
+      "mode": 420,
+      "sha256": "2bf1f5ffd325b9a8c7a97b24f9eaf44ea853a198bf8091f159e71296678ccfb9",
+      "size": 1211
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/generate.py": {
+      "mode": 493,
+      "sha256": "fd069dc1b90ac0e71eb075abf2e39037328a2fcfdea19652c5b678cb9fde79b9",
+      "size": 2332
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/generator.ini": {
+      "mode": 420,
+      "sha256": "499e52b4b8f66a3fd1f19275d93c64c56e31631789007fa51902626aa3531c1c",
+      "size": 708
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "62f47e0d89a4c0bcf5b036f149ac9790e0857658f5e76ed9484e46011756e5ab",
+      "size": 262
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/README.md": {
+      "mode": 420,
+      "sha256": "882e4e42ebf106ea083f898a63f0885ee78f64d83fd65562a7d84804822aa942",
+      "size": 853
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "cb46f410c5c08aed437341b6b1579dba38f3a41c9b5b6424a7fc6e2276841817",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "88d03810e3bc967e01f0d5aaeade5ce427b8d76345edae5d458548a6e9c64d8f",
+      "size": 663
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/complete.py": {
+      "mode": 420,
+      "sha256": "20f3bfddc418b23c4cb3f4dc1f9541c3f82daa631999466accbd49914fab16d9",
+      "size": 1591
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/generate.py": {
+      "mode": 420,
+      "sha256": "fe932d022d9d2b3971bed292a8aa92994c281535314677a8d1f5cbc6541ec5a3",
+      "size": 5254
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/generator.ini": {
+      "mode": 420,
+      "sha256": "8cdd3dc55fad822b7142888e8fddb1c4dc4fc3a5a75e088503273ee28669f56c",
+      "size": 904
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "45825fdf22e6eb12db737d4ecdbc03dd22924703e14e09762ab32ab5f7061221",
+      "size": 331
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/README.md": {
+      "mode": 420,
+      "sha256": "a7ec91d2ab7d8ddf55c5b43b309439e917bb78485f65fd2beb866fb1083a8ed3",
+      "size": 1272
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "14715d0153b7126b126097a5deb15e0df97de4c4aa2007de759198929accc73f",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "91cb3a0239dcbb0e7e3ae5c3c5879dda2cedc220aaaff65924b4d2c50282ae70",
+      "size": 1220
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/complete.py": {
+      "mode": 420,
+      "sha256": "cd77d52f24e93e00002f3d3a5c07b0574dc5fcccb22cf000035bf83eb9dce0e8",
+      "size": 1180
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/generate.py": {
+      "mode": 420,
+      "sha256": "994c4c339c4031bdaf3f37a72d7a348846ccb10c074b8004a9a47d9dae9069da",
+      "size": 1871
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/generator.ini": {
+      "mode": 420,
+      "sha256": "5b1b2a42ecdd6446da2e58fdde7b73fca46aefd6ee5e69f710071ad56d341140",
+      "size": 777
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/LICENSE": {
+      "mode": 420,
+      "sha256": "6dcdd4fbb20aced74761049bb7076d7a1ea5340959b08b1dec7b6b12f2302410",
+      "size": 263
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/README.md": {
+      "mode": 420,
+      "sha256": "818794e172787cb2d290a0329d6583c610638107916308a770eda39eba108c5d",
+      "size": 527
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "2a9d3651355bbc02534c6761b7196943c405139f7d7b3af9384a118045f488aa",
+      "size": 392
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/generate.py": {
+      "mode": 493,
+      "sha256": "cf0edffc7118557eee2014444a3bbe58feaa8b3b3776abed13fc6f24b77d5851",
+      "size": 4038
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/generator.ini": {
+      "mode": 420,
+      "sha256": "9dc20af2f1ae2957c28e050f57ef32dee5e3e84d33bc36528e0015703a0080f3",
+      "size": 821
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/README.md": {
+      "mode": 420,
+      "sha256": "0ae6d5857d9f3f2613b6b14d4a2a08314545573fbdd332940365b2dfcbad2cbb",
+      "size": 308
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "a0bcdd5d93e176d655311265fef4f5297518c2390631608e19025447663d41de",
+      "size": 392
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/generate.py": {
+      "mode": 420,
+      "sha256": "21ef252e1a872787555bb4f5197013def4ab03d041c6dcd56d959d2e9e98a86d",
+      "size": 4128
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/generator.ini": {
+      "mode": 420,
+      "sha256": "becc3018e5ab987831906b5583134cd3e3d8553b68453850dd142a0a8456ed37",
+      "size": 800
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generate.py": {
+      "mode": 420,
+      "sha256": "d1a050c4a5acbf58ed0c8d0558d4dd00c4a7471c37e1700f4259262f2ff6a25e",
+      "size": 2176
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generator.ini": {
+      "mode": 420,
+      "sha256": "3809eba1ba20f664ec5513cd8840e8973ad04f48f25220220fc9917d9726e37e",
+      "size": 1135
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/reference/preprocessing/README.md": {
+      "mode": 420,
+      "sha256": "edf4301f898b94d574b88f181ec2c8daad5b390d9b3290d7b5b3d8f25af2e5f8",
+      "size": 628
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/reference/preprocessing/build_normalized_reference.py": {
+      "mode": 420,
+      "sha256": "92e0994c2db20703532b7590bed01d03702da67424c765e7b2310894001a57cf",
+      "size": 14249
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/README.md": {
+      "mode": 420,
+      "sha256": "1fd90724cf9d3030c45d8f257051429e6e3534305c8d759b427e1807a0cc9f71",
+      "size": 1166
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_hydraulic_demo.metadata.txt": {
+      "mode": 420,
+      "sha256": "85167f2a6de861668ca1bfdb7ed9ce060686ec4f20fc58ddc9c0bf1714b81138",
+      "size": 2465
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_river_centerline.metadata.txt": {
+      "mode": 420,
+      "sha256": "d7c380490a3f3f2fcce24630b6ce8632bc1859cf9909678c0ec8c51fd6c6fc99",
+      "size": 2159
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley.metadata.txt": {
+      "mode": 420,
+      "sha256": "c573f526d2992818901b7750239ca8b8312183c8068d73e7f28512cd9d6d59fb",
+      "size": 1956
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley_grid.metadata.txt": {
+      "mode": 420,
+      "sha256": "4d140f8ee75ea65db522dc97672e9709b5b5491ced038ad59ebf0405f224811a",
+      "size": 2516
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/metadata/ticino_valley_settlements.metadata.txt": {
+      "mode": 420,
+      "sha256": "fbb7bb241b9eb913104f0f44d8fa897d0847489fb177727470c6fabd89d7e39e",
+      "size": 2108
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_hydraulic_demo.csv": {
+      "mode": 420,
+      "sha256": "a51462a88b8e2bfd240c4d3ef9b2f9030a0b3ee34f1d93a6637df1fa505e11e9",
+      "size": 93393
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_river_centerline.csv": {
+      "mode": 420,
+      "sha256": "e55291f82bd3f11f1cc8220a5a9ba0055dc50ef6d1ab9eae23a912cfa3157f0f",
+      "size": 45497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_valley_grid.csv": {
+      "mode": 420,
+      "sha256": "d19726af82fbee408f7be33e644ac2b5aaf82c8ea9b3720a964c44576aab8343",
+      "size": 1013689
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/raw/ticino_valley_settlements.csv": {
+      "mode": 420,
+      "sha256": "2bc59dd5eaa76b7fcc224994dc0bad92b030b88aec03e24aa79a537aeb205bee",
+      "size": 94108
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/ATTRIBUTIONS.md": {
+      "mode": 420,
+      "sha256": "92645c9ef89a7e87ef2510cde9d493c9b939987e227ec982a7bdb3ea114adc4e",
+      "size": 2449
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/CORINE_CLASSIFICATION.md": {
+      "mode": 420,
+      "sha256": "c999629fb18bc3b782cc49e42f827ae495eddf1c73b289d1abfefdf92b24079f",
+      "size": 1177
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/NORMALIZATION.md": {
+      "mode": 420,
+      "sha256": "77a5b7c409133777e48f1e6d62c3fe961914467e2944392d1ccabcfd8f9a770e",
+      "size": 1709
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/SOURCES.md": {
+      "mode": 420,
+      "sha256": "b193c0561efbeeb11c48600802cd65252e250be02443aa63f445ff33ee0c7fcd",
+      "size": 3593
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/SOURCE_BUNDLE_VALIDATION.md": {
+      "mode": 420,
+      "sha256": "8f10d31ce55800cf654029fc37375851255bf1d1fd599392875c12d1c2dde2d8",
+      "size": 2463
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/template/reference/source_bundle_manifest.tsv": {
+      "mode": 420,
+      "sha256": "dac92a1e4b1c17830868805a33ea34d6a6367be8357223454c1dea445878f1a6",
+      "size": 6596
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/LICENSE": {
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/README.md": {
+      "mode": 420,
+      "sha256": "e9d06c0a2925114fc25da16c6ff5b833097f5e396e74d87b70c5c1bf25bbdbce",
+      "size": 265
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "03665f3ab6789cadb8d62e477e2fd7c468aef1c2f2b795169e9d2c849ec99601",
+      "size": 495
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/data/real_training_reference_439.csv": {
+      "mode": 420,
+      "sha256": "065b8f45fcd1d1c4bd9553e6594b3a549ee507737281e7f6e366c6cfff801d4f",
+      "size": 17180
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/generate.py": {
+      "mode": 420,
+      "sha256": "19c7fb5feecc92795e7ae1f47e0c235ac9afc4635e94b8523016bdf9b2a39546",
+      "size": 3837
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/generator.ini": {
+      "mode": 420,
+      "sha256": "8f42869068cff1a49d3e1c52900d31be0619c25eea0d554ec00c531cdc3242f6",
+      "size": 796
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "57026977673293c369713b3b40e4c1414d51702fa6c54535c6174a7a8845ed79",
+      "size": 451
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/README.md": {
+      "mode": 420,
+      "sha256": "f89d1bd6df76b5f7c328c18b2e8231a44994470f92627b868f3daa73f9ff3a76",
+      "size": 1710
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "20dfaf540588274f8bb369c4d430a90e7009831a3042b8012f332f546f961d87",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "8639d7d2c5e50acaa7f3340615fa0c63cf136a8ba482de6cdca522b3d257cd87",
+      "size": 1498
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/complete.py": {
+      "mode": 420,
+      "sha256": "a8f2d9c2edd619c1d7217c52fe0c804d1cf21c635a3677e1e9c23f859a36fb7f",
+      "size": 1919
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/generate.py": {
+      "mode": 493,
+      "sha256": "11c2d3acc53c0e7f6c0fb8265ac7548389cde8d42f5dfef0b0b658e8044fd3e7",
+      "size": 3027
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/generator.ini": {
+      "mode": 420,
+      "sha256": "dcc7254a3a7201a2ebe883f33e16221f80ef5fbe63667efe077bb21e03e2e4ff",
+      "size": 908
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/CHANGELOG.md": {
+      "mode": 420,
+      "sha256": "4c3b61b99155816a78cc7feda85bc7667a80c830ef41fe788c2631e181a8c85f",
+      "size": 349
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/LICENSE": {
+      "mode": 420,
+      "sha256": "59c41cb3fd0cfb16297467b54831c792595b349f4e22925a3fe9ab5dc8cbce95",
+      "size": 299
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/README.md": {
+      "mode": 420,
+      "sha256": "7c862ba63345b4b53f195f863dade4756cbd067b7cec430f61c249deeb3b37f4",
+      "size": 904
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "812fdd730fd797d46340f137b8f06c06fa1a088c63bdc0a5576034983f968b34",
+      "size": 631
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/TEST_RESULTS.md": {
+      "mode": 420,
+      "sha256": "306f179db40446bea02cec3b65c5b2ddfa7a04acb874f7fc17fd97a47a4ba49d",
+      "size": 700
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/complete.py": {
+      "mode": 420,
+      "sha256": "1e7078f35b4c69f1ae8ce714de8649bdea6c8a2b2e1bbb8249149eab8daa6475",
+      "size": 1909
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/generate.py": {
+      "mode": 493,
+      "sha256": "69ce23dc6932f24d9ff0af6d77efd42588551a47a81efeceab0c149f444df364",
+      "size": 5677
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/generator.ini": {
+      "mode": 420,
+      "sha256": "2017b0159ea417f5b82443f6a5eebd529c9ab4a67ab82f7e51b920af45fbf644",
+      "size": 800
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/session_recipe.py": {
+      "mode": 420,
+      "sha256": "61706a6245996fae82f18881dc5924b508629656365c0d4c098769cd9865f881",
+      "size": 7497
+    },
+    "session_generator_libraries/gxtxt.accepted_generators/session-generator-library.ini": {
+      "mode": 420,
+      "sha256": "a7088c049b29d792007da8bf1fc696831f3da7fc9f22819981be8c1d49e8651e",
+      "size": 269
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calculus/generate.py": {
+      "mode": 420,
+      "sha256": "594084f126a78c72a5d7192bb792e75e9efadc932bf9ef37c06ebc417a4f8303",
+      "size": 1111
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calculus/generator.ini": {
+      "mode": 420,
+      "sha256": "bf8c1d2dca7a2c82178e77b424f511cfd4ef38be87ef1947351d58ce9bb9a4f0",
+      "size": 528
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/README.md": {
+      "mode": 420,
+      "sha256": "30d9c600ce93165f40439cf9667d272f5fa34d833723a07ba52a08709d11c678",
+      "size": 4479
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/REFERENCE.md": {
+      "mode": 420,
+      "sha256": "d737daed6b3b6e4ac0f11eabc3e283d331b13a3f62818dcb67525fb3898ef7b8",
+      "size": 1730
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "71663a96cf397fa9b14d0655240414c8536543a07df01af7998e161b4b457fb6",
+      "size": 2729
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/generate.py": {
+      "mode": 420,
+      "sha256": "c9d3e99071d98fa006006701cfe5ae8f42059ac865866a2e942b9d5c89f26576",
+      "size": 10472
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/generator.ini": {
+      "mode": 420,
+      "sha256": "c1c9d4b5a49189838b6358bd04b9ae8d884359fcffdebed3d6a5a7fc5c6df0e3",
+      "size": 1067
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/reference_spec.json": {
+      "mode": 420,
+      "sha256": "30bfad7567713c611b7c0ab2aa00eae8d87b37d048f15e3a431d271dea1decbf",
+      "size": 2803
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/session_recipe.py": {
+      "mode": 420,
+      "sha256": "0c96f25c92853e62f52e4cf1e17d2824da8d7aa0b9078ae76b0c31c551745422",
+      "size": 9827
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/LICENSE.txt": {
+      "mode": 420,
+      "sha256": "587a86021609d5458993618594028a6d09672844b7abd54d0fd9470468f2a407",
+      "size": 367
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/SHA256SUMS.txt": {
+      "mode": 420,
+      "sha256": "c6122633ad6a2f699197ef8352c8f026d47577eacd78ffa9df0a0f51eaac895f",
+      "size": 477
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "c7bf0ce38c66ff555b2bc9c6f2ec534f100aaa74d935d29b2b4b0e81b73aed32",
+      "size": 2663
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/generate.py": {
+      "mode": 420,
+      "sha256": "9fd59eb0bdf00c4072b130075b5078dfd5e909b656f34dbdb0e85ec874ffe63b",
+      "size": 5384
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/generator.ini": {
+      "mode": 420,
+      "sha256": "b6be4a722cdec6b280c25a9ec08db0faed8657e59bd38f7178106f6714415f7a",
+      "size": 855
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/fft_example/generate.py": {
+      "mode": 420,
+      "sha256": "74e41522aca1bd2fa284ea4cf51873f5e6bf1a69af27b3ffdc9ab87cd111da25",
+      "size": 833
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/fft_example/generator.ini": {
+      "mode": 420,
+      "sha256": "574dd5aff87eea902f2230db355f22c1a4debc7a1b32462d6df59693c010313e",
+      "size": 517
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/interpolation/generate.py": {
+      "mode": 420,
+      "sha256": "d054b3bf2f7099035b2085fb453bde6768a2cd615211dcb1e386ef6d5a9aba43",
+      "size": 1017
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/interpolation/generator.ini": {
+      "mode": 420,
+      "sha256": "eb1d808e838a81a5af77db7c29df70940118e4e6cb6139c702c17de0f03cbcb4",
+      "size": 529
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/linear_regression/generate.py": {
+      "mode": 420,
+      "sha256": "9b0c9c09a6a9d73dfa5819a2a4aa7c1d863c99af6efe4f6b47db38e24395ff3e",
+      "size": 1145
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/linear_regression/generator.ini": {
+      "mode": 420,
+      "sha256": "5b3ec7b3c16936eb0c4228391913a9c1fe527108afd8a242851bef4b6ae151b9",
+      "size": 551
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/nonlinear_fitting/generate.py": {
+      "mode": 420,
+      "sha256": "dccf9f335861843abf95e7a10f0feff86547ae74ac7378992157f04344c9f555",
+      "size": 1023
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/nonlinear_fitting/generator.ini": {
+      "mode": 420,
+      "sha256": "6c92e374240a1d1af1a441b82c004caf215a89b683e34aac6997d088b28f6389",
+      "size": 575
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/polynomial_fitting/generate.py": {
+      "mode": 420,
+      "sha256": "6e114108a76603dae3fd403734ec5353c1fbcfd3a12ddcd20aa1a55b1e3b5bac",
+      "size": 1224
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/generators/polynomial_fitting/generator.ini": {
+      "mode": 420,
+      "sha256": "55e380e191001a865f5d2a09b99aed38b564a82df1c4e00a86a0470c63db498a",
+      "size": 562
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/recipe.py": {
+      "mode": 420,
+      "sha256": "a1cd84e9b4bada8eaade8138688a676ec70326600b6860dc8f4d7fbbd449d69b",
+      "size": 4661
+    },
+    "session_generator_libraries/gxtxt.numerical_examples/session-generator-library.ini": {
+      "mode": 420,
+      "sha256": "1954d57eea8e78d90744fe71c8b368bafeec4575295b80f2a2d3b24d8b189d03",
+      "size": 333
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/README.md": {
+      "mode": 420,
+      "sha256": "cfbf4c4f828fe51c232a57184fd907c2339871f62bdf00041bad77c6ad031634",
+      "size": 1985
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "96cdcd8a1ecfe76556366b4f3fd77cd5c664fd471b645c18fa2ecabeddd27d53",
+      "size": 3018
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/generate.py": {
+      "mode": 420,
+      "sha256": "b063e795ba9af679e469c00c0a536caf43027d157c8a0a904f01df6d756c73e2",
+      "size": 6524
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/generator.ini": {
+      "mode": 420,
+      "sha256": "ab4942a034a3d8b2bacaca6844a854903d6d161aee3eefad513b9ce2cfd3806d",
+      "size": 1052
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "c9f30791f0ab23a8021d1906442772978fac5d6090b149b007ca19b68c2d714d",
+      "size": 3493
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/generate.py": {
+      "mode": 420,
+      "sha256": "91663082e343cdc7eafdc8a2aaab6afebfc76950d90d49906314d501dfac9410",
+      "size": 4443
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/generator.ini": {
+      "mode": 420,
+      "sha256": "96d2625e0da5bf7e80ed4ec51fefb85e489c811c492d6ab5fa064b0f66518c97",
+      "size": 1081
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/session_recipe.py": {
+      "mode": 420,
+      "sha256": "4c6124ca1df8e7d4ac47d118a9dc5e13fa326ae89caa28588dec1d5de040908c",
+      "size": 9439
+    },
+    "session_generator_libraries/gxtxt.workbench_validation/session-generator-library.ini": {
+      "mode": 420,
+      "sha256": "326fc04642fb1dd0ebc5e1ca3c33387d404ea50d0277e7e75ddc409957f08b25",
+      "size": 290
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/LICENSE": {
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/MANUAL.md": {
+      "mode": 420,
+      "sha256": "81d6f2d2b1000b66007a47ea77d697d5b06108ab26ce54b1dc38b0e7dc874cc9",
+      "size": 2735
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/STUDENT_GUIDE.md": {
+      "mode": 420,
+      "sha256": "2c290ce728af01e5ab1dc37c9c06e1c415a581ff62f791a9af6a0c610e38f4a3",
+      "size": 1735
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/generate.py": {
+      "mode": 420,
+      "sha256": "c56503e7002ed5caafcec755f4275c1fc07d10c2c3899ca75bde85531fb5d665",
+      "size": 1463
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/generator.ini": {
+      "mode": 420,
+      "sha256": "fd4e2d66a9ba0634a5554e2eb63f1e887e4104f2b43a12c52ac49168e1d0fe9c",
+      "size": 869
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/public_producer.tcl": {
+      "mode": 420,
+      "sha256": "084b4af204aa2f941ab602070fb952ee2af0575124327549d1a87aaea4fea3ad",
+      "size": 951
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/worksheet_session.py": {
+      "mode": 420,
+      "sha256": "91d52c38a3ae414fe2dc917265ccfe722a62b50571fda8fecd5dcfa1e278b6e4",
+      "size": 4339
+    },
+    "session_generator_libraries/gxtxt.worksheet_examples/session-generator-library.ini": {
+      "mode": 420,
+      "sha256": "fb43ccec16a4f7f77a8d8b350f0c0a871877e46a3c4d564deb7e6b2bfa5671e3",
+      "size": 233
+    }
+  },
+  "source_generators": [
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/generator.ini",
+      "descriptor_sha256": "8a711ec79ebd4709e116787a25771d19fab0925a950b6af7a5a832170ebac11a",
+      "id": "cepstrum_analysis",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/generator.ini",
+      "descriptor_sha256": "719202562815069eda7cd76ffef1ea50db433440d5cd54bc5d0a2de74fc6c897",
+      "id": "cross_spectral_transfer",
+      "version": "1.0.2"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/generator.ini",
+      "descriptor_sha256": "443a3823c037c2de1ce4f6a2a096939b90d6b7a873c9fcfb41695fc893358237",
+      "id": "descriptive_statistics_student_lab",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/generator.ini",
+      "descriptor_sha256": "130d027ea7c92e69fccee2e1acd73018ceac17da722f6125e651d71a8411b210",
+      "id": "document_extraction_teacher",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/generator.ini",
+      "descriptor_sha256": "82437ed072451d35116ede21b400840fdf429c9b51225bf72dd03c6bdacf8770",
+      "id": "envelope_spectrum",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/generator.ini",
+      "descriptor_sha256": "4675dc25f0b1ae13973a651111edb5dc21b7787f5e5105d8fc1eb455210a4bc1",
+      "id": "fractional_octave_psd",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/generator.ini",
+      "descriptor_sha256": "85715983ec92432b9f7ebaef0b8bb9f1f097b5ad802d8ac0f0bc609121279ce5",
+      "id": "grouped_statistics_student_lab",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/generator.ini",
+      "descriptor_sha256": "cd0d6bf237f04219f4e300f6e04b635154fd5a31d7e9776648a08fecff80efc5",
+      "id": "harmonic_analysis",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/generator.ini",
+      "descriptor_sha256": "d3344d8edc732692cc71704b70116c1f7831660c63cc12ce0dbdccd3660f4d9c",
+      "id": "ir_remote_nec",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/generator.ini",
+      "descriptor_sha256": "b4f9ec7d88d8c4a8bcdb1cbb0d83296c0df659fee21560fa11b021b1f80a6057",
+      "id": "manchester_uvvis_faculty",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/generator.ini",
+      "descriptor_sha256": "dc3741d7ddb7612f57086c91a6aef1f023b28020e6a51749a23195b17a3dfbb6",
+      "id": "measurement_uncertainty",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/generator.ini",
+      "descriptor_sha256": "82f609bab79d17e37a4d561fe02733683c25b35db6ef68026131854ca8f95b0a",
+      "id": "minimization_1d",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/generator.ini",
+      "descriptor_sha256": "9cb3734d0503820ef081eb64b450a8d1df18af95dad466d2206e4a4cb1985efa",
+      "id": "molecular_structure_practice",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/generator.ini",
+      "descriptor_sha256": "0888b98b50117991ad818164080fbafd6ec848b8d3f9172826b3e052c6cfb2d9",
+      "id": "occhi_sul_molo_audio_chain",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/generator.ini",
+      "descriptor_sha256": "d65e4c5efdf84c7af165c9be6c3bd81ccbba48d0b17322bbb63b8040d89c7496",
+      "id": "octave_script_bridge",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/generator.ini",
+      "descriptor_sha256": "6993bf1d5c85892a54c0c816918d4098cf68d1f121af11833ff707d8c56f95ec",
+      "id": "peak_detection",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/generator.ini",
+      "descriptor_sha256": "384d6584c3c8c679ca3d343ac86b1d38e35fa87a3adfbff86202cd99b9ab3d60",
+      "id": "replicate_curve_analysis",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/generator.ini",
+      "descriptor_sha256": "b3cb903001e075b7a1e0dcdf83ae1435c72afc79ddc6d34fb9649f8d2f2f5dbf",
+      "id": "root_finding",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/sardinia_levoglucosan_campaign/generator.ini",
+      "descriptor_sha256": "876d2e3e225719861360f5822530d1a4cb15395fc540fc39fa82475b2734e301",
+      "id": "sardinia_levoglucosan_campaign",
+      "version": "1.1.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/generator.ini",
+      "descriptor_sha256": "499e52b4b8f66a3fd1f19275d93c64c56e31631789007fa51902626aa3531c1c",
+      "id": "smoothing",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/generator.ini",
+      "descriptor_sha256": "8cdd3dc55fad822b7142888e8fddb1c4dc4fc3a5a75e088503273ee28669f56c",
+      "id": "spectral_features",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/generator.ini",
+      "descriptor_sha256": "5b1b2a42ecdd6446da2e58fdde7b73fca46aefd6ee5e69f710071ad56d341140",
+      "id": "statistics",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/generator.ini",
+      "descriptor_sha256": "9dc20af2f1ae2957c28e050f57ef32dee5e3e84d33bc36528e0015703a0080f3",
+      "id": "surface3d_thermal_field",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/generator.ini",
+      "descriptor_sha256": "becc3018e5ab987831906b5583134cd3e3d8553b68453850dd142a0a8456ed37",
+      "id": "table_join_extract",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generator.ini",
+      "descriptor_sha256": "3809eba1ba20f664ec5513cd8840e8973ad04f48f25220220fc9917d9726e37e",
+      "id": "ticino_valley_3d",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/generator.ini",
+      "descriptor_sha256": "8f42869068cff1a49d3e1c52900d31be0619c25eea0d554ec00c531cdc3242f6",
+      "id": "triode_fit_spice",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/generator.ini",
+      "descriptor_sha256": "dcc7254a3a7201a2ebe883f33e16221f80ef5fbe63667efe077bb21e03e2e4ff",
+      "id": "weighted_regression",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/generator.ini",
+      "descriptor_sha256": "2017b0159ea417f5b82443f6a5eebd529c9ab4a67ab82f7e51b920af45fbf644",
+      "id": "welch_psd",
+      "version": "1.0.1"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calculus/generator.ini",
+      "descriptor_sha256": "bf8c1d2dca7a2c82178e77b424f511cfd4ef38be87ef1947351d58ce9bb9a4f0",
+      "id": "calculus",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/generator.ini",
+      "descriptor_sha256": "c1c9d4b5a49189838b6358bd04b9ae8d884359fcffdebed3d6a5a7fc5c6df0e3",
+      "id": "calibrated_curve_family",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/generator.ini",
+      "descriptor_sha256": "b6be4a722cdec6b280c25a9ec08db0faed8657e59bd38f7178106f6714415f7a",
+      "id": "calibrated_digitizer",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/fft_example/generator.ini",
+      "descriptor_sha256": "574dd5aff87eea902f2230db355f22c1a4debc7a1b32462d6df59693c010313e",
+      "id": "fft_example",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/interpolation/generator.ini",
+      "descriptor_sha256": "eb1d808e838a81a5af77db7c29df70940118e4e6cb6139c702c17de0f03cbcb4",
+      "id": "interpolation",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/linear_regression/generator.ini",
+      "descriptor_sha256": "5b3ec7b3c16936eb0c4228391913a9c1fe527108afd8a242851bef4b6ae151b9",
+      "id": "linear_regression",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/nonlinear_fitting/generator.ini",
+      "descriptor_sha256": "6c92e374240a1d1af1a441b82c004caf215a89b683e34aac6997d088b28f6389",
+      "id": "nonlinear_fitting",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/polynomial_fitting/generator.ini",
+      "descriptor_sha256": "55e380e191001a865f5d2a09b99aed38b564a82df1c4e00a86a0470c63db498a",
+      "id": "polynomial_fitting",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/generator.ini",
+      "descriptor_sha256": "ab4942a034a3d8b2bacaca6844a854903d6d161aee3eefad513b9ce2cfd3806d",
+      "id": "cad_geometry_practice",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/generator.ini",
+      "descriptor_sha256": "96d2625e0da5bf7e80ed4ec51fefb85e489c811c492d6ab5fa064b0f66518c97",
+      "id": "planar_em_practice",
+      "version": "1.0.0"
+    },
+    {
+      "descriptor": "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/generator.ini",
+      "descriptor_sha256": "fd4e2d66a9ba0634a5554e2eb63f1e887e4104f2b43a12c52ac49168e1d0fe9c",
+      "id": "scientific_worksheet",
+      "version": "1.0.0"
+    }
+  ],
+  "source_libraries": [
+    {
+      "delivery": "DECLARED_PUBLIC_SUBSET_COMPLETE_GENERATORS",
+      "descriptor": "session_generator_libraries/gxtxt.accepted_generators/session-generator-library.ini",
+      "descriptor_sha256": "a7088c049b29d792007da8bf1fc696831f3da7fc9f22819981be8c1d49e8651e",
+      "generators": [
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/cepstrum_analysis/generator.ini",
+          "descriptor_sha256": "8a711ec79ebd4709e116787a25771d19fab0925a950b6af7a5a832170ebac11a",
+          "id": "cepstrum_analysis",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/cross_spectral_transfer/generator.ini",
+          "descriptor_sha256": "719202562815069eda7cd76ffef1ea50db433440d5cd54bc5d0a2de74fc6c897",
+          "id": "cross_spectral_transfer",
+          "version": "1.0.2"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/descriptive_statistics_student_lab/generator.ini",
+          "descriptor_sha256": "443a3823c037c2de1ce4f6a2a096939b90d6b7a873c9fcfb41695fc893358237",
+          "id": "descriptive_statistics_student_lab",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/generator.ini",
+          "descriptor_sha256": "130d027ea7c92e69fccee2e1acd73018ceac17da722f6125e651d71a8411b210",
+          "id": "document_extraction_teacher",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/envelope_spectrum/generator.ini",
+          "descriptor_sha256": "82437ed072451d35116ede21b400840fdf429c9b51225bf72dd03c6bdacf8770",
+          "id": "envelope_spectrum",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/fractional_octave_psd/generator.ini",
+          "descriptor_sha256": "4675dc25f0b1ae13973a651111edb5dc21b7787f5e5105d8fc1eb455210a4bc1",
+          "id": "fractional_octave_psd",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/grouped_statistics_student_lab/generator.ini",
+          "descriptor_sha256": "85715983ec92432b9f7ebaef0b8bb9f1f097b5ad802d8ac0f0bc609121279ce5",
+          "id": "grouped_statistics_student_lab",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/harmonic_analysis/generator.ini",
+          "descriptor_sha256": "cd0d6bf237f04219f4e300f6e04b635154fd5a31d7e9776648a08fecff80efc5",
+          "id": "harmonic_analysis",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/ir_remote_nec/generator.ini",
+          "descriptor_sha256": "d3344d8edc732692cc71704b70116c1f7831660c63cc12ce0dbdccd3660f4d9c",
+          "id": "ir_remote_nec",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/manchester_uvvis_faculty/generator.ini",
+          "descriptor_sha256": "b4f9ec7d88d8c4a8bcdb1cbb0d83296c0df659fee21560fa11b021b1f80a6057",
+          "id": "manchester_uvvis_faculty",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/measurement_uncertainty/generator.ini",
+          "descriptor_sha256": "dc3741d7ddb7612f57086c91a6aef1f023b28020e6a51749a23195b17a3dfbb6",
+          "id": "measurement_uncertainty",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/minimization_1d/generator.ini",
+          "descriptor_sha256": "82f609bab79d17e37a4d561fe02733683c25b35db6ef68026131854ca8f95b0a",
+          "id": "minimization_1d",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/molecular_structure_practice/generator.ini",
+          "descriptor_sha256": "9cb3734d0503820ef081eb64b450a8d1df18af95dad466d2206e4a4cb1985efa",
+          "id": "molecular_structure_practice",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/occhi_sul_molo_audio_chain/generator.ini",
+          "descriptor_sha256": "0888b98b50117991ad818164080fbafd6ec848b8d3f9172826b3e052c6cfb2d9",
+          "id": "occhi_sul_molo_audio_chain",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/octave_script_bridge/generator.ini",
+          "descriptor_sha256": "d65e4c5efdf84c7af165c9be6c3bd81ccbba48d0b17322bbb63b8040d89c7496",
+          "id": "octave_script_bridge",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/peak_detection/generator.ini",
+          "descriptor_sha256": "6993bf1d5c85892a54c0c816918d4098cf68d1f121af11833ff707d8c56f95ec",
+          "id": "peak_detection",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/replicate_curve_analysis/generator.ini",
+          "descriptor_sha256": "384d6584c3c8c679ca3d343ac86b1d38e35fa87a3adfbff86202cd99b9ab3d60",
+          "id": "replicate_curve_analysis",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/root_finding/generator.ini",
+          "descriptor_sha256": "b3cb903001e075b7a1e0dcdf83ae1435c72afc79ddc6d34fb9649f8d2f2f5dbf",
+          "id": "root_finding",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/sardinia_levoglucosan_campaign/generator.ini",
+          "descriptor_sha256": "876d2e3e225719861360f5822530d1a4cb15395fc540fc39fa82475b2734e301",
+          "id": "sardinia_levoglucosan_campaign",
+          "version": "1.1.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/smoothing/generator.ini",
+          "descriptor_sha256": "499e52b4b8f66a3fd1f19275d93c64c56e31631789007fa51902626aa3531c1c",
+          "id": "smoothing",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/spectral_features/generator.ini",
+          "descriptor_sha256": "8cdd3dc55fad822b7142888e8fddb1c4dc4fc3a5a75e088503273ee28669f56c",
+          "id": "spectral_features",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/statistics/generator.ini",
+          "descriptor_sha256": "5b1b2a42ecdd6446da2e58fdde7b73fca46aefd6ee5e69f710071ad56d341140",
+          "id": "statistics",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/surface3d_thermal_field/generator.ini",
+          "descriptor_sha256": "9dc20af2f1ae2957c28e050f57ef32dee5e3e84d33bc36528e0015703a0080f3",
+          "id": "surface3d_thermal_field",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/table_join_extract/generator.ini",
+          "descriptor_sha256": "becc3018e5ab987831906b5583134cd3e3d8553b68453850dd142a0a8456ed37",
+          "id": "table_join_extract",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/ticino_valley_3d/generator.ini",
+          "descriptor_sha256": "3809eba1ba20f664ec5513cd8840e8973ad04f48f25220220fc9917d9726e37e",
+          "id": "ticino_valley_3d",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/triode_fit_spice/generator.ini",
+          "descriptor_sha256": "8f42869068cff1a49d3e1c52900d31be0619c25eea0d554ec00c531cdc3242f6",
+          "id": "triode_fit_spice",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/weighted_regression/generator.ini",
+          "descriptor_sha256": "dcc7254a3a7201a2ebe883f33e16221f80ef5fbe63667efe077bb21e03e2e4ff",
+          "id": "weighted_regression",
+          "version": "1.0.1"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.accepted_generators/generators/welch_psd/generator.ini",
+          "descriptor_sha256": "2017b0159ea417f5b82443f6a5eebd529c9ab4a67ab82f7e51b920af45fbf644",
+          "id": "welch_psd",
+          "version": "1.0.1"
+        }
+      ],
+      "id": "org.giuxlab.gxtxt.accepted_generators",
+      "source_file_count": 337,
+      "source_root": "session_generator_libraries/gxtxt.accepted_generators",
+      "version": "1.1.0-public1"
+    },
+    {
+      "delivery": "EXACT_ACCEPTED_SOURCE_LIBRARY",
+      "descriptor": "session_generator_libraries/gxtxt.numerical_examples/session-generator-library.ini",
+      "descriptor_sha256": "1954d57eea8e78d90744fe71c8b368bafeec4575295b80f2a2d3b24d8b189d03",
+      "generators": [
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calculus/generator.ini",
+          "descriptor_sha256": "bf8c1d2dca7a2c82178e77b424f511cfd4ef38be87ef1947351d58ce9bb9a4f0",
+          "id": "calculus",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_curve_family/generator.ini",
+          "descriptor_sha256": "c1c9d4b5a49189838b6358bd04b9ae8d884359fcffdebed3d6a5a7fc5c6df0e3",
+          "id": "calibrated_curve_family",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/calibrated_digitizer/generator.ini",
+          "descriptor_sha256": "b6be4a722cdec6b280c25a9ec08db0faed8657e59bd38f7178106f6714415f7a",
+          "id": "calibrated_digitizer",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/fft_example/generator.ini",
+          "descriptor_sha256": "574dd5aff87eea902f2230db355f22c1a4debc7a1b32462d6df59693c010313e",
+          "id": "fft_example",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/interpolation/generator.ini",
+          "descriptor_sha256": "eb1d808e838a81a5af77db7c29df70940118e4e6cb6139c702c17de0f03cbcb4",
+          "id": "interpolation",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/linear_regression/generator.ini",
+          "descriptor_sha256": "5b3ec7b3c16936eb0c4228391913a9c1fe527108afd8a242851bef4b6ae151b9",
+          "id": "linear_regression",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/nonlinear_fitting/generator.ini",
+          "descriptor_sha256": "6c92e374240a1d1af1a441b82c004caf215a89b683e34aac6997d088b28f6389",
+          "id": "nonlinear_fitting",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.numerical_examples/generators/polynomial_fitting/generator.ini",
+          "descriptor_sha256": "55e380e191001a865f5d2a09b99aed38b564a82df1c4e00a86a0470c63db498a",
+          "id": "polynomial_fitting",
+          "version": "1.0.0"
+        }
+      ],
+      "id": "org.giuxlab.gxtxt.numerical_examples",
+      "source_file_count": 29,
+      "source_root": "session_generator_libraries/gxtxt.numerical_examples",
+      "version": "1.2.0"
+    },
+    {
+      "delivery": "EXACT_ACCEPTED_SOURCE_LIBRARY",
+      "descriptor": "session_generator_libraries/gxtxt.workbench_validation/session-generator-library.ini",
+      "descriptor_sha256": "326fc04642fb1dd0ebc5e1ca3c33387d404ea50d0277e7e75ddc409957f08b25",
+      "generators": [
+        {
+          "descriptor": "session_generator_libraries/gxtxt.workbench_validation/generators/cad_geometry_practice/generator.ini",
+          "descriptor_sha256": "ab4942a034a3d8b2bacaca6844a854903d6d161aee3eefad513b9ce2cfd3806d",
+          "id": "cad_geometry_practice",
+          "version": "1.0.0"
+        },
+        {
+          "descriptor": "session_generator_libraries/gxtxt.workbench_validation/generators/planar_em_practice/generator.ini",
+          "descriptor_sha256": "96d2625e0da5bf7e80ed4ec51fefb85e489c811c492d6ab5fa064b0f66518c97",
+          "id": "planar_em_practice",
+          "version": "1.0.0"
+        }
+      ],
+      "id": "org.giuxlab.gxtxt.workbench_validation",
+      "source_file_count": 11,
+      "source_root": "session_generator_libraries/gxtxt.workbench_validation",
+      "version": "1.0.0"
+    },
+    {
+      "delivery": "EXACT_ACCEPTED_SOURCE_LIBRARY",
+      "descriptor": "session_generator_libraries/gxtxt.worksheet_examples/session-generator-library.ini",
+      "descriptor_sha256": "fb43ccec16a4f7f77a8d8b350f0c0a871877e46a3c4d564deb7e6b2bfa5671e3",
+      "generators": [
+        {
+          "descriptor": "session_generator_libraries/gxtxt.worksheet_examples/generators/scientific_worksheet/generator.ini",
+          "descriptor_sha256": "fd4e2d66a9ba0634a5554e2eb63f1e887e4104f2b43a12c52ac49168e1d0fe9c",
+          "id": "scientific_worksheet",
+          "version": "1.0.0"
+        }
+      ],
+      "id": "org.giuxlab.gxtxt.worksheet_examples",
+      "source_file_count": 8,
+      "source_root": "session_generator_libraries/gxtxt.worksheet_examples",
+      "version": "1.0.0"
+    }
+  ],
+  "supplemental_libraries": [
+    {
+      "delivery": "NORMAL_ORIGINAL_EXPLICIT_LIBRARY_IMPORT",
+      "generators": [
+        {
+          "descriptor": "generators/ticino_valley_3d/generator.ini",
+          "id": "ticino_valley_3d",
+          "version": "1.0.1"
+        }
+      ],
+      "id": "org.giuxlab.gxtxt.geospatial_examples",
+      "path": "distribution/packages/gxtxt_geospatial_examples_1.0.1.zip",
+      "sha256": "c41084762fc20568142e70a55439a4c59a6fc2e14c2621282c2635298ba3e35e",
+      "version": "1.0.1"
+    }
+  ]
+}

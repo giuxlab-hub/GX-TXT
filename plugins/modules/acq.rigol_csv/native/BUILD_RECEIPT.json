@@ -1,0 +1,22 @@
+{
+  "schema": "gxtxt.rigol_native_build.v1",
+  "source_sha256": "8f6dd9da424875ed7efc809f11ec484a895f0c39d4943ac2a17058fc40a986bf",
+  "binary_sha256": "3c264977e15c3d5ac04946c99cd8b00f95c859b3a5b47d349e124c961e42662c",
+  "command": [
+    "/usr/bin/g++",
+    "-std=c++17",
+    "-O2",
+    "-ffp-contract=off",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wl,-z,relro,-z,now",
+    "/srv/gxtxt/agents/scratch/DEV111-P028-MAIN/framework/plugins/modules/acq.rigol_csv/runtime/rigol_csv_native.cpp",
+    "-o",
+    "/srv/gxtxt/agents/scratch/DEV111-P028-MAIN/build_rigol_native03/rigol_csv_worker"
+  ],
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0\nCopyright (C) 2024 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "scientific_validation": "NOT_RUN",
+  "installed": false,
+  "activated": false
+}

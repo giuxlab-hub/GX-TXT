@@ -16,10 +16,12 @@ proc ::GX::DatasetCurveFit::_interpretStatistics {key result} {
     if {[dict get $result model] eq "complex_response"} {
         dict set context orientation joint_responses;dict set context y_unit 1;dict set context coefficient_space original_physical
         dict set result complex_model_state [dict get $facts complex_model_state]
+        dict set result complex_model_types [::GX::nativeWorkspaceTransportSubtypes [dict get $result numeric_statistics_types] complex_model_state]
         dict set result complex_model_state_sha256 [_numericStateDigest [dict get $facts complex_model_state]]
     }
     if {[dict exists $facts numeric_model_state]} {
         dict set result numeric_model_state [dict get $facts numeric_model_state]
+        dict set result numeric_model_types [::GX::nativeWorkspaceTransportSubtypes [dict get $result numeric_statistics_types] numeric_model_state]
         dict set result numeric_model_state_sha256 [_numericStateDigest [dict get $facts numeric_model_state]]
     }
     set raw [dict get $facts fit]
@@ -100,6 +102,7 @@ proc ::GX::DatasetCurveFit::_interpretStatistics {key result} {
     if {[dict get $result model] eq "rational"} {dict set result rational_state_sha256 [_numericStateDigest [_rationalState $result]]}
     if {[dict get $result model] in {akima bspline}} {dict set result knot_binding_sha256 [_knotResultIdentity $result]}
     dict unset result numeric_statistics
+    dict unset result numeric_statistics_types
     return [_applyStatisticsAliases $result]
 }
 proc ::GX::DatasetCurveFit::_statisticsAliasRows {result} {

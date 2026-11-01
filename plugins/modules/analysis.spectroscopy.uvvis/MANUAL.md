@@ -4,7 +4,7 @@
 
 ## Architecture
 
-This module follows [the framework architecture overview](../../../ARCHITECTURE.md).
+This module follows `docs/architecture/NUMERIC_ANALYSIS_BOUNDARY_RULE.md`.
 
 - `math.numeric` / `NUMERIC_API_v1` owns reusable mathematics such as regression, interpolation/resampling and peak detection.
 - this module owns UV/Vis scientific workflow and semantics: selected analytical wavelength, absorbance blank subtraction, calibration/holdout roles, inverse concentration prediction, lambda-max suggestion, validity warnings, reporting and provenance.

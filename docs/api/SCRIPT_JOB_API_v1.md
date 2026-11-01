@@ -1,5 +1,16 @@
 # CORE Script Job API v1
 
+Registered Python/Octave Projects freeze and verify the entire admitted source
+tree. Job `source_sha256` is the composite Project SHA; `entrypoint_sha256` records
+the entrypoint bytes separately. Historical inspection verifies every manifest
+file. `options.invocation_parameters` supplies additive per-Job typed descriptor
+rows; duplicate saved names refuse. Effective `parameter_schema` and origins
+are immutable alongside values. Shared Runner rerun reconstructs manual rows
+without changing saved declarations. Project Debug takes `debug_breakpoints`
+as `{relative_file {physical_line ...} ...}`; single-file Jobs keep a line list.
+See [Project contract](SCRIPT_PROJECTS_v1.md) and
+[source/invocation parameters](SCRIPT_PARAMETER_DECLARATIONS_v1.md).
+
 Auxiliary GUI requests use the existing nonblocking
 `scriptJobAsync command payload callback ?options?` transport. Options are
 timeout_ms, max_bytes, process_group, ui_lifetime, label and optional duplex;
@@ -156,16 +167,41 @@ client does not deadlock behind its own queued callable under a one-worker polic
 
 Options include `session`, `namespace`, `inputs`, `output`, `runtime_template`,
 and the existing Analysis `module_output` projection. Each input maps a unique
-identifier alias to `{dataset_id ID label LABEL}`. Resolution uses only canonical
-Datasets in the exact selected current namespace; descendants and unrelated
-namespaces are excluded. The namespace comes from the existing Namespace API.
-Current namespace changes do not retarget a job. Dataset revision tokens are
-captured at admission and checked before Bridge calls; a mutable input change
-fails explicitly instead of silently changing scientific inputs. Input payloads
-are read through existing Dataset/Table Stream APIs without full-file copies.
+identifier alias to `{dataset_id ID namespace NAMESPACE revision TOKEN label LABEL}`.
+Namespace and revision are optional for old clients: omitted namespace uses
+`options.namespace` or the Session Current namespace; omitted revision captures
+current admission identity. An explicit namespace must match that exact Dataset
+ID in the captured Session. A supplied opaque `datasetRevisionToken` must still
+match. Missing, moved, changed or cross-Session inputs fail with the affected alias.
+No input selector changes global Current. Namespace normalization and membership
+remain with `DATASET_NAMESPACE_API_v1`; reads can cross namespaces.
 
-The Run dialog has an optional collapsed bindings section. A semantic alias is
-scientific identity; its display label is presentation. `gxtxt_context()` exposes
+`scriptJobInputsResolve session inputs ?defaultNamespace?` is the existing Job
+owner's host resolver. The preparation process repeats validation against the
+persisted Registry, freezes each alias's own namespace/ID/revision and exports
+those same bindings to Python and Octave. Bridge calls revalidate revision and
+namespace; a change fails instead of retargeting scientific data. Input payloads
+are read through Canonical Dataset/Table Stream APIs without full-file copies.
+
+The shared Script Runner supplies `reviewed_script` with the reviewed metadata;
+preparation checks SHA, revision and parameter declarations before and after the
+source snapshot. These additive guards also protect asynchronous submission.
+`parameter_dataset` optionally pins a canonical preset's Dataset ID, revision,
+SHA and Variable IDs, validated through
+[SCRIPT_PARAMETER_DATASET_API_v1](SCRIPT_PARAMETER_DATASET_API_v1.md). Effective
+values remain separate editable per-Job parameters; the original preset identity
+is immutable provenance in the Job receipt/runtime and `gxtxt_context()`.
+
+All launchers open the same scrollable review: Workspace, Script Library, main
+Run, host Run control, Session Script Explorer and history rerun. Parameters,
+input rows and output requests share one controller. Validate performs no
+execution. Each row has independent namespace/Dataset selectors, semantic alias,
+optional label, revision status and Remove. Save/Load parameters operates on
+canonical Datasets without modifying Script Registry defaults or submitting Jobs.
+Run Job alone submits; Close only dismisses review. Script Jobs separately shows
+actual execution state and committed publications.
+
+`gxtxt_context()` exposes
 `inputs` and optional `output`. Output declaration fields are `dataset_id`,
 `label`, `replace_owned`. A compatible script explicitly reads this declaration
 and passes the desired ID/label/authorization through normal Publication APIs.
@@ -370,7 +406,7 @@ Results; changed/unverified legacy identities are explicit conflicts, never
 silently treated as safe user scripts. Ordinary Jobs and user publications remain
 visible. Scientific provider Jobs have their own legitimate Results category.
 
-## Managed compiled Viewer exchange (dev109)
+## Managed compiled Viewer exchange
 
 Existing auxiliary `scriptJobAsync command payload callback ?options?` accepts
 boolean `duplex` (default0). With duplex1 its supervised pipe retains the write

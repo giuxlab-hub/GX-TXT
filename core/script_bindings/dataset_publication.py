@@ -12,6 +12,7 @@ REGISTRATION = {
     "provider_kind": "core", "provider_id": "dataset_publication",
     "documentation_ref": "docs/api/DATASET_PUBLICATION_API_v2.md",
     "operations": {
+        "publish_batch": {"name": "publish_batch", "summary": "Publish producer-owned outputs with an optional atomic Dataset Group", "arguments": [{"name": "request", "kind": "producer batch with Session token, outputs and optional dataset_group", "required": True}], "argument_convention": "producer batch request", "result_contract": "atomic publication receipt and optional Group descriptor"},
         "publish_managed_variables": {"name": "publish_managed_variables", "summary": "Publish owned nD arrays through the canonical binary Dataset writer", "argument_convention": "definition, dimension ID/size dictionary, Variable schema/resource bindings", "result_convention": "publication result struct with exact nD schema"},
         "publish_managed_columns": {"name": "publish_managed_columns", "summary": "Publish an owned binary64 column-major matrix through the canonical managed Dataset writer", "argument_convention": "definition, owned resource, ordered schema", "result_convention": "publication result struct"},
         "begin": {"name": "begin", "summary": "Prepare and open a managed Dataset writer", "argument_convention": "publication definition struct", "result_convention": "opaque writer token"},
@@ -119,6 +120,16 @@ def _binary(value, shape=None, scope=None, temporary=None):
 
 
 def invoke(host, operation, args):
+    if operation == 'publish_batch' and len(args) == 1 and isinstance(args[0], dict):
+        binding = host.modules['DATASET_GROUP_API_v1']
+        binding.bounded(args)
+        raw = host.as_dict(host.call('::GX::datasetProducerPublishBatchV1', binding.capability(host), host.session, args[0]))
+        datasets = [host.as_dict(item) for item in host.as_list(raw['datasets'])]
+        for item in datasets: item.pop('path', None)
+        result = {'output_count': int(raw['output_count']), 'atomic': bool(int(raw['atomic'])),
+                  'dataset_ids': host.as_list(raw['dataset_ids']), 'datasets': datasets}
+        if 'dataset_group' in raw: result['dataset_group'] = binding.group_result(host, raw['dataset_group'])
+        return host.record_publications(result)
     if operation == "publish_managed_variables" and len(args) == 3 and isinstance(args[0], dict) and isinstance(args[1], dict) and isinstance(args[2], (list, tuple)):
         result = host.as_dict(host.call("::GX::datasetPublicationV2PublishManagedVariables", host.session, host.module_id, *args))
         result.pop("path", None)

@@ -62,7 +62,7 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
         dict lappend record operations [dict merge $declaration [dict create previous_units $previous]]
         dict set replacements $id $record
     }
-    set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         dict for {id record} $replacements {dict set st($w,curves) $id $record;dict unset st($w,coordinatePresentation) $id}
         dict set st($w,coordinateConfiguration) x_unit [lindex $units 0]
@@ -70,7 +70,7 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
         set st($w,coordinateCache) {};set st($w,pointTableSignature) {}
         _coordinateFrameSync $w;_selectionScene $w;_history $w $before $ids
         _curveList $w;_pointList $w;_comparisonRefresh $w;_draw $w;_save $w
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) {Scientific axis meaning recorded. Geometry values and original Datasets are unchanged. Display conversion and physical scale remain separate.}
     return [dict merge $declaration [dict create curve_ids $ids]]
 }
@@ -80,7 +80,7 @@ proc ::GX::CurveWorkbench::createCoordinateCurve {w name points units rationale}
     set declaration [_coordinateDeclaration $units $rationale];set name [string trim $name]
     if {$name eq {}||[string length $name]>160||[regexp {[\x00-\x1f]} $name]||[llength $points]<2||[llength $points]>65536} {error {Enter a curve name and 2–65536 explicit physical XY points}}
     set target [_coordinateSourceFrame $w [dict create coordinate_units $units]]
-    set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set id {}
+    set before [_snapshotIds $w {}];set id {}
     # Native2D validates and, when needed, converts only the new geometry into
     # the established frame. Existing coordinates are never reinterpreted.
     set native [::GX::Native2D::core add $st($w,scene) $points]
@@ -100,7 +100,7 @@ proc ::GX::CurveWorkbench::createCoordinateCurve {w name points units rationale}
         _history $w $before [list $id];_save $w
     } on error {message options} {
         if {$id ne {}&&[dict exists $st($w,curves) $id]} {_removeRecord $w $id} elseif {$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
-        _restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message
+        _restoreSnapshot $w $before;return -options $options $message
     }
     return $id
 }

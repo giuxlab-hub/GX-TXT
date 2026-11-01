@@ -9,7 +9,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::documentationBrowserApiInfo {} {
-    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index host_operations {documentationBrowserOpenModuleWindow documentationBrowserAttachViewerHelp documentationBrowserOpenApi documentationBrowserResolve documentationBrowserModuleTutorials}]
+    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index host_operations {documentationBrowserOpenReferenceWindow documentationBrowserOpenApiWindow documentationBrowserManualInspect documentationBrowserOpenModuleWindow documentationBrowserAttachViewerHelp documentationBrowserOpenApi documentationBrowserResolve documentationBrowserModuleTutorials}]
 }
 
 proc ::GX::documentationBrowserAdd {id category title type path {owner ""} {version ""}} {
@@ -187,6 +187,7 @@ proc ::GX::documentationBrowserRefresh {} {
         set root [file normalize [file dirname $descriptor]]
         set version [descriptorValue $d meta version ""]
         foreach {field type label} {
+            html_manual html_manual {HTML manual}
             guide guide Guide manual manual Manual quick_start quick_start {Quick start}
             scientific_method scientific_method {Scientific method}
             parameter_reference parameter_reference {Parameter reference}

@@ -1,7 +1,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Host-only projections. These weak widget subscriptions never own Documents,
 # resource trees, provider actions or scientific History.
-namespace eval ::GX::SessionWorkspace {variable adapters {};variable hosts {};variable menus {}}
+namespace eval ::GX::SessionWorkspace {variable adapters {};variable hosts {};variable menus {};variable treeRowsAfter {}}
+proc ::GX::_workspaceHostTreeRowsSchedule {tree} {
+    if {![winfo exists $tree] || ![winfo ismapped $tree] || [dict exists $::GX::SessionWorkspace::treeRowsAfter $tree]} return
+    dict set ::GX::SessionWorkspace::treeRowsAfter $tree [after idle [list ::GX::_workspaceHostTreeRowsApply $tree [winfo id $tree]]]
+}
+proc ::GX::_workspaceHostTreeRowsApply {tree identity} {
+    dict unset ::GX::SessionWorkspace::treeRowsAfter $tree
+    if {![winfo exists $tree] || ![winfo ismapped $tree] || [winfo id $tree] ne $identity} return
+    _uiFieldTreeFontRows $tree GXSessionWorkspace.Treeview
+}
+proc ::GX::_workspaceHostTreeRowsDispose {tree actual} {
+    if {$tree eq $actual && [dict exists $::GX::SessionWorkspace::treeRowsAfter $tree]} {
+        after cancel [dict get $::GX::SessionWorkspace::treeRowsAfter $tree]
+        dict unset ::GX::SessionWorkspace::treeRowsAfter $tree
+    }
+}
 proc ::GX::_workspaceHostToken {} {if {$::GX::currentSession eq {} || ![file isdirectory $::GX::currentSession]} {return {}};return [interactiveDocumentSessionToken]}
 proc ::GX::_workspaceHostContext {provider callbacks parent} {return [dict create provider $provider callbacks $callbacks parent $parent token [_workspaceHostToken] window_id [expr {[winfo exists $parent] ? [winfo id $parent] : {}}]]}
 proc ::GX::_workspaceHostCheck {context} {
@@ -9,7 +24,7 @@ proc ::GX::_workspaceHostCheck {context} {
     set parent [dict get $context parent]
     if {![winfo exists $parent] || [winfo id $parent] != [dict get $context window_id]} {error {Workspace host has closed or was replaced.}}
 }
-proc ::GX::_workspaceHostReceipt {id} {set item [sessionWorkspaceGet $id];return [dict create workspace_id $id generation [dict get $item generation] revision [dict get $item revision] provider_id [dict get $item provider_id]]}
+proc ::GX::_workspaceHostReceipt {id} {set item [sessionWorkspaceMetadata $id];return [dict create id $id workspace_id $id generation [dict get $item generation] revision [dict get $item revision] provider_id [dict get $item provider_id]]}
 proc ::GX::_workspaceHostValidateReceipt {receipt} {
     set now [_workspaceHostReceipt [dict get $receipt workspace_id]]
     if {$now ne $receipt} {error {Workspace changed or was replaced. Refresh and select it again.}}
@@ -25,15 +40,20 @@ proc ::GX::_workspaceHostAdapter {provider {context {}}} {
 proc ::GX::_workspaceHostCurrent {context} {set cb [dict get $context callbacks];if {![dict exists $cb current]} {return {}};return [uplevel #0 [dict get $cb current]]}
 proc ::GX::sessionWorkspaceHostState {context {id {}}} {
     set valid [expr {[dict get $context token] ne {} && [dict get $context token] eq [_workspaceHostToken] && [winfo exists [dict get $context parent]] && [winfo id [dict get $context parent]] == [dict get $context window_id]}]
-    set selected [expr {$valid && $id ne {} && ![catch {sessionWorkspaceGet $id} item]}]
+    set selected [expr {$valid && $id ne {} && ![catch {sessionWorkspaceMetadata $id} item]}]
     set provider [dict get $context provider]
     if {$selected} {set provider [dict get $item provider_id]}
     set adapter [_workspaceHostAdapter $provider $context];set cb [dict get $adapter callbacks]
     set current {};catch {set current [_workspaceHostCurrent $adapter]}
     set currentSelected [expr {$current ne {} && (!$selected || $current eq $id)}]
     set state [dict create refresh 1 manager $valid new [expr {$valid && [dict exists $cb open]}] import $valid open $selected duplicate $selected rename $selected delete $selected notes $selected preview $selected export $selected actions $selected save [expr {$valid && [dict exists $cb save] && (!$selected || $currentSelected)}] close [expr {$valid && [dict exists $cb close] && (!$selected || $currentSelected)}]]
+    if {$valid && $id eq {} && [dict exists $cb save_as]} {dict set state duplicate 1}
     if {$provider ne {} && [catch {_workspaceProvider $provider}]} {foreach action {new open save duplicate rename delete notes preview export actions} {dict set state $action 0}}
     if {$valid && [dict exists $cb prepare] && [catch {uplevel #0 [list {*}[dict get $cb prepare] query]} reason]} {foreach action {new open save duplicate close delete} {dict set state $action 0}}
+    if {$selected && ![dict get $item compatible]} {
+        foreach action {open save duplicate rename notes preview export actions} {dict set state $action 0}
+        dict set state delete $valid
+    }
     return $state
 }
 proc ::GX::sessionWorkspaceHostPrepare {context action} {
@@ -48,14 +68,50 @@ proc ::GX::sessionWorkspaceHostPrepare {context action} {
     if {$answer eq {cancel}} {return 0}
     if {$answer eq {yes}} {
         if {![dict exists $cb save]} {error {This Viewer cannot save the current draft.}}
-        uplevel #0 [dict get $cb save]
+        _historyWorkspaceSave $context
         if {[uplevel #0 [dict get $cb dirty]]} {error {Workspace changes remain unsaved. Continue editing before switching.}}
-    } elseif {![dict exists $cb discard]} {error {This Viewer has no safe discard callback. Continue editing or Save.}}
+    } elseif {![dict exists $cb discard]} {error {This Viewer has no safe discard callback. Continue editing or Save.}} else {
+        set window [dict get $context parent]
+        if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+            scientificHistoryViewerDiscard $window
+        }
+    }
     } finally {if {[dict exists $cb review] && [winfo exists [dict get $context parent]]} {uplevel #0 [list {*}[dict get $cb review] 0]}}
 
     return 1
 }
 proc ::GX::_workspaceHostClose {context} {set cb [dict get $context callbacks];if {[dict exists $cb discard]} {uplevel #0 [dict get $cb discard]} elseif {[dict exists $cb close]} {uplevel #0 [dict get $cb close]}}
+proc ::GX::sessionWorkspaceSessionLeave {action} {
+    if {[info exists ::GX::Parameters::publicationPhase] && $::GX::Parameters::publicationPhase ne {}} {error {Finish the current Parameter publication before changing Session}}
+    # Review every live host before disposing any of them. Cancel keeps all
+    # windows and the Session identity; a Save chosen during review is durable.
+    set token [_workspaceHostToken];set hosts {}
+    dict for {window context} $::GX::SessionWorkspace::adapters {
+        if {[dict get $context token] ne $token || ![winfo exists $window] || [winfo id $window] != [dict get $context window_id]} continue
+        if {![sessionWorkspaceHostPrepare $context $action]} {return 0}
+        lappend hosts $context
+    }
+    if {[llength [info commands printStudioWorkspaceReview]] && ![printStudioWorkspaceReview $action]} {return 0}
+    lassign [workspaceExternalHostReview $action] externalAccepted externalHosts
+    if {!$externalAccepted} {return 0}
+    nativeWorkspaceFlushAll
+    scientificHistoryFlushAll
+    foreach context $hosts {
+        set window [dict get $context parent]
+        if {[winfo exists $window] && [winfo id $window] == [dict get $context window_id]} {_workspaceHostClose $context}
+    }
+    workspaceExternalHostClose $externalHosts
+    if {[llength [info commands printStudioWorkspaceLeave]]} {printStudioWorkspaceLeave}
+    nativeWorkspaceCloseSession
+    return 1
+}
+proc ::GX::sessionWorkspaceApplicationClose {} {
+    if {[catch {sessionWorkspaceSessionLeave {exiting GX-TXT}} accepted]} {
+        tk_messageBox -parent . -icon error -title {Close GX-TXT} -message $accepted
+        return
+    }
+    if {$accepted} {destroy .}
+}
 proc ::GX::_workspaceHostDestroyed {widget actual} {
     if {$widget ne $actual} return
     foreach name {adapters hosts menus views titles} {if {[dict exists [set ::GX::SessionWorkspace::$name] $widget]} {dict unset ::GX::SessionWorkspace::$name $widget}}
@@ -78,6 +134,7 @@ proc ::GX::sessionWorkspaceViewerMenu {menu provider callbacks parent} {
     bind $parent <Destroy> +[list ::GX::_workspaceHostDestroyed $parent %W]
     bind $menu <Destroy> +[list ::GX::_workspaceHostDestroyed $menu %W]
     foreach {label action} {{New workspace…} new {Open workspace…} open Save save {Save as / Duplicate…} duplicate Rename… rename {Session Workspaces…} manager Close close Delete… delete Notes… notes Preview… preview Import… import Export… export Refresh refresh} {
+        if {$action eq {duplicate} && [dict exists $callbacks save_as]} {set label {Save As…}}
         $menu add command -label $label -command [list ::GX::sessionWorkspaceViewerAction $provider $callbacks $parent $action]
     }
     menu $menu.ownerActions -tearoff 0 -postcommand [list ::GX::sessionWorkspaceHostProviderMenu $menu $menu.ownerActions]
@@ -142,6 +199,10 @@ proc ::GX::sessionWorkspaceBuild {frame {provider {}} {callbacks {}} {parent {}}
     ttk::panedwindow $f.body -orient vertical;ttk::frame $f.body.list;ttk::frame $f.body.detail
     $f.body add $f.body.list -weight 3;$f.body add $f.body.detail -weight 1;pack $f.body -fill both -expand 1
     ttk::treeview $f.tree -columns {name type provider preview} -show headings -height 7 -selectmode browse
+    # Reuse the measured row owner locally; never change the global Treeview.
+    _uiFieldTreeFontRows $f.tree GXSessionWorkspace.Treeview
+    foreach event {<Map> <Configure> <<ThemeChanged>>} {bind $f.tree $event +[list ::GX::_workspaceHostTreeRowsSchedule $f.tree]}
+    bind $f.tree <Destroy> +[list ::GX::_workspaceHostTreeRowsDispose $f.tree %W]
     foreach {key label width} {name Name 230 type Type 140 provider Provider 150 preview Preview 90} {$f.tree heading $key -text $label;$f.tree column $key -width $width -minwidth 70 -stretch 1}
     ttk::scrollbar $f.scroll -command [list $f.tree yview];$f.tree configure -yscrollcommand [list $f.scroll set]
     pack $f.scroll -in $f.body.list -side right -fill y;pack $f.tree -in $f.body.list -fill both -expand 1
@@ -203,9 +264,11 @@ proc ::GX::_workspaceHostInspect {f} {
     $f.preview configure -image {} -text {Select a Workspace for preview and details.}
     catch {image delete gxWorkspacePreview_[string map {. _} $f]}
     if {$id eq {}} {$f.status configure -text [expr {[_workspaceHostToken] eq {} ? {Open a Session to manage Workspaces.} : {Select one Workspace. New and Save require an available Viewer adapter.}}];return}
-    set item [sessionWorkspaceGet $id]
+    set item [sessionWorkspaceMetadata $id]
     $f.status configure -text "[dict get $item name] • [dict get $item provider_id] • revision [dict get $item revision]"
     set resource [dict get $item preview]
+    if {![dict get $item native_workspace]} {$f.preview configure -text {Obsolete Workspace: restore and conversion are unavailable. Delete requires confirmation and preserves referenced scientific resources.};return}
+    if {[dict exists $resource native_preview]} {set resource [nativeWorkspaceDecode [dict get [lindex [nativeWorkspaceProperties $id] 1] preview]]}
     if {$resource eq {}} {$f.preview configure -text {No managed preview is associated with this Workspace.};return}
     if {[catch {_workspaceHostPreview $f $id $resource} problem]} {$f.preview configure -text "Preview unavailable: $problem"}
 }
@@ -249,12 +312,19 @@ proc ::GX::sessionWorkspaceHostDispatch {context action {id {}} {receipt {}}} {
         refresh {sessionWorkspaceViewsChanged}
         manager {sessionWorkspaceDialog [dict get $context parent] $provider $cb}
         new - rename - duplicate {
-            set name [expr {$action eq {new} ? {New Workspace} : [dict get [sessionWorkspaceGet $id] name]}]
-            if {$action eq {duplicate}} {append name { copy}}
+            if {$action eq {new} && [dict exists $cb new]} {
+                # A provider may present additional creation fields. Admission
+                # stays here; its existing form owns subsequent cancel/review.
+                return [uplevel #0 [dict get $cb new]]
+            }
+            set name [expr {$action eq {new} || $id eq {} ? {New Workspace} : [dict get [sessionWorkspaceGet $id] name]}]
+            if {$action eq {duplicate} && $id ne {}} {append name { copy}}
+            set title "[string totitle $action] Workspace"
+            if {$action eq {duplicate} && [dict exists $cb save_as] && [_workspaceHostCurrent $adapter] eq $id} {set title {Save As Workspace}}
             set w [string trimright [dict get $context parent] .].workspaceName
-            uiFieldFormCreate $w "[string totitle $action] Workspace" {name {type string required 1 label Name}} [dict create name $name] [list ::GX::sessionWorkspaceHostNamed $adapter $action $id $receipt $w] [dict get $context parent]
+            uiFieldFormCreate $w $title {name {type string required 1 label Name}} [dict create name $name] [list ::GX::sessionWorkspaceHostNamed $adapter $action $id $receipt $w] [dict get $context parent]
         }
-        save {uplevel #0 [dict get $cb save];sessionWorkspaceViewsChanged}
+        save {_historyWorkspaceSave $context;sessionWorkspaceViewsChanged}
         close {if {[sessionWorkspaceHostPrepare $adapter closing]} {_workspaceHostClose $adapter}}
         open {
             sessionWorkspaceValidate $id
@@ -264,14 +334,14 @@ proc ::GX::sessionWorkspaceHostDispatch {context action {id {}} {receipt {}}} {
             } else {sessionWorkspaceOpen $id}
         }
         delete {
-            set item [sessionWorkspaceGet $id]
+            set item [sessionWorkspaceMetadata $id]
             set current {};catch {set current [_workspaceHostCurrent $adapter]}
             if {$current eq $id && ![sessionWorkspaceHostPrepare $adapter deleting]} return
             set receipt [_workspaceHostReceipt $id]
-            if {[tk_messageBox -parent [dict get $context parent] -title {Delete Workspace} -type okcancel -default cancel -icon warning -message "Delete Workspace ‘[dict get $item name]’?\n\nIts Document, notes, History and owned managed resources are removed. Source and published Datasets remain unchanged."] ne {ok}} return
+            if {[tk_messageBox -parent [dict get $context parent] -title {Delete Workspace} -type okcancel -default cancel -icon warning -message "Delete Workspace ‘[dict get $item name]’?\n\nIts notes and History are removed. Referenced scientific resources, source Datasets and published Datasets are preserved."] ne {ok}} return
             _workspaceHostCheck $context;_workspaceHostValidateReceipt $receipt
             if {$current eq $id} {_workspaceHostClose $adapter}
-            sessionWorkspaceDelete $id
+            sessionWorkspaceDelete $id 1 $receipt
         }
         notes {noteDocumentOpen $id view}
         export {
@@ -310,9 +380,16 @@ proc ::GX::sessionWorkspaceHostNamed {context action id receipt form values} {
         }
         duplicate {
             set current {};catch {set current [_workspaceHostCurrent $context]}
-            if {[dict exists $cb open] && ![sessionWorkspaceHostPrepare $context duplicating]} return
-            set package [sessionWorkspaceExport $id];set duplicate [sessionWorkspaceImport $package $name]
-            if {[dict exists $cb open]} {_workspaceHostClose $context;uplevel #0 [list {*}[dict get $cb open] [dict create workspace_id [dict get $duplicate workspace_id]]]}
+            if {[dict exists $cb save_as] && $current eq $id} {
+                # Copy the live draft without saving or discarding its source.
+                uplevel #0 [list {*}[dict get $cb save_as] $name]
+            } else {
+                if {[dict exists $cb open] && ![sessionWorkspaceHostPrepare $context duplicating]} return
+                if {[_nativeWorkspaceExists $id]} {
+                    set copied [nativeWorkspaceSaveAs $id $name];set duplicate [sessionWorkspaceGet [dict get $copied id]]
+                } else {set package [sessionWorkspaceExport $id];set duplicate [sessionWorkspaceImport $package $name]}
+                if {[dict exists $cb open]} {_workspaceHostClose $context;uplevel #0 [list {*}[dict get $cb open] [dict create workspace_id [dict get $duplicate workspace_id]]]}
+            }
         }
     }
     if {[winfo exists $form]} {destroy $form}

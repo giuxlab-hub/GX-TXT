@@ -178,6 +178,8 @@ proc ::AcqTextDocument::_preview {result} {
         text.bom BOM text.validation_scope {Validation scope}
         text.line_count Lines text.character_count Characters
         text.newline_style {Line endings} text.has_final_newline {Final newline}
+        uml.profile {UML profile} uml.family {UML diagram family}
+        uml.source_sha256 {Exact UML source SHA-256}
         code.language_candidates_json {Ambiguous candidates}
     } {
         if {[dict exists $md $key]} { dict set preview $label [dict get $md $key] }
@@ -189,8 +191,53 @@ proc ::AcqTextDocument::_preview {result} {
     return $preview
 }
 
+proc ::AcqTextDocument::_umlResult {request result} {
+    set md [dict get $result metadata]
+    set original [::GX::datasetPublicationV2DictDefault $md source.original_filename {}]
+    if {$original eq {}} {
+        foreach field {original_name source_path raw_path} {
+            if {[dict exists $request $field]} {set original [file tail [dict get $request $field]];break}
+        }
+    }
+    if {[string tolower [file extension $original]] ni {.puml .plantuml}} {return $result}
+    if {[_setting $request destination auto] eq {session_script}} {error {UML source is a canonical Dataset; choose Dataset destination, not Session script.}}
+    if {[dict exists $result fields path]} {
+        # The normal import worker returns a relative staged filename. Inspect
+        # returns no path: its already-authorized request source is read below.
+        set relative [dict get $result fields path]
+        if {![dict exists $request output_dir] || [file pathtype $relative] ne {relative} || [regexp {[\\:\x00\r\n]} $relative]} {error {Invalid staged UML source path}}
+        foreach part [file split $relative] {if {$part in {{} . ..}} {error {Invalid staged UML source path}}}
+        set path [file join [dict get $request output_dir] $relative]
+    } else {
+        set path [dict get $request source_path]
+    }
+    set stream [open $path rb]
+    try {set bytes [read $stream 4194305]} finally {close $stream}
+    if {[string length $bytes]>4194304} {error {UML source exceeds the 4 MiB profile bound; original bytes remain unchanged.}}
+    ::GX::documentUtf8Prefix $bytes [string length $bytes]
+    set source [encoding convertfrom utf-8 $bytes]
+    if {[encoding convertto utf-8 $source] ne $bytes} {error {UML source requires exact valid UTF-8; original bytes remain unchanged.}}
+    set detected [::GX::umlDocumentDetect $original $source]
+    if {![dict get $detected recognized]} {
+        set diagnostic [lindex [dict get $detected diagnostics] 0]
+        error "UML line [dict get $diagnostic line]: [dict get $diagnostic message]"
+    }
+    dict set result fields contract document.uml
+    dict set result fields format puml
+    dict set result fields media_type text/vnd.plantuml
+    dict set result fields label "[string totitle [dict get $detected family]] UML source"
+    dict set md document.language uml
+    foreach field {profile family parser_version source_sha256} {dict set md uml.$field [dict get $detected $field]}
+    dict set md code.language uml
+    dict set md code.language_name {UML source}
+    dict set md code.language_detection {CORE gxtxt.plantuml.v1 parser}
+    dict set md code.language_confidence validated_profile
+    dict set result metadata $md
+    return $result
+}
+
 proc ::AcqTextDocument::inspect {request} {
-    if {[catch {set result [_wait [_launch $request 0]]} problem]} {
+    if {[catch {set result [_umlResult $request [_wait [_launch $request 0]]]} problem]} {
         return [dict create recognized 0 format "" metadata {} variables {} preview_rows {} \
             warnings [list $problem] preview_kind metadata \
             preview_metadata [dict create Status "Not an importable text/code source" Diagnostic $problem]]
@@ -202,6 +249,7 @@ proc ::AcqTextDocument::inspect {request} {
 }
 
 proc ::AcqTextDocument::_datasetResult {request result} {
+    set result [_umlResult $request $result]
     set f [dict get $result fields]
     foreach key {format contract path media_type label} {
         if {![dict exists $f $key]} { error "Text import result is missing $key." }
@@ -216,6 +264,10 @@ proc ::AcqTextDocument::_datasetResult {request result} {
         return [dict create outcome registered_session_script language [expr {$language eq {python}?{Python}:{Octave}}] script_id [dict get $request dataset_id] name [dict get $f label] source_path [dict get $f path] provenance {Source imported through Text and Source Code Import; UTF-8 Registry snapshot; no execution.}]
     }
     set notes [join [dict get $result warnings] "\n"]
+    set provenance "Original text/code RAW bytes preserved without re-encoding or newline conversion; full-file text validation; language=[dict get $md code.language]; method=[dict get $md code.language_detection]; no code execution or syntax validation."
+    if {[dict get $f contract] eq {document.uml}} {
+        set provenance "Original UML RAW bytes preserved without re-encoding or newline conversion; exact UTF-8 validated by CORE [dict get $md uml.profile] [dict get $md uml.family] parser; source SHA-256=[dict get $md uml.source_sha256]; no code execution."
+    }
     # Text/code is a file-shaped Dataset, NOT a one-column numerical table.
     # Original encoding, BOM, tabs and line endings remain byte-for-byte intact.
     # CORE owns all registry, RAW, hash and structured-metadata transactions.
@@ -223,7 +275,7 @@ proc ::AcqTextDocument::_datasetResult {request result} {
         contract [dict get $f contract] format [dict get $f format] path [dict get $f path] \
         storage_kind text media_type [dict get $f media_type] variables {} units {} semantic_roles {} \
         source "Text and source code: [dict get $f label]" notes $notes structured_metadata $md \
-        provenance "Original text/code RAW bytes preserved without re-encoding or newline conversion; full-file text validation; language=[dict get $md code.language]; method=[dict get $md code.language_detection]; no code execution or syntax validation."]]]
+        provenance $provenance]]]
 }
 
 proc ::AcqTextDocument::import {request} {

@@ -1,0 +1,14 @@
+# dev085 focused real GUI operator matrix
+
+Plain-entry native Xorg controls in disposable installations A and B.
+
+| Check | Observed result | Status | Evidence |
+|---|---|---|---|
+| Project Home navigation | Sessions button returns to associated Project and highlights the open Experiment; browsing another Project does not switch Session | PASS | [session-home-button.png](../evidence/dev085/operator-A/session-home-button.png), [home-context.png](../evidence/dev085/operator-A/home-context.png), [other-project-selected.png](../evidence/dev085/operator-B/other-project-selected.png), [corrected-home-context.png](../evidence/dev085/operator-B/corrected-home-context.png) |
+| Whole Project GUI export | Native save chooser and completion: two Experiments, fifteen module snapshots, SHA-256 | PASS | [export-chooser.png](../evidence/dev085/operator-A/export-chooser.png), [export-complete.png](../evidence/dev085/operator-A/export-complete.png) |
+| GUI import into installation B | Native file/name controls create independent Received Project with both Sessions and keep B existing Project | PASS | [import-final-dialog.png](../evidence/dev085/operator-B/import-final-dialog.png), [import-complete.png](../evidence/dev085/operator-B/import-complete.png), [operator-audit.json](../evidence/dev085/operator-audit.json) |
+| Reopen/save/restart imported Sessions | Both imported Sessions open normally, saved state survives plain-entry restart; canonical five-row voltage Dataset renders | PASS | [imported-preview.png](../evidence/dev085/operator-B/imported-preview.png), [corrupt-chooser.png](../evidence/dev085/operator-B/corrupt-chooser.png), [electrical-reopened.png](../evidence/dev085/operator-B/electrical-reopened.png), [optical-reopened-final.png](../evidence/dev085/operator-B/optical-reopened-final.png), [B-readback.tcldict](../evidence/dev085/B-readback.tcldict) |
+| Identifier/provenance/scientific integrity | New local IDs, unchanged creator, receiver events and persistent source IDs; twenty payload files, Project resources and all dependency snapshots match | PASS | [operator-audit.json](../evidence/dev085/operator-audit.json), [B-readback.tcldict](../evidence/dev085/B-readback.tcldict), [api.log](../evidence/dev085/api.log) |
+| Failure handling and rollback | GUI corrupt import rejected with exact registry preimage; API rejects nested corruption, traversal and receiving-root collision; post-move failure rolls back without partial Project | PASS | [corrupt-package-error.png](../evidence/dev085/operator-B/corrupt-package-error.png), [gui-failure-readback.json](../evidence/dev085/gui-failure-readback.json), [api.log](../evidence/dev085/api.log) |
+
+Development batches queued before dismissing the existing Save confirmation are excluded. Reopened/home steps were repeated. Source IDs are read from persistent origin history after Save. Complete input journals and application logs are bundled alongside these selected reviewed screens.

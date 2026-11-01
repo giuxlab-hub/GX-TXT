@@ -1,14 +1,14 @@
-## 1.0.5
+## 1.0.5 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 
 # Changelog
 
-## 1.0.4
+## 1.0.4 — 2026-10-01
 
 - Open an inspectable source-selection shell without a Session or compatible spectrum. Keep direct compatible Dataset requests on the standard persistent graph editor path.
 
-## 1.0.3
+## 1.0.3 — 2026-09-30
 
 - Use Plot Dataset API v3 alone for live graphs, editor and detached snapshots.
 

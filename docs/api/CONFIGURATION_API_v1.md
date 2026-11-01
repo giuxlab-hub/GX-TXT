@@ -1,6 +1,37 @@
 # Configuration API v1
 
-## Local LaTeX inventory (dev109)
+## P031 framework-wide Preview activation
+
+The existing User-profile field `preview.module_enabled` is the sole persistent
+authority for Preview ON/OFF. Its validated value is a dictionary of stable
+module IDs and booleans (at most 512 entries / 64 KiB). Module live variables are
+projections, not another store. A never-configured Preview defaults OFF. Missing
+IDs remain inert; actual Module/Installer descriptor, version, ownership and
+pending-generation admission still determine readiness.
+
+Configuration Preview toggles update this live field without saving it. Explicit
+**Save user defaults** persists the choices; unrelated scoped preference commits
+do not implicitly save them. Cold startup restores saved choices. Session/default
+reload preserves live unsaved choices. Legacy experiment-configuration imports
+and Session `module_state.enabled`/`modules.selected` Preview IDs are ignored for
+activation; read does not migrate or rewrite their original files. Non-Preview
+enabled/run and Session parameter overrides retain their established semantics.
+
+Direct changes to this framework field and Preview activation require host/user
+authority; ordinary module-private callbacks receive no global mutation grant.
+ON, Dataset applicability and loaded/ready are distinct. A disabled dependency
+in a Session makes an ON Preview unavailable without changing its global choice.
+Actual Save errors restore the previous file/saved acknowledgement and report
+failure; non-file destinations are refused. Framework-profile persistence uses
+the existing Configuration file and owner, never a Session Manifest.
+
+The CORE Preview settings `preview.cache_enabled` and `preview.cache_mib` belong
+to the built-in user schema. Session creation and ordinary user-configuration
+reload retain their registered identities and saved values, so existing GUI
+subscribers can refresh them without stale-field errors. Registering these
+settings does not prepare previews or create a cache.
+
+## Local LaTeX inventory
 
 Configuration → Scripts places the read-only LaTeX environment directly after
 the existing Python environment. Refresh inspects actual native tool versions,
@@ -16,15 +47,15 @@ Changing `runtime.latex` invalidates the previous rows and requires Refresh.
 Completion verifies the current configured executable and retires its request
 even when stale. Session changes alone do not invalidate a machine inventory.
 Missing runtimes and launch failures are visible panel diagnostics. This source
-contract requires separate real GUI/cancellation evidence; it is not acceptance
-of the LaTeX authoring Viewer or every installed TeX resource.
+inventory does not validate document compilation, Viewer authoring or every
+installed TeX resource.
 
 `libraries.scientific_root` remains the persisted GX-TXT Library Root field.
 Managed scientific libraries live under its effective value. Consumers can
 query that value through the public CORE
 `::GX::ScientificLibraryManagerAPIv1::libraryRoot` method. The
 `GXTXT_SCIENTIFIC_LIBRARY_ROOT` variable remains an internal compatibility
-compatibility mechanism, not a public consumer contract.
+handoff, not a public consumer contract.
 
 GX-TXT separates framework facts, user defaults, module defaults, Session configuration, and runtime state. `configurationFields` returns the registered fields and their scope. `configurationGet` reads a field, `configurationSet` changes a writable value in memory, and `configurationSave` persists user and module defaults to the user's GX-TXT configuration directory.
 
@@ -82,6 +113,8 @@ owned by their Dataset/Selection/Model/Temporal Set authorities.
 set id module.example.configuration.level
 set receipt [::GX::configurationResolve $id]
 # factory, user, override, effective, origin, scopes, session_token
+# user_origin and effective_origin distinguish factory, saved User,
+# unsaved User, Session, framework and runtime values.
 set starting [::GX::configurationScopedValue $id user]
 ::GX::configurationCommit [list [dict create id $id scope user value 5 expected $starting]]
 # Explicit override, bound to the actual Session lifetime, including A→B→A:
@@ -111,6 +144,12 @@ Immediate consumers subscribe and read `configurationResolve`; next-invocation
 consumers read at invocation; restart settings apply at startup. CORE never
 executes plugin-specific behavior. Existing module-local `moduleCfg` controls
 write Session overrides; global defaults continue to use this registry.
+
+Repeatable table factory values are typed snapshots from
+`repeatableConfigDefaultSnapshot`, rather than the descriptor's empty sentinel.
+An editing template can contain unresolved required inputs. Reading that factory
+does not commit it; actual changed table values validate through the Repeatable
+owner before any scoped mutation.
 
 The shared GUI client is `configurationModuleDialog module_id ?parent=.?`.
 Both surfaces use the same typed descriptors, validators, conflict checks and
@@ -155,7 +194,7 @@ authorities at commit. Discovery does not require scientific runtime data.
 
 ## Generic Viewer command adapter
 
-The existing Configuration/UI owner now supplies `viewerCommandCatalogRegister
+The Configuration/UI owner supplies `viewerCommandCatalogRegister
 catalog_id commands ?configuration_id? ?module_key? ?owner_module?`. Each stable command descriptor
 has `label`, optional `default` key, and a keyboard `scope` (default `viewer`).
 An optional `context` predicate receives the focus widget. Lightweight module
@@ -219,9 +258,9 @@ invocation. Omitting the owner retains the catalog identity as owner. This keeps
 multiple catalogs/shortcut fields for one module within the same existing command
 authority, including Surface Fitter. It does not register another module.
 
-Dev109 adds `::GX::configurationOpenPage page` (`open_page`) for ordinary GUI
+`::GX::configurationOpenPage page` (`open_page`) provides ordinary GUI
 navigation to an existing Configuration page: storage, runtime, computation,
-execution, libraries, scripts, viewers or modules. It changes no values and
+execution, libraries, scripts, viewers, modules, appearance or maintenance. It changes no values and
 requires the main GUI to be open. Restricted C++ Viewers can request only the
 fixed Runtime destination through `Host::em_command(form, "runtime")` with the
 explicit `CONFIGURATION_API_v1/open_page` grant; no widget path enters the SDK.
@@ -229,3 +268,20 @@ explicit `CONFIGURATION_API_v1/open_page` grant; no widget path enters the SDK.
 The Scripts page shares its available height between the existing Python and
 LaTeX inventory panels. Each panel keeps its own scrollable tree and controls;
 resizing the page does not change configuration values or restart inventory.
+
+## Framework Maintenance
+
+Configuration → Framework Maintenance is a child page with persistent left
+navigation and one right content pane. It keeps ordinary Configuration tabs and
+Save user defaults. Its Configuration Browser displays factory/User/Session and
+effective values, explicit origin and supported scopes through this owner.
+`configurationResolve` retains its original `origin` layer field and additionally
+returns `user_origin` and `effective_origin`; `user_unsaved` identifies memory
+values that differ from their saved/default source. Framework and runtime values
+remain read-only.
+
+Import and reset use a validated per-scope diff with expected values and Session
+lifetime, then call `configurationCommit`. User and Session changes are never
+merged into one durable transaction. Secret fields are redacted and excluded.
+Other Maintenance operations, safety boundaries and public signatures are in
+[Framework Maintenance](FRAMEWORK_MAINTENANCE_API_v1.md).

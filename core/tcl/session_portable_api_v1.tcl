@@ -82,7 +82,12 @@ proc ::GX::sessionPortableExport {session archive} {
     set archive [file normalize $archive]
     if {[string tolower [file extension $archive]] ne ".zip"} { append archive ".gxtxt-session.zip" }
     file mkdir [file dirname $archive]
+    nativeWorkspacePortableDrain $session
+    set drained [scientificHistoryPortableDrain $session]
+    scientificHistoryPortableVerifySession $session [dict get $drained owned]
     set cmd [list [runtimeToolRequired python] [_sessionPortableHelper] export $session $archive $scriptDir $version --carrier-installation [installationIdentityCurrent]]
+    foreach path [dict get $drained owned] {lappend cmd --history-owned $path}
+    if {[info exists ::GX::currentSession] && $::GX::currentSession ne {} && [file normalize $::GX::currentSession] eq $session && $::GX::NativeWorkspace::handle ne {}} {lappend cmd --workspace-owned [file join $session metadata workspaces.sqlite]}
     if {[catch {set out [exec {*}$cmd 2>@1]} err opts]} { return -options $opts $err }
     set result [_sessionPortableParseOutput $out]
     dict set result package_info [sessionPortableValidate $archive]
@@ -207,3 +212,5 @@ proc ::GX::sessionPortableStageImport {archive destination staging} {
     dict set result logical_destination $destination
     return $result
 }
+
+source [file join [file dirname [info script]] scientific_history_portable.tcl]

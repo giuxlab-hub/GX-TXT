@@ -1,5 +1,78 @@
 # Python Script Workspace
 
+## Script Projects and independent source tabs
+
+In **Script Library**, choose the intended scope/language, **New Project**, enter
+an ID/name and **Save**. **Open Workspace** opens its real entrypoint. The project
+file tree navigates the project. The **Project** menu opens/adds files, renames
+or moves paths, removes non-entrypoint files and selects the main entrypoint. Source subfolders are
+supported. Python projects import admitted helpers/packages; Octave helper
+functions use their actual matching `.m` filenames.
+
+Each file has its own source buffer, dirty star, Undo/Redo, caret, scroll and Find.
+The primary menu is **File / Edit / Project / View / Run / Help**. Use the
+**Project** menu for project file operations; the file tree navigates sources.
+F10 focuses the primary menu row; Left/Right choose a menu and Space/Down open
+it. Alt+F/E/P/V/R/H open File/Edit/Project/View/Run/Help directly. Escape returns
+to the source. The same arrows navigate adjacent open primary menus.
+**File → Save** saves the active Script or its complete Project transaction;
+**File → Save All** (Ctrl+Shift+S) saves every writable dirty Script/Project.
+Separate Scripts remain independent records, and a stale source or metadata
+revision refuses saving while preserving unsaved buffers.
+
+Click the **×** at the right of a source tab to close that exact file, including
+an inactive tab. Dirty sources offer Save / Don't Save / Cancel. Cancel preserves
+the original active file and focus. **File → Close tab** (Ctrl+W) closes the active
+tab; **File → Close** closes the Workspace. Closing the final source tab creates
+a fresh unsaved draft. No extra toolbar or source selector is needed.
+
+Ctrl+Tab/Ctrl+Shift+Tab cycle all open files. When tabs exceed the available
+width, the tab strip's **…** menu lists their complete qualified identities;
+Alt+Down on the notebook opens that same list. Selecting a hidden file brings
+its tab into view. Duplicate paths in separate Scripts show their distinct
+references. The project file tree remains available. On small screens or at
+large fonts, use **View → Focus source / restore panes** or hide optional side
+panes and script properties; these commands preserve their contents.
+
+**Assign to Session** freezes every admitted source. **Export** writes one
+integrity-checked Project ZIP, including source and saved parameter/API metadata;
+**Import Project ZIP** creates a new reviewed identity. Run and Debug use the
+existing Runner/Job supervisor and freeze the entire tree again. Helper-file
+breakpoints and native stack navigation use physical file/line and the frozen
+whole-project SHA. Job details **Open source files** opens verified historical
+sources in read-only tabs, separate from today's editable Registry record.
+
+![Native P029 private-fixture Project tree and closable file tabs in Focus source mode; optional outer panes remain available through View.](images/script-project-tabs.png)
+
+## Source declarations and invocation parameters
+
+Declare typed parameters directly in source using literal arguments:
+
+```python
+from gxtxt import gxtxt_parameter_declare, gxtxt_context
+gxtxt_parameter_declare('gain', 'double', default=2.0, min=0.0,
+                        description='Signal multiplier')
+gain = gxtxt_context()['parameters']['gain']
+```
+
+Saving inspects declarations without running imports or scientific source,
+including every admitted project helper. Distinct source and editor metadata
+names combine; conflicts and nonliteral declarations refuse saving. Change a
+source-declared definition in its source. The runtime declaration has no side
+effects and does not assign the effective value to a language variable.
+
+The shared Runner always offers **Add parameter**, including an empty schema.
+Invocation-only rows have typed values, **Edit** and **Remove**, and do not change
+saved declarations. Optional **Save parameters as Dataset** / **Load parameters**
+preserves mixed definitions and exact typed values; loaded values remain editable
+before Run. No declaration or Dataset is required merely to add an invocation
+parameter. Source/revision, effective schema, origins and values remain in the
+immutable Job provenance.
+
+See [Project contract](../../../docs/api/SCRIPT_PROJECTS_v1.md) and
+[source declaration contract](../../../docs/api/SCRIPT_PARAMETER_DECLARATIONS_v1.md)
+for exact path, type, constraint, runtime and host API rules.
+
 ## Python Script Workspace
 
 Open **Viewers → Python Script Workspace** with or without a Session. Choose **New**, select User or Session scope, enter a stable script ID, name, semantic version, description, required APIs, and optional typed parameters, then edit the Python source and **Save**. The Script Registry records revision and SHA-256. **Save As** creates another ID. The editor has line numbers, Python highlighting, undo/redo, search in both directions, go to line, UTF-8 `.py` import/export, and public `gxtxt` bridge help. Closing an unsaved edit prompts to save or discard it.
@@ -43,10 +116,9 @@ The Runner shows its actual scope, ID, version and SHA, and requires its own Run
 command to execute. A source changed elsewhere is explicitly identified; stale
 saves remain rejected. Run also opens the existing Script Library and Jobs Manager.
 
-An unregistered buffer must first be saved. Legacy Octave documents require the
-explicit Run → Register legacy as Session/User action; merely opening a Runner
-never converts them. Existing documents and execution snapshots retain their
-identities. An editor bound to another or subsequently closed Session cannot perform
+An unregistered buffer must first be saved. Obsolete Interactive Document
+Workspaces cannot be converted by these editors. Historical execution snapshots
+retain their identities. An editor bound to another or subsequently closed Session cannot perform
 Session-scope save, delete, register or Runner operations there: export any unsaved source if needed,
 close it, and reopen the workspace in the intended Session.
 
@@ -72,9 +144,10 @@ Five repeated open/close cycles do not require rebuilding the editor.
 
 **View → Focus source** is reversible; **Reset layout** restores the default
 proportions. Pane visibility and splitters are presentation settings saved in
-the user's configuration. **View → Script properties / parameters** collapses
-metadata without changing its values, source or dirty state. This is useful
-with a 900 × 560 window and a large GUI font. **Show script properties / parameters** expands it again. Appearance font settings apply when GX-TXT
+the user's configuration. **View → Script properties** collapses
+the other metadata rows. **View → Parameters** independently hides/restores the
+parameter declarations panel without changing its values, source or dirty state. This is useful
+with a 900 × 560 window and a large GUI font. **Show script properties** expands it again. Appearance font settings apply when GX-TXT
 starts; restart after saving a different GUI font size.
 
 ![Three-pane editor with the managed native debugger.](images/debugger-paused.png)
@@ -169,7 +242,7 @@ and Reset layout. If values seem stale, compare the selected native frame and
 the Job source identity before interpreting them. Missing required APIs fail
 preflight; use the public API documentation rather than a private fallback.
 
-## Complete workspace control reference (dev108)
+## Complete workspace control reference
 
 The Workspace writes source independently of any scientific Session. A **User**
 script belongs to your Script Library; a **Session** script is a separate saved
@@ -259,7 +332,8 @@ configuration; highlighting, selection, scroll and fold never rewrite source.
 | Breakpoints | Show saved line, enablement, function, source and exact revision information. |
 | Focus source / restore panes | Temporarily prioritize source, then restore the previous side panes. |
 | Reset editor layout | Restore the standard visible panes/proportions. |
-| Script properties / parameters | Collapse/restore metadata without changing any field value. |
+| Script properties | Collapse/restore other metadata without changing field values. |
+| Parameters | Independently hide/show declarations without changing values, source or debugger state. |
 
 Drag horizontal/vertical splitter sashes to size panels. Visibility and
 proportions are user presentation preferences. Reopen to restore them; use Reset
@@ -384,16 +458,30 @@ visible error or an untested remote endpoint is never a successful remote run.
 
 Open Run → Open Script Runner for the saved identity. Check its revision/SHA,
 named parameter values and any saved default argument text.
-Expand **Dataset bindings (optional)**. The namespace is fixed when the review opens; change it
-in Datasets and reopen Run if needed. **+ Input Dataset** adds a row: choose a
-canonical Dataset, a unique semantic alias and optional display label; **Remove**
-removes that request row. No available Dataset is needed for a parameter-only
-script. An optional Output ID/label and **Replace owned** declare a requested
-publication; the scientific publication API still validates ownership and must
-actually commit the output. Run submits a new local Job; Close dismisses review.
-An expanded review is not a remote destination selector.
+Review typed invocation values and saved inert argument text. Each **Add input
+Dataset** row has its own **Namespace** and **Dataset ID** selectors, a unique
+semantic alias and optional display label. Namespace changes clear only that
+row; Session Current and other rows stay unchanged. Selection captures the
+Dataset revision; changed or moved inputs require explicit reselection. **Remove
+input** removes only that request. Parameter-only scripts need no Dataset.
 
-![Actual ordinary Runner expanded Dataset bindings; this capture has no canonical inputs in its private namespace.](images/dev108-runner-bindings.png)
+**Parameter Dataset** accepts a canonical preset ID in this Session. **Save
+parameters as Dataset** creates a new typed canonical Dataset; **Load parameters**
+checks Script/schema/source/revision and payload integrity before applying all
+values. Numeric, string, boolean and choice types and stable Variable IDs are
+preserved. Loaded values remain editable. Neither action changes Registry
+metadata or executes a Job. A changed preset or Script requires fresh review.
+
+**Output request** declares an optional ID/label and deliberate owned replacement.
+Publication defaults to the script producer's private namespace; input namespaces
+grant no write rights. Only an actual Publication commit creates output.
+**Validate review** checks without execution; **Run Job** submits the immutable
+Script/input/parameter snapshot. **Close** dismisses review and does not cancel
+an admitted Job. The actions/status remain visible while the form scrolls;
+Tab/Shift+Tab reaches fields, Ctrl+Return submits and Escape closes review.
+Script Jobs reports actual completion, cancellation and committed outputs.
+
+![Shared Script Runner invocation review.](images/script-runner.png)
 ![Actual Script Library metadata and typed parameter editor shared by the two languages.](images/dev108-library-metadata.png)
 
 Script Library lists stable User/Session identities. Select the intended row
@@ -481,3 +569,61 @@ every failure means a time limit. Stack, locals and current-line arrow clear
 after terminal completion/cancellation. Debugger control output and program
 stdout/stderr are different views. Close or source/Session changes require the
 owner's cancellation/stale checks before another run.
+
+
+## Per-file Markdown Notes — DEV111-P030
+
+Use the primary **Edit → Edit Notes** command for the selected source file.
+**View → Show Notes** hides or shows the same adjacent note page; it retains the
+draft and its Undo/search state. Notes use the shared Markdown editor with Source,
+Rendered, Outline, Properties and Resources views. Insert images through its
+existing image command. Source and Rendered have independent selection and copy.
+Find and Focus Source act on the selected note. Python/Octave temporarily give
+Notes the source region and restore the prior code panels when returning to code.
+
+Explicit Save publishes the note as a canonical Markdown Dataset in the current
+Session. Without a Session, Save retains an explicit local note; attach it when a
+Session is available. Save All and portable Project export preserve per-file
+notes and their PNG resources through the existing source-owner snapshot.
+Save As/Save Copy create fresh source/note identities and preserve the original.
+Notes do not change source code, build inputs or scientific execution hashes.
+If another editor changes the source or note, saving refuses and retains the
+draft; review the current revision or use Publish New to preserve a separate copy.
+
+Opening an associated note from the Dataset Browser returns to that exact file's
+Notes page when its source remains available. Otherwise Documents opens the same
+canonical Dataset. Associated Source is read-only and shows only the exact
+matching source, with an explicit diagnostic if it has changed or disappeared.
+
+![Python per-file Notes with Source, Rendered and the primary menus at font18.](images/p030-notes.png)
+
+Python per-file Notes with Source, Rendered and the primary menus at font18.
+
+Formatting is in **Edit → Note format**, including headings, emphasis, code,
+lists, tables, links, quotes, rules and text color. **Edit → Note images** opens
+the shared PNG chooser and provides Replace/Remove for the selected managed
+resource. **View → Note panes and zoom** controls Source, Rendered preview,
+Outline, Properties and Resources independently, with zoom and layout reset.
+These groups act on the currently selected note and are unavailable on code
+pages. Portable images remain read-only until explicit Session attachment.
+
+## Optional projects inside the Workspace (DEV111-P033)
+
+**File → New Script** starts an ordinary standalone source immediately; a project
+is optional. **Project → New Project…** opens the temporary project canvas inside
+the same window. Enter a display name, stable ID, User or current Session scope
+and language-specific entrypoint. Create uses the authoritative Script Registry
+and opens that project's entrypoint in the existing source tabs. Other dirty
+source tabs stay available with their own identity and Undo.
+
+**Project → Open Project… / Manage Project…** lists saved projects for the active
+language. Open entrypoint returns to the existing code view. **Return to code**
+or Escape leaves the temporary canvas and restores its original widgets, focus,
+scrolling and layout. Validation or identity conflicts retain the project form
+and explain the refusal; Return to code restores the unchanged editor. No source
+is silently converted from standalone into a project. Existing project file
+operations, Save All, Source Notes, Runner and Debugger keep their existing owners.
+
+User projects work without a Session. Session-scope actions are bound to the
+Session active when the canvas opened; a changed/closed Session requires a fresh
+review. A stale saved-project listing must be refreshed before opening.

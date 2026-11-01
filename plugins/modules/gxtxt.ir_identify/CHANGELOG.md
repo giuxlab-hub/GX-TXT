@@ -1,12 +1,12 @@
 # gxtxt.ir_identify changelog
 
-## 2.0.2
+## 2.0.2 — 2026-10-01
 
 - Resolves a `primary.` qualified signal binding against the waveform
   manifest's source column name, so normal GUI bindings find the preceding
   waveform analysis artifact.
 
-## 2.0.1
+## 2.0.1 — 2026-09-26
 
 - Routes reusable score statistics through public `math.numeric`.
 - Publishes four diagnostic Datasets and renders all graphs with persistent
@@ -16,7 +16,7 @@
 - Keeps reference timing lines in the selected microsecond display unit and
   reduces frame labels for a readable default view.
 
-## 2.0
+## 2.0 — 2026-09-14
 
 Rewrite for GX-TXT Pipeline v0.7.9 Standard Module API.
 

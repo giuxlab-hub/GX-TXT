@@ -551,29 +551,9 @@ proc ::GX::ScientificWorksheet::_v1_bindDataset {book datasetId mappings {firstR
     if {[dict exists $dirty $key]} {dict unset dirty $key}
     return [list $book $imported]
 }
-proc ::GX::ScientificWorksheet::_v1_save {book} {
-    _requireSession
-    set id [dict get $book document_id]
-    if {$id eq ""} {
-        set meta [::GX::interactiveDocumentCreate viewer.scientific_worksheet scientific_worksheet scientific_worksheet.v1 1 $book]
-        dict set book document_id [dict get $meta id]
-        ::GX::interactiveDocumentUpdate [dict get $meta id] $book
-    } else {::GX::interactiveDocumentUpdate $id $book}
-    return $book
-}
-proc ::GX::ScientificWorksheet::listDocuments {} {return [::GX::interactiveDocumentList viewer.scientific_worksheet scientific_worksheet]}
-proc ::GX::ScientificWorksheet::_v1_load {id} {
-    set record [::GX::interactiveDocumentRead $id]
-    if {[dict get $record format] ne "scientific_worksheet.v1"} {error "Unsupported Worksheet document format."}
-    set book [dict get $record payload]
-    if {[catch {dict get $book format} format] || $format ne "scientific_worksheet.v1"} {error "Invalid Worksheet document payload."}
-    dict set book document_id $id
-    set key [_key $book]
-    variable cache; variable dirty
-    if {[dict exists $cache $key]} {dict unset cache $key}
-    if {[dict exists $dirty $key]} {dict unset dirty $key}
-    return $book
-}
+proc ::GX::ScientificWorksheet::_v1_save {book} {error {Obsolete Worksheet Workspace persistence is unsupported; use the current native Worksheet model}}
+proc ::GX::ScientificWorksheet::listDocuments {} {return [::GX::nativeWorkspaceQuery scientific_worksheet viewer.scientific_worksheet]}
+proc ::GX::ScientificWorksheet::_v1_load {id} {error {Obsolete Worksheet Workspace restore/conversion is unsupported}}
 proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {displayName ""}} {
     validateBook $book
     set session [_requireSession]

@@ -17,7 +17,7 @@ namespace eval ::GX::ScientificLibraryManagerAPIv1 {
 proc ::GX::ScientificLibraryManagerAPIv1::apiInfo {} {
     return [dict create api_name SCIENTIFIC_LIBRARY_MANAGER_API_v1 api_version 1 \
         registry_version 1 capability_schema gxtxt.library_capabilities.v1 \
-        operations {listLibraryTypes resolveLibraryProvider getLibraryInfo listInstalledLibraries queryCompatibleLibraries installLibrary updateLibrary removeLibrary verifyLibrary openLibrary listLibraryEntries openLibraryEntry readLibrarySpectrum libraryRoot listRegisteredLibraries registerLibrary unregisterLibrary getProviderCapabilities getLibraryCapabilities libraryCatalogPage openLibraryViewer invokeLibraryAction libraryRequest libraryEntriesPage getLibraryEntryInfo searchLibraryEntries readLibraryEntry exportLibraryEntry addLibraryEntry removeLibraryEntry credentialStatus credentialLock credentialProfileAdmin bindLibraryCredentialProfile credentialPrepare credentialSubmit credentialFinish} \
+        operations {listLibraryTypes resolveLibraryProvider getLibraryInfo listInstalledLibraries queryCompatibleLibraries installLibrary updateLibrary removeLibrary verifyLibrary openLibrary listLibraryEntries openLibraryEntry readLibrarySpectrum libraryRoot listRegisteredLibraries registerLibrary unregisterLibrary getProviderCapabilities getLibraryCapabilities libraryCatalogPage openLibraryViewer invokeLibraryAction libraryRequest libraryEntriesPage getLibraryEntryInfo searchLibraryEntries readLibraryEntry exportLibraryEntry addLibraryEntry removeLibraryEntry credentialStatus credentialLock credentialProfileAdmin bindLibraryCredentialProfile credentialPrepare credentialSubmit credentialFinish domainApiInfo sourceApiInfo resolveExternalId describeScope getDomainSchemas listSourceConnectors searchAcrossLibraries relatedEntries importLibraryRecords importSourceSelection domainRequest} \
         host_credential_operations {credentialPrepare credentialSubmit credentialFinish} \
         script_exposure intentional_subset \
         script_operations {api_info effective_root list_types list_libraries list_installed_libraries library_info compatible_libraries legacy_entries provider_capabilities library_capabilities catalog_page entries_page entry_info search_entries read_entry export_entry add_entry remove_entry credential_status credential_unlock credential_lock}]
@@ -28,7 +28,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_helper {} {
     return $path
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_run {operation args} {
-    if {$operation in {content library_capabilities} && [llength $args]} {
+    if {$operation in {content library_capabilities source_import} && [llength $args]} {
         set owned [_credentialFind [lindex $args 0]]
         if {$owned ne {}} {
             set reply [_credentialExchange $owned $operation $args]
@@ -51,7 +51,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_run {operation args} {
         foreach id $::GX::moduleOrder {
             set path [::GX::moduleField $id descriptor ""]
             if {$path ne "" && [info exists ::GX::moduleCatalog($id,dict)] &&
-                [::GX::descriptorValue $::GX::moduleCatalog($id,dict) library_type_provider api_version ""] eq "1"} {
+                [_descriptorSupported $id]} {
                 lappend descriptors $path
             }
         }
@@ -212,9 +212,9 @@ proc ::GX::ScientificLibraryManagerAPIv1::unregisterLibrary {libraryId} {
 proc ::GX::ScientificLibraryManagerAPIv1::getProviderCapabilities {libraryType} {return [_info [_run provider_capabilities $libraryType]]}
 proc ::GX::ScientificLibraryManagerAPIv1::getLibraryCapabilities {libraryId} {return [_info [_run library_capabilities $libraryId]]}
 proc ::GX::ScientificLibraryManagerAPIv1::libraryCatalogPage {{options {}}} {
-    set values [dict merge {mode all query {} offset 0 limit 100} $options]
-    foreach key [dict keys $options] {if {$key ni {mode query offset limit}} {error {Unknown Library catalog option}}}
-    set raw [_info [_run catalog_page [dict get $values mode] [dict get $values query] [dict get $values offset] [dict get $values limit]]]
+    set values [dict merge {mode all query {} offset 0 limit 100 library_type {}} $options]
+    foreach key [dict keys $options] {if {$key ni {mode query offset limit library_type}} {error {Unknown Library catalog option}}}
+    set raw [_info [_run catalog_page [dict get $values mode] [dict get $values query] [dict get $values offset] [dict get $values limit] [dict get $values library_type]]]
     return [_catalogPageDecode $raw]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_catalogPageDecode {raw} {
@@ -249,15 +249,15 @@ proc ::GX::ScientificLibraryManagerAPIv1::invokeLibraryAction {libraryId actionI
     return [_info [_run library_action $libraryId $actionId {*}$arguments]]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::libraryRequest {operation arguments callback} {
-    if {$operation in {content library_capabilities} && [llength $arguments]} {
+    if {$operation in {content library_capabilities source_import} && [llength $arguments]} {
         set owned [_credentialFind [lindex $arguments 0]]
         if {$owned ne {}} {return [_credentialAsync $owned $operation $arguments $callback]}
     }
-    if {$operation ni {catalog_page library_capabilities provider_capabilities library_action info entries verify install update remove register unregister provider types open content}} {error {Unsupported asynchronous Library operation}}
+    if {$operation ni {domain source_import catalog_page library_capabilities provider_capabilities library_action info entries verify install update remove register unregister provider types open content}} {error {Unsupported asynchronous Library operation}}
     # The helper still discovers the current authoritative installed providers.
     set descriptors {}
     foreach id $::GX::moduleOrder {
-        if {[info exists ::GX::moduleCatalog($id,dict)] && [::GX::descriptorValue $::GX::moduleCatalog($id,dict) library_type_provider api_version {}] eq {1}} {lappend descriptors [::GX::moduleField $id descriptor]}
+        if {[info exists ::GX::moduleCatalog($id,dict)] && [_descriptorSupported $id]} {lappend descriptors [::GX::moduleField $id descriptor]}
     }
     set options [dict create timeout_ms 120000 max_bytes 33554432 process_group 1 ui_lifetime 1 label {Scientific Library Manager}]
     # Public provider descriptor paths are inert request data, applied only to
@@ -270,7 +270,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_requestDone {operation callback respo
     if {[dict get $response ok]} {
         if {[catch {
             set wire [string trimright [dict get $response result wire] \n]
-            if {$operation eq {content}} {set value [_contentDecode $wire]} elseif {$operation in {entries types}} {set value [_list $wire]} else {set value [_info $wire]}
+            if {$operation in {domain source_import}} {set value [_domainDecode $wire]} elseif {$operation eq {content}} {set value [_contentDecode $wire]} elseif {$operation in {entries types}} {set value [_list $wire]} else {set value [_info $wire]}
             if {$operation eq {catalog_page}} {set value [_catalogPageDecode $value]}
             dict set response result $value
         } message options]} {
@@ -378,13 +378,13 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialLegacyFailure {reply} {
     return -options [dict create -code error -level 0 -errorcode [list GXTXT SCIENTIFIC_LIBRARY_MANAGER $code] -library_error $detail] [dict get $detail message]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_credentialMutation {operation arguments} {
-    return [expr {$operation eq {bind} || ($operation eq {profile_admin} && [lindex $arguments 0] in {create replace delete}) || ($operation eq {content} && [lindex $arguments 1] in {add_entry remove_entry})}]
+    return [expr {$operation eq {bind} || ($operation eq {profile_admin} && [lindex $arguments 0] in {create replace delete}) || ($operation eq {source_import}) || ($operation eq {content} && [lindex $arguments 1] in {add_entry remove_entry})}]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_credentialDescriptors {} {
     set result {}
     if {![info exists ::GX::moduleOrder]} {return $result}
     foreach id $::GX::moduleOrder {
-        if {[info exists ::GX::moduleCatalog($id,dict)] && [::GX::descriptorValue $::GX::moduleCatalog($id,dict) library_type_provider api_version {}] eq {1}} {
+        if {[info exists ::GX::moduleCatalog($id,dict)] && [_descriptorSupported $id]} {
             lappend result [::GX::moduleField $id descriptor]
         }
     }
@@ -394,6 +394,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialCurrent {record} {
     if {[dict get $record revoked]} {return 0}
     if {[file normalize [::GX::configurationPath]] ne [dict get $record configuration]} {return 0}
     if {[dict get $record role] eq {admin}} {return 1}
+    if {[dict get $record session] eq {}} {return [expr {$::GX::currentSession eq {}}]}
     return [expr {$::GX::currentSession ne {} && [file normalize $::GX::currentSession] eq [dict get $record session] && [::GX::interactiveDocumentSessionToken] eq [dict get $record session_token]}]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_credentialFind {library} {
@@ -469,8 +470,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialNew {role library} {
     set configuration [file normalize [::GX::configurationPath]]
     set session {};set token {}
     if {$role eq {runtime}} {
-        if {$::GX::currentSession eq {}} {return {}}
-        set session [file normalize $::GX::currentSession];set token [::GX::interactiveDocumentSessionToken]
+        if {$::GX::currentSession ne {}} {set session [file normalize $::GX::currentSession];set token [::GX::interactiveDocumentSessionToken]}
     }
     # Exactly16 random bytes, kept only as an owner identity (never an unlock
     # grant or transferable secret). Linux private runtime is the accepted slice.
@@ -526,6 +526,20 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialExchange {id operation argu
     if {![dict get $reply ok] && [dict get $reply code] eq {transport_failure}} {_credentialRevoke $id;if {$mutation} {return [_credentialError transport_failure unknown]}}
     return $reply
 }
+proc ::GX::ScientificLibraryManagerAPIv1::_credentialCleanupPending {} {
+    variable credentialContexts
+    dict for {id record} $credentialContexts {
+        if {[dict get $record revoked]} {return 1}
+    }
+    return 0
+}
+proc ::GX::ScientificLibraryManagerAPIv1::_credentialNotifyCleanup {} {
+    # Presentation notification only, after nonsecret state transitions. Never
+    # add traces to the native protected maps or yield through protected Submit.
+    if {[llength [info commands ::event]] && [llength [info commands ::winfo]] && [winfo exists .]} {
+        catch {event generate . <<ScientificLibraryCredentialCleanupChanged>> -when tail}
+    }
+}
 proc ::GX::ScientificLibraryManagerAPIv1::_credentialRevoke {id} {
     variable credentialContexts
     if {![dict exists $credentialContexts $id]} {return 0}
@@ -533,6 +547,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialRevoke {id} {
     set record [dict get $credentialContexts $id]
     catch {::GX::scriptJobRequestCancel [dict get $record request] cancelled}
     if {[dict get $record poll] eq {}} {dict set credentialContexts $id poll [after 25 [list ::GX::ScientificLibraryManagerAPIv1::_credentialDrain $id [dict get $record generation]]]}
+    _credentialNotifyCleanup
     return 1
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_credentialDrain {id generation} {
@@ -556,6 +571,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::_credentialEnded {id generation respon
     set record [dict get $credentialContexts $id]
     if {[dict get $record poll] ne {}} {after cancel [dict get $record poll]}
     dict unset credentialContexts $id
+    _credentialNotifyCleanup
     if {[dict exists $record protected]} {
         _credentialAttemptRelease $record 0
         set completion [dict get $record protected completion]
@@ -988,3 +1004,41 @@ proc ::GX::ScientificLibraryManagerAPIv1::credentialLock {args} {return [_creden
 proc ::GX::ScientificLibraryManagerAPIv1::credentialProfileAdmin {args} {return [_credentialFacade profile_admin $args]}
 proc ::GX::ScientificLibraryManagerAPIv1::bindLibraryCredentialProfile {args} {return [_credentialFacade bind $args]}
 ::GX::ScientificLibraryManagerAPIv1::_credentialSessionTrace
+
+# P028 additive host-only typed Library/source operations. Existing protected
+# content/credential owner and manager registry remain the admission authority.
+proc ::GX::ScientificLibraryManagerAPIv1::_descriptorSupported {id} {
+    if {[llength [info commands ::GX::moduleIsEnabled]] && ![::GX::moduleIsEnabled $id]} {return 0}
+    foreach section {library_type_provider library_domain_provider library_source_connector} {
+        if {[::GX::descriptorValue $::GX::moduleCatalog($id,dict) $section api_version {}] eq {1}} {return 1}
+    }
+    return 0
+}
+proc ::GX::ScientificLibraryManagerAPIv1::_domainDecode {wire} {
+    set parts [split $wire \t]
+    if {[llength $parts]!=2 || [lindex $parts 0] ne {G} || [string length $wire]>25165824} {error {Invalid Library domain response}}
+    set result [_decode [lindex $parts 1]]
+    dict size $result
+    return $result
+}
+proc ::GX::ScientificLibraryManagerAPIv1::domainRequest {operation parametersJson} {
+    return [_domainDecode [_run domain $operation $parametersJson]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::describeScope {parametersJson} {return [domainRequest scope_describe $parametersJson]}
+proc ::GX::ScientificLibraryManagerAPIv1::getDomainSchemas {} {return [domainRequest schemas {{}}]}
+proc ::GX::ScientificLibraryManagerAPIv1::listSourceConnectors {} {return [domainRequest connectors {{}}]}
+proc ::GX::ScientificLibraryManagerAPIv1::searchAcrossLibraries {parametersJson} {return [domainRequest search $parametersJson]}
+proc ::GX::ScientificLibraryManagerAPIv1::relatedEntries {parametersJson} {return [domainRequest related $parametersJson]}
+proc ::GX::ScientificLibraryManagerAPIv1::importLibraryRecords {parametersJson} {return [domainRequest import $parametersJson]}
+proc ::GX::ScientificLibraryManagerAPIv1::importSourceSelection {sourceLibrary parametersJson} {
+    return [_domainDecode [_run source_import $sourceLibrary $parametersJson]]
+}
+source [file join [file dirname [info script]] library_entry_acquisition_dispatch_api_v1.tcl]
+source [file join [file dirname [info script]] scientific_library_browser_v1.tcl]
+proc ::GX::ScientificLibraryManagerAPIv1::domainApiInfo {} {
+    return [dict create api_name SCIENTIFIC_LIBRARY_DOMAINS_API_v1 api_version 1 owner SCIENTIFIC_LIBRARY_MANAGER_API_v1 schema gxtxt.library_domain.v1 capabilities {literal_content_contract_selector_v1 read_only_normalized_metadata_projection_v1} scope_contract {library_types record_types library_ids provider_ids source_ids} operations {describeScope getDomainSchemas searchAcrossLibraries relatedEntries resolveExternalId importLibraryRecords domainRequest} manual_operations {manual_prepare manual_candidates manual_import} manual_suggestions opt_in_provider_declared host_only 1]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::sourceApiInfo {} {
+    return [dict create api_name SCIENTIFIC_LIBRARY_SOURCE_CONNECTOR_API_v1 api_version 1 owner SCIENTIFIC_LIBRARY_MANAGER_API_v1 operations {listSourceConnectors registerLibrary searchLibraryEntries readLibraryEntry importSourceSelection} credential_owner existing_protected_library_context network_on_discovery 0 library_import explicit session_datasets_created 0]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::resolveExternalId {parametersJson} {return [domainRequest resolve_external_id $parametersJson]}

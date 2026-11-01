@@ -1,0 +1,15 @@
+schema gxtxt.viewer_design.v1 title {Curve Digitalizer — Canonical Data Table} module_id preview.curve_digitizer provider_id curve_digitizer version 0.1.12 geometry 1100x720 requirements {VIEWER_GUI_HOST_API_v1 1 UI_FIELD_API_v1 1 PREVIEW_COMPONENT_GUI_API_v1 1} components {
+{id first type action parent toolbar properties {label Load action table_first tooltip {Read the first canonical Dataset page}} layout {manager pack side left padx 3 pady 1}}
+{id previous type action parent toolbar properties {label Prev action table_previous tooltip {Previous 50 canonical rows}} layout {manager pack side left padx 3 pady 1}}
+{id next type action parent toolbar properties {label Next action table_next tooltip {Next 50 canonical rows}} layout {manager pack side left padx 3 pady 1}}
+{id toolbar_spacer type panel parent toolbar properties {} layout {manager pack side left fill x expand 1 padx 0 pady 0}}
+{id precision_label type label parent toolbar properties {text Precision wraplength 0} layout {manager pack side left padx 5 pady 1}}
+{id precision type combobox parent toolbar properties {default {6 digits} width 15 choices {{6 digits} {10 digits} {Full precision}}} layout {manager pack side left padx 3 pady 1}}
+{id information type status parent inspector properties {text {Choose Load first page to read a bounded canonical page.}} layout {row 0 column 0 sticky ew}}
+{id view_tabs type tabs parent canvas properties {tab_position north} layout {row 0 column 0 sticky nsew weight 1}}
+{id science_page type tab parent view_tabs properties {title {Scientific values}} layout {row 0 column 0 sticky nsew weight 1}}
+{id science_table type table parent science_page properties {columns {{Row} {Curve} {Point} {X (physical)} {Y (physical)} {Axis} {Calibration} {Sigma X} {Sigma Y} {Cov XY}} scrollbars both} layout {row 0 column 0 sticky nsew weight 1}}
+{id provenance_page type tab parent view_tabs properties {title {Point traceability}} layout {row 0 column 0 sticky nsew weight 1}}
+{id provenance_table type table parent provenance_page properties {columns {{Row} {Curve ID} {Point ID} {Calibration ID} {Pixel X} {Pixel Y}} scrollbars both} layout {row 0 column 0 sticky nsew weight 1}}
+{id table_notice type status parent footer properties {text {Canonical Dataset values are read-only.}} layout {row 0 column 0 sticky ew}}
+} handlers {table_first {arguments {window action} effect presentation} table_previous {arguments {window action} effect presentation} table_next {arguments {window action} effect presentation} precision {arguments {window action} effect presentation}} origin {} target preview preview {dataset_contracts {curve_family.table;table.generic} view_role complementary}

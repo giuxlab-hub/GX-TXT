@@ -100,7 +100,7 @@ schema_source_dataset_id
 schema_source_variable_ids
 ```
 
-Dataset publication uses both fields.
+Version 1.3.0 uses both fields for every publication.
 
 For each output CSV column, `dataset.extract` sends the source identity:
 
@@ -225,13 +225,20 @@ Selected/Unselected resolves each saved member through the common Selection and 
 - Plugin Install API v1
 - Documentation API v1
 
+## Previous CORE schema gap
+
+The Dataset Publication schema-preservation limitation documented by `dataset.extract` 1.1.0 is **resolved by GX-TXT 0.9.7.19** for pure subset/projection publication.
+
+`CORE_DATASET_PUBLICATION_SCHEMA_GAP.md` is retained as historical documentation and now records the implemented resolution. The 1.1.0 changelog remains unchanged.
+
 ## Tests
 
 See `tests/README.md` and `TEST_REPORT.md`.
 
-## Shared Transform and multi-source Selections
+## 1.3.0: shared Transform and multi-source selections
 
-Dataset Extract provides All/Selected/Unselected and All/Trace controls. Selected/Unselected accepts a saved multi-source Selection from
+Dataset Extract keeps the existing All/Selected/Unselected and All/Trace
+controls. Selected/Unselected now accepts a saved multi-source Selection from
 Graphs → Select data → Save Selection. One run publishes exactly one output
 Dataset using the entered public Dataset ID. Each source/member keeps its own
 row selection and filters. Compatible tables retain every selected column;

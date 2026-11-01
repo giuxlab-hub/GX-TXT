@@ -1,0 +1,61 @@
+{
+  "record_types": {
+    "technical.document": {
+      "library_type": "technical.resources",
+      "label": "Technical document",
+      "fields": {
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "document_role": {
+          "type": "string",
+          "required": true
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      }
+    },
+    "technical.media": {
+      "library_type": "technical.resources",
+      "label": "Photo or technical drawing",
+      "fields": {
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "media_role": {
+          "type": "string",
+          "required": true
+        },
+        "source_url": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      }
+    }
+  },
+  "relations": {},
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "domain.technical_resources"
+}

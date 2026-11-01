@@ -12,4 +12,4 @@ See `SESSION_HTML_EXPORT.md` for the user workflow and limitations.
 
 License: GPL-3.0-or-later.
 
-HTML export must be verified against a disposable Session, including a browser-readable offline result.
+Validation results are recorded in `TEST_RESULTS.md`.

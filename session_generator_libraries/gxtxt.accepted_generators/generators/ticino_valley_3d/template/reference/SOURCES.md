@@ -43,4 +43,4 @@ Source bundle: `ticino_valley_source_bundle_20260923.tgz`
 SHA-256: `0500172477a05bd24f11444e0302a5cea270d7335b170ee0b3b4f9a3dd380541`
 Retrieval date recorded by source bundle: 2026-09-23.
 
-Source details and terms of use are documented in `source_bundle_manifest.tsv`, `ATTRIBUTIONS.md`, and `CORINE_CLASSIFICATION.md`.
+See `source_bundle_manifest.tsv`, `SOURCE_BUNDLE_VALIDATION.md`, `ATTRIBUTIONS.md`, and `CORINE_CLASSIFICATION.md` for the acquisition-agent evidence carried into this generated Session.

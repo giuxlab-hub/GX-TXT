@@ -1,4 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# Existing Plot canvas + UI Field focus/scroll authority; fields are genuine
+# body descendants, while original dialog and primary footer identities remain.
+proc ::GX::plotDialogFieldSee {canvas body widget} {
+    if {![winfo exists $widget] || ![winfo exists $canvas] || ![string match $body.* $widget]} return
+    uiFieldScrollSee $canvas $body $widget
+    set x [expr {[winfo rootx $widget]-[winfo rootx $body]}]
+    set end [expr {$x+[winfo width $widget]}];set left [$canvas canvasx 0];set right [$canvas canvasx [winfo width $canvas]]
+    if {$x<$left || $end>$right} {$canvas xview moveto [expr {max(0,($x-8)/double(max(1,[winfo reqwidth $body])))}]}
+}
+proc ::GX::plotDialogFormPresent {window footer} {
+    if {![winfo exists $window] || ![winfo exists $footer]} return
+    set canvas $window.viewport.canvas;set body $canvas.body
+    pack $footer -side bottom -fill x -padx 6 -pady 6
+    uiFieldScrollAreaAttach $canvas $body
+    bind $window <FocusIn> +[list ::GX::plotDialogFieldSee $canvas $body %W]
+    bind $footer <Configure> +[list ::GX::uiFieldControlsLayout $footer %w [winfo children $footer]]
+    set width [expr {min(1000,max(500,[winfo screenwidth $window]-60))}]
+    set height [expr {min(760,max(360,[winfo screenheight $window]-100))}]
+    wm geometry $window ${width}x${height};wm minsize $window 500 300
+}
 proc ::GX::plotFontUnitChanged {} {
     variable cfg
     variable ui
@@ -136,10 +156,11 @@ proc ::GX::globalGraphicsDialog_v0933_before_3d {} {
     toplevel $w
     wm title $w "Global graphics"
     wm transient $w .
-    grid columnconfigure $w 1 -weight 1
+    set body [scrollableDialogBody $w]
+    grid columnconfigure $body 1 -weight 1
 
-    ttk::label $w.intro -text "Global settings used by every native plot. Per-plot settings may override presentation details. Output DPI, font defaults and the global grid default originate here." -wraplength 720 -justify left
-    grid $w.intro -row 0 -column 0 -columnspan 3 -sticky ew -padx 10 -pady {10 8}
+    ttk::label $body.intro -text "Global settings used by every native plot. Per-plot settings may override presentation details. Output DPI, font defaults and the global grid default originate here." -wraplength 720 -justify left
+    grid $body.intro -row 0 -column 0 -columnspan 3 -sticky ew -padx 10 -pady {10 8}
 
     set r 1
     foreach {label key width} {
@@ -151,54 +172,54 @@ proc ::GX::globalGraphicsDialog_v0933_before_3d {} {
         "Title font size (blank = inherit)" plot_title_font_size 12
         "Line width" plot_line_width 12
     } {
-        ttk::label $w.l$r -text $label
-        ttk::entry $w.e$r -textvariable ::GX::cfg($key) -width $width
-        grid $w.l$r -row $r -column 0 -sticky e -padx 6 -pady 3
-        grid $w.e$r -row $r -column 1 -sticky w -padx 6 -pady 3
+        ttk::label $body.l$r -text $label
+        ttk::entry $body.e$r -textvariable ::GX::cfg($key) -width $width
+        grid $body.l$r -row $r -column 0 -sticky e -padx 6 -pady 3
+        grid $body.e$r -row $r -column 1 -sticky w -padx 6 -pady 3
         incr r
     }
 
-    ttk::label $w.ful -text "Font unit"
-    ttk::combobox $w.fu -textvariable ::GX::cfg(plot_font_unit) -values {px pt} -state readonly -width 10
+    ttk::label $body.ful -text "Font unit"
+    ttk::combobox $body.fu -textvariable ::GX::cfg(plot_font_unit) -values {px pt} -state readonly -width 10
     set ui(plotFontUnitLast) $cfg(plot_font_unit)
-    bind $w.fu <<ComboboxSelected>> {::GX::plotFontUnitChanged}
-    grid $w.ful -row $r -column 0 -sticky e -padx 6 -pady 3
-    grid $w.fu -row $r -column 1 -sticky w -padx 6 -pady 3
+    bind $body.fu <<ComboboxSelected>> {::GX::plotFontUnitChanged}
+    grid $body.ful -row $r -column 0 -sticky e -padx 6 -pady 3
+    grid $body.fu -row $r -column 1 -sticky w -padx 6 -pady 3
     incr r
 
-    ttk::label $w.gridlabel -text "Global grid"
-    ttk::frame $w.grid
-    ttk::checkbutton $w.grid.enabled -text "Enabled" -variable ::GX::cfg(plot_grid) -command ::GX::globalGridEnabledChanged
-    ttk::combobox $w.grid.mode -textvariable ::GX::cfg(plot_grid_mode) -values {both vertical horizontal none} -state readonly -width 12
-    bind $w.grid.mode <<ComboboxSelected>> {::GX::globalGridModeChanged}
-    ttk::entry $w.grid.color -textvariable ::GX::cfg(plot_grid_color) -width 12
-    ttk::button $w.grid.pick -text "Color..." -command [list ::GX::chooseConfigColor plot_grid_color "Grid color"]
-    pack $w.grid.enabled $w.grid.mode $w.grid.color $w.grid.pick -side left -padx {0 5}
-    grid $w.gridlabel -row $r -column 0 -sticky e -padx 6 -pady 3
-    grid $w.grid -row $r -column 1 -columnspan 2 -sticky w -padx 6 -pady 3
+    ttk::label $body.gridlabel -text "Global grid"
+    ttk::frame $body.grid
+    ttk::checkbutton $body.grid.enabled -text "Enabled" -variable ::GX::cfg(plot_grid) -command ::GX::globalGridEnabledChanged
+    ttk::combobox $body.grid.mode -textvariable ::GX::cfg(plot_grid_mode) -values {both vertical horizontal none} -state readonly -width 12
+    bind $body.grid.mode <<ComboboxSelected>> {::GX::globalGridModeChanged}
+    ttk::entry $body.grid.color -textvariable ::GX::cfg(plot_grid_color) -width 12
+    ttk::button $body.grid.pick -text "Color..." -command [list ::GX::chooseConfigColor plot_grid_color "Grid color"]
+    pack $body.grid.enabled $body.grid.mode $body.grid.color $body.grid.pick -side left -padx {0 5}
+    grid $body.gridlabel -row $r -column 0 -sticky e -padx 6 -pady 3
+    grid $body.grid -row $r -column 1 -columnspan 2 -sticky w -padx 6 -pady 3
     incr r
 
-    ttk::label $w.lfslabel -text "Default legend font"
-    ttk::frame $w.lfs
-    ttk::entry $w.lfs.size -textvariable ::GX::cfg(plot_legend_font_size) -width 10
-    ttk::combobox $w.lfs.unit -textvariable ::GX::cfg(plot_legend_font_unit) -values {inherit px pt} -state readonly -width 8
+    ttk::label $body.lfslabel -text "Default legend font"
+    ttk::frame $body.lfs
+    ttk::entry $body.lfs.size -textvariable ::GX::cfg(plot_legend_font_size) -width 10
+    ttk::combobox $body.lfs.unit -textvariable ::GX::cfg(plot_legend_font_unit) -values {inherit px pt} -state readonly -width 8
     set ui(plotLegendFontUnitLast) $cfg(plot_legend_font_unit)
-    bind $w.lfs.unit <<ComboboxSelected>> {::GX::legendFontUnitChanged}
-    pack $w.lfs.size $w.lfs.unit -side left -padx {0 5}
-    grid $w.lfslabel -row $r -column 0 -sticky e -padx 6 -pady 3
-    grid $w.lfs -row $r -column 1 -sticky w -padx 6 -pady 3
+    bind $body.lfs.unit <<ComboboxSelected>> {::GX::legendFontUnitChanged}
+    pack $body.lfs.size $body.lfs.unit -side left -padx {0 5}
+    grid $body.lfslabel -row $r -column 0 -sticky e -padx 6 -pady 3
+    grid $body.lfs -row $r -column 1 -sticky w -padx 6 -pady 3
     incr r
 
-    ttk::label $w.bglabel -text "Background"
-    ttk::entry $w.bg -textvariable ::GX::cfg(plot_background) -width 14
-    ttk::button $w.bgb -text "Choose..." -command [list ::GX::chooseConfigColor plot_background "Plot background"]
-    grid $w.bglabel -row $r -column 0 -sticky e -padx 6 -pady 3
-    grid $w.bg -row $r -column 1 -sticky w -padx 6 -pady 3
-    grid $w.bgb -row $r -column 2 -sticky w -padx 3 -pady 3
+    ttk::label $body.bglabel -text "Background"
+    ttk::entry $body.bg -textvariable ::GX::cfg(plot_background) -width 14
+    ttk::button $body.bgb -text "Choose..." -command [list ::GX::chooseConfigColor plot_background "Plot background"]
+    grid $body.bglabel -row $r -column 0 -sticky e -padx 6 -pady 3
+    grid $body.bg -row $r -column 1 -sticky w -padx 6 -pady 3
+    grid $body.bgb -row $r -column 2 -sticky w -padx 3 -pady 3
     incr r
 
-    ttk::label $w.note -text "px means a size referenced to the final PNG. pt means typographic points. Switching the default font unit converts inherited global text sizes using the current DPI so the apparent size is preserved. The legend can inherit that unit or use its own px/pt unit. Global grid Enabled/Mode/Color define the inherited grid style; per-module and per-plot Axes/grid overrides may replace it. Output DPI is global and must be 72..1200. Module graphics overrides inherit these values unless explicitly changed." -wraplength 720 -justify left
-    grid $w.note -row $r -column 0 -columnspan 3 -sticky ew -padx 10 -pady 8
+    ttk::label $body.note -text "px means a size referenced to the final PNG. pt means typographic points. Switching the default font unit converts inherited global text sizes using the current DPI so the apparent size is preserved. The legend can inherit that unit or use its own px/pt unit. Global grid Enabled/Mode/Color define the inherited grid style; per-module and per-plot Axes/grid overrides may replace it. Output DPI is global and must be 72..1200. Module graphics overrides inherit these values unless explicitly changed." -wraplength 720 -justify left
+    grid $body.note -row $r -column 0 -columnspan 3 -sticky ew -padx 10 -pady 8
     incr r
 
     ttk::frame $w.buttons
@@ -206,7 +227,7 @@ proc ::GX::globalGraphicsDialog_v0933_before_3d {} {
     ttk::button $w.buttons.rerender -text "Apply + rerender current plot" -command [list ::GX::globalGraphicsApply 1]
     ttk::button $w.buttons.cancel -text "Close" -command [list destroy $w]
     pack $w.buttons.apply $w.buttons.rerender $w.buttons.cancel -side left -padx 5
-    grid $w.buttons -row $r -column 0 -columnspan 3 -sticky e -padx 8 -pady {4 10}
+    plotDialogFormPresent $w $w.buttons
 }
 
 proc ::GX::globalGraphicsDialog {} { ::GX::globalGraphicsDialog_v0933_before_3d }
@@ -257,11 +278,12 @@ proc ::GX::legendConfigDialog {} {
     if {$ui(legendEdit,layout) eq ""} { set ui(legendEdit,layout) inherit }
     if {$ui(legendEdit,border) eq ""} { set ui(legendEdit,border) inherit }
     if {$ui(legendEdit,font_unit) eq ""} { set ui(legendEdit,font_unit) inherit }
-    grid columnconfigure $w 1 -weight 1
-    ttk::label $w.title -text "Legend override for: [file tail $p]\nPlot ID: $gk" -justify left
-    grid $w.title -row 0 -column 0 -columnspan 3 -sticky w -padx 8 -pady 7
-    ttk::checkbutton $w.en -text "Use plot-specific configuration" -variable ::GX::ui(legendEditEnabled)
-    grid $w.en -row 1 -column 0 -columnspan 3 -sticky w -padx 8 -pady 4
+    set body [scrollableDialogBody $w]
+    grid columnconfigure $body 1 -weight 1
+    ttk::label $body.title -text "Legend override for: [file tail $p]\nPlot ID: $gk" -justify left
+    grid $body.title -row 0 -column 0 -columnspan 3 -sticky w -padx 8 -pady 7
+    ttk::checkbutton $body.en -text "Use plot-specific configuration" -variable ::GX::ui(legendEditEnabled)
+    grid $body.en -row 1 -column 0 -columnspan 3 -sticky w -padx 8 -pady 4
     set r 2
     foreach {label field values width} {
         "Placement" placement {inherit none inside below above right left manual} 16
@@ -269,21 +291,21 @@ proc ::GX::legendConfigDialog {} {
         "Inside preset" location {inherit north northeast east southeast south southwest west northwest} 16
         "External alignment" alignment {inherit start center end} 16
     } {
-        ttk::label $w.l$r -text $label
-        ttk::combobox $w.e$r -textvariable ::GX::ui(legendEdit,$field) -values $values -state readonly -width $width
-        grid $w.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
-        grid $w.e$r -row $r -column 1 -sticky w -padx 5 -pady 3
+        ttk::label $body.l$r -text $label
+        ttk::combobox $body.e$r -textvariable ::GX::ui(legendEdit,$field) -values $values -state readonly -width $width
+        grid $body.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
+        grid $body.e$r -row $r -column 1 -sticky w -padx 5 -pady 3
         incr r
     }
-    ttk::label $w.l$r -text "Legend font size"
-    ttk::frame $w.fontrow
-    ttk::entry $w.fontrow.size -textvariable ::GX::ui(legendEdit,font_size) -width 10
-    ttk::combobox $w.fontrow.unit -textvariable ::GX::ui(legendEdit,font_unit) -values {inherit px pt} -state readonly -width 8
-    pack $w.fontrow.size $w.fontrow.unit -side left -padx {0 5}
-    ttk::label $w.h$r -text "size + unit; inherit uses module/global legend defaults" -foreground #555555
-    grid $w.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
-    grid $w.fontrow -row $r -column 1 -sticky w -padx 5 -pady 3
-    grid $w.h$r -row $r -column 2 -sticky w -padx 5 -pady 3
+    ttk::label $body.l$r -text "Legend font size"
+    ttk::frame $body.fontrow
+    ttk::entry $body.fontrow.size -textvariable ::GX::ui(legendEdit,font_size) -width 10
+    ttk::combobox $body.fontrow.unit -textvariable ::GX::ui(legendEdit,font_unit) -values {inherit px pt} -state readonly -width 8
+    pack $body.fontrow.size $body.fontrow.unit -side left -padx {0 5}
+    ttk::label $body.h$r -text "size + unit; inherit uses module/global legend defaults" -foreground #555555
+    grid $body.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
+    grid $body.fontrow -row $r -column 1 -sticky w -padx 5 -pady 3
+    grid $body.h$r -row $r -column 2 -sticky w -padx 5 -pady 3
     incr r
     foreach {label field hint} [list \
         "Wrapped columns" columns "used only by wrapped layout; blank = global" \
@@ -293,22 +315,22 @@ proc ::GX::legendConfigDialog {} {
         "External margin (px)" external_margin_px "blank = global; 0..100" \
         "Manual center X (0..1)" manual_x "used only with manual placement" \
         "Manual center Y (0..1)" manual_y "used only with manual placement"] {
-        ttk::label $w.l$r -text $label
-        ttk::entry $w.e$r -textvariable ::GX::ui(legendEdit,$field) -width 18
-        ttk::label $w.h$r -text $hint -foreground #555555
-        grid $w.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
-        grid $w.e$r -row $r -column 1 -sticky w -padx 5 -pady 3
-        grid $w.h$r -row $r -column 2 -sticky w -padx 5 -pady 3
+        ttk::label $body.l$r -text $label
+        ttk::entry $body.e$r -textvariable ::GX::ui(legendEdit,$field) -width 18
+        ttk::label $body.h$r -text $hint -foreground #555555
+        grid $body.l$r -row $r -column 0 -sticky e -padx 5 -pady 3
+        grid $body.e$r -row $r -column 1 -sticky w -padx 5 -pady 3
+        grid $body.h$r -row $r -column 2 -sticky w -padx 5 -pady 3
         incr r
     }
-    ttk::label $w.note -text "Placement and layout are independent. Examples: below + row, below + wrapped (4 columns), right + stacked, inside + row. Inside preset is used only for inside placement. External alignment means left/center/right for above/below and top/center/bottom for left/right. Manual X/Y are the CENTER of the legend. Legend font size and unit are edited together; unit may inherit the effective module/global legend unit or override px/pt for this plot. GNUplot uses the common custom legend renderer for deterministic placement and automatic overflow protection." -wraplength 700 -justify left
-    grid $w.note -row $r -column 0 -columnspan 3 -sticky ew -padx 8 -pady 5; incr r
+    ttk::label $body.note -text "Placement and layout are independent. Examples: below + row, below + wrapped (4 columns), right + stacked, inside + row. Inside preset is used only for inside placement. External alignment means left/center/right for above/below and top/center/bottom for left/right. Manual X/Y are the CENTER of the legend. Legend font size and unit are edited together; unit may inherit the effective module/global legend unit or override px/pt for this plot. GNUplot uses the common custom legend renderer for deterministic placement and automatic overflow protection." -wraplength 700 -justify left
+    grid $body.note -row $r -column 0 -columnspan 3 -sticky ew -padx 8 -pady 5; incr r
     ttk::frame $w.b
     ttk::button $w.b.save -text "Save" -command [list ::GX::legendConfigSave $w $gk $p 0]
     ttk::button $w.b.render -text "Save and rerender plot" -command [list ::GX::legendConfigSave $w $gk $p 1]
     ttk::button $w.b.cancel -text "Cancel" -command [list destroy $w]
     pack $w.b.save $w.b.render $w.b.cancel -side left -padx 4
-    grid $w.b -row $r -column 0 -columnspan 3 -pady 8
+    plotDialogFormPresent $w $w.b
 }
 
 proc ::GX::legendConfigSave {w gk path rerender} {

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Unwired TASK210 development factory. MAIN owns loader/notebook/lifecycle hooks.
+# Existing Module/Plugin owners supply activation, discovery and lifecycle.
 # Installed metadata and operational state stay with their existing public owners.
 namespace eval ::GX::ConfigurationPreviewComponents {
     variable views; if {![info exists views]} {set views {}}
@@ -27,8 +27,8 @@ proc ::GX::ConfigurationPreviewComponents::_List {value} {
 proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
     if {[catch {dict size $information}]} {set information {}}
     if {[catch {dict size $operational}]} {set operational {}}
-    set row [dict create component_id {} name {} installed_version {} active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 reason {Package admission is unavailable} admission_fingerprint {}]
-    foreach key {component_id name installed_version active_version pending_version native_abi native_platform native_layout_id native_build_id gui_design_sha256 admission_fingerprint} {dict set row $key [_Text [_Default $information $key [dict get $row $key]] 256]}
+    set row [dict create profile native component_id {} name {} installed_version {} active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 reason {Package admission is unavailable} admission_fingerprint {}]
+    foreach key {profile component_id name installed_version active_version pending_version native_abi native_platform native_layout_id native_build_id gui_design_sha256 admission_fingerprint} {dict set row $key [_Text [_Default $information $key [dict get $row $key]] 256]}
     dict set row reason [_Text [_Default $information reason [dict get $row reason]] 512]
     foreach key {dataset_contracts capabilities verified_capabilities} {dict set row $key [_List [_Default $information $key {}]]}
     dict set row descriptor_valid [_Bool [_Default $information descriptor_valid 0]]
@@ -49,6 +49,10 @@ proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
     set fingerprint [dict get $row admission_fingerprint]
     if {$fingerprint ne {} && ![regexp {^[0-9a-f]{64}$} $fingerprint]} {set fingerprint {};dict set row admission_fingerprint {}}
     set ready [expr {$operationalKnown && $enabled && $reportedEnabled && [dict get $row descriptor_valid] && $compatibility eq {compatible} && $load eq {verified} && [_Bool [_Default $information available 0]] && $fingerprint ne {} && [dict get $row pending_version] eq {}}]
+    if {[dict get $row profile] eq {presentation}} {
+        set ready [expr {$operationalKnown && $enabled && $reportedEnabled && [dict get $row descriptor_valid] && $compatibility eq {compatible} && [_Bool [_Default $information available 0]] && [dict get $row pending_version] eq {}}]
+        dict set row verified_capabilities {}
+    }
     dict set row available $ready
     if {!$ready} {dict set row verified_capabilities {}}
     if {!$operationalKnown} {
@@ -59,8 +63,12 @@ proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
         dict set row readiness {Invalid descriptor}
     } elseif {$load eq {restart_required} || [dict get $row pending_version] ne {}} {
         dict set row readiness {Activation pending}
+    } elseif {![_Bool [_Default $information dependency_ready 1]]} {
+        dict set row readiness {Dependency unavailable}
     } elseif {$compatibility eq {incompatible}} {
         dict set row readiness Incompatible
+    } elseif {$ready && [dict get $row profile] eq {presentation}} {
+        dict set row readiness {Ready on selection}
     } elseif {$ready} {
         dict set row readiness {Ready (admitted)}
     } elseif {$load eq {failed}} {
@@ -79,7 +87,11 @@ proc ::GX::ConfigurationPreviewComponents::_Matches {row query} {
 }
 proc ::GX::ConfigurationPreviewComponents::_Display {value {empty {Not reported}}} {if {$value eq {}} {return $empty};return $value}
 proc ::GX::ConfigurationPreviewComponents::_Details {row} {
+    if {[dict get $row profile] eq {presentation}} {
+        return [join [list "[dict get $row name] ([dict get $row component_id])" {Framework-wide Configuration. Save user defaults to persist ON/OFF.} "Installed: [_Display [dict get $row installed_version]]    Active: [_Display [dict get $row active_version]]    Pending: [_Display [dict get $row pending_version] None]" "Framework state: [dict get $row operational_state]    Readiness: [dict get $row readiness]" "Dataset contracts: [_Display [join [dict get $row dataset_contracts] {, }] {None declared}]" {Contributes available Dataset tabs alongside the standard Preview.} [dict get $row reason]] \n]
+    }
     set lines [list "[dict get $row name] ([dict get $row component_id])" "Installed: [_Display [dict get $row installed_version]]    Activation version: [_Display [dict get $row active_version]]    Pending: [_Display [dict get $row pending_version] {None reported}]" "Module state: [dict get $row operational_state]    Readiness: [dict get $row readiness]" "Declared capabilities: [_Display [join [dict get $row capabilities] {, }] {None declared}]" "Current verified capabilities: [_Display [join [dict get $row verified_capabilities] {, }] {None verified}]" "Dataset contracts: [_Display [join [dict get $row dataset_contracts] {, }] {None declared}]" "Compatibility: [dict get $row compatibility_status]    Admission: [dict get $row load_status]" "Declared native ABI: [_Display [dict get $row native_abi]]    Platform: [_Display [dict get $row native_platform]]" "Declared layout: [_Display [dict get $row native_layout_id]]    Build: [_Display [dict get $row native_build_id]]" "Declared GUI design SHA: [_Display [dict get $row gui_design_sha256]]" "Admission fingerprint: [_Display [dict get $row admission_fingerprint]]" "[dict get $row reason]"]
+    set lines [linsert $lines 1 {Framework-wide Configuration. Save user defaults to persist ON/OFF.}]
     return [join $lines \n]
 }
 proc ::GX::ConfigurationPreviewComponents::_Collect {} {
@@ -160,6 +172,10 @@ proc ::GX::ConfigurationPreviewComponents::_Filter {parent} {
         if {[dict get $row component_id] eq $selected($instance)} {set restore $iid}
     }
     dict set views $parent visible $visible
+    ::GX::uiFieldInspectionColumnsFit $tree
+    # Reserve a complete heading, at least one actual-font row and the existing
+    # horizontal scrollbar. Fixed20px Treeview rows clip saved larger fonts.
+    grid rowconfigure $root 1 -minsize [expr {[font metrics TkHeadingFont -linespace]+[font metrics TkDefaultFont -linespace]+30+[winfo reqheight $root.list.x]}]
     if {$restore eq {}} {set restore $first}
     if {$restore ne {}} {$tree selection set $restore;$tree see $restore}
     _ShowDetails $parent
@@ -190,13 +206,13 @@ proc ::GX::configurationPreviewComponentsBuild {parent} {
     set query($instance) {};set selected($instance) {};set status($instance) {}
     bind $root <Destroy> [list ::GX::ConfigurationPreviewComponents::_Forget $parent $instance %W]
     try {
-        ttk::label $root.title -text {Installed Preview components} -font TkHeadingFont
-        ttk::label $root.note -text {Declared capabilities remain unverified until current admission checks succeed. Activation follows normal Module dependency rules.} -wraplength 650
+        ttk::label $root.title -text {Framework Preview components} -font TkHeadingFont
         ttk::frame $root.search
         ttk::label $root.search.label -text Filter
         ttk::entry $root.search.query -textvariable ::GX::ConfigurationPreviewComponents::query($instance)
         ttk::button $root.search.refresh -text Refresh -command [list ::GX::configurationPreviewComponentsRefresh $parent]
         pack $root.search.label -side left -padx 3;pack $root.search.refresh -side right -padx 3;pack $root.search.query -fill x -expand 1
+        pack $root.title -in $root.search -side left -before $root.search.label -padx {0 8}
         bind $root.search.query <KeyRelease> [list ::GX::ConfigurationPreviewComponents::_Filter $parent]
         ttk::frame $root.list
         ttk::treeview $root.list.tree -columns {enabled installed activation pending readiness} -show {tree headings} -selectmode browse -height 9
@@ -209,19 +225,22 @@ proc ::GX::configurationPreviewComponentsBuild {parent} {
         grid rowconfigure $root.list 0 -weight 1;grid columnconfigure $root.list 0 -weight 1
         bind $root.list.tree <<TreeviewSelect>> [list ::GX::ConfigurationPreviewComponents::_ShowDetails $parent 1]
         ttk::frame $root.detail
-        text $root.detail.text -height 7 -wrap word -state disabled -font TkDefaultFont
+        text $root.detail.text -height 4 -wrap word -state disabled -font TkDefaultFont
         ttk::scrollbar $root.detail.y -command [list $root.detail.text yview]
         $root.detail.text configure -yscrollcommand [list $root.detail.y set]
         pack $root.detail.y -side right -fill y;pack $root.detail.text -fill both -expand 1
         ttk::frame $root.actions
         ttk::button $root.actions.toggle -text {Enable / disable} -state disabled -command [list ::GX::ConfigurationPreviewComponents::_Toggle $parent]
-        ttk::button $root.actions.manage -text {Install or update in Plugin Manager…} -command ::GX::pluginManagerDialog
+        ttk::button $root.actions.manage -text {Plugin Manager…} -command ::GX::pluginManagerDialog
         pack $root.actions.toggle $root.actions.manage -side left -padx 3
         ttk::label $root.status -textvariable ::GX::ConfigurationPreviewComponents::status($instance) -wraplength 650
-        pack $root.title $root.note $root.search -side top -fill x -pady 3
-        pack $root.status $root.actions -side bottom -fill x -pady 3
-        pack $root.detail -side bottom -fill x -pady 4
-        pack $root.list -fill both -expand 1 -pady 4
+        pack $root.status -in $root.actions -side right -fill x -expand 1 -padx 8
+        foreach {widget row} {search 0 list 1 detail 2 actions 3} {
+            grid $root.$widget -row $row -column 0 -sticky nsew -pady 3
+        }
+        grid columnconfigure $root 0 -weight 1
+        grid rowconfigure $root 1 -weight 3 -minsize 80
+        grid rowconfigure $root 2 -weight 1 -minsize 55
         pack $root -fill both -expand 1
         configurationPreviewComponentsRefresh $parent
     } on error {message options} {if {[winfo exists $root]} {destroy $root};return -options $options $message}

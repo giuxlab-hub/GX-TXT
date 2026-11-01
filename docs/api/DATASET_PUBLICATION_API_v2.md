@@ -257,7 +257,7 @@ Python/Octave `publish_series_batch` takes `{series: [ordinary_publish_series_re
 or replacing operation; finalize revalidates full revision/producer/namespace and
 immutable protection under the shared per-Session transaction. Distinct writers
 cannot lose each other's registry updates. Provider streaming and hashing remain
-outside the commit lock. The shared CORE transaction and recovery guarantees remain authoritative.
+outside the commit lock. See [transaction and recovery contract](DATASET_TRANSACTIONS_dev093.md).
 <a id="managed-binary-writes-in-dev097"></a>
 ## Managed binary writes
 
@@ -276,6 +276,31 @@ floating-point 2^64 for uint64. Provider errors leave the writer failed: abort
 and prepare a fresh transaction. Scientific source Datasets remain immutable.
 Standalone Octave helpers use the same transport with unchanged public call
 signatures; CSV and legacy small callers retain their supported paths.
+
+## Deferred HDF5 resource writes
+
+The additive Tcl calls
+`::GX::datasetPublicationV2WriteVariableSubmit writer variableId values ?shape?`
+and `::GX::datasetPublicationV2WriteVariableCollect writer` pipeline complete
+managed-resource writes on existing HDF5 writer contexts. The capability
+`deferred_resource_write` is true for HDF5 and false for other existing providers.
+These calls use the same RWRITE request and acknowledgement as synchronous
+publication; they do not add a storage format, writer process or Script Bridge
+operation. Existing public synchronous signatures are unchanged.
+
+Submit validates the declared variable, shape, dtype and delegated resource scope,
+then returns `{writer variable_id state pending}`. Only one request may be pending
+per writer. The caller must retain the immutable resource until successful Collect
+or completion of owned Abort. Collect revalidates the resource, consumes the
+provider acknowledgement and clears the pending state. Other writer mutations
+refuse while a request is pending. Abort drains that acknowledgement before
+closing the same provider. Provider failure requires normal Abort and rollback.
+
+Trusted Acquisition controllers may submit to several independent existing HDF5
+contexts before collecting their acknowledgements, subject to the existing shared
+Parallel Execution policy and nesting limits. Dataset Authority still serializes
+finalization, Registry changes and the atomic Dataset Group commit. Cancellation
+retains the existing managed-worker retirement and journal recovery contract.
 
 ## Managed column-major resources
 
@@ -355,3 +380,15 @@ The optional existing `semantic_reason` is retained verbatim as single-line
 metadata; omitted reasons remain empty. Neither field converts numeric values,
 changes Variable identities or grants producer authority. Unknown source tags
 still reject before writer mutation. The source Dataset remains unchanged.
+
+## Optional Dataset Group publication (P030)
+
+The additive `datasetProducerPublishBatchV1 capability session request` facade
+uses this existing create-only batch engine and one Dataset Authority journal.
+Request fields are session_token, outputs and optional dataset_group; omit the
+last field for unchanged independent publication. A requested Group contains
+exactly the genuine new outputs, with capability-derived producer identity.
+Validation/publication failure rolls back outputs and Group together. Existing
+single publication and owned replacement semantics remain unchanged.
+See [Dataset Group Producer API v1](DATASET_GROUP_PRODUCER_API_v1.md), including
+explicit owned-existing grouping and the separate reviewed host operation.

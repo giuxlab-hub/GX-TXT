@@ -8,19 +8,24 @@ function yes = gxtxt_api_require(requirements)
   for k = 1:numel(requirements)
     item = requirements{k};
     if (ischar(item))
-      parts = regexp(strtrim(item), '^([A-Za-z0-9_]+)(?:@([0-9]+))?(?::([A-Za-z0-9._-]+))?(?:\+([A-Za-z0-9_|.-]+))?$', 'tokens', 'once');
-      if (isempty(parts))
+      declaration = strtrim(item);
+      if (isempty(regexp(declaration, '^[A-Za-z0-9_]+(?:@[0-9]+)?(?::[A-Za-z0-9._-]+)?(?:\+[A-Za-z0-9_|.-]+)?$', 'once')))
         error('GXTXT:ScriptBridge:InvalidArguments', 'Invalid required API declaration: %s', item);
       endif
-      item = struct('api_id', parts{1});
-      if (numel(parts) >= 2 && !isempty(parts{2}))
-        item.api_version = str2double(parts{2});
+      % Octave omits unmatched optional captures. Extract each labelled field
+      % separately so a missing version/provider cannot shift capabilities.
+      item = struct('api_id', regexp(declaration, '^[A-Za-z0-9_]+', 'match', 'once'));
+      version = regexp(declaration, '@([0-9]+)', 'tokens', 'once');
+      provider = regexp(declaration, ':([A-Za-z0-9._-]+)', 'tokens', 'once');
+      capabilities = regexp(declaration, '\+([A-Za-z0-9_|.-]+)', 'tokens', 'once');
+      if (!isempty(version))
+        item.api_version = str2double(version{1});
       endif
-      if (numel(parts) >= 3 && !isempty(parts{3}))
-        item.provider_id = parts{3};
+      if (!isempty(provider))
+        item.provider_id = provider{1};
       endif
-      if (numel(parts) >= 4 && !isempty(parts{4}))
-        item.capabilities = regexp(parts{4}, '\|', 'split');
+      if (!isempty(capabilities))
+        item.capabilities = regexp(capabilities{1}, '\|', 'split');
       endif
     endif
     if (!isstruct(item) || numel(item) != 1 || !isfield(item, 'api_id'))

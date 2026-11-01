@@ -895,6 +895,10 @@ proc ::GX::loadManifestV2_before_project_api_v1 {path} {
 # persistent resource that only fails much later at analysis time.
 proc ::GX::datasetDelete {session datasetId} {
     if {$::GX::DatasetPrivate::activeContext ne {}} {_datasetNamespaceRequireModuleWrite $session [dict get $::GX::DatasetPrivate::activeContext module_id] $datasetId}
+    if {[llength [info commands ::GX::datasetGroupForDataset]] && $session ne {}} {
+        set groupId [datasetGroupForDataset $session $datasetId]
+        if {$groupId ne {}} {error "Dataset '$datasetId' belongs to group '$groupId'; explicitly detach or ungroup before deleting it"}
+    }
     if {$session ne "" && [file isdirectory $session]} {
         temporalSetLoadRegistry $session
         set refs {}

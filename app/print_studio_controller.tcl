@@ -143,9 +143,9 @@ proc ::GX::printStudioSave {} {
 proc ::GX::printStudioSavedRefresh {} {
     variable ::GX::PrintStudio::state
     set choices {};set state(savedChoices) {}
-    foreach doc [interactiveDocumentList framework.printing print_composition] {
-        if {[catch {printRecipeDocumentRead [dict get $doc id]} data]} continue
-        set label "[dict get $data payload recipe title] · [dict get $doc id]"
+    _printWorkspaceProviderEnsure
+    foreach doc [nativeWorkspaceQuery print_composition framework.printing] {
+        set label "[dict get $doc name] · [dict get $doc id]"
         lappend choices $label;dict set state(savedChoices) $label [dict get $doc id]
     }
     if {[info exists ::GX::ui(printSaved)] && [winfo exists $::GX::ui(printSaved)]} {$::GX::ui(printSaved) configure -values $choices}
@@ -695,3 +695,34 @@ proc ::GX::printStudioSourceCurrent {generation} {
     return [expr {$generation==$state(sourceGeneration) && [info exists state(sourceToken)] && ![catch {interactiveDocumentSessionToken} token] && $token eq $state(sourceToken)}]
 }
 source [file join $::GX::scriptDir app print_studio_poster.tcl]
+
+# The main Print tab survives Session changes; drafts and derived leases do not.
+proc ::GX::printStudioWorkspaceReview {action} {
+    if {![info exists ::GX::PrintStudio::state(recipe)]} {return 1}
+    if {$::GX::PrintStudio::state(session_token) eq {}} {return 1}
+    printStudioDocumentSession
+    if {![printStudioApplySetup]} {error $::GX::ui(printStatus)}
+    return [printStudioPrepare]
+}
+proc ::GX::printStudioWorkspaceLeave {} {
+    if {![info exists ::GX::PrintStudio::state(recipe)]} {return}
+    printStudioClearDocument
+    set ::GX::PrintStudio::state(recipe) [printRecipePosterNew]
+    set ::GX::PrintStudio::state(history) [printRecipeHistoryCreate $::GX::PrintStudio::state(recipe)]
+    set ::GX::PrintStudio::state(saved) $::GX::PrintStudio::state(recipe)
+    set ::GX::PrintStudio::state(id) {};set ::GX::PrintStudio::state(stamp) {};set ::GX::PrintStudio::state(session_token) {}
+}
+proc ::GX::printStudioOpenWorkspace {id} {
+    printStudioInit
+    if {![printStudioPrepare]} {return cancelled}
+    set doc [printRecipeDocumentRead $id]
+    printStudioClearDocument
+    set ::GX::PrintStudio::state(recipe) [dict get $doc payload recipe]
+    set ::GX::PrintStudio::state(history) [dict get $doc payload history]
+    set ::GX::PrintStudio::state(saved) $::GX::PrintStudio::state(recipe)
+    set ::GX::PrintStudio::state(id) $id
+    set ::GX::PrintStudio::state(stamp) [list [dict get $doc generation] [dict get $doc revision] [dict get $doc sha256]]
+    set ::GX::PrintStudio::state(session_token) [interactiveDocumentSessionToken]
+    printStudioInvalidate {Composition reopened; verify current sources};printStudioQueueRefresh
+    return [printStudioOpen]
+}

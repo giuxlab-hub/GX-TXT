@@ -15,4 +15,4 @@ The module deliberately does **not** perform OCR, text extraction, page renderin
 The validated module is bundled with GX-TXT 0.9.7.81 as CORE / ALWAYS. It is
 not an externally managed plugin and is not installed from this ZIP by users.
 
-See `MANUAL.md` for the user workflow, validation scope and architecture.
+See `MANUAL.md` for user and architecture details and `TEST_RESULTS.md` for validation coverage.

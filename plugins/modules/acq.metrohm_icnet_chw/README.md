@@ -1,4 +1,13 @@
-# Metrohm IC Net CHW importer — native C candidate 0.3.0
+# Metrohm IC Net CHW importer — 0.4.0
+
+With CORE Dataset Group API v1 (P028), each newly imported acquisition is one
+`chromatography.measurement` Group named `<id>.group`, with primary `<id>.trace`.
+Roles are `chromatography.trace` (required), `chromatography.peaks` and
+`chromatography.source_container` (optional). The selected output profile and
+actual source peak records determine membership; trace_only has one member.
+CORE persists exact source/member SHA and owns whole-group Namespace moves,
+Group ZIP export/import and explicit member detachment. Existing ungrouped
+Sessions stay ungrouped. Scientific decoding and original bytes are unchanged.
 
 GPL-3.0-or-later. Acquisition Handler Plugin API v1. Development target: dev110;
 public contracts rebaselined against the officially deposited dev109. This source
@@ -127,4 +136,4 @@ separate source ordinals/paths. An explicit basename never controls output paths
 
 Proprietary samples, reference exports and laboratory metadata are not bundled.
 The preserved upstream archive/member hashes and current development evidence
-scope are recorded in SOURCE_PROVENANCE.json and the source integrity notes.
+scope are recorded in SOURCE_PROVENANCE.json and the task handoff.

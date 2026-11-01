@@ -28,7 +28,7 @@ checks installed provider/presentation enablement before lazy activation.
 An already open window is raised and returned **before** inspecting a new
 context: repeated `viewerOpen` is not a project-switch request. `dispatch` does
 not branch on operation. Project selection requires `project.json`. In the
-current UI, editable files are `handlers.cpp` and `project.json`; design,
+current UI, editable files are declared `handlers.cpp`, `src/*.cpp`, `include/*.hpp`, `project.json` and the optional manual; design,
 validation/build reports and trusted adapter views are read-only. Project reads
 reject a missing file, final symlink or a file larger than 4,194,304 bytes.
 That read ceiling does not replace the stricter Development source/policy bound.
@@ -46,9 +46,12 @@ asynchronous responses from updating a different project.
 
 Source editing, search and syntax services reuse
 [Source Surface](SOURCE_SURFACE_API_v1.md); Debug controls use the managed
-debugger owner. The left API Browser uses the same discovery owner as Python and
-Octave and does not grant runtime access by selecting a catalog row. Its layout
-uses the existing `scripts.editor_layout.cpp` Configuration fields.
+debugger owner. The right reference notebook contains the same shared API Browser factory used
+by Python and Octave. Its compact tab keeps the source tree available at small
+window sizes; selecting a catalog row does not grant runtime access. The shared
+compact composition and measured minimum client height retain three actual API
+rows and four reference lines with persisted larger Appearance fonts. Normal
+fonts keep the 980×650 minimum; larger fonts may require a taller window.
 
 These stateful widget callbacks are not a new headless command API. Programmatic
 authors should use the documented Development service/request contract. This
@@ -125,3 +128,20 @@ Builder declaration/import remains truthful about unrepresented controls;
 source editing alone does not prove original controls adopted a changed layout.
 Ordinary restricted C++ projects retain their existing editable source targets,
 limits, build/debug workflow and runtime policy.
+
+## File-aware project presentation
+
+The existing project/source owner supplies normalized source_files names and
+per-file SHA identity. A nested tree and independent shared Source Surface tabs
+retain each buffer/Undo/dirty baseline across selection. Save commits the current
+file; Save All submits all changed file preimages as one bounded project_files
+request. Stale preimages refuse without accepting editor baselines. New/Add,
+Rename/Move, Remove and Close tab are ordinary host UI actions; editor tabs are
+not registered programs. Interface and generated reports remain read-only.
+
+Import project package delegates to import_project initialization with the
+normal exported ZIP and a fresh absent destination. It preserves exact editable
+source/design/project/manual assets without executing the packaged binary.
+Debug uses the original GDB/MI owner, file-aware breakpoint records and actual
+project_file frames; stack selection/Step Into/Out opens the corresponding tab.
+The frozen whole-project source identity remains authoritative.

@@ -1,0 +1,509 @@
+{
+  "clock": "Actual normal CORE/OS clocks; no stubs",
+  "core_always_api_operations": 0,
+  "demo_api_operations": 0,
+  "finished_unix_actual": 1793515936.0602098,
+  "framework_roots": [
+    "acq.aia_andi_chromatography",
+    "acq.audio",
+    "acq.crystal_density",
+    "acq.electronics_component",
+    "acq.generic_csv",
+    "acq.geometry_3d",
+    "acq.image_binary",
+    "acq.metrohm_icnet_chw",
+    "acq.molecule_structure",
+    "acq.nmr",
+    "acq.nmr_multidimensional",
+    "acq.pdf_document",
+    "acq.rigol_csv",
+    "acq.scientific_measurement",
+    "acq.scientific_publication",
+    "acq.scientific_spectrum",
+    "acq.sketch_dataset",
+    "acq.tektronix_current_log",
+    "acq.text_document",
+    "acq.touchstone",
+    "acq.wav",
+    "acq.xas",
+    "analysis.audio_decode",
+    "analysis.cepstrum",
+    "analysis.cross_spectral_transfer",
+    "analysis.dataset_expression",
+    "analysis.envelope_spectrum",
+    "analysis.fft_spectrum",
+    "analysis.fractional_octave_spectrum",
+    "analysis.harmonic_analysis",
+    "analysis.octave_script",
+    "analysis.python_script",
+    "analysis.regression",
+    "analysis.spectral_features",
+    "analysis.spectroscopy.ir",
+    "analysis.spectroscopy.nmr",
+    "analysis.spectroscopy.uvvis",
+    "analysis.spectroscopy.uvvis_exploration",
+    "analysis.statistics.anova",
+    "analysis.statistics.correlation",
+    "analysis.statistics.descriptive",
+    "analysis.statistics.distribution",
+    "analysis.statistics.grouped",
+    "analysis.statistics.outliers",
+    "analysis.statistics.pca",
+    "analysis.statistics.resampling",
+    "analysis.statistics.tests",
+    "analysis.statistics.weighted",
+    "analysis.time_dependent_fft",
+    "analysis.welch_spectrum",
+    "analysis.xas.normalize",
+    "contract.electronics_component",
+    "contract.scientific_measurement",
+    "contract.scientific_publication",
+    "core.scientific_execution",
+    "curve.replicate_analysis",
+    "curvefit.family_global",
+    "dataset.extract",
+    "domain.chemistry",
+    "domain.electronics",
+    "domain.publications",
+    "domain.scientific_spectra",
+    "domain.technical_resources",
+    "export.curve_dataset",
+    "export.native2d_presentation",
+    "export.native3d_geometry",
+    "export.session_html",
+    "gxtxt.ir_identify",
+    "gxtxt.ir_waveform",
+    "library.chemistry.records",
+    "library.electronics.components",
+    "library.molecular.structures",
+    "library.reference.json",
+    "library.scientific.publications",
+    "library.scientific.spectra",
+    "library.spectroscopy.ir.reference",
+    "library.spectroscopy.nmr.reference",
+    "library.technical.resources",
+    "math.electromagnetic_simulation",
+    "math.magnetics",
+    "math.numeric",
+    "math.rf_network",
+    "math.signal",
+    "model.spice_build_validate",
+    "plot.dataset",
+    "preview.curve_digitizer",
+    "preview.markdown_document",
+    "preview.oscilloscope_waveform",
+    "preview.scientific_frame",
+    "preview.scientific_spectrum",
+    "preview.scientific_trace",
+    "preview.uml_document",
+    "sequence.table_join",
+    "source.lcsc",
+    "source.mouser",
+    "source.pubchem",
+    "tool.script_module_builder",
+    "viewer.3d_workbench",
+    "viewer.circuit_workbench",
+    "viewer.code_dataset",
+    "viewer.comparison_example",
+    "viewer.crystal_structure",
+    "viewer.curve_digitizer",
+    "viewer.curve_viewer",
+    "viewer.curve_workbench",
+    "viewer.dataset_curve_fit",
+    "viewer.dataset_table_next",
+    "viewer.dev107_restricted_native3d",
+    "viewer.dev107_scientific_xy",
+    "viewer.development_workspace",
+    "viewer.document_extractors",
+    "viewer.electromagnetics",
+    "viewer.electromagnetics_studio",
+    "viewer.engine_3d",
+    "viewer.html",
+    "viewer.ic_chromatograms",
+    "viewer.interactive_curve_builder",
+    "viewer.interface_builder",
+    "viewer.ir_spectroscopy",
+    "viewer.markdown_documents",
+    "viewer.mathematics_explorer",
+    "viewer.molecule_3d",
+    "viewer.native_3d",
+    "viewer.nmr_multidimensional",
+    "viewer.nmr_reference",
+    "viewer.nmr_spectrum",
+    "viewer.pcb_source_snapshot_inspector",
+    "viewer.pdf_ocr",
+    "viewer.pdf_reader",
+    "viewer.reference_library",
+    "viewer.replicate_curve_analysis",
+    "viewer.scientific_3d_workbench",
+    "viewer.scientific_image_inspector",
+    "viewer.scientific_latex",
+    "viewer.scientific_library_manager",
+    "viewer.scientific_library_workspace",
+    "viewer.scientific_worksheet",
+    "viewer.script_library",
+    "viewer.section_profile",
+    "viewer.signal_analysis",
+    "viewer.spectral_library",
+    "viewer.statistical_analysis",
+    "viewer.stderr_diagnostics",
+    "viewer.table_extractor",
+    "viewer.test_cad_1",
+    "viewer.test_cad_2",
+    "viewer.uml_editor",
+    "viewer.unified_document_extraction",
+    "viewer.xas_spectra"
+  ],
+  "operations": [
+    {
+      "action": "installed",
+      "id": "analysis.cross_spectral_transfer",
+      "type": "module",
+      "version": "1.1.3"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.dataset_expression",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.regression",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.spectroscopy.nmr",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.anova",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.correlation",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.distribution",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.outliers",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.pca",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.resampling",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.tests",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.statistics.weighted",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "analysis.xas.normalize",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "action": "installed",
+      "id": "contract.electronics_component",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "contract.scientific_measurement",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "contract.scientific_publication",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "domain.chemistry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "domain.electronics",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "domain.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "domain.scientific_spectra",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "action": "installed",
+      "id": "domain.technical_resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "export.curve_dataset",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "export.native2d_presentation",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "preview.curve_digitizer",
+      "type": "module",
+      "version": "0.1.12"
+    },
+    {
+      "action": "installed",
+      "id": "preview.markdown_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "preview.oscilloscope_waveform",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "preview.scientific_frame",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "preview.scientific_spectrum",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "preview.scientific_trace",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "preview.uml_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.comparison_example",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.dev107_scientific_xy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.engine_3d",
+      "type": "module",
+      "version": "0.1.6"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.ir_spectroscopy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.markdown_documents",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.native_3d",
+      "type": "module",
+      "version": "0.9.9"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.scientific_image_inspector",
+      "type": "module",
+      "version": "0.4.3"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.script_library",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "action": "installed",
+      "id": "viewer.uml_editor",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "export.native3d_geometry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.chemistry.records",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.electronics.components",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.molecular.structures",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.scientific.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.scientific.spectra",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "library.technical.resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "action": "installed",
+      "id": "source.lcsc",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "source.mouser",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "action": "installed",
+      "id": "source.pubchem",
+      "type": "module",
+      "version": "1.0.1"
+    }
+  ],
+  "private_state_shipped": false,
+  "registry_sections": [
+    "analysis.cross_spectral_transfer",
+    "analysis.dataset_expression",
+    "analysis.regression",
+    "analysis.spectroscopy.nmr",
+    "analysis.statistics.anova",
+    "analysis.statistics.correlation",
+    "analysis.statistics.distribution",
+    "analysis.statistics.outliers",
+    "analysis.statistics.pca",
+    "analysis.statistics.resampling",
+    "analysis.statistics.tests",
+    "analysis.statistics.weighted",
+    "analysis.xas.normalize",
+    "contract.electronics_component",
+    "contract.scientific_measurement",
+    "contract.scientific_publication",
+    "domain.chemistry",
+    "domain.electronics",
+    "domain.publications",
+    "domain.scientific_spectra",
+    "domain.technical_resources",
+    "export.curve_dataset",
+    "export.native2d_presentation",
+    "export.native3d_geometry",
+    "library.chemistry.records",
+    "library.electronics.components",
+    "library.molecular.structures",
+    "library.scientific.publications",
+    "library.scientific.spectra",
+    "library.technical.resources",
+    "preview.curve_digitizer",
+    "preview.markdown_document",
+    "preview.oscilloscope_waveform",
+    "preview.scientific_frame",
+    "preview.scientific_spectrum",
+    "preview.scientific_trace",
+    "preview.uml_document",
+    "source.lcsc",
+    "source.mouser",
+    "source.pubchem",
+    "viewer.comparison_example",
+    "viewer.dev107_scientific_xy",
+    "viewer.engine_3d",
+    "viewer.ir_spectroscopy",
+    "viewer.markdown_documents",
+    "viewer.native_3d",
+    "viewer.scientific_image_inspector",
+    "viewer.script_library",
+    "viewer.uml_editor"
+  ],
+  "schema": "gxtxt.dev112.actual_api_preparation.v1",
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8",
+  "started_unix_actual": 1793515845.7915936,
+  "worker_exit": "successful normal adapter return"
+}

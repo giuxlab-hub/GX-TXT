@@ -12,6 +12,8 @@ import sys
 import uuid
 
 LIBRARY_TYPE = "spectroscopy.ir.reference"
+# Explicit read-only interoperability with the existing CORE Reference owner.
+MANAGED_REFERENCE_READ_API = 1
 
 
 def _reference_root():
@@ -106,3 +108,38 @@ def read_spectrum(payload_path, spectrum_id):
         result["x"] = x
         result["y"] = y
         return result
+
+
+# P025 normalized managed consultation. Imports stay lazy; discovery remains inert.
+LIBRARY_CAPABILITIES = dict(modes=['managed'], read_only=True, mutable=False,
+    authentication_required=False, offline_available=True, list_entries=True,
+    entry_info=True, search_entries=True, read_entry=True, export_entry=False,
+    add_entry=False, remove_entry=False, verify=True)
+
+
+def _content_adapter(framework_root):
+    path = str(Path(framework_root) / 'core' / 'python')
+    if path not in sys.path:
+        sys.path.insert(0, path)
+    import scientific_reference_content_v1
+    return scientific_reference_content_v1
+
+
+def library_content_policy(record, operation, parameters, framework_root):
+    return _content_adapter(framework_root).policy(record, operation)
+
+
+def list_entries(record, parameters, framework_root):
+    return _content_adapter(framework_root).content(record, parameters, 'list_entries', read_spectrum)
+
+
+def entry_info(record, parameters, framework_root):
+    return _content_adapter(framework_root).content(record, parameters, 'entry_info', read_spectrum)
+
+
+def search_entries(record, parameters, framework_root):
+    return _content_adapter(framework_root).content(record, parameters, 'search_entries', read_spectrum)
+
+
+def read_entry(record, parameters, framework_root):
+    return _content_adapter(framework_root).content(record, parameters, 'read_entry', read_spectrum)

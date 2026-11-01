@@ -1,6 +1,6 @@
 # Scientific Spectral Library Viewer
 
-The toolbar provides **Install library...**. Choose an independently packaged IR scientific-library ZIP. The Viewer calls CORE Scientific Library Manager API v1, which verifies the package and registers it through the IR Library Type Provider before the spectra appear in the library chooser. The four curated reference collections are separate data-only packages; no reference data is embedded in the framework. Managed-library updates and removals use the manager API. Existing user-authored Scientific Reference Libraries remain visible and are preserved; a managed package cannot silently replace one with the same ID.
+Version 1.0.10 adds **Install library...** to the toolbar. Choose an independently packaged IR scientific-library ZIP. The Viewer calls CORE Scientific Library Manager API v1, which verifies the package and registers it through the IR Library Type Provider before the spectra appear in the library chooser. The four curated reference collections are separate data-only packages; no reference data is embedded in the framework. Managed-library updates and removals use the manager API. Existing user-authored Scientific Reference Libraries remain visible and are preserved; a managed package cannot silently replace one with the same ID.
 
 Reference libraries can be browsed without an open Session; Session spectrum and IR-ranking controls become useful when one is open.
 

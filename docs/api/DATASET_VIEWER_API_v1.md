@@ -14,6 +14,21 @@ an analysis/viewer plugin. Existing API signatures remain available.
   workflow; all other targets are consultation only. No payload path is returned.
 - `::GX::datasetViewerOpen datasetId`: requires Tk and an open Session. Opens the
   selected CORE consultation window; Sketch delegates to guarded Curve Workbench.
+- `::GX::datasetViewerReference datasetId`: returns a pinned `canonical_dataset`
+  reference containing `session_id`, `dataset_id`, `revision`, `sha256` and
+  `contract`. The Session identity is the existing validated canonical current
+  Session path from Session Inspection, and revision is the exact payload SHA
+  from `datasetViewerDescribe`. No independent Session UUID/Registry is created.
+  A Library relation additionally supplies its schema-declared `record_type`.
+- `::GX::datasetViewerOpenReference reference`: requires the exact current
+  Session identity and registered Dataset, exact SHA revision and, when present,
+  matching `sha256`/`contract`, then delegates to `datasetViewerOpen`. It never
+  opens another Session, searches for a similarly named Dataset, converts source
+  data or publishes anything. Missing/unavailable/different Sessions, stale
+  pins and ambiguous legacy non-SHA revisions give explicit diagnostics while
+  preserving the original relation. Open the matching Session normally or
+  explicitly repin through the reference getter. Moved/portable Session paths
+  are unavailable until explicitly repinned; there is no implicit retargeting.
 - `::GX::datasetViewerClose window`: idempotent host cleanup: streams, timers,
   native scene, process pipes, isolated workers, images and temporary artifacts.
 - `::GX::scientificDatasetAxes datasetId`: returns eligible rank-one numeric
@@ -37,7 +52,7 @@ not receive the molecular action. This introduces no conversion, renderer or
 canonical publication. A missing/disabled Molecule Viewer is an explicit
 availability condition. The dev109 focused installed GUI acceptance covers the
 ordinary browser/context-menu dispatch and the registered molecular practice
-Generator workflow; see the scoped molecular acceptance record.
+Generator workflow; see the scoped [molecular acceptance record](../development/additive_preview_acceptance368/MOLECULE_ACCEPTANCE.json).
 Successful rendering does not establish a universal cause for historical failures.
 Pending remains an acquisition source: Preview is available, canonical Open is
 not. An unsupported/corrupt source receives a diagnostic, never a made-up graph.
@@ -384,3 +399,53 @@ Python/Octave registration for this family remains only canonical `describe`;
 there is no managed-resource reader-opening Bridge operation or generic C++ call.
 An admitted TeX form uses its specific GUI Host `preview` plan through this same
 reader. No new renderer or temporary scientific Dataset is introduced.
+
+
+### Managed Library PDF artifacts (P028 revision 2, additive trusted host)
+
+`datasetMediaViewerOpenArtifact source container ?title={Library PDF}?` embeds the
+**existing CORE PDF Reader** into an existing ordinary Tk `frame -container 1`.
+It returns the same opaque media owner; `datasetMediaViewerInspect owner` and
+`datasetViewerClose owner` keep their existing read-only inspection/close roles.
+No Session, Dataset, Document Workspace, Library mutation, new PDF renderer or
+new storage/cache owner is created. The caller holds its existing temporary
+Resource allocation and closes this owner before release/cleanup.
+
+`source` has exactly `allocation_id`, `path`, `sha256`, `source_identity`. The live
+Resource must be a directory allocation owned by this host PID with unchanged
+root inode/device, not released/removed. The canonical absolute file must remain
+inside that allocation, with no symlink/hardlink, at most32MiB, PDF magic and exact
+SHA. `source_identity` is a bounded dictionary of `api_id`, `reference`, `sha256`
+and optional `revision`; it describes original Library/local-source attribution,
+not a fabricated Dataset. The container belongs to the calling Tk interpreter.
+Private/Script mutation contexts are rejected; no SDK/Script capability is added.
+
+Inspection reports `source_kind=managed_artifact`, `source_identity`, allocation ID,
+`embedded=1`, `read_only=1` and existing bounded page/zoom/render SHA/pixel metrics.
+It omits fake Dataset identity and native/PID control coordinates. Source bytes,
+Resource lease and parent lifetime are rechecked; release/source change or container
+closure retires the same managed reader owner. This Library consultation is
+Session-independent. Existing Dataset and managed Document PDF sources preserve
+their prior Session/generation checks and standalone-reader behavior.
+
+`datasetViewerClose owner ?onClosed={}?` retains existing one-argument callers.
+The optional trusted command prefix runs after an external media reader drains
+and is reaped; managed-artifact callers release/cleanup their allocation in that
+callback. The existing Dataset Viewer process owner retains its pipe until EOF,
+then performs the same non-computation blocking reap pattern as CORE Native3D.
+Artifact PDF workers use the existing auxiliary process-group helper so render
+subprocesses retire with the reader. Parent closure also triggers retirement.
+
+A callback registered while that owner is already retiring is queued until the
+same EOF/reap; duplicate command prefixes are invoked once. Already-drained
+owners invoke a supplied callback asynchronously. Validation failures happen
+before launch; a launch failure after an artifact owner is created remains an
+owned `unavailable` reader/receipt that can be closed normally, so callers never
+release an allocation while an inaccessible child may still be using it.
+
+Artifact close retains the owned pipe/leader identity through group escalation
+and observes PID/group/state only until no live render descendant remains;
+leader EOF alone does not authorize Resource cleanup. The trusted host requires
+standard process-state observation (`ps` on the qualified POSIX host). Unknown
+observation retains the lease/retirement, never reports a false drain. Existing
+normal standalone sources remain backward compatible.

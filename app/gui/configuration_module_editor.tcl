@@ -197,14 +197,14 @@ proc ::GX::configurationEditorRefresh {} {
 }
 proc ::GX::configurationModulesPending {} {
     set result {}
-    foreach category {services exports} {
+    foreach category {services exports acquisition} {
         set parent .top.nb.configuration.sections.modules.kinds.$category.browser.split.detail.viewport.content.editor
         lappend result {*}[configurationModuleEditorPending $parent user]
     }
     return $result
 }
 proc ::GX::configurationModulesSaved {} {
-    foreach category {services exports} {
+    foreach category {services exports acquisition} {
         configurationModuleEditorAccept .top.nb.configuration.sections.modules.kinds.$category.browser.split.detail.viewport.content.editor user
     }
     configurationEditorChanged {}

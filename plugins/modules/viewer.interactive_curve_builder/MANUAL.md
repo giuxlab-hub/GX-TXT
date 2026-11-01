@@ -17,7 +17,7 @@ group with its used-row count. Full identities remain in the standard series
 filters and published provenance.
 
 **Auto-order points (non-temporal)** is OFF at factory defaults. OFF preserves
-dev095 method ordering exactly, including the established 2-D X sort. Turning
+the established method ordering, including the 2-D X sort. Turning
 it ON requires reviewing the original and proposed sequence before Preview.
 Functional mode proposes stable X ordering (t for non-temporal 3-D parameters).
 Arc-length mode proposes a geometric path through unchanged points in common
@@ -36,10 +36,14 @@ Dataset Curve Fit for broader parametric models or incompatible coordinate units
 Configuration uses the same typed module fields as central Configuration →
 Modules, with explicit User/Session scope. A saved ON default is displayed as
 an explicit preference and still requires review for each new candidate.
-Workspace optionally saves settings and exact source lineage through CORE.
+Workspace optionally saves settings and exact source lineage through the native
+CORE Workspace service. Numeric entry drafts and exact Family/Member text keep
+their original spelling; Preview remains the numerical validation boundary.
 New/Open/Save/Rename/Duplicate/Manager/Close remain in the middle-row menu.
 Ordinary launch creates no Workspace. Reopen rejects changed source bytes or
-scientific schema. Builder has no History, Undo/Redo or Recipe strip.
+scientific schema. Closing or opening another Workspace reviews unsaved changes:
+Save must succeed, Discard keeps the saved state, and Cancel keeps the current
+window and draft. Builder has no History, Undo/Redo or Recipe strip.
 
 **Publish as Dataset** writes a normal canonical table through Dataset Publication API v2. The Dataset registry and structured metadata retain source Dataset IDs, source variable IDs, exact source row ordinals, method, degree, parameter mode, target coordinates and units. The result survives Session save/reopen. The optional Plot Dataset overlay opens the standard Plot Dataset editor for 2-D curves after publication. For 3-D curves it opens the standard Plot Dataset `line3` graph and Native 3D interactive representation. No private plotting engine is used.
 
@@ -50,7 +54,7 @@ proportional to its finite source rows. Selected Subset limits the drawn context
 independently of the selected fitting input.
 
 
-Version 1.2.0 reports line and polynomial fit diagnostics through the public
+Line and polynomial fit diagnostics use the public
 CORE Statistical Result Semantics API. Preview uses validated labels, physical
 units and explicit undefined/unavailable states. Polynomial coefficients retain
 physical descending-power order; line coefficients retain intercept/slope order.
@@ -59,6 +63,6 @@ actual parameter. No mixed-unit pooled error or geometric-distance claim is made
 Interpolation retains its nonregression contract. Published fitted curves carry
 `analysis.statistical_results` alongside the existing raw Numeric diagnostics and
 source-row provenance. Saving/publishing starts no additional fit or residual
-calculation. Old previews with captured Numeric facts are interpreted on explicit
+calculation. Previews with captured Numeric facts are interpreted on explicit
 publication; existing Datasets are not rewritten. Known fit noise assumptions
 are not invented, and confidence intervals remain unavailable without them.

@@ -1,0 +1,662 @@
+{
+  "status": "FINITE_PACKET_COMPLETED_WITH_DECLARED_UNFINISHED_COVERAGE",
+  "timestamp_utc": "2026-10-22T20:37:44.344010+00:00",
+  "allocation_control": "b5894852-a412-4c24-a3ad-a98995c87444",
+  "session_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/session/actor/Sessions/task210-thermal-001",
+  "session_name": "task210-thermal-001",
+  "session_title": "Deterministic 3-D thermal surface",
+  "dataset_id": "thermal.surface.source",
+  "schema": {
+    "kind": "table.generic",
+    "rows": 1681,
+    "sample_count": 1681,
+    "variable_count": 3,
+    "variables": [
+      {
+        "id": "v0001",
+        "name": "x_mm",
+        "unit": "mm",
+        "role": "independent",
+        "enabled": true,
+        "dtype": "float64",
+        "rank": 1,
+        "shape": [
+          1681
+        ]
+      },
+      {
+        "id": "v0002",
+        "name": "y_mm",
+        "unit": "mm",
+        "role": "independent",
+        "enabled": true,
+        "dtype": "float64",
+        "rank": 1,
+        "shape": [
+          1681
+        ]
+      },
+      {
+        "id": "v0003",
+        "name": "temperature_K",
+        "unit": "K",
+        "role": "measured",
+        "enabled": true,
+        "dtype": "float64",
+        "rank": 1,
+        "shape": [
+          1681
+        ]
+      }
+    ]
+  },
+  "metadata": "Initially empty; imported producer-supplied thermal_surface_3d.metadata.txt through actual Import and Save; Run log confirms structured metadata saved",
+  "preview": "Actual explicit X=v0001,Y=v0002,Z=v0003; native XYZ1681pts/1681scanned, stride1, mm/mm/K. Rotation, wheel, Fit and maximize exercised. 2D Render first shows unsupported generic text until explicit3D XYZ route; no forged curve trace.",
+  "run": {
+    "module": "demo.visualization.surface3d",
+    "version": "1.0.3",
+    "status": "NORMAL_GUI_SELECTIVE_ANALYSIS_COMPLETED",
+    "scientific_dataset_plot_version": "4.2.4",
+    "plot_module_run_selected": false,
+    "job_id": null,
+    "report": {
+      "source": "actualGUIResults screenshot049",
+      "bindings": [
+        "v0001",
+        "v0002",
+        "v0003"
+      ],
+      "grid": [
+        41,
+        41
+      ],
+      "points": 1681,
+      "x_range_mm": [
+        -50,
+        50
+      ],
+      "y_range_mm": [
+        -50,
+        50
+      ],
+      "temperature_min_K": 290.650005,
+      "temperature_max_K": 310.708246,
+      "temperature_mean_K": 295.044889,
+      "temperature_range_K": 20.0582409,
+      "maximum_location_mm": [
+        -12.5,
+        7.5
+      ],
+      "synthetic_data_metadata": true,
+      "truncated": 0,
+      "reference_comparison": "Actual GUI Sessions file browser showed producer analytical reference min290.650005297855,max310.708246164604,mean295.044888907512,maxloc[-12.5,7.5]; actual report agrees at shown rounding. Shared producer model/reference, not an independent recalculation."
+    },
+    "analysis_run_id_visible": "demo.visualization.surface3d-analysis-1792700738853-3097680-1",
+    "job_id_qualification": "No durable analysis Job ID observed. Script Jobs Manager showed zero matches/five stored, not evidence of failed scientific Run; do not invent a Job receipt."
+  },
+  "actual_surface_graph": {
+    "id": "demo.visualization.surface3d.surface",
+    "variant": "base",
+    "provider": "demo.visualization.surface3d",
+    "artifact": "analysis/demo.visualization.surface3d/01_surface.png",
+    "bytes": 51548,
+    "source": "Graph info screenshot057"
+  },
+  "graphs": "Actual surface,mesh,contours inspected. Contour genuine native3D opened and rotated; graphs057–062. Other exact graph identities pendingGraphInfo capture.",
+  "operator_input_correction": "Initial xdotool type consumed trailing key/Tab/sleep tokens; TkCtrl+A moved to beginning rather than selecting. Original invalid field attempt066/071 retained, rerender completed with no validated18claim. Corrected using HomeShiftEndBackSpace then separate type/key commands. Screenshot072 verifies exactly18; corrected rerender currentlyawaited. This is operator input error, not asserted product defect. INTERMEDIATE NOTE SUPERSEDED: the awaiting statement preceded capture074. The corrected 18-level rerender completed in074 and the setting was retained in105; see contour_change/T10. Original operator mistakes remain preserved.",
+  "actions": [
+    {
+      "id": "T01",
+      "status": "PASS",
+      "scope": "Exact ready stage/version/profile/display/allocatedroot identity, no initialSession",
+      "evidence": [
+        "001_ready.png"
+      ],
+      "qualification": "No release activation/final111 acceptance"
+    },
+    {
+      "id": "T02",
+      "status": "PASS",
+      "scope": "NewSessioninitial/browser usablewithoutresize; acceptedlibraryID and exactthermalgenerator1.0.1 selected",
+      "evidence": [
+        "004_new_session_initial.png",
+        "006_generate_ready.png",
+        "007_generator_tree_end.png",
+        "009_thermal_selected.png"
+      ],
+      "qualification": "Installedlibraryversion not shown/read; source1.0.0 remains declared, not actual readback"
+    },
+    {
+      "id": "T03",
+      "status": "PASS",
+      "scope": "One genuine registered Generate creates privateSession; actual name/path confirmed",
+      "evidence": [
+        "012_generation_wait.png",
+        "087_session_info.png"
+      ]
+    },
+    {
+      "id": "T04",
+      "status": "PASS",
+      "scope": "ActualDataset/schema/units1681rows3enabledfloat64rank1Variables; representativefirst/lastrows and reportbounds",
+      "evidence": [
+        "016_dataset_active.png",
+        "017_provenance.png",
+        "018_provenance_variables.png",
+        "019_provenance_temperature.png",
+        "091_canonical_rows.png",
+        "092_canonical_rows_end.png"
+      ]
+    },
+    {
+      "id": "T05",
+      "status": "PASS",
+      "scope": "Initiallyemptymetadata, GUIImport suppliedfile/Save and genuineRun metadata readback; retainedafterreopen",
+      "evidence": [
+        "020_metadata_initial.png",
+        "023_metadata_import_review.png",
+        "049_actual_report.png",
+        "102_reopened_metadata.png"
+      ]
+    },
+    {
+      "id": "T06",
+      "status": "PASS",
+      "scope": "Actual X/Y/Z stableIDchoices;3DXYZ sourceverified1681/1681stride1 mm/mm/K",
+      "evidence": [
+        "028_preview_y_choices.png",
+        "032_preview_z_dropdown.png",
+        "034_preview_3d.png"
+      ]
+    },
+    {
+      "id": "T07",
+      "status": "PASS",
+      "scope": "Mouse rotation, wheel zoom, nativeFit, normalWMmaximize and usablecanvas; onlytheseexercised",
+      "evidence": [
+        "035_preview_rotation.png",
+        "036_preview_wheel_zoom.png",
+        "037_preview_fit.png",
+        "038_preview_maximized.png"
+      ],
+      "qualification": "Pan/selection/visibility/keyboard coverage and originalcomparison NOT_TESTED; no fullperformancePASS"
+    },
+    {
+      "id": "T08",
+      "status": "PASS",
+      "scope": "Actual moduleenablement/Runplan/bindings normalRunreport and 3outputs",
+      "evidence": [
+        "039_modules.png",
+        "042_analysis_scrolled.png",
+        "043_run_ready.png",
+        "047_jobs_menu.png",
+        "049_actual_report.png"
+      ],
+      "qualification": "JobIDunobserved, reportcomparison producerreference only; no independentanalyticrecompute"
+    },
+    {
+      "id": "T09",
+      "status": "PASS",
+      "scope": "3demoGraphs surface/mesh/contour and6top-levelmenus directlyobserved; graphinfo actualsurfaceID",
+      "evidence": [
+        "050_plots_inventory_start.png",
+        "051_menu_selection.png",
+        "052_menu_render.png",
+        "053_menu_presentation.png",
+        "054_menu_data_variants.png",
+        "055_menu_graph.png",
+        "056_menu_import_export.png",
+        "057_graph_info_surface.png",
+        "058_mesh.png",
+        "059_contour.png"
+      ],
+      "qualification": "Full percontrol inventory/denominator/matrix NOT_COMPLETE; menuopening is notfunctionexecution"
+    },
+    {
+      "id": "T10",
+      "status": "PASS",
+      "scope": "Real demo native3Dcontour opened/rotated; corrected18contour control verified and rerender completed",
+      "evidence": [
+        "061_contour_3d_ready.png",
+        "062_contour_native_rotation.png",
+        "072_contour_18_verified.png",
+        "074_contour_rerender_state.png"
+      ],
+      "qualification": "Earlier operatorinputmistakes retained066/071; no privatefix/cacheclaim"
+    },
+    {
+      "id": "T11",
+      "status": "PASS",
+      "scope": "Manual ScientificDatasetPlot on same source, onlyXYZsurface configured/Run, actualgraphIDread",
+      "evidence": [
+        "077_manual_xyz_controls.png",
+        "078_manual_xyz_types.png",
+        "080_manual_plot_run_plan.png",
+        "084_manual_xyz_surface.png",
+        "104_manual_graph_info.png"
+      ],
+      "qualification": "ManualXYZnative3Dbutton not visible in this stage; report ownergap, no bypass"
+    },
+    {
+      "id": "T12",
+      "status": "NOT_TESTED",
+      "scope": "Full save→applicationclose→freshapplicationreopen cycle notcompleted; sameprocessdirectoryreopen andlaternormalclose separatelyPASS",
+      "evidence": [
+        "098_save_result.png",
+        "101_session_reopened.png",
+        "102_reopened_metadata.png",
+        "103_reopened_graphs.png",
+        "105_reopened_contour_setting.png",
+        "106_final_retained_contour.png"
+      ],
+      "qualification": "No second app launch authorized. Inprocessreopen supports scopedpersistence only; freshrestart remainsunexecuted"
+    }
+  ],
+  "full_matrix_complete": false,
+  "complete_tutorial": false,
+  "first_usable_latency": null,
+  "original_candidate_parity_accepted": false,
+  "operator": "GX210-TUTORIAL1",
+  "input_method": "Ordinary xdotool keyboard/mouse against exact allocated211 only; no callbacks/invoke/widgetsetting/API/privateSession writes",
+  "actual_build": "0.9.8.10-dev-110",
+  "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+  "installed_active_final111_acceptance": false,
+  "normal_root_close": true,
+  "raw_gui_rows": {
+    "first": [
+      -50,
+      -50,
+      292.650000021093
+    ],
+    "last": [
+      50,
+      50,
+      293.650000000002
+    ],
+    "evidence": [
+      "091_canonical_rows.png",
+      "092_canonical_rows_end.png"
+    ],
+    "method": "Normal Sessions file browser on canonical CSV; no private file read/execution to obtain values"
+  },
+  "manual_plot": {
+    "status": "PASS_NORMAL_GUI_RUN_AND_RASTER",
+    "module": "plot.dataset",
+    "version": "4.2.4",
+    "graph_id": "plot.dataset.xyz",
+    "variant": "base",
+    "source_dataset": "thermal.surface.source",
+    "plot_type": "surface",
+    "source_bindings": [
+      "primary.x_mm",
+      "primary.y_mm",
+      "primary.temperature_K"
+    ],
+    "xy_disabled": true,
+    "demo_run_selected": false,
+    "artifact": "analysis/plot.dataset/03_dataset_xyz.png",
+    "bytes": 52808,
+    "normal_run_diagnostic": "Actual normal GUI Run log reports gnuplot/headless rendering backend and toolkit warning; this was product implementation behind ordinary GUI Run, not an operator headless invocation. Retained without hiding or rewriting.",
+    "native_consultation": "No3Dbutton visible in this selected graph; demo contour/surface do show3D. No unsupported invocation attempted; clicked same nowblank location once with no effect. Route/owner confirmation requested, not general claim no native support anywhere.",
+    "selection_supported_from_graphinfo": false,
+    "series_count_from_graphinfo": 0,
+    "evidence": [
+      "080_manual_plot_run_plan.png",
+      "082_manual_plot_result_state.png",
+      "084_manual_xyz_surface.png",
+      "104_manual_graph_info.png"
+    ]
+  },
+  "contour_change": {
+    "status": "PASS_CORRECTED_GUI_INPUT_AND_RERENDER",
+    "before": 12,
+    "after": 18,
+    "verified_parameter": "072_contour_18_verified.png",
+    "completed_rerender": "074_contour_rerender_state.png",
+    "before_png_bytes": 39785,
+    "after_png_bytes": 43754,
+    "reopened_setting": "105_reopened_contour_setting.png",
+    "cache_reuse_or_no_scientific_workers_claimed": false,
+    "operator_error_preserved": true
+  },
+  "persistence": {
+    "packet001": "Preserved under packet001_persistence_history, original030 immutable",
+    "cold_original_copy": "PASS_SCOPED actualfreshapplicationOpen MAINexactwholeSessioncopy; source/schema/hash/metadata/fourGraphs/contour18 retained",
+    "new_variant_sameprocess": "PASS_SCOPED Save/inprocessOpen p0001/metadata/contour18; listdefect remains",
+    "new_variant_cold_restart": "NOT_TESTED",
+    "normal_close_002": "2026-10-22T21:25:06.001Z, bootstrap/outerexit0"
+  },
+  "observed_top_level_plots_menus": {
+    "Selection": [
+      "All",
+      "None",
+      "Toggle",
+      "Up",
+      "Down"
+    ],
+    "Render": [
+      "Rerender selected",
+      "Rerender module"
+    ],
+    "Presentation": [
+      "Legend…",
+      "Place legend",
+      "Axes…",
+      "Title and labels…",
+      "Graphics…",
+      "Annotate…"
+    ],
+    "Data / Variants": [
+      "Variants...",
+      "Select data...",
+      "Select area",
+      "Clear area"
+    ],
+    "Graph": [
+      "Clone…",
+      "Edit clone…",
+      "Delete…",
+      "Graph info…",
+      "Notes…"
+    ],
+    "Import / Export": [
+      "Export...",
+      "Export annotated...",
+      "Export Graph ZIP...",
+      "Import Graph ZIP..."
+    ]
+  },
+  "timing": {
+    "raw_receipt": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_GUI_TIMING_RAW_030.json",
+    "scope": "Input-dispatch/capture intervals with stated settle/tooloverhead; readiness screenshots bracket behavior, not precise frame latencies. Initial005 stilloldform at367ms,006 ready later; nevercall367msready. No median/p95/originalcomparison or blanketresponsiveness acceptance.",
+    "first_usable_latency": null,
+    "original_candidate_comparison": false
+  },
+  "close_capture_error": "After normal rootClose the owned wrapper shut211; xdotool returnedXconnectionbroken and screenshot107failed. No107image, no retry/relaunch, notclassifiedasproductcrash.",
+  "bootstrap_receipts": {
+    "actor_result": "session/actor/result.tcldict:MANUAL_ROOT_CLOSE_OBSERVED exit0",
+    "outer_result": "nested_result.json:returncode0,ownXephyr0,recordedXephyrnotSurvives,parentWM/resolution unchanged",
+    "cleanup_qualification": "Recorded service survivors empty; allprivate descendantdrain NOT_ESTABLISHED outsidewrappercoverage. No new process poll."
+  },
+  "post_source_pins": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_POST_SLOT_SOURCE_PINS_030.json",
+  "science_review": "Actualreport/scientificmeanings reviewed; selected output/reference/units source consistency only, no independentrecalculation",
+  "visual_review": "Principal viewed all 106 packet001 captures and all 49 packet002b captures. SUB3 statically inspected the five new packaged frames020/023/031/033/045; its intermediate-editor, unit-source, title/clipping, padded-tick, unlabelled-colorbar and raster/native qualifications are incorporated. Its earlier nine-frame review covered six older packaged frames038/050/058/061/084/102, not packaged049/105. Static frame inspection does not establish HTML rendering, full GUI parity or performance.",
+  "not_tested_remaining": [
+    "Full independentapplicability-awarePlotsmatrix and allconditionaldialogs/actions",
+    "Cold application restart of newlycreated savedVariant (originalsourcecopy coldOpen observed in002)",
+    "Common documentationbrowser HTML/CSS/JS/navigation/nativegeneratoraction",
+    "Comparative latency/redraw/keyboard/mouse/fullcontrolparity",
+    "Previewpan/selection/visibility andsourceimage/Quality branches",
+    "Export/Print/PDF/clones/Notes/retainedvariants beyondobservedmenus",
+    "OtherthreegeneratortutorialGUIworkflows"
+  ],
+  "content_id": "tutorial.surface3d_thermal_field",
+  "packaged_capture_subset": [
+    {
+      "path": "assets/steps/preview-xyz.png",
+      "source_capture": "038_preview_maximized.png",
+      "sha256": "1c1da5ba34fa19f57465b31f22be15a0867c05ba7cbd83e8f13955d5bb7baf27",
+      "caption": "Native Dataset Preview XYZ scatter of thermal.surface.source. Selectors map v0001=x_mm and v0002=y_mm in mm, and v0003=temperature_K in K. Uniform blue markers do not encode temperature color. The UI reports 1,681 points; camera state affects presentation.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/demo-surface.png",
+      "source_capture": "050_plots_inventory_start.png",
+      "sha256": "f37096cf4f81efd9a13a799914706c0346790ca2cf02ea1ccbd0a4eac1a977cf",
+      "caption": "Demo surface raster in Plots, associated 01_surface.png. X/Y are mm; height and color represent temperature in K. This is distinct from Dataset Preview and native 3D consultation.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/demo-mesh.png",
+      "source_capture": "058_mesh.png",
+      "sha256": "cd722aa5e1362d1db8a2c4c6ef7740647a8f8a5a63ba25450e16bfcfafd25850",
+      "caption": "Demo mesh raster in Plots, associated 02_mesh.png. The wire grid exposes the sampled field; X/Y are mm and temperature is K. It supplies no new measurements between samples.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/demo-contour-native.png",
+      "source_capture": "061_contour_3d_ready.png",
+      "sha256": "c5a702c27cd85b4f89e589f91671f6228a01787e645404cd642695ea39fa60b7",
+      "caption": "Native 3D consultation of the selected demo contour graph. X/Y are mm and temperature is K. This view differs from its PNG; displayed contour-colorbar ticks are not the source minimum/maximum.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/run-report.png",
+      "source_capture": "049_actual_report.png",
+      "sha256": "a5d85082713a47081dded86c284d54d6561f1098881427a33d18cfbe000506cd",
+      "caption": "Actual GUI Results report from the normal demo Run, bound to thermal.surface.source and v0001/v0002/v0003. Rounded temperature statistics and sampled maximum location describe the synthetic grid.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/metadata-retained.png",
+      "source_capture": "102_reopened_metadata.png",
+      "sha256": "4152c4bcafc656df6250338f4c58e6fad7ec126b63694acdf53cf76acf108b61",
+      "caption": "Displayed synthetic/grid/model metadata after the recorded Save configuration and in-process Open Session sequence. The frame alone does not establish persistence; the action receipt records that sequence.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/manual-xyz-surface.png",
+      "source_capture": "084_manual_xyz_surface.png",
+      "sha256": "cbbe38abed4e202ac90349462f4bc10f8c71c3ad2a939542fcb8f290986f8993",
+      "caption": "Separate Scientific Dataset Plot XYZ surface, graph plot.dataset.xyz, on the same source with mm/mm/K bindings. The raster is not native geometry. Its footer legend settings do not establish an exercised legend.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/contour-setting-retained.png",
+      "source_capture": "105_reopened_contour_setting.png",
+      "sha256": "d035b110b88d16d7c9ff0eaa0bb483a478f40704c37caa092dd0e91784ddbb0e",
+      "caption": "The contour-level field reads 18 after the recorded Save configuration and in-process Open Session sequence. The earlier normal rerender completed; this does not establish cache reuse or cold-start persistence.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/cold-contour-setting.png",
+      "source_capture": "020_cold_contour18.png",
+      "source_packet": "002b",
+      "sha256": "14a7df97c374aa05377eae16bfc77af89bff47c6a4301074a6e401eb26c0e12d",
+      "caption": "The contour-level field still reads 18 after the original Session copy was opened in a fresh application. This frame belongs to the recorded cold-open sequence; a frame alone does not establish persistence.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/saved-variant-bindings.png",
+      "source_capture": "023_new_variant.png",
+      "source_packet": "002b",
+      "sha256": "dd5adb2272f3e92d98239cbe1b65bb56cc791c2ed854af2b7f70c76dc64a82d9",
+      "caption": "Intermediate New from base editor for p0001, still titled Plot p0001 before renaming and saving. The source is thermal.surface.source, with X v0001=x_mm, Y v0002=y_mm and Z v0003=temperature_K. Units mm/mm/K were read from the Dataset and native axes, not these selectors. The background raster is the original base.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/saved-variant-native.png",
+      "source_capture": "031_native_variant_surface.png",
+      "source_packet": "002b",
+      "sha256": "5d488c9512fb9abf00249b00f7c1beddcebf4b8931bea796b09008656563c85c",
+      "caption": "Native consultation of the saved surface Variant p0001, named Thermal source surface in Plots. Height is v0003 temperature in K; X/Y are v0001/v0002 in mm. The native canvas literally displays auto and clips the lower v0002 label. Tick bounds include padding, not new source extrema. No separately labelled colorbar supports an exact temperature reading from color.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/saved-variant-rotation.png",
+      "source_capture": "033_native_rotated.png",
+      "source_packet": "002b",
+      "sha256": "1bd38fc70fe6dc38970e27eb71856c3c8969dcd1c506f9fd1af55ff02bdc1183",
+      "caption": "Ordinary mouse dragging changes the saved Variant native camera. Technical-ID mappings remain mm/mm/K. Rotated tick overlap and lower-label clipping are retained; this is no parity or performance acceptance.",
+      "edited": false
+    },
+    {
+      "path": "assets/steps/saved-variant-retained.png",
+      "source_capture": "045_reopened_variant_identity.png",
+      "source_packet": "002b",
+      "sha256": "54d8392ba0638d228fef3ef9d2cda14fabfef7a89e49e1a538adf23934ea9b77",
+      "caption": "Graph Info after normal Save and in-process Open identifies plot.dataset.xyz / p0001 and its retained raster artifact. File size does not establish numerical equality. The separate 3D action remains available; this background is a raster. The contour-list alias defect persists. Cold restart of this new Variant remains untested.",
+      "edited": false
+    }
+  ],
+  "raw_screenshot_inventory_external": {
+    "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_GUI_RESULT_030.json",
+    "count": 106,
+    "qualification": "Full immutable originals retained externally; only declared8 unchanged copies included"
+  },
+  "editorial_corrections": {
+    "raw_receipt_preserved": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_GUI_RESULT_030.json",
+    "correction_record": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_RECEIPT_EDITORIAL_CORRECTIONS_032.json",
+    "scope": "Exact menu transcription and superseded intermediate summaries only; no new GUI action or broadened acceptance"
+  },
+  "packet001_persistence_history": {
+    "save_configuration": "PASS_actual_saved_confirmation098",
+    "in_process_same_directory_reopen": "PASS_normalOpenSessionchooser099–101",
+    "retained_metadata": "PASS102",
+    "retained_four_graphs": "PASS103",
+    "retained_contour18": "PASS105",
+    "normal_app_close": "PASS_native_rootClose_input20:35:31.714UTC + bootstrapMANUAL_ROOT_CLOSE_OBSERVED exit0",
+    "app_restart_and_cold_reopen": "NOT_TESTED; one allocated bootstrap, no authorized relaunch performed",
+    "separate_session_close_action": "Not found in inspected Session menu; no hidden close substituted"
+  },
+  "continuation_002": {
+    "timestamp_utc": "2026-10-22T21:28:11.293597+00:00",
+    "status": "FINITE_GUI_CONTINUATION_COMPLETED_WITH_GRAPH_LIST_DEFECT_AND_VISUAL_LIMITATIONS",
+    "allocation": "347129f9-f5a2-446a-8093-49a3b8cbb190 corrected02b, actualREADYreadbeforeinput",
+    "actual_ready": {
+      "pid": 3431678,
+      "root_xid": "0x00600005",
+      "display": ":211",
+      "version": "0.9.8.10-dev-110",
+      "private_profile": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/session/actor/XDG_CONFIG_HOME/gxtxt_pipeline/configuration.ini",
+      "initial_session_empty": true,
+      "deadline_epoch": 1792704476
+    },
+    "copy_session": "/srv/gxtxt/agents/scratch/GX210-MAIN1/thermal_continuation_fixture01/Session",
+    "cold_reopen": {
+      "status": "PASS_SCOPED_NORMAL_FRESH_APP_OPEN",
+      "evidence": [
+        "005_open_exact_copy.png",
+        "007_cold_open_settled.png",
+        "012_retained_metadata.png",
+        "013_retained_variables.png",
+        "014_retained_provenance.png",
+        "015_cold_four_graphs.png",
+        "020_cold_contour18.png"
+      ],
+      "canonical_hash_visible": "f3f979b2e10bd6281b58eac0a5a8f6362203b580223a15a82160ca3fe8de4f61",
+      "rows": 1681,
+      "units": [
+        "mm",
+        "mm",
+        "K"
+      ],
+      "metadata_synthetic": true,
+      "four_graphs_before_variant": true,
+      "contour18_retained": true
+    },
+    "variant": {
+      "id": "p0001",
+      "title": "Thermal source surface",
+      "enabled": true,
+      "graph": "plot.dataset.xyz",
+      "bindings": {
+        "x": "thermal.surface.source/v0001/x_mm",
+        "y": "thermal.surface.source/v0002/y_mm",
+        "z": "thermal.surface.source/v0003/temperature_K"
+      },
+      "family_color": "blank optional",
+      "plot_type": "surface",
+      "save_and_render": "NORMAL_GUI_COMPLETION_DIALOG027",
+      "dispatch_utc": "2026-10-22T21:11:41.112Z",
+      "native_consultation": {
+        "status": "PASS_SCOPED_SUPPORTED_PERSISTENT_VARIANT_ROUTE",
+        "evidence": [
+          "029_selected_saved_variant.png",
+          "030_native_preparing.png",
+          "031_native_variant_surface.png",
+          "032_native_fit.png",
+          "033_native_rotated.png",
+          "034_native_refit_after_rotation.png",
+          "035_return_to_variant_raster.png",
+          "037_saved_variant_graph_info.png"
+        ],
+        "geometry": "Native surface shown; normal mouse drag changescamera; Fit invoked before/afterrotation, no claim Fit resets orientation",
+        "units": "v0001(mm),v0002(mm),v0003(K); source mapping023",
+        "visual_findings": [
+          "Literal native title auto",
+          "Lower axis label clipping",
+          "Rotated tick overlap"
+        ],
+        "artifact": "analysis/plot.dataset/variants/plot.dataset.xyz/p0001/03_dataset_xyz.png",
+        "bytes": 52808,
+        "selection_supported_2d": false,
+        "series_count_2d": 0
+      },
+      "evidence": [
+        "023_new_variant.png",
+        "024_variant_surface_settings.png",
+        "026_variant_render_state.png",
+        "027_saved_variant_list.png"
+      ]
+    },
+    "finding": {
+      "id": "TUT-THERMAL-VARIANT-GRAPHLIST-001",
+      "before": "015 and022 show demo surface/mesh/contour plus manualXYZbase",
+      "after": "026/027/028 show demo surface/mesh plus manualXYZbase and newVariant; demo contour entry absent",
+      "first_material_difference": "Not a data-deletion diagnosis. Actual visible list delta after normal New from base / Save and render; no graph Delete/toggle action intended. Underlying cause unestablished.",
+      "stopped": "Paused at028; MAIN483 authorized separate C06/C07. No repair/Refresh/rerun. Originaldifference remains.",
+      "preservation": "Original001Session/106captures untouched. Only MAINexactindependentcopy used."
+    },
+    "operator_notes": [
+      "Single/doubleclick Dataset tree only selected; actual Activate Dataset context menu used, no empty metadata misclassified failure",
+      "After normalWMmaximize coordinateschanged;016 mislabeledanalysis actually opened Render menu without selecting command; Escape then correctAnalysis. Original016 preserved.",
+      "Wheeloverfields ignored; normal scrollbar used to read contour18. No settings edited or demoRun performed."
+    ],
+    "capture_count": 49,
+    "gui_open": false,
+    "normal_close_pending": false,
+    "host_checks": "OMITTED_BY_ALLOCATION",
+    "full_matrix_complete": false,
+    "performance_acceptance": false,
+    "normal_root_close": true,
+    "normal_close_utc": "2026-10-22T21:25:06.001Z",
+    "bootstrap_exit_code": 0,
+    "outer_exit_code": 0,
+    "original001_rerun": false,
+    "html_checks": "OMITTED_BY_ALLOCATION",
+    "owner_disposition": {
+      "control": "a114b8b4-ce3a-47eb-a60e-6b3076245c43",
+      "sequence": 483,
+      "diagnosis_owner": "MAIN/MAIN-SUB2",
+      "source_cause": "Old automatic_graphs refers to absent p0001; new ordinary Variant reusesID with emptyprovider_key; falsealias suppression hides originalcontour PNG, not deletion",
+      "allowed": "Same existing02bdeadline C06/C07 only, no repair/Refresh/demoRun",
+      "fix_tested": false
+    },
+    "persistence_after_new_variant": {
+      "save_confirmation": "041",
+      "normal_same_process_reopen": "042–043",
+      "variant_identity": "044–045 p0001/plot.dataset.xyz retained",
+      "metadata": "046 retained",
+      "contour_setting": "048 retained18",
+      "list_defect": "Stillpresent044/049, no fullgraphpreservationPASS",
+      "cold_reopen_new_variant": "NOT_TESTED"
+    },
+    "capture_inventory": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_GUI_CAPTURE_INVENTORY_038.json",
+    "post_source_pins": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_POST_SLOT_SOURCE_PINS_038.json",
+    "post_source_payload": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_POST_SLOT_SOURCE_PAYLOAD_038.json",
+    "timing": {
+      "method": "Dispatch UTC to unchanged capture filemtime; settle/tool/human gaps included, not exactfirstframe/median/p95/comparativeperformance",
+      "render_dispatch": "2026-10-22T21:11:41.112Z",
+      "native_dispatch": "2026-10-22T21:21:19.103Z",
+      "fit_dispatch": "2026-10-22T21:21:43.277Z",
+      "rotation_dispatch": "2026-10-22T21:21:55.720Z",
+      "sameprocess_reopen_dispatch": "2026-10-22T21:23:34.129Z",
+      "native030": "Stillpreparing after0.8settle",
+      "native031": "Geometryready later, notprecisefirstusable",
+      "fit_rotation_settle_seconds": 0.3,
+      "performance_acceptance": false
+    },
+    "bootstrap_receipts": [
+      "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/session/actor/result.tcldict",
+      "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/session/result.json",
+      "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/nested_result.json"
+    ],
+    "cleanup_scope": "Ownerreceipts exit0/recordedservicesurvivors[], ownXephyrnotSurvives/parentWMresolutionunchanged; allprivatedescendantsnotestablished"
+  },
+  "raw_screenshot_inventory_002_external": {
+    "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/THERMAL_GUI_CAPTURE_INVENTORY_038.json",
+    "count": 49,
+    "qualification": "Unchanged originals, five declared copies packaged; no original106campaign repeated"
+  }
+}

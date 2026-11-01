@@ -67,7 +67,7 @@ ASCII STL, STEP and textual VTU normally reach the plugin preview. Acquisition
 still uses the handler and persists its metadata. After import, the normal
 registered-Dataset preview displays that metadata. This package does not override
 or patch CORE functions to bypass the guard; the small future integration point
-is documented in `docs/ARCHITECTURE.md`.
+is documented in `docs/CORE_EXTRACTION.md`.
 
 After import, open Native 3D and choose the canonical Dataset from the Session
 selector. Opening the viewer does not open a filesystem chooser. STL/OBJ/STEP
@@ -131,7 +131,7 @@ receive an explicit diagnostic rather than an unbounded allocation.
 a framework-neutral inspector. They are explicitly marked **CORE EXTRACTION
 CANDIDATE**, contain no registry writes and can move together without carrying
 the GUI, package installer, Tcl adapter or a native renderer. See
-`docs/ARCHITECTURE.md` for the small interface and migration boundary.
+`docs/CORE_EXTRACTION.md` for the small interface and migration boundary.
 
 `runtime/geometry_worker.py` handles the application process protocol and exact
 copy. `runtime/acquisition_handler.tcl` translates public Acquisition requests
@@ -146,5 +146,6 @@ Run `python -B tests/test_probe.py` from the extracted package. The fixture file
 are self-authored small examples. `envelope.step` / `envelope.stp` test the
 explicitly limited STEP envelope scope; they are not a tessellated solid.
 
-Integration and GUI verification must use an **expendable extracted framework**
-and the plugin ZIP. Do not run these checks against a production installation.
+The integration and GUI test scripts accept an **expendable extracted framework**
+and the plugin ZIP. Do not run them against your production installation. See
+`TEST_RESULTS.md` for executed checks and limitations.

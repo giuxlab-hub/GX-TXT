@@ -329,7 +329,11 @@ proc ::GX::DatasetCurveFit::_sourceControls {w disabled {saved {}}} {
 proc ::GX::DatasetCurveFit::_numericSource {key model degree initial scope selected domain options input} {
     variable state
     if {$state($key,documentId) eq ""} {
-        set state($key,documentId) [dict get [::GX::interactiveDocumentCreate viewer.dataset_curve_fit dataset_curve_fit gxtxt.dataset_curve_fit.viewer 2.0 [dict create version 2 workspace_sources {} active_source "" next_source 0 next_fit 0 records {} view_bounds {} presentation [::GX::Native2D::core presentation $state($key,scene)]]] id]
+        set name [expr {[info exists state($key,workspaceName)]?$state($key,workspaceName):{Dataset Curve Fit}}]
+        set owner [::GX::sessionWorkspaceCreate dataset_curve_fit [::GX::sessionWorkspaceAvailableName $name] [dict create version 2 workspace_sources {} active_source "" next_source 0 next_fit 0 records {} view_bounds {} presentation [::GX::Native2D::core presentation $state($key,scene)]]]
+        set state($key,documentId) [dict get $owner workspace_id]
+        set state($key,documentGeneration) [dict get $owner generation];set state($key,documentRevision) [dict get $owner revision]
+        set state($key,savedPayload) [dict get $owner payload]
     }
     set training [expr {$scope eq "all" ? $input : [dict get $input training]}]
     set hostKey [expr {[info exists state($key,loading)]&&$state($key,loading) ? $key : ""}]

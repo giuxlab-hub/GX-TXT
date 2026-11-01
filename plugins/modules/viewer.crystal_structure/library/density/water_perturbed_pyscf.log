@@ -1,0 +1,129 @@
+#INFO: **** input file is /home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_numeric_v09809/validation/gxtxt-0.9.8.10-dev-006-chemistry-crystal-density-nmr-multisource-worksheet-ux/crystal_density/generate_signed_density.py ****
+#!/usr/bin/env python3
+"""Compute a signed RHF density difference on the water reference CUBE grid."""
+from pathlib import Path
+import hashlib
+import json
+import numpy as np
+import pyscf
+from pyscf import gto, scf
+from pyscf.dft import numint
+from pyscf.tools import cubegen
+
+HERE = Path(__file__).resolve().parent
+OUT = HERE / "computed"
+REFERENCE = OUT / "water_density.cube"
+original = gto.M(atom="O 0.000000 0.000000 0.000000; H 0.758602 0.000000 0.504284; H -0.758602 0.000000 0.504284",
+                 unit="Angstrom", basis="sto-3g", charge=0, spin=0, verbose=0)
+perturbed = gto.M(atom="O 0.000000 0.000000 0.000000; H 0.818602 0.000000 0.504284; H -0.758602 0.000000 0.504284",
+                  unit="Angstrom", basis="sto-3g", charge=0, spin=0, verbose=4,
+                  output=str(OUT / "water_perturbed_pyscf.log"))
+mf = scf.RHF(perturbed)
+mf.conv_tol = 1e-9
+mf.kernel()
+if not mf.converged:
+    raise RuntimeError("Perturbed-water SCF did not converge")
+
+reference_grid = cubegen.Cube(original, nx=48, ny=48, nz=48, margin=3.0)
+header = REFERENCE.read_text().splitlines()
+source_origin = np.array([float(x) for x in header[2].split()[1:4]])
+source_axes = np.array([[float(x) for x in header[3+i].split()[1:4]] for i in range(3)])
+expected_axes = np.array([reference_grid.box[i] / 47 for i in range(3)])
+if not np.allclose(reference_grid.boxorig, source_origin, atol=1e-5) or not np.allclose(expected_axes, source_axes, atol=1e-5):
+    raise RuntimeError("Reference CUBE grid differs from the documented input")
+rho_ref = np.fromstring(" ".join(header[9:]).replace("D", "E"), sep=" ").reshape((48,48,48))
+
+grid = cubegen.Cube(perturbed, nx=48, ny=48, nz=48, resolution=None,
+                   origin=reference_grid.boxorig,
+                   extent=np.diag(reference_grid.box))
+coords = grid.get_coords()
+rho_new = np.empty(len(coords))
+dm = mf.make_rdm1()
+for start in range(0,len(coords),8000):
+    stop = min(start+8000,len(coords))
+    ao = perturbed.eval_gto("GTOval",coords[start:stop])
+    rho_new[start:stop] = numint.eval_rho(perturbed,ao,dm)
+rho_diff = rho_new.reshape((48,48,48)) - rho_ref
+if not (rho_diff.min() < 0 < rho_diff.max()):
+    raise RuntimeError("Computed difference density is not signed")
+target = OUT / "water_displacement_difference.cube"
+grid.write(rho_diff,target,comment="Difference electron density: perturbed water minus reference water (e/Bohr^3)")
+report = {"solver":"PySCF","solver_version":pyscf.__version__,
+          "method":"molecular RHF/STO-3G for perturbed water; scalar subtraction on original-water CUBE grid",
+          "perturbation":"One O-H bond endpoint moved from x=0.758602 to 0.818602 Angstrom; other coordinates unchanged",
+          "perturbed_energy_hartree":float(mf.e_tot),
+          "reference_cube_sha256":hashlib.sha256(REFERENCE.read_bytes()).hexdigest(),
+          "grid_shape":[48,48,48],"difference_range_e_per_bohr3":[float(rho_diff.min()),float(rho_diff.max())],
+          "source_rights":"CC0-1.0 dedication by GX-TXT Task 006 authors",
+          "files":{p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                   for p in [OUT/"water_perturbed_pyscf.log",target]}}
+(OUT / "signed_calculation_provenance.json").write_text(json.dumps(report,indent=2)+"\n")
+print(json.dumps(report,indent=2))
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='server', release='6.12.101+deb13-amd64', version='#1 SMP PREEMPT_DYNAMIC Debian 6.12.101-1 (2026-08-05)', machine='x86_64')  Threads 2
+Python 3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]
+numpy 2.5.3  scipy 1.18.1  h5py 3.16.0
+Date: Thu Oct  1 20:05:54 2026
+PySCF version 2.14.0
+PySCF path  /home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_numeric_v09809/validation/gxtxt-0.9.8.10-dev-006-chemistry-crystal-density-nmr-multisource-worksheet-ux/crystal_density/.venv/lib/python3.13/site-packages/pyscf
+
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 3
+[INPUT] num. electrons = 10
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = Angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 O      0.000000000000   0.000000000000   0.000000000000 AA    0.000000000000   0.000000000000   0.000000000000 Bohr   0.0
+[INPUT]  2 H      0.818602000000   0.000000000000   0.504284000000 AA    1.546933585021   0.000000000000   0.952958649000 Bohr   0.0
+[INPUT]  3 H     -0.758602000000   0.000000000000   0.504284000000 AA   -1.433550017547   0.000000000000   0.952958649000 Bohr   0.0
+
+nuclear repulsion = 9.38601219838506
+number of shells = 5
+number of NR pGTOs = 21
+number of NR cGTOs = 7
+basis = sto-3g
+ecp = {}
+CPU time:         0.48
+
+
+******** <class 'pyscf.scf.hf.RHF'> ********
+method = RHF
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-09
+SCF conv_tol_grad = None
+SCF max_cycles = 50
+direct_scf = True
+direct_scf_tol = 1e-13
+chkfile to save SCF result = /tmp/tmphc5xgnfj
+max_memory 4000 MB (current use 99 MB)
+Set gradient conv threshold to 3.16228e-05
+Initial guess from minao.
+init E= -74.8804765806078
+  HOMO = -0.399995689135776  LUMO = 0.420949402258382  gap/eV = 22.33905
+cycle= 1 E= -74.9055220368698  delta_E= -0.025  |g|= 0.354  |ddm|=  1.7
+  HOMO = -0.269587415873606  LUMO = 0.637983763137143  gap/eV = 24.69627
+cycle= 2 E= -74.9494447119632  delta_E= -0.0439  |g|= 0.0357  |ddm|= 0.51
+  HOMO = -0.382998125779036  LUMO = 0.601516293663801  gap/eV = 26.79000
+cycle= 3 E= -74.9498235271612  delta_E= -0.000379  |g|= 0.00823  |ddm|= 0.0423
+  HOMO = -0.383825581142887  LUMO = 0.601532291214431  gap/eV = 26.81295
+cycle= 4 E= -74.9498513015092  delta_E= -2.78e-05  |g|= 0.000593  |ddm|= 0.0174
+  HOMO = -0.383943281345298  LUMO = 0.601476588943081  gap/eV = 26.81464
+cycle= 5 E= -74.949851573137  delta_E= -2.72e-07  |g|= 5.2e-05  |ddm|= 0.00212
+  HOMO = -0.383967913160467  LUMO = 0.60151028531198  gap/eV = 26.81623
+cycle= 6 E= -74.949851575212  delta_E= -2.08e-09  |g|= 3.07e-06  |ddm|= 0.000204
+  HOMO = -0.383967416009048  LUMO = 0.601506594765895  gap/eV = 26.81611
+cycle= 7 E= -74.9498515752173  delta_E= -5.33e-12  |g|= 6.59e-07  |ddm|= 9.13e-06
+  HOMO = -0.383967369701192  LUMO = 0.601506980156875  gap/eV = 26.81612
+Extra cycle  E= -74.9498515752175  delta_E= -1.71e-13  |g|= 2.4e-07  |ddm|= 1.19e-06
+converged SCF energy = -74.9498515752175

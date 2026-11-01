@@ -2,12 +2,14 @@
 # Lifecycle notifications are delivered only after canonical deletion, at idle,
 # outside Native callback/render transactions. Receipts carry owner identity.
 namespace eval ::GX::DocumentLifecycle {variable subscribers {};variable serial 0;variable deliveries {};variable timer ""}
-proc ::GX::interactiveDocumentLifecycleSubscribe {callback {ownerWindow ""} {document ""}} {
+proc ::GX::interactiveDocumentLifecycleSubscribe {callback {ownerWindow ""} {document ""} {watchRevision 0}} {
     variable ::GX::DocumentLifecycle::subscribers;variable ::GX::DocumentLifecycle::serial
     if {$callback eq {}} {error "Document lifecycle callback is required"}
     set token "document-lifecycle#[pid]-[incr serial]"
-    set generation "";if {$document ne ""} {set generation [dict get [interactiveDocumentRead $document] generation]}
-    dict set subscribers $token [dict create callback $callback session_token [interactiveDocumentSessionToken] owner_window $ownerWindow document_id $document owner_generation $generation notified 0]
+    if {![string is boolean -strict $watchRevision]} {error {Document revision watch must be boolean}}
+    set generation {};set revision {}
+    if {$document ne {}} {set metadata [expr {$watchRevision?[interactiveDocumentMetadata $document]:[interactiveDocumentRead $document]}];set generation [dict get $metadata generation];set revision [dict get $metadata revision]}
+    dict set subscribers $token [dict create callback $callback session_token [interactiveDocumentSessionToken] owner_window $ownerWindow document_id $document owner_generation $generation revision $revision watch_revision $watchRevision notified 0]
     _interactiveDocumentLifecycleWatchStart
     return $token
 }
@@ -40,6 +42,9 @@ proc ::GX::_interactiveDocumentLifecycleWatch {} {
         if {$event ne ""} {
             dict set subscribers $token notified 1
             _interactiveDocumentDeletedNotify [dict create api_id INTERACTIVE_DOCUMENT_API_v1 api_version 1 event $event document_id $document owner_generation [dict get $subscriber owner_generation] session_token [dict get $subscriber session_token]]
+        } elseif {[dict get $subscriber watch_revision] && [dict get $registry $document revision] ne [dict get $subscriber revision]} {
+            dict set subscribers $token revision [dict get $registry $document revision]
+            _interactiveDocumentDeletedNotify [dict create api_id INTERACTIVE_DOCUMENT_API_v1 api_version 1 event updated document_id $document owner_generation [dict get $subscriber owner_generation] revision [dict get $registry $document revision] session_token $lifetime]
         }
     }
     if {$subscribers ne {}} {_interactiveDocumentLifecycleWatchStart}
@@ -59,6 +64,7 @@ proc ::GX::_interactiveDocumentDeletedDeliver {delivery} {
     foreach token $current {
         if {![dict exists $subscribers $token]} continue
         set subscriber [dict get $subscribers $token]
+        if {[dict get $event event] eq {updated} && ![dict get $subscriber watch_revision]} continue
         if {[dict get $subscriber session_token] ne [dict get $event session_token]} continue
         set owner [dict get $subscriber owner_window]
         if {$owner ne ""&&([catch {winfo exists $owner} exists]||!$exists)} {dict unset subscribers $token;continue}

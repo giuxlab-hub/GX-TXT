@@ -146,7 +146,7 @@ for independently distributed scientific data libraries.
   the metadata runtime extensions provide stable primary, additional and
   dynamic source access to `standard_octave` modules.
 - [Module API v1](MODULE_API_v1.md) and the current
-  plugin interface specification
+  [plugin interface specification](GXTXT_PLUGIN_MODULE_INTERFACE_SPEC_v092.md)
   define descriptors, bindings, configuration and standard runners.
 - `standard_octave` public helpers in `core/octave/` provide INI/runtime reads,
   source/schema lookup, Table Stream access, Unit conversion, Temporal Set
@@ -294,6 +294,6 @@ This additive inventory records implementations, not final release acceptance.
 | Viewer GUI Host / EM / Native3D v2 | Typed original model/Job/Workspace form and exact planar cell-field presentation | Same restricted author candidate874915 and actual CORE field contract; installed GUI pending |
 | Viewer Provider | Descriptor deprecation/replacement and conditional single launcher; original EM model dispatcher | Source integration only; installed catalog/legacy identity QA pending |
 
-See dev109 regression notes,
-authority catalog and the private exact
+See [dev109 regression notes](../developer/DEV109_SHARED_REGRESSION_NOTES.md),
+[authority catalog](../architecture/AUTHORITY_CATALOG.yaml) and the private exact
 requirements ledger for failures, scope qualifications and all unfinished criteria.

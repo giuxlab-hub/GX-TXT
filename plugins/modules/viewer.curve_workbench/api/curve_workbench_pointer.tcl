@@ -34,12 +34,6 @@ proc ::GX::CurveWorkbench::_mouseUp {w x y} {
 
 # Viewport-only gesture: independent of construction, semantic selection and Undo.
 proc ::GX::CurveWorkbench::_middlePan {w phase x y} {
-    variable st
-    if {$phase eq "start"} {set st($w,middlePan) [list $x $y];return}
-    if {![info exists st($w,middlePan)]} return
-    lassign $st($w,middlePan) px py
-    ::GX::Native2D::core pan $st($w,scene) [expr {$x-$px}] [expr {$y-$py}]
-    set st($w,middlePan) [list $x $y]
-    _draw $w
-    if {$phase eq "end"} {unset st($w,middlePan);_viewPersistLater $w}
+    set event [dict get {start pan_start move pan_move end pan_end} $phase]
+    [_cadCanvas $w] event $event $x $y
 }

@@ -1,0 +1,37 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "f94cea9fb7064b6dd0c75c4c632f89304f495b06dda79b3be6a12032325179ea",
+  "design_sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+  "manual_assets": {},
+  "manual_sha256": "6694c8e3d6aaa7310e605ce61524d46d7151161e90826631a3f00d79d35d020d",
+  "module_id": "viewer.ir_spectroscopy",
+  "policy_sha256": "9be634bd797e7d8d04f051129d0ff084cc191fc2215a0958806ebeb3929f055a",
+  "project_digest_sha256": "2dbaa662f7b87eef10b9a0fd636033a2d8ff65ccb2fb7fd65dd137688f08d9a3",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "cadcfcaf2f4e36e5159f782d248478dc4f49101c793564cabeffe30b0b68c816",
+  "source_manifest": [
+    {
+      "bytes": 470,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7"
+    },
+    {
+      "bytes": 266,
+      "path": "include/ir_viewer_client.hpp",
+      "role": "header",
+      "sha256": "a77b6a89f3f21baefe9540928f1d1b451bdad8a4f33dadf1819179fe1f64009b"
+    },
+    {
+      "bytes": 4553,
+      "path": "src/ir_viewer_client.cpp",
+      "role": "translation_unit",
+      "sha256": "cb3f8abd3243ae63e917f4f4d0e756de9f0b81cb0939baf507aacededb787e50"
+    }
+  ],
+  "source_sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7",
+  "source_tree_sha256": "5006af1a70d2b0c453800e5186edb425be5d8434d7168e351cde7f45a97426f2",
+  "version": "1.0.1"
+}

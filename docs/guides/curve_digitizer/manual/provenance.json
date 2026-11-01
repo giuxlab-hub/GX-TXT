@@ -19,59 +19,59 @@
   },
   "source_documents": [
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_fd5cd9f2ee12]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/module.ini",
       "sha256": "9ac7b7fbaf130fc67bf147287a0aa73ad0fdde18275d0ba19ef2c6f35748aa95"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_4621625ae984]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/MANUAL.md",
       "sha256": "22d04bea5ff2d011170bbad330a216251298355ec552064ef3af500985e8adeb"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_5a1e8c43db26]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/QUALITY_API_v2.md",
       "sha256": "2441e5f663ad0b2198600a95f4574b9e7fdae9c5e4fa361b1baa8d34f90cb5ed"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_24e6b4cc9fc0]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/UNCERTAINTY_API_v1.md",
       "sha256": "3df148985115f09a3a18878e80f494db9acf08089a3dbc32de110e093fd02e77"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_00aab52a5aba]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/STROKE_WIDTH_API_v1.md",
       "sha256": "07d901f9ed9bedf6bc25aa2392ae23b2985170f8b11d823a3569224e89c99d0a"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_954b3f340e1f]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/python/gxtxt_curve_digitizer.py",
       "sha256": "4e402eb322d34e0749d2dc4500833fc1be05280023ce02afce5b1d4cc187acf8"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_b0af7fde5a66]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/python/assisted_exclusion_ui.py",
       "sha256": "cf605fe9f56eb8101d94f4625f86d702802da74486770d78a80e8c42d8a65e02"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_69030c63a389]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/plugins/modules/viewer.curve_digitizer/python/stroke_width_ui.py",
       "sha256": "9edad73b1e0415273180b52daaa27cbd46dee6a9016fdd2f1106f22c62f3dfef"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_8c25e5b26d7a]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/docs/api/DOCUMENTATION_BROWSER_API_v1.md",
       "sha256": "09eb0102e808d669b84512e8cea70b4cf6693b253777d6509d9950e71585f77b"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_41b62dc714f4]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/docs/api/HTML_VIEWER_API_v1.md",
       "sha256": "a58f2b01f37a77aeef724584944f3a00ca8f80043deaccc128634f131e5dcd43"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_c15e32ea74db]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/docs/api/SESSION_GENERATOR_LIBRARY_API_v1.md",
       "sha256": "311c68f4c0557e96231628b59729c324a5339dbd041a062fa3dbe2406eb0165f"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_4f21719fdd54]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/docs/api/DATASET_PREVIEW_API_v1.md",
       "sha256": "0d0018cdda2f03a41c7b603f84e0302150ade33b720825d7f67b831ecd296d6c"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_5babe13ed69a]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/docs/guides/DATASET_PREVIEW_dev098.md",
       "sha256": "c1d373ed1e1688e97c8d880c57440dfc2bad92bb5a6790a7251e6a4a32bd8838"
     },
     {
-      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_56908f57ca82]",
+      "path": "/home/giu/electronics-server/scripts/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_110/app/gui/documentation_browser.tcl",
       "sha256": "bf42acfadc0f20ce265b7eceb0d2ca7dba9a1d4d6d5a428d813a5f70c7ad7e13"
     }
   ],

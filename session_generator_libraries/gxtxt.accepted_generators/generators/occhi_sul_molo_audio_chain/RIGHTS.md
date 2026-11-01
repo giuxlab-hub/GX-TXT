@@ -1,7 +1,5 @@
 # Rights and provenance
 
-*Occhi sul Molo* is an original recording owned by the GX-TXT/Giux-Lab project author. The rights holder has expressly authorized public redistribution of the exact WAV as part of the GX-TXT repository and its scientific demonstration/Session Generator distributions.
+The recording *Occhi sul Molo* is supplied by its author, who explicitly stated that they own the rights and that it may be distributed for this GX-TXT demonstration. This statement is the basis for including the exact WAV whose SHA-256 is `09d2235cb618fd65d834124f7c0af1fa023d6ef3b579de60b45e0d538b26cdcc`. No general third-party license for the recording is asserted.
 
-The distributed WAV has SHA-256 `09d2235cb618fd65d834124f7c0af1fa023d6ef3b579de60b45e0d538b26cdcc`. The recording remains separately copyrighted; the permission to redistribute it with GX-TXT does not automatically license standalone adaptation, remixing, or unrelated reuse. Framework code and original teaching materials retain their respective source licenses.
-
-The generator copies the authorized original without modifying the recording or any pre-existing scientific Session.
+The generator script and written teaching materials are provided by Giux-Lab for this private GX-TXT release. The source music-lab Session was not modified to make this package.

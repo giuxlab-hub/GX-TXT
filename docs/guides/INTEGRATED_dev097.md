@@ -92,4 +92,6 @@ Existing user libraries can import its standalone ZIP through the Library Manage
   explains source archives, notices, replacement builds and loader paths.
 
 See [Common fitting errors](COMMON_FITTING_ERRORS.md) for worked scientific
-examples. Independent numerical verification remains necessary when applying the workflows to new experimental measurements.
+examples. The accompanying release evidence, rather than historical generator
+test reports, states which checks were executed or retained for the final
+archive. Omitted extensive final GUI matrices are `NOT RUN — USER-ACCEPTED`.

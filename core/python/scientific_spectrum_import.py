@@ -99,7 +99,7 @@ def column_index(value: str, headers: list[str], header: bool) -> int:
     return index
 
 
-def parse_csv(path: Path, options: dict, metadata: dict, provenance: dict):
+def parse_csv(path: Path, options: dict, metadata: dict, provenance: dict, *, max_samples=None):
     x_col = required(options, "x_column")
     y_col = required(options, "y_column")
     header = options.get("header", "1").lower() in {"1", "true", "yes"}
@@ -130,6 +130,8 @@ def parse_csv(path: Path, options: dict, metadata: dict, provenance: dict):
                 continue
             if max(xi, yi) >= len(row):
                 fail(f"CSV row {line_number} has too few columns")
+            if max_samples is not None and len(pairs) >= max_samples:
+                fail("CSV exceeds the admitted parser sample bound")
             pairs.append((finite_float(row[xi].strip(), f"CSV X row {line_number}"),
                           finite_float(row[yi].strip(), f"CSV Y row {line_number}")))
     if len(pairs) < 2:
@@ -181,7 +183,9 @@ def jcamp_units(headers):
     x_raw = headers.get("XUNITS", "").upper().replace(" ", "")
     y_raw = headers.get("YUNITS", "").upper().replace(" ", "")
     x_map = {"1/CM": ("wavenumber", "cm^-1"), "CM-1": ("wavenumber", "cm^-1"),
-             "NM": ("wavelength", "nm"), "EV": ("energy", "eV")}
+             "NM": ("wavelength", "nm"), "NANOMETERS": ("wavelength", "nm"),
+             "UM": ("wavelength", "um"), "MICROMETERS": ("wavelength", "um"),
+             "EV": ("energy", "eV")}
     y_map = {"ABSORBANCE": ("absorbance", "absorbance", "1"),
              "ABSORPTIONINDEX": ("absorption_index", "absorption_index", "1"),
              "DISPERSIONINDEX": ("dispersion_index", "dispersion_index", "1"),
@@ -197,25 +201,30 @@ def jcamp_units(headers):
     return x_map[x_raw], y_map[y_raw]
 
 
-def parse_jcamp(path: Path, options: dict, metadata: dict, provenance: dict):
+def parse_jcamp(path: Path, options: dict, metadata: dict, provenance: dict, *, max_samples=None):
     headers, data_tag, lines = read_jcamp(path)
     x_factor = finite_float(headers.get("XFACTOR", "1"), "JCAMP XFACTOR")
     y_factor = finite_float(headers.get("YFACTOR", "1"), "JCAMP YFACTOR")
     pairs = []
     packed_signed_affn = False
+    grid_metadata = {}
     if data_tag == "XYDATA":
-        delta_raw = headers.get("DELTAX", "")
-        if delta_raw:
-            delta = finite_float(delta_raw, "JCAMP DELTAX") * x_factor
-        else:
-            first = finite_float(required(headers, "FIRSTX"), "JCAMP FIRSTX") * x_factor
-            last = finite_float(required(headers, "LASTX"), "JCAMP LASTX") * x_factor
-            n = int(required(headers, "NPOINTS"))
-            delta = (last - first) / (n - 1)
-        if delta == 0:
-            fail("JCAMP DELTAX is zero")
-        first_grid = (finite_float(headers["FIRSTX"], "JCAMP FIRSTX") * x_factor
-                      if headers.get("FIRSTX") else None)
+        if headers[data_tag].upper().replace(" ", "") != "(X++(Y..Y))":
+            fail("unsupported JCAMP XYDATA declaration")
+        # JCAMP-DX 1988 sections 5.1.1, 6.2.3 and 6.3.2: FIRSTX/LASTX
+        # are physical coordinates; DELTAX is nominal, not a decoding step.
+        first_grid = finite_float(required(headers, "FIRSTX"), "JCAMP FIRSTX")
+        last_grid = finite_float(required(headers, "LASTX"), "JCAMP LASTX")
+        count = required(headers, "NPOINTS")
+        if not re.fullmatch(r"[0-9]+", count) or int(count) < 2:
+            fail("JCAMP XYDATA NPOINTS must be an integer of at least two")
+        n = int(count)
+        if max_samples is not None and n > max_samples:
+            fail("JCAMP exceeds the admitted parser sample bound")
+        delta = (last_grid - first_grid) / (n - 1)
+        if not math.isfinite(delta) or delta == 0 or x_factor == 0:
+            fail("JCAMP XYDATA grid step and XFACTOR must be finite and nonzero")
+        anchor_count, anchor_max_error = 0, 0.0
         for line in lines:
             tokens = line.replace(",", " ").split()
             if len(tokens) == 1:
@@ -227,37 +236,45 @@ def parse_jcamp(path: Path, options: dict, metadata: dict, provenance: dict):
                                       tokens[0])
                 if packed is None:
                     fail("unsupported JCAMP XYDATA encoding; expected AFFN or signed packed AFFN")
-                if first_grid is None:
-                    fail("JCAMP signed-packed AFFN requires FIRSTX for its exact numerical grid")
                 x0 = finite_float(packed.group(1), "JCAMP row X") * x_factor
                 values = re.findall(r"[+-](?:\d+(?:\.\d*)?|\.\d+)(?:[Ee][+-]?\d+)?", packed.group(2))
                 if "".join(values) != packed.group(2):
                     fail("unsupported JCAMP XYDATA signed encoding")
-                expected_x = first_grid + len(pairs) * delta
-                if abs(x0 - expected_x) > max(abs(delta) / 2, 0.02):
-                    fail("JCAMP packed row X does not match declared grid")
-                for token in values:
-                    y = finite_float(token, "JCAMP signed AFFN Y") * y_factor
-                    pairs.append((first_grid + len(pairs) * delta, y))
                 packed_signed_affn = True
             elif len(tokens) >= 2:
                 x0 = finite_float(tokens[0], "JCAMP row X") * x_factor
-                for index, token in enumerate(tokens[1:]):
-                    # Compressed SQZ/DIF/DUP records must not be misread as AFFN.
-                    y = finite_float(token, "JCAMP AFFN Y") * y_factor
-                    pairs.append((x0 + index * delta, y))
+                values = tokens[1:]
             else:
                 fail("empty JCAMP XYDATA row")
+            error = abs(x0 - (first_grid + len(pairs) * delta))
+            if not math.isfinite(error) or error > max(abs(delta) / 2, 0.02):
+                fail("JCAMP row X does not match declared grid")
+            anchor_count += 1
+            anchor_max_error = max(anchor_max_error, error)
+            if len(pairs) + len(values) > n:
+                fail("JCAMP XYDATA exceeds declared NPOINTS")
+            for token in values:
+                # Compressed SQZ/DIF/DUP records must not be misread as AFFN.
+                y = finite_float(token, "JCAMP AFFN Y") * y_factor
+                pairs.append((first_grid + len(pairs) * delta, y))
+        grid_metadata = {"jcamp.grid_policy": "first_last_npoints",
+                         "jcamp.grid_step": format(delta, ".17g"),
+                         "jcamp.row_anchor_count": str(anchor_count),
+                         "jcamp.row_anchor_max_error": format(anchor_max_error, ".17g")}
     else:
         for line in lines:
             tokens = [t for t in re.split(r"[\s,;]+", line) if t]
             if len(tokens) % 2:
                 fail("JCAMP XY pair row has an odd number of values")
+            if max_samples is not None and len(pairs) + len(tokens) // 2 > max_samples:
+                fail("JCAMP exceeds the admitted parser sample bound")
             for i in range(0, len(tokens), 2):
                 pairs.append((finite_float(tokens[i], "JCAMP X") * x_factor,
                               finite_float(tokens[i + 1], "JCAMP Y") * y_factor))
     if len(pairs) < 2:
         fail("JCAMP spectrum has fewer than two numerical samples")
+    if any(not math.isfinite(x) or not math.isfinite(y) for x, y in pairs):
+        fail("JCAMP scaled numerical values must be finite")
     expected = headers.get("NPOINTS", "")
     if expected and len(pairs) != int(expected):
         fail(f"JCAMP NPOINTS mismatch: declared {expected}, parsed {len(pairs)}")
@@ -283,6 +300,7 @@ def parse_jcamp(path: Path, options: dict, metadata: dict, provenance: dict):
     fields, automatic = make_base(path, options, "JCAMP-DX")
     metadata = {**{f"jcamp.{key.lower().replace(' ', '_')}": value for key, value in headers.items()}, **metadata}
     metadata["jcamp.numeric_encoding"] = "signed_packed_affn" if packed_signed_affn else "affn"
+    metadata.update(grid_metadata)
     automatic["jcamp_data_tag"] = data_tag
     return fields, metadata, {**automatic, **provenance}, pairs
 

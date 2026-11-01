@@ -1,0 +1,43 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "document_command",
+        "value_get"
+      ]
+    },
+    {
+      "api_id": "UML_DOCUMENT_API_v1",
+      "version": 1,
+      "operations": [
+        "umlDocumentRead",
+        "umlDocumentParse",
+        "umlDocumentLayout"
+      ]
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "preview.uml_document",
+  "profile": "document_view_v1",
+  "provenance": {
+    "template": "genuine_builder_uml_preview_v1",
+    "scientific_source": null
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  },
+  "version": "1.0.0"
+}

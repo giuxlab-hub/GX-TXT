@@ -6,4 +6,4 @@ Version 1.2.0 keeps the scientific workflow in the analysis module while reusabl
 
 The family overlay uses the canonical long-form `spectrum.family` Dataset directly through public numeric 2-D family grouping. It does not create one private renderer or one copied Dataset per curve. When absorbance blank correction is requested, the corrected family is a normal derived Dataset because the scientific values themselves have changed.
 
-See `MANUAL.md` and [the architecture overview](../../../ARCHITECTURE.md).
+See `MANUAL.md` and `docs/architecture/NUMERIC_ANALYSIS_BOUNDARY_RULE.md`.

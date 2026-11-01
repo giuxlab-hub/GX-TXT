@@ -1,4 +1,4 @@
-# viewer.dataset_curve_fit 0.45.0
+# viewer.dataset_curve_fit
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,6 +8,7 @@ Explicit nonlinear profile likelihood retains constrained trials, physical
 parameter identities and shared CORE interpretation across GUI, recipes and
 Python/Octave result pages. See [the public API](../../../docs/api/DATASET_CURVE_FIT_API_v1.md#retained-profile-likelihood).
 
-See [MANUAL.md](MANUAL.md) and [CHANGELOG.md](CHANGELOG.md). Install this normal module package through
+See [MANUAL.md](MANUAL.md), [CHANGELOG.md](CHANGELOG.md) and
+[TEST_RESULTS.md](TEST_RESULTS.md). Install this normal module package through
 the existing Plugin Manager; dependencies and public API entrypoints are declared
 in module.ini.

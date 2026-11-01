@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 - 2026-09-24
 
 - Initial deterministic Statistics Session Generator.
 - Added explicit weights and intentional missing-value validation rows that the public CSV provider exposes as NaN.

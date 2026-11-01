@@ -30,6 +30,30 @@ proc ::GX::DatasetCurveFit::_surfaceUiReference {w} {
     return [surfaceResultReference $state($w,workspace) $state($w,selected)]
 }
 proc ::GX::DatasetCurveFit::_surfaceUiEditor {w} {return [list [_surfaceUiSource $w] [_surfaceUiRecipe $w] [_surfaceUiOptions $w]]}
+proc ::GX::DatasetCurveFit::_surfaceUiDraft {w} {
+    variable state
+    set draft {}
+    foreach field {dataset x y z sigma layout nonfinite noise max_iterations max_seconds expression name selected qx qy dataset_out nx ny xmin xmax ymin ymax style} {dict set draft $field $state($w,$field)}
+    set parameters {};foreach row $state($w,rows) {
+        set parameter {};foreach field {id unit initial lower upper fixed} {dict set parameter $field $state($w,$row,$field)}
+        lappend parameters $parameter
+    };dict set draft parameters $parameters
+    return $draft
+}
+proc ::GX::DatasetCurveFit::_surfaceWorkspaceCurrent {w} {variable state;return $state($w,workspace)}
+proc ::GX::DatasetCurveFit::_surfaceWorkspaceDirty {w} {variable state;return [expr {[_surfaceUiDraft $w] ne $state($w,draftBaseline)}]}
+proc ::GX::DatasetCurveFit::_surfaceWorkspacePrepare {w action} {
+    variable state
+    if {$state($w,sessionToken) ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen the surface Workspace}}
+    if {$state($w,busy) && $action ne {query}} {error {Finish or cancel the active surface operation}}
+    return 1
+}
+proc ::GX::DatasetCurveFit::_surfaceWorkspaceCallbacks {w} {
+    return [dict create current [list ::GX::DatasetCurveFit::_surfaceWorkspaceCurrent $w] save [list ::GX::DatasetCurveFit::_surfaceUiSave $w] \
+        open ::GX::DatasetCurveFit::openSurface close [list ::GX::DatasetCurveFit::_surfaceWorkspaceClose $w] \
+        dirty [list ::GX::DatasetCurveFit::_surfaceWorkspaceDirty $w] prepare [list ::GX::DatasetCurveFit::_surfaceWorkspacePrepare $w] discard [list destroy $w]]
+}
+proc ::GX::DatasetCurveFit::_surfaceWorkspaceClose {w} {return [::GX::sessionWorkspaceViewerAction dataset_surface_fit [_surfaceWorkspaceCallbacks $w] $w close]}
 proc ::GX::DatasetCurveFit::_surfaceAddParameter {w parameter} {
     variable state
     _formulaAdd $w $parameter
@@ -113,9 +137,18 @@ proc ::GX::DatasetCurveFit::_surfaceUiApply {w payload} {
         if {[dict exists $payload controls $field]} {set state($w,$field) [dict get $payload controls $field]}
     }
     _surfaceUiDataset $w
+    if {[dict exists $payload controls editor]} {
+        dict for {field value} [dict get $payload controls editor] {
+            if {$field eq {parameters}} {
+                foreach row $state($w,rows) {_formulaRemove $w $row}
+                foreach parameter $value {_surfaceAddParameter $w $parameter}
+            } else {set state($w,$field) $value}
+        }
+    }
     set state($w,showPreview) [expr {[dict get $payload preview] ne {}}]
     if {$state($w,showPreview)&&![catch {_surfaceUiEditor $w} editor]} {set state($w,previewEditor) $editor}
     _surfaceUiRefresh $w
+    set state($w,draftBaseline) [_surfaceUiDraft $w]
 }
 proc ::GX::DatasetCurveFit::_surfaceUiRefresh {w} {
     variable state
@@ -153,8 +186,11 @@ proc ::GX::DatasetCurveFit::_surfaceUiSave {w} {
         dict set payload source [_surfaceUiSource $w];dict set payload recipe [_surfaceUiRecipe $w];dict set payload settings [_surfaceUiOptions $w]
     }
     foreach field {name selected qx qy dataset_out nx ny xmin xmax ymin ymax style} {dict set payload controls $field $state($w,$field)}
+    dict set payload controls editor [_surfaceUiDraft $w]
     if {$payload ne [dict get $original payload]} {_surfaceCommit $original $payload {Save physical surface controls}}
     set state($w,status) {Workspace saved.};_surfaceUiRefresh $w
+    set state($w,draftBaseline) [_surfaceUiDraft $w]
+    return $state($w,workspace)
 }
 proc ::GX::DatasetCurveFit::_surfaceUiSelected {w} {
     variable state
@@ -176,7 +212,7 @@ proc ::GX::DatasetCurveFit::_surfaceUiAction {w id} {
     switch $id {
         cancel {if {$state($w,numericRun) ne {}} {::GX::parallelExecutionCancel $state($w,numericRun)};set state($w,sourceCancelled) 1;return}
         save {_surfaceUiSave $w}
-        close {_surfaceUiSave $w;destroy $w;return}
+        close {return [_surfaceWorkspaceClose $w]}
         add_parameter {if {[llength $state($w,rows)]>=32} {error {Surface formulas support at most32 parameters}};_surfaceAddParameter $w [dict create id {} unit {} initial 1]}
         preview {
             set state($w,busy) 1;set state($w,status) {Fitting the declared physical surface…};_surfaceUiRefresh $w;update idletasks
@@ -192,7 +228,7 @@ proc ::GX::DatasetCurveFit::_surfaceUiAction {w id} {
             set delta [expr {$id eq "undo"?-1:1}]
             set history [::GX::scientificHistoryNavigate viewer.dataset_curve_fit.surface $history [expr {[dict get $history cursor]+$delta}]]
             set payload [::GX::scientificHistoryState $history];dict set payload scientific_history $history
-            ::GX::sessionWorkspaceUpdate $state($w,workspace) $payload;_surfaceUiApply $w $payload
+            ::GX::sessionWorkspaceUpdate $state($w,workspace) $payload $original;_surfaceUiApply $w $payload
         }
         query {
             set q [surfaceQuery [_surfaceUiReference $w] [list [list $state($w,qx) $state($w,qy)]]]
@@ -235,7 +271,8 @@ proc ::GX::DatasetCurveFit::openSurface {{context {}}} {
     if {[winfo exists $w]} {
         if {$requested eq {}||$requested eq $state($w,workspace)} {raise $w;return $w}
         if {$state($w,busy)} {error {Finish or cancel the active surface operation}}
-        _surfaceUiSave $w;destroy $w
+        if {![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $w] opening]} {raise $w;return $w}
+        destroy $w
     }
     if {$requested in {{} new}} {
         set names [lmap item [::GX::sessionWorkspaceList] {dict get $item name}];set name {Physical surface fit};set suffix 1
@@ -301,6 +338,8 @@ proc ::GX::DatasetCurveFit::openSurface {{context {}}} {
     ::GX::viewerCommandsAttach $w viewer.dataset_curve_fit.surface $handlers
     menu $w.menu -tearoff 0;$w configure -menu $w.menu
     foreach {group label ids} {file File {save export recipe close} fit Fit {preview accept cancel add_parameter query} history History {undo redo} output Publish {publish plot}} {menu $w.menu.$group -tearoff 0;$w.menu add cascade -label $label -menu $w.menu.$group;foreach id $ids {::GX::viewerCommandMenuAdd $w $w.menu.$group $id}}
+    menu $w.menu.workspace -tearoff 0;$w.menu add cascade -label Workspace -menu $w.menu.workspace
+    ::GX::sessionWorkspaceViewerMenu $w.menu.workspace dataset_surface_fit [_surfaceWorkspaceCallbacks $w] $w
     if {[dict exists $context dataset_id]} {set state($w,dataset) [dict get $context dataset_id]}
     _surfaceUiApply $w [dict get $workspace payload]
     bind $w.setup.viewport.canvas <Configure> +[list ::GX::DatasetCurveFit::_surfaceUiLayout $w %w]

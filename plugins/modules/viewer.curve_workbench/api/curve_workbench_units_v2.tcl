@@ -114,7 +114,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
             }
         }
     }
-    set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     set descriptor [_pointSelectionDescriptor $w]
     set changed 0
     try {
@@ -164,7 +164,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
         _selectionScene $w;_restorePointSelectionDescriptor $w $descriptor
         _history $w $before $ids
     } on error {message options} {
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo
+
         if {$changed} {
             if {[catch {_restoreSnapshot $w $before;_curveList $w;_pointList $w;_draw $w} rollback]} {append message "; workspace rollback failed: $rollback"}
         }

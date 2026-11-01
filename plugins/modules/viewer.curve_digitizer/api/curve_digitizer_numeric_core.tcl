@@ -66,14 +66,19 @@ proc ::GX::CurveDigitizerNumericCore::_inline {packet selected count} {
     }
     lassign $fields tag measurement mode reason dist pixel cal override xy jp jc units ids calunits mapping method condition
     set n $count
+    set m [llength [split [_decoded $ids] {;}]]
+    if {$m ni {12 14}} {error {Unsupported 12/14 shared calibration input count.}}
+    if {$m==14 && [string first {y2_minimum} [_decoded $ids]]<0} {
+        error {Y2 shared calibration identity list is incomplete.}
+    }
     set linearization [::GX::ScientificTransportv1::struct [dict create \
         schema [::GX::ScientificTransportv1::text gxtxt.digitization_linearization.v1] \
         coordinates [_wireMatrix $xy $n 2] \
         point_jacobian [_wireMatrix $jp [expr {2*$n}] 2] \
-        calibration_jacobian [_wireMatrix $jc [expr {2*$n}] 12] \
+        calibration_jacobian [_wireMatrix $jc [expr {2*$n}] $m] \
         coordinate_units [_strings $units 2] \
-        calibration_ids [_strings $ids 12] \
-        calibration_units [_strings $calunits 12] \
+        calibration_ids [_strings $ids $m] \
+        calibration_units [_strings $calunits $m] \
         mapping [::GX::ScientificTransportv1::text [_decoded $mapping]] \
         jacobian_method [::GX::ScientificTransportv1::text [_decoded $method]] \
         condition_number [_array {1 1} [list $condition]]]]
@@ -87,12 +92,16 @@ proc ::GX::CurveDigitizerNumericCore::_inline {packet selected count} {
         dict set spec pixel_distribution [::GX::ScientificTransportv1::text $distribution]
         # Zero is legitimate and is passed exactly, without epsilon substitution.
         dict set spec pixel_scale [_array {1 2} [_numberList $pixel 2]]
-        dict set spec calibration_standard_uncertainty [_array {1 12} [_numberList $cal 12]]
+        dict set spec calibration_standard_uncertainty [_array [list 1 $m] [_numberList $cal $m]]
     } elseif {$mode eq {physical_override}} {
         if {$pixel ne {} || $cal ne {}} {error {Mixed uncertainty model is not allowed}}
-        set values [_numberList $override 2]
+        set countOverride [llength [split $override ,]]
+        if {$countOverride ni [list 2 [expr {2*$n}]]} {
+            error {Physical override requires one X/Y pair or one X/Y pair per publication row.}
+        }
+        set values [_numberList $override $countOverride]
         foreach value $values {if {$value<=0} {error {A physical override must contain strictly positive declared uncertainties}}}
-        dict set spec override_standard_uncertainty [_array {1 2} $values]
+        dict set spec override_standard_uncertainty [_array [expr {$countOverride==2 ? {1 2} : [list $n 2]}] $values]
     } else {error {Inactive/unknown uncertainty model must not invoke Numeric}}
     return [list $linearization [::GX::ScientificTransportv1::struct $spec]]
 }
@@ -130,7 +139,7 @@ proc ::GX::CurveDigitizerNumericCore::propagate {documentId rowsText measurement
     foreach command {::GX::NumericAPIv1::callOperation ::GX::StatisticsV1::digitizationInterpretation} {
         if {![llength [info commands $command]]} {error "Required GX-TXT dev097 CORE service '$command' is unavailable"}
     }
-    set full [::GX::interactiveDocumentRead $documentId]
+    set full [::GX::CurveDigitizer::_ownedDocumentRead $documentId]
     if {[dict get $full module_id] ne {viewer.curve_digitizer}} {error {Uncertainty review requires the digitizer-owned scientific document}}
     set sessionToken [::GX::interactiveDocumentSessionToken]
     set documentSha [dict get $full sha256]
@@ -168,7 +177,7 @@ proc ::GX::CurveDigitizerNumericCore::propagate {documentId rowsText measurement
         }
     }
     if {[::GX::interactiveDocumentSessionToken] ne $sessionToken ||
-        [dict get [::GX::interactiveDocumentRead $documentId] sha256] ne $documentSha} {
+        [dict get [::GX::CurveDigitizer::_ownedDocumentRead $documentId] sha256] ne $documentSha} {
         error {Session or document changed during Numeric CORE propagation}
     }
     set current [::GX::CurveDigitizer::_sourceInfo $sourceDataset]
@@ -197,7 +206,7 @@ proc ::GX::CurveDigitizerNumericCore::propagate {documentId rowsText measurement
         error {Point identity changed during managed resource capture}
     }
     if {[::GX::interactiveDocumentSessionToken] ne $sessionToken ||
-        [dict get [::GX::interactiveDocumentRead $documentId] sha256] ne $documentSha ||
+        [dict get [::GX::CurveDigitizer::_ownedDocumentRead $documentId] sha256] ne $documentSha ||
         ![string equal -nocase [dict get [::GX::CurveDigitizer::_sourceInfo $sourceDataset] sha256] $sourceSha]} {
         error {Scientific Session, configuration or source changed while retaining CORE resources}
     }

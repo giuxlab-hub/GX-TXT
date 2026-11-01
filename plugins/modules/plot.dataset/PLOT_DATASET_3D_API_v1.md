@@ -2,7 +2,9 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-This public API provides the current persistent interactive-3D operations. Consumers may alternatively use the complete `PLOT_DATASET_API_v3` facade for the same interactive operations.
+Introduced by `plot.dataset` 3.9.0 and extended by 3.10.0 in GX-TXT
+0.9.8.10-dev. This dedicated API remains supported. New consumers may use
+the complete `PLOT_DATASET_API_v3` facade for the same interactive operations.
 
 ## Workflow
 
@@ -78,7 +80,7 @@ source graph is later removed. A graphical OpenGL display and
 the packaged VTK/OCCT backend are needed for interactive display.
 
 
-## Read-only preview export
+## dev087 ordinary preview export
 
 `previewExportCommand plotRef callerOwnedTemporaryDirectory` returns the read-only
 command for the already rendered exact XYZ Variant. It uses prepared cache and
@@ -87,10 +89,10 @@ presentation, and exports transient VTP plus a typed scene descriptor. No static
 render, Viewer provider enable, persistent Document, Session commit or Dataset
 publication occurs. It diagnoses changed source/bindings/preparation/presentation
 before reuse. This is intentionally distinct from explicit persistent `buildScene`.
-See the documented preview constraints and the current [GUI guide](GUI_MANUAL.md) for axis/layout behavior and supported source types.
+See the dev087 guide for CORE axis/layout gaps and intake/display limits.
 
 
-## Native3D preview controls and scientific figure publication
+## Dev087 manual-acceptance scientific figure correction
 
 `native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
 RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;

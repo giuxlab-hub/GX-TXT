@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Generator — browsing and managing libraries</title>
+<style>
+:root{color-scheme:light;--ink:#203140;--muted:#536474;--line:#d6e0e7;--accent:#175c87}
+*{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:var(--ink);font:17px/1.65 system-ui,sans-serif}
+main{max-width:1100px;margin:auto;padding:2rem;background:white}h1,h2,h3{line-height:1.25}h1{font-size:2.1rem}h2{margin-top:2.5rem;border-top:1px solid var(--line);padding-top:1.3rem}a{color:var(--accent)}nav{display:flex;flex-wrap:wrap;gap:.5rem 1.3rem;padding:.8rem 0}li{margin:.5rem 0}figure{margin:1.5rem 0;padding:1rem;border:1px solid var(--line);border-radius:.4rem;background:#f8fafb}figure img{display:block;max-width:100%;height:auto;margin:auto}figcaption,.caption{font-size:.93rem;color:var(--muted);margin-top:.7rem}.note{border-left:4px solid var(--accent);padding:.6rem 1rem;background:#edf5fa}table{border-collapse:collapse;width:100%;font-size:.95rem}th,td{border:1px solid var(--line);padding:.65rem;text-align:left;vertical-align:top}th{background:#edf2f6}code{overflow-wrap:anywhere;font-size:.92em}kbd{border:1px solid #b3c0c9;border-radius:.2rem;padding:0 .2rem;background:#f3f5f6}footer{margin-top:2rem;color:var(--muted);font-size:.9rem}.table-wrap{overflow:auto}@media(max-width:650px){main{padding:1rem}h1{font-size:1.6rem}figure{padding:.4rem}}@media print{body{background:white}main{max-width:none;padding:0}nav{display:none}figure{break-inside:avoid}a{color:inherit}}
+</style>
+</head>
+<body><main>
+<header>
+<p class="caption">GX-TXT · New Session · dev109 candidate instructions</p>
+<h1>Browse Session generators and manage their libraries</h1>
+<p>Choose a generator, read what it produces, and create its example Session.
+Use the same dialog to inspect installed libraries, edit their metadata, or import,
+export and copy generators.</p>
+<nav aria-label="Guide contents">
+<a href="#open">Open the browser</a><a href="#browse">Choose a generator</a>
+<a href="#generate">Generate an example</a><a href="#manage">Manage libraries</a>
+<a href="#check">Repeat the interaction check</a><a href="#evidence">Evidence</a>
+</nav>
+</header>
+<section id="open">
+<h2>Open the browser</h2>
+<ol>
+<li>Make sure a Session root is configured. If New Session asks for one, open
+<strong>Configuration → Storage</strong>, create a named Storage Profile, set its
+<strong>New Session root</strong> to an existing directory, and choose
+<strong>Save &amp; Apply</strong>.</li>
+<li>Open the <strong>Sessions</strong> tab, then choose
+<strong>Session → New Session...</strong>.</li>
+<li>Review <strong>Location</strong>. Choose <strong>Standalone Session</strong>
+or the intended Project. The generator uses that choice when creating the Session.</li>
+<li>Choose the upper <strong>Generate Session...</strong> button to show the
+browser. This button opens browsing; the lower <strong>Generate Session</strong>
+button runs the selected generator.</li>
+</ol>
+<p>To create an ordinary empty Session, enter its name and choose <strong>Create</strong>.
+Generator browsing is optional.</p>
+</section>
+<section id="browse">
+<h2>Choose a generator and read its description</h2>
+<ol>
+<li>Expand a library and category in the left tree using their disclosure arrows.
+The arrow keys also navigate the native tree.</li>
+<li>Select a generator row. Its description on the right identifies the generator,
+library, category, version and any supplied purpose, output files and requirements.</li>
+<li>Check the <strong>Session name</strong> after choosing the generator. An empty
+name may receive the generator's suggestion; text already present stays in the
+field when you switch generators. Edit it explicitly to the intended final name.</li>
+</ol>
+<p>Selecting a library or category shows its browsing information and disables the
+lower Generate button. Select a generator again to enable it.</p>
+<figure>
+<a href="images/browser.png"><img src="images/browser.png" alt="Real New Session browser with the hierarchical library tree on the left and Linear Regression details on the right."></a>
+<figcaption>Fresh independent review of the candidate browser. The selected generator's details, rather than
+the name field alone, identify what will run. Open the image for its full size.</figcaption>
+</figure>
+<p>Drag the vertical divider to change the tree/description proportions. Use the
+tree's horizontal scrollbar for a long name and its vertical scrollbar for more
+rows. The description has its own scrollbar and accepts wheel scrolling.</p>
+</section>
+<section id="generate">
+<h2>Generate a numerical example</h2>
+<ol>
+<li>Select <strong>GX-TXT Numerical Examples → Mathematics → Linear Regression</strong>.</li>
+<li>Set an explicit Session name and confirm <strong>Location</strong>.</li>
+<li>Choose the lower <strong>Generate Session</strong>. On success, acknowledge
+<strong>Session generated</strong>; GX-TXT opens the new Session normally.</li>
+</ol>
+<p>This bundled numerical example produces <code>raw/linear_regression.csv</code>
+and <code>metadata/ground_truth.txt</code>. Its 41 data rows follow
+<code>y = 2.5 x + 1.2 + noise</code>, with Gaussian noise of standard deviation
+<code>0.12</code> and seed <code>1971</code>. These are deterministic example
+numbers; no physical measurement units are implied.</p>
+<p>The generated Session also records library/generator identity, version and type
+in <code>metadata/session_generator.ini</code>. Generation creates the example;
+it does not demonstrate that a later analysis or fit has been run.</p>
+<figure>
+<a href="images/generation.png"><img src="images/generation.png" alt="Original real Generate Session completion message naming the newly created private QA Session."></a>
+<figcaption>Original successful GUI generation, reused from the completed author
+run. The long path is that private QA Session's actual path. Its CSV rows and
+provenance were checked separately; this run was not repeated for the guide.</figcaption>
+</figure>
+</section>
+<section id="manage">
+<h2>Manage libraries, then return to browsing</h2>
+<p>Choose <strong>Manage Libraries...</strong> in the browser. The left side lists
+libraries and the generators in the selected library. The right side has
+<strong>Details</strong>, <strong>Library metadata</strong> and
+<strong>Copy generator</strong> tabs.</p>
+<figure>
+<a href="images/manager.png"><img src="images/manager.png" alt="Real Library Manager with library and generator lists beside the Details, Library metadata and Copy generator tabs."></a>
+<figcaption>Fresh independent review: Manager keeps inspection, metadata editing and copying in separate
+tabs. Choose a library first, then a generator when an operation needs one.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Task</th><th>Controls and expected result</th></tr></thead>
+<tbody>
+<tr><td>Inspect</td><td>Select a library or generator and open <strong>Details</strong>.
+Changing libraries clears the previous generator selection.</td></tr>
+<tr><td>Edit library metadata</td><td>Select the library, open
+<strong>Library metadata</strong>, edit Name, Description, Version or Author,
+then choose <strong>Save Metadata</strong>. The library's stable ID stays the same.</td></tr>
+<tr><td>Create a library</td><td>Choose <strong>Create Library...</strong>, enter
+its name and metadata, then choose <strong>Create</strong>. The new library starts
+without generators.</td></tr>
+<tr><td>Import or export a whole library</td><td>Use <strong>Import Library...</strong>
+or select a library and choose <strong>Export Library...</strong>. Choose the
+package or output filename in the normal file chooser. Importing an already
+installed library reports that conflict.</td></tr>
+<tr><td>Import or export one generator</td><td>Select the destination library before
+<strong>Import Generator...</strong>. To export, select its library and generator,
+then choose <strong>Export Generator...</strong>.</td></tr>
+<tr><td>Copy between libraries</td><td>Select the source library and generator.
+Open <strong>Copy generator</strong>, choose the destination library, then choose
+<strong>Add Generator to Library...</strong>. This copies the installed generator;
+it does not run it.</td></tr>
+<tr><td>Cancel a removal</td><td><strong>Remove Library</strong> or
+<strong>Remove Generator</strong> opens a confirmation for that selected identity.
+Choose <strong>No</strong> to keep it. The illustrated checks used a disposable
+synthetic library and cancelled both confirmations.</td></tr>
+</tbody></table></div>
+<p>Return with <strong>Hide Manager / Back to browsing</strong>, or the upper
+<strong>Generate Session...</strong> button. The browser restores its selected
+identity, expanded branches, scrolling and splitter proportions. Manager and
+browser keep their own divider proportions.</p>
+<figure>
+<a href="images/narrow.png"><img src="images/narrow.png" alt="Real narrow candidate dialog showing readable side-by-side panels and accessible scrolling or wrapped management controls."></a>
+<figcaption>Fresh independent review of a narrow layout. Use the divider and scrollbars to allocate the
+available space; management buttons wrap when their row is too narrow.</figcaption>
+</figure>
+<p>Closing the dialog ends that browsing interaction. Reopening starts with no
+active generator. Installed libraries and previously generated Sessions remain
+available.</p>
+</section>
+<section id="check">
+<h2>Repeat the interaction check</h2>
+<p>This short check exercises browsing and Manager transitions without generating
+another Session or changing a library.</p>
+<ol>
+<li>Open the browser and select Linear Regression. Read its description and check
+that the lower Generate button is enabled.</li>
+<li>Select its Mathematics category, then its library row. Check the description
+changes and Generate is disabled in both cases.</li>
+<li>Collapse and expand a different branch, then reselect the intended generator
+and drag the divider. Note its selected name and the current window size.</li>
+<li>Open Manager, then use <strong>Hide Manager / Back to browsing</strong>.
+Check that the selected identity, divider and window size remain useful.</li>
+<li>Open Manager again and return with the upper <strong>Generate Session...</strong>
+button. Check the same state and use the arrow keys in the browser.</li>
+<li>Make the window narrower. Scroll a long name or description, open Manager and
+visit its three tabs. Confirm the lists, descriptions and controls remain reachable.</li>
+<li>Choose <strong>Cancel</strong>, reopen New Session and show the browser.
+Check that Generate stays disabled until a generator is selected.</li>
+</ol>
+</section>
+<section id="evidence">
+<h2>Evidence and contract</h2>
+<p>All images are unaltered real Debian GUI captures from isolated QA profiles.
+Synthetic library names and private paths identify test material. The guide covers
+the Session Generator dialog; scientific producer algorithms and other workspaces
+are outside it.</p>
+<p>The existing Help browser uses the <a href="USER_GUIDE.md">Markdown Help edition</a>; this HTML edition opens in a normal browser.</p>
+<p>Image provenance and SHA-256 values are in
+<a href="IMAGE_PROVENANCE.json">IMAGE_PROVENANCE.json</a>. The existing developer
+contract is <a href="../api/SESSION_GENERATOR_LIBRARY_API_v1.md">Session Generator
+Library API v1</a>.</p>
+<p class="note">These instructions describe the reviewed dev109 candidate.
+Independent branch review and reused author evidence remain distinct from MAIN's
+installed acceptance and release decision.</p>
+<p>MAIN accepted SESSION-GEN-BROWSER-01 through -07 on 2026-10-21 at unchanged CORE source33f301. See the <a href="FINAL_FAMILY_MATRIX.md">seven-criterion matrix and acceptance provenance</a>. Receipt: <code>MAIN_FAMILY_ACCEPTANCE87.json</code>, SHA256 <code>69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8</code>. Whole workstream6 and all15 release remain OPEN. This documentation reconciliation awaits MAIN integration; original native evidence remains unchanged.</p>
+</section>
+<footer>Offline guide · no network resources or generated illustrations · Session Generator family only.</footer>
+</main></body></html>

@@ -141,12 +141,12 @@ proc ::GX::pluginBundlePreflightPackage {info mode} {
     set type [dict get $info type]
     set newver [dict get $info version]
     set target [pluginTargetPath $type $id]
-    set exists [file exists $target]
+    set exists [expr {![catch {file lstat $target installedStat}]}]
     set managed [pluginRegistryIsManaged $id]
     if {$mode eq "install" && $exists} { error "Plugin '$id' is already installed" }
     if {$mode eq "update" && !$exists} { error "Plugin '$id' is not installed" }
-    if {$exists && !$managed} { error "Plugin '$id' exists but is not managed by Plugin Install API v1" }
-    set oldver [expr {$managed ? [pluginInstalledField $id version ""] : ""}]
+    set oldver {}
+    if {$exists} {set oldver [dict get [pluginUpdateTargetInfo $type $id [expr {$mode eq {update}}]] version]}
     if {$exists && $oldver ne ""} {
         set cmp [pluginVersionCompare $newver $oldver]
         if {$mode eq "update" && $cmp <= 0} { error "Update of '$id' must be newer than installed version $oldver (package is $newver)" }

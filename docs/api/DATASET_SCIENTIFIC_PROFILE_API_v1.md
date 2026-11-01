@@ -107,7 +107,7 @@ rows with bounded high cardinality and GUI heartbeat, zero repeated range/stream
 reads through two consumers, fresh-interpreter reopen, partial coverage, corruption,
 mid-build cancellation, replacement races, metadata-failure rollback, high-rank
 unsupported state, and a ten-million-element implicit axis with zero data reads.
-These checks exercise bounded resource use, numerical equivalence and cancellation without altering the original Dataset.
+Focused logs and timing/RSS are in `docs/evidence/dev075`.
 
 # Legacy categorical component (dev073/dev074; preserved)
 
@@ -144,6 +144,14 @@ carry empty/incomplete entries with the discovery-budget reason. An in-memory
 legacy cache retains at most 32 Dataset/budget identities, with obsolete identities
 removed. Persistence is base64-encoded structured Tcl data in the ordinary metadata
 INI, protected from generic user/module metadata editing.
+
+The existing native collector stops category collection for a column after its
+positive distinct-value cap is full and an additional admitted distinct key has
+already established truncation. It still validates each incoming chunk's shape.
+No subsequent key can change that bounded inventory or its incomplete status;
+other columns continue normally. Encounter order, retained bytes and scanned-row
+coverage are unchanged. This optimization applies only to derived category
+choices, not canonical scientific validation or descriptive numeric summaries.
 
 Normal registry commits detect changed scientific fields and generate/update profiles
 for acquisitions, imports, generation, publication and replacement. The bounded
@@ -187,8 +195,8 @@ validated before merging, so obsolete inventories cannot cross a Dataset replace
 incomplete descriptive distinct sample. `datasetProfileVariable` still reports the
 actual requested summary's partial coverage: complete membership does not imply
 complete numeric statistics. Existing API identity, metadata key and signatures stay
-unchanged. The public contract applies consistently to CSV/HDF5 sources,
-Preview and Graph Series consumers.
+unchanged. Focused CSV/HDF5 and real Preview/Graph Series checks are in
+`validation/preview_dev076/` and `docs/reports/PREVIEW_CORRECTIONS_dev076.md`.
 
 ### Explicit filter binding (dev094)
 

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Rigol CSV technical reference</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Rigol CSV technical reference</h1>
+</header>
+<p>For the illustrated native workflow, open <strong>Help</strong> on
+the Rigol importer row or <a href="TUTORIAL.html">the HTML tutorial</a>.
+This Markdown file remains the technical reference and is available
+through the manual host References menu.</p>
+<h1 id="rigol-csv-import">Rigol CSV Import</h1>
+<p>Select <strong>Rigol oscilloscope CSV import</strong> in Acquisition,
+then add the source CSV to the standard batch table. The module previews
+the configured header and eight data rows before import. The Variables
+table shows detected signal columns; choose canonical names and units
+there. A Rigol DS1000Z source uses the first header row for channel
+names and the second for units, <code>Start</code>, and
+<code>Increment</code>. <code>Start</code> and <code>Increment</code>
+are timing metadata, not signals.</p>
+<p>The default parser expects two header rows, a sequence number in
+column 1, and comma-separated records. Change parser, delimiter, header
+count, column mapping, or raw/trailing field counts in module
+configuration when the actual export layout requires it. Those settings
+apply to both Preview and import. An invalid or unsupported source
+remains a GX-TXT import failure to diagnose; the module does not label
+previously supported Rigol exports as bad external data merely because a
+preview could not map them.</p>
+<p>Import preserves the exact RAW source. Each selected channel becomes
+an independent full-resolution <code>timeseries.table</code> Dataset
+with stable Variable IDs <code>v0001</code> (time_s, seconds) and
+<code>v0002</code> (signal, source-declared unit). All selected channels
+form one persistent measurement Group. The normal Dataset Browser
+expands/collapses it; move/export/import the whole Group, or explicitly
+detach a member before moving it independently. Ordinary member Preview
+and Dataset ZIP remain available. Missing unselected channels are never
+fabricated.</p>
+<p><strong>Canonical storage</strong> is <code>auto</code>,
+<code>hdf5</code> or <code>csv</code>. Auto chooses CORE HDF5 for
+sources at least 8 MiB; smaller inputs use CSV. HDF5 uses the actual
+CORE Publication v2 writer, numeric float64 schema, original time
+reconstruction and canonical SHA. CSV writes 17 significant digits for
+float64 round trips. Neither path reduces scientific samples. An
+unavailable requested HDF5 backend fails normally; there is no disguised
+CSV or silent precision downgrade.</p>
+<p><strong>CSV parser backend</strong> is <code>auto</code>,
+<code>native</code> or <code>octave</code>. For HDF5, Auto uses the
+installed native worker when available, otherwise the retained streaming
+Octave worker. Both emit typed private numeric transport consumed by
+CORE; the worker does not own HDF5 or the Dataset Registry. CSV uses
+Octave. Explicit Native requires its installed binary and HDF5.
+Processing is currently one actual parser worker; a global requested
+thread count does not claim parallel parsing.</p>
+<p>Metadata records actual source channel/column, sample count, source
+time start, increment/sample rate when present, sequence diagnostics,
+actual worker and stage timings. No instrument model, trigger or missing
+engineering unit is invented. Add a real oscilloscope in Instrumentation
+when that provenance is available. CORE checks source identity across
+inspection/RAW staging, owns the transaction, Namespace and Group, and
+rolls back failed publications together.</p>
+<p>Requires compatible P028 CORE Acquisition numeric-publication/Group
+capabilities on GX-TXT 0.9.8.10-dev, the configured CORE HDF5 Python
+dependencies for HDF5, and GNU Octave for the retained Octave/CSV paths.
+The distributed Debian native binary has its exact C++ source and build
+receipt in this package. Installation uses the existing Plugin Install
+API. Acquisition importers are always available; select the current
+importer in Acquisition.</p>
+<h2 id="progress-cancellation-and-session-identity-2.2.0">Progress,
+cancellation and Session identity (2.2.0)</h2>
+<p>The normal <strong>Import into current Session</strong> action keeps
+the GUI event loop active while the native or Octave parser and CORE
+binary Publication run in an owned auxiliary process. The Acquisition
+heading shows parser rows/percent, channel publication and finalization.
+Percentages apply to the displayed phase; validated channels remain
+pending until the whole Group commits. <strong>Cancel import</strong>
+and the existing Stop action request cancellation of that same process
+group.</p>
+<p>The selected Session is protected from other Dataset writes while the
+request is active. Changing the selected Session cancels the original
+request; completion never targets the newly selected Session. Source
+size/mtime are pinned on admission, and worker source hashes are
+verified across the complete import. Original RAW files are read only.
+Callback diagnostics and control envelopes are bounded; complete numeric
+arrays remain in the existing Publication data path.</p>
+<p>Cancellation waits for the owned worker to exit, then runs the
+existing Dataset journal recovery before releasing the Session. The
+unfinished Group, its copied RAW and its new channels roll back
+together; previous imported queue rows and existing Datasets remain. A
+receipt enlisted in the same transaction distinguishes a completed
+commit from a late cancellation. If recovery fails, the Session stays
+protected and the UI reports failure for review. A crash is reconciled
+by existing Dataset recovery when the Session is reopened.</p>
+<p>Programmatic synchronous import remains synchronous with its existing
+Dataset-ID return value. Additive host APIs are
+<code>acquisitionHandlerImportSourcesAsync module session sources datasetId contract variables ?options? ?callback?</code>
+and <code>acquisitionHandlerCancelAsync operation_id ?reason?</code>.
+The callback receives the existing request-style
+<code>{ok result|error}</code> dictionary; successful results carry
+<code>operation_id status session module_id dataset_ids</code>. Status
+is <code>completed</code> or <code>cancelled</code>. These auxiliary
+requests do not create a second durable scientific Job or Registry. Host
+Preview preparation after successful commit retains the normal
+configured policy; the auxiliary worker suppresses only its own
+duplicate advisory Preview preparation in process memory.</p>
+<h2 id="temporary-numeric-storage-2.3.0">Temporary numeric storage
+(2.3.0)</h2>
+<p>The importer explicitly marks its generated numeric transport as
+consumable. CORE validates that these files belong to its private import
+staging area and removes each file after its last successful use; shared
+time arrays remain until all selected channels consume them. This
+reduces unnecessary temporary disk writeback. Original RAW and canonical
+Datasets retain their existing integrity checks and lifetime, including
+rollback of an unfinished Group.</p>
+<p>Normal import retains one existing HDF5 channel provider at a time,
+the reliable lower-memory choice from complete-import measurements. The
+native parser uses one parser process. Configuration’s worker count is a
+capacity budget and does not imply that this parser processes CSV
+records in parallel.</p>
+<p>One managed temporary workspace now serves the complete Group, with
+isolated channel scopes. Existing owned recovery releases that workspace
+after cancellation. Each canonical channel remains independently
+portable with its explicit float64 time axis; temporary shared buffers
+do not couple canonical Dataset lifetimes.</p>
+<p>On the verified 141 MB, four-channel recording (three million
+samples/channel), a matched shared-collector change reduced complete
+import 17.389489→16.012613s (7.9%, observed1.086× throughput), with
+timed CPU 15.06→13.63s and identical scientific values, inventories and
+own storage traffic. A whole-pipeline control
+measured34.340439→28.021367s, with less CPU and temporary writeback;
+shared disk pressure varied, so these measurements are not a guaranteed
+import duration. Requested 1/2/4/8 worker experiments did not show
+reliable parallel speed gains; normal parser, channel provider and
+durability flush remain serial. # DEV111-P031 compatibility</p>
+<p>Version2.3.1’s illustrated guide, References and native HTML behavior
+require the matching DEV111-P031 CORE. The package’s DEV111 minimum does
+not encode a patch number and does not claim the new guide workflow
+works on P029/P030 or older frameworks. CSV parser/runtime bytes retain
+their prior scientific behavior.</p>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# dev097 accepted release status — 2026-10-17
+
+The user explicitly accepts GX-TXT 0.9.8.10-dev-097 as the official Linux/Debian release and authorizes its deposit. The packaged [user decision](DEV097_USER_ACCEPTANCE_20261017.json) resolves the two previously reported release blockers. The normal active dev096 installation and independent plugins are preserved; depositing this release does not activate it.
+
+The original RLC tutorial and fifth guide are **DEFERRED — USER DECISION** because the eleven original waveform inputs are unavailable. They remain scientifically untested, never PASS. The four completed scientific tutorial workflows retain their [guides and downloadable sources](../guides/tutorials_dev097/index.html). Independent Digitalizer 1.2.29 is not merged; 2.0.3 integration belongs to the separate future assignment.
+
+The single cumulative scientific campaign198–202 and retained source review203 verify the recorded numerical/API/Script Bridge/transport/data-integrity work. The isolated Debian install, actual rollback and native-loader checks204 passed. The installed GUI smoke completed its one representative edit and normal save/exit/restart/reopen verification; three failed harness attempts and two successful continuation processes remain accurately recorded. Other final GUI matrices are **NOT RUN — USER-ACCEPTED**. No scientific or GUI acceptance is repeated for this metadata-only deposit.
+
+The external final acceptance package binds all98 indexed requirements and17 evidence families to the final archive, includes the exact metadata-only impact review, and preserves the earlier blocked gate as history. Its current gate checks actual final package integrity and the unmodified statistical anti-bypass validator. Release acceptance does not convert deferred scientific work into PASS.
+
+Scientific limits remain: unavailable uncertainty is not zero; conditional intervals are not unconditional guarantees; optional Bayesian MCMC is unavailable. The measured1M fit-only polynomial timing includes mandatory inference identity hashes and is slower than096; recorded aggregate/managed-read budgets pass. Byte-identical native adapter rebuild evidence applies to its recorded environment only.

@@ -10,10 +10,10 @@ supplies display-only examples through the same public native constructors.
 1. Choose **New project** and an existing parent directory. The environment creates
    a new project directory, source skeleton, inert Builder design, facility
    requests and provenance. An existing nonempty project is never overwritten.
-2. Edit **C++ handlers** in the shared source editor. Native selection, Copy/Paste,
+2. Edit **handlers.cpp**, additional **src/*.cpp** units and **include/*.hpp** headers in independent source tabs. Native selection, Copy/Paste,
    Undo/Redo, Find, syntax colors, physical lines and supported folds belong to
    Source Surface. The separate C++ debugger runs admitted source through the fixed compiler and real GDB/MI backend.
-3. Save source with **Save / Ctrl+S**. A dirty close asks Save, Discard or Cancel.
+3. Save the current source with **Save / Ctrl+S**, or commit every changed tab with **Save All / Ctrl+Shift+S**. A dirty close asks Save, Discard or Cancel.
    The Builder design and generated reports are read-only here; edit visual
    hierarchy/properties with the existing Interface Builder.
 4. Choose **Validate** (Develop menu or toolbar; F5 starts/continues Debug). This runs the real Clang raw lexer, then resolved AST
@@ -69,12 +69,80 @@ distributed binary without invoking the development compiler.
 
 Project imports first pass the actual Clang raw lexer/resolved AST and facility
 checks; rejected imports do not replace the editor buffer. Source Save uses the
-same project-write tool grant as CLI. Invalid C++/JSON can be saved for repair,
-but cannot pass future Build/Run admission. No code runs on import. The compiler/AST policy must admit source before any
+same project-write tool grant as CLI. Incomplete C++ can be saved for repair.
+Save All requires well-formed project metadata and retains its existing source_files
+list; use the tree actions to change that list. Invalid source cannot pass future
+Build/Run admission. No code runs on import. The compiler/AST policy must admit source before any
 native execution. No authored Tcl hook, build script, external header or alternate
 compiler command is accepted. Reopening the same project preserves its original
 source bytes. A changed source/design during validation or execution is refused
 rather than silently applied to another revision.
+
+
+## Multifile source tree and portable projects
+
+![Actual GDB Step Into at an executable project header, with its own source tab and physical execution arrow.](images/multifile-debug-header.png)
+
+The project tree shows handlers.cpp, nested src/ translation units and include/
+headers. **New file** creates an empty source or a header with pragma once.
+**Add file** copies a selected ordinary UTF-8 .cpp/.hpp into a chosen project-relative
+name. **Rename / move** preserves exact file bytes; update include statements
+explicitly. **Remove** asks before deleting an auxiliary file; handlers.cpp is
+the mandatory entrypoint and cannot be renamed or removed. Failed operations
+retain the existing source tree. Names containing traversal or linked ancestors
+are refused. Projects admit at most32 source/header files,64KiB each and1MiB total.
+
+At narrow widths, source tabs use a selector with the complete relative file
+names. Scroll the project tree horizontally to read long nested filenames.
+The File menu retains New file, Add file, Rename / move, Remove and Close tab
+when their duplicate toolbar buttons do not fit. SDK, Profile, API Browser and
+the diagnostic pages keep their existing native page selection.
+If the inline API reference is taller than its page, use its outer scrollbar to
+reach the remaining reference controls. Keyboard focus brings those controls
+into view; the reference's own lists and text keep their normal scrolling.
+
+Select a file to open its independent shared Source Surface tab. Switching files
+preserves unsaved text, Undo, selection and scroll position. A star marks each
+changed tab. **Close tab / Ctrl+W** offers Save/Discard/Cancel for that file.
+Save All checks every changed file's inspected SHA before publishing the batch;
+a concurrent external edit refuses the operation and retains all buffers.
+Ordinary I/O failure restores prior touched bytes/modes; no crash-atomic promise
+is made. Validate/Build/Preview/Test/Export save every changed tab first.
+
+All source/header bytes participate in the complete source manifest and composite
+project identity. A helper/header edit invalidates the previous Build/Preview and
+source-bound Debug execution. The original fixed compiler admits each translation
+unit and its local headers, then links all units with the trusted SDK adapter.
+Diagnostics navigate the actual file, line and column; generated reports and
+Builder design remain read-only. Every source tab is part of this one project,
+not another installed program.
+
+Breakpoints in all open source/header tabs are submitted together against one
+frozen whole-project revision. GDB Step Into/Out and Call Stack selection open
+the actual helper/header/caller tab and place its execution arrow. SDK/system
+frames remain external. A nonexecutable header breakpoint can stay pending or
+resolve to a different instruction; only actual GDB observations establish a stop.
+Stop before changing the active breakpoint set.
+
+**File → Import project package…** reads a normal exported Viewer ZIP and creates
+a separate editable project in a chosen parent folder. The source/design/project
+manifest and authored manual/assets are checked against the package checksums
+and build receipt before the complete folder is published. Existing destinations
+are preserved. Import runs no authored code and loads no packaged native binary;
+use explicit Build under current admission before Run. Export includes exact
+sources/headers and their source manifest alongside the genuine compiled binary.
+Install the exported module separately through the ordinary Plugin Manager.
+
+The CLI uses the same owners:
+
+```sh
+printf '{"operation":"list"}\n' | core/bin/gxtxt-viewer-dev project_files /absolute/projects/thermometer
+core/bin/gxtxt-viewer-dev import_project /absolute/projects/imported --package /absolute/packages/viewer.zip
+```
+
+The project_files operation reads a JSON object on stdin; use operation list,
+then the returned expected_project_sha256 for add/rename/remove/save_all. Full
+request shapes are in the public Viewer Development API manual.
 
 ## Configure a real event test
 
@@ -165,9 +233,10 @@ Host functions, actual budgets and synchronization fingerprints.
 
 ## Profiles and API Browser
 
-Use **View → API Browser** to show or hide the Browser below **Developer project**
-in the left column. The same Browser is available in Python and GNU Octave Script
-Workspaces. Drag the vertical divider to share space with the Explorer. Searching
+Use the **API Browser** tab beside SDK and Profile in the right reference
+notebook. **View → API Browser tab** shows or hides that tab. The same Browser is available in Python and GNU Octave Script
+Workspaces. Its internal divider shares space between API declarations and
+reference text; the project tree keeps the full left-column height. Searching
 and reading declarations require neither a scientific Session nor a C++ project.
 
 Family rows describe the actual installed public declarations. Separate provider
@@ -197,7 +266,7 @@ The selected reference follows Session open/switch/close using the cached
 catalog, without another metadata worker or scientific Job. A Session does not
 activate a script. Narrow editors retain readable list/detail panes; their
 divider adapts to the actual font size while retaining the Explorer.
-Use Select All/Copy in the focused reference, and **Open full API manual** for
+Use Select All/Copy in the focused reference, and **Manual** for
 the existing Documentation Browser. A manual can be unavailable; its name alone
 does not establish a complete reference for every operation. Browsing does not
 execute a provider operation, start a Script/Job or change source text.
@@ -268,7 +337,7 @@ its guarantees remain limited to the exact tested project/profile and mechanisms
 
 ## Native GUI walkthrough
 
-![Source project, public API subset and actual validation/build controls.](images/workspace.png)
+![Multifile source tree, independent tabs and actual validation/build controls.](images/multifile-project.png)
 
 ![Compiled C++ numeric change event and the genuine public Native3D RAM viewport.](images/native3d-cpp.png)
 
@@ -282,6 +351,16 @@ requires reopening Demo. CLI and GUI check the source-bound artifact before
 build/run, require fresh admission and compilation for changed inputs, and reject
 incomplete/stale output. The common footer distinguishes compiled-event state
 from the native viewport's separate rendering state.
+
+### Trusted scalar Numeric calls
+
+The native C++ library remains loaded across events. Explicit scalar Numeric
+add/sqrt/exp calls use a bounded trusted transport to the same public Numeric
+owner; the numerical service does not inherit C++ author memory/CPU/file limits.
+The native author budgets remain unchanged. Domain errors discard that event's
+UI/state updates, and a later valid request can recover in the same Viewer.
+Viewers without scalar grants start no scalar transport. Normal Close, failure
+and cancellation drain/reap the owned broker and CORE helper groups.
 
 ## Complete copyable source projects
 
@@ -298,9 +377,9 @@ Viewer name remains available in its title, catalogue tooltip and module metadat
 The official examples use concise captions; their original source designs and
 C++ handler bytes remain intact.
 
-## Real restricted C++ debugging (dev108)
+## Real restricted C++ debugging
 
-The debugger controls **actual admitted `handlers.cpp`**, compiled by the same
+The debugger controls the **actual admitted C++ project source tree**, compiled by the same
 fixed Clang19/SDK/AST owner as normal Build/Run. Debug uses `-O0 -g3 -fstandalone-debug` and explicit
 source path mapping; GDB/MI runs the same separate native ABI worker. Numeric and
 SDK calls retain the exact normal admission/public broker contracts. Debugger
@@ -308,7 +387,7 @@ execution and its returned operation plan are distinct from a scientific GUI
 submission; no scientific Job is implied by inspecting a scalar event. There is no arbitrary GDB
 console or expression evaluator. Compiler options and dependencies remain explicitly reviewed; ordinary project-local process facilities are documented in the support catalog.
 
-Open/save `handlers.cpp`, wait for source structure, set a breakpoint in the
+Open a declared source/header tab, Save All, wait for source structure, set a breakpoint in the
 compact red-dot gutter or with F9, then choose Start Debug. A yellow arrow marks
 the actual selected native source line; its lane is separate from folding and
 physical line numbers. A hollow red dot is disabled. Blank/comments are refused;
@@ -443,7 +522,7 @@ The debugger does not grant a GDB console, arbitrary evaluation or direct I/O.
 ### Read-only inspection, installed native testing and illustrated export
 
 The Source browser opens project files and the supplied SDK. Approved CLI
-`inspect --target` accepts only `handlers.cpp`, `project.json`, `MANUAL.md`,
+`inspect --target` accepts declared C++ source/header files, `project.json`, `MANUAL.md`,
 `design.gxtxt-viewer`, or `sdk_v1`; it returns exact UTF-8/bytes/SHA and never
 executes the inspected text. `api --document VIEWER_GUI_HOST_API_v1` reads a
 catalogued public manual without an arbitrary path. Discovery is not a runtime
@@ -497,7 +576,7 @@ Poll/Publish on the original Job rather than submitting another simulation.
    `remove` removes a binding while retaining historical content bytes.
 5. Save inert UTF-8 MANUAL.md through approved `save --file MANUAL.md` (at most
    256KiB, no NUL; ordinary C++ source/project metadata remain64KiB), referring
-   to a Markdown reference to an installed-module image path `images/circuit-native.png`. Allowed PNGs are bounded to4096²,
+   to `![Caption](images/circuit-native.png)`. Allowed PNGs are bounded to4096²,
    8MiB each,32 images/16MiB aggregate; symlinks, altered SHA/codec, stale sources
    and external references fail. Historical admitted images keep original
    capture source/version provenance; captions must state that version honestly.
@@ -577,7 +656,7 @@ grants, action payload, scalar defaults or component identities remain strict.
 Live edited projects still require Close/reopen; old Workspaces without the
 digest retain exact-snapshot compatibility. No scientific source guard is removed.
 
-## Declared visibility, canonical source inspection and waveform editing (dev108)
+## Declared visibility, canonical source inspection and waveform editing
 
 These controls compose existing public Builder, GUI Host, Configuration, Plot,
 History and Workspace owners. A declared presentation handler is dispatched by
@@ -660,7 +739,7 @@ The corresponding public host calls are
 `viewerGuiDesignComponentVisible window component boolean` and
 `viewerGuiDesignComponentVisibleGet window component`. The latter reports
 explicit presentation visibility even for an unselected notebook page. Normal
-Module generation marks these declarations as requiring dev108, including a
+Module generation records the necessary package compatibility metadata, including a
 design without icons.
 
 ![Actual cold-opened generic Builder-generated visibility fixture with checked native View rows. This validates shared presentation controls, not restricted Circuit author adoption.](images/declared-visibility.png)
@@ -759,8 +838,8 @@ Source-point probes continue to return exact canonical row/values/units; they do
 not infer rows by reading screen pixels. These edits do not calculate vectors,
 submit Jobs, retrieve remote results or admit arbitrary author scripts.
 
-![Earlier actual primary generic series fixture with retained voltage traces and right-axis i_v1 (A). Subsequent independent qa_plot_series04 verifies the corrected native renderer and cold restore; this illustration retains its original capture provenance.](images/canonical-series-axes.png)
-![Same earlier primary generic fixture at820x600: two canonical panels and a shared bottom time axis. Independent qa_plot_series04 later passes the empty-panel shared-X correction and exact saved restore; author1.9 adoption is separately evidenced below, not certified by this older image.](images/canonical-series-panels.png)
+![Canonical series fixture with retained voltage traces and right-axis i_v1 (A).](images/canonical-series-axes.png)
+![Canonical series fixture at820x600: two panels and a shared bottom time axis.](images/canonical-series-panels.png)
 
 ### Canonical schematic-to-waveform selection
 
@@ -776,7 +855,7 @@ current, missing variables, foreign publications and stale source report errors
 and retain the earlier waveform. Split-complex AC requires an explicit public
 Numeric projection; the probe does not compute magnitude/phase implicitly.
 
-For a completed AC publication, the same endpoint click now resolves the actual
+For a completed AC publication, the same endpoint click resolves the actual
 frequency and split real/imaginary pair into the existing AC Numeric form.
 `AC_SOURCE_SELECTED` identifies its Dataset, original Job, physical unit and
 exact Variable IDs. The previous Plot/computed result stays valid. In **AC result**
@@ -833,7 +912,7 @@ only Escape is admitted for a mapped, unobscured, bound declared Plot, with no
 active pan. Other Plot keys/foreign/hidden/stale targets remain denied. A warm
 GUI owner receipt does not certify fresh external CLI projection of every field.
 
-![Actual primary fresh normal installed1.8 author Workspace restore: saved canonical crosshair and truthful no-row-reselected readout. No computation or simulation on reopen.](images/canonical-source-cursor.png)
+![Canonical Workspace restore: saved crosshair and explicit no-row-reselected readout. Reopen performs no computation or simulation.](images/canonical-source-cursor.png)
 
 ### Discover shared original icons through the approved tools
 
@@ -871,7 +950,7 @@ ordinary source/C++ limits and runtime SDK permissions remain unchanged.
 
 ![Actual native Add shared icon chooser lists the29 original distributed sources.](images/shared-icon-sources.png)
 ![Actual imported Voltage resource retains its declared title, Electrical category, license, source SHA and four native state previews.](images/shared-icon-metadata.png)
-![Independent fresh generic Builder Preview: all18 added glyphs at16/24 pixels, normal and actual native disabled states. These are real controls after the inherited-paint correction, not installed Circuit Viewer certification.](images/shared-icon-native-sizes.png)
+![Shared Builder Preview glyphs at16/24 pixels with normal and disabled native control states.](images/shared-icon-native-sizes.png)
 
 Safe SVG group paint is normalized before the existing bounded decoder, including
 inherited fill/stroke and paint opacity; group opacity and transforms retain
@@ -930,24 +1009,234 @@ write guards and the existing admitted relative PNG rules remain unchanged.
 Oversize, invalid encoding/NUL, links or arbitrary targets reject while retaining
 the earlier saved guide. Normal export preserves exact guide bytes in installed
 `MANUAL.md` and `source/MANUAL.md`; the inert guide does not grant runtime I/O or
-execute source. The SDK contract adds `manual_limit_bytes=262144`, so its policy
-bytes change even though runtime header/calls/grants are unchanged. The actual
-formerly denied73976-byte author guide passed identical retry; final1.9 guide
-74071 bytes and seven admitted assets were exported through the normal owner.
+execute source. The current SDK policy uses `manual_limit_bytes=262144`. The manual remains inert
+and source/package checksums preserve its exact authored bytes. A screenshot or
+successful Save does not establish scientific correctness or complete release
+acceptance; inspect the actual operation and public persistence receipts.
 
-The illustrations above retain their genuine Debian capture/source provenance.
-Independent `qa_plot_series04/INDEPENDENT_MULTITRACE_CORRECTION_QA` now passes the
-empty-panel shared-X correction with native binary `17ce56ba`, exact source and
-four Dataset identities, two sizes, occupied-panel denial, and fresh normal
-factory restore of all50 History states with no science/converter/protocol calls.
-The original failure report and earlier images remain historical evidence. That
-is a scoped generic public-host PASS, not proof of an arbitrary authored Viewer.
+## Readable API reference with larger Appearance fonts
 
-Separately, the restricted Circuit author1.9 has adopted the declared panes,
-netlist and series profile and used approved public Save/close/reopen on canonical
-Workspace `idoc_0006`: three traces/two panels, cursor, C++ state,105/105 History,
-netlist and original campaign/Jobs were retained. This actual author workflow is
-distinct from the generic fixture correction. Independent current installed GUI,
-remaining focus/layout cases and final release gates retain their own acceptance
-scope. No screenshot or successful Save certifies all scientific, security or
-release requirements.
+The right **API Browser** tab uses the shared reference browser. Search and
+surface selection stay above the API list; **Refresh** reloads declarations.
+**Manual**, **Previous** and **Next** share a responsive footer with full
+tooltips. Select a list row to read its scrollable reference below the sash.
+Successful searches release the status row; pending requests, errors and empty
+results keep visible status feedback.
+
+Resize the sash to divide list and details. The layout retains three API rows
+and four reference text lines, plus Diagnostics' heading, one row and scrollbars.
+The ordinary-font minimum client is 980×650. A larger saved Appearance font
+requires a taller measured minimum window; attempts to resize below that height
+are clamped by the window manager. Captions and source fonts retain the selected
+size. A taller window gives Diagnostics more space. Save Appearance changes and
+restart GX-TXT normally to apply the chosen font.
+
+![API Browser with persisted Appearance18: native family/method glyphs, selected real SDK reference and source remain readable at the measured taller minimum window.](images/api-browser-readable-rows.png)
+
+API Browser family and method rows use the existing shared UI Field inspection
+font and row padding. The native row height follows the saved Appearance font,
+and the three-row minimum uses those actual rows. This does not autosize the
+Browser's declared columns on queries or replace a deliberate horizontal pan.
+
+Project file dialogs use the shared UI Field requested geometry and screen bounds, including larger Appearance fonts. The file-name entry and Add/Rename/Cancel actions follow their font sizes; no fixed220-pixel height is imposed.
+
+
+## Per-file Markdown Notes — DEV111-P030
+
+Use the primary **Edit → Edit Notes** command for the selected source file.
+**View → Show Notes** hides or shows the same adjacent note page; it retains the
+draft and its Undo/search state. Notes use the shared Markdown editor with Source,
+Rendered, Outline, Properties and Resources views. Insert images through its
+existing image command. Source and Rendered have independent selection and copy.
+Find and Focus Source act on the selected note. Python/Octave temporarily give
+Notes the source region and restore the prior code panels when returning to code.
+
+Explicit Save publishes the note as a canonical Markdown Dataset in the current
+Session. Without a Session, Save retains an explicit local note; attach it when a
+Session is available. Save All and portable Project export preserve per-file
+notes and their PNG resources through the existing source-owner snapshot.
+Save As/Save Copy create fresh source/note identities and preserve the original.
+Notes do not change source code, build inputs or scientific execution hashes.
+If another editor changes the source or note, saving refuses and retains the
+draft; review the current revision or use Publish New to preserve a separate copy.
+
+Opening an associated note from the Dataset Browser returns to that exact file's
+Notes page when its source remains available. Otherwise Documents opens the same
+canonical Dataset. Associated Source is read-only and shows only the exact
+matching source, with an explicit diagnostic if it has changed or disappeared.
+
+![Notes associated with the actual C++ source file, alongside the existing SDK reference.](images/p030-notes.png)
+
+Notes associated with the actual C++ source file, alongside the existing SDK reference.
+
+Formatting is in **Edit → Note format**, including headings, emphasis, code,
+lists, tables, links, quotes, rules and text color. **Edit → Note images** opens
+the shared PNG chooser and provides Replace/Remove for the selected managed
+resource. **View → Note panes and zoom** controls Source, Rendered preview,
+Outline, Properties and Resources independently, with zoom and layout reset.
+These groups act on the currently selected note and are unavailable on code
+pages. Portable images remain read-only until explicit Session attachment.
+
+## Acquisition plugin source projects
+
+The CSV recipe editor remains the simple INI workflow. Its File menu can also
+open the adjacent **Acquisition Plugin Builder**. In that window, File → New
+project chooses a parent directory; fill the Module ID, version, name, license
+and declared dependencies, then File → Save project metadata. The normal
+Development service creates a genuine Acquisition project (`project.json` and
+registered C++ source), without a Viewer canvas/design or an invented parser.
+Opening an existing project validates its actual target and source closure before
+replacing the displayed context. No scientific Session is required for authoring.
+
+Project → Add profile declares a module-local profile ID, human name and
+`text`/`binary` source kind. Its published identity is `MODULE/PROFILE`. Filename
+patterns and MIME hints are not content-recognition proof. Bind Recognize,
+Inspect and Import to registered source files and actual qualified C++ symbols;
+fill output contracts and profile dependencies. Capability and limit declarations
+use the shared Source Surface's typed JSON editor. The normal backend checks
+structure; only a matching current AST receipt can make a callback
+`validated_ast`. Unknown contract strings remain declarations, not fabricated
+compatibility. There may be zero profiles in an unfinished project, but real
+Build/Export requires eligible saved callbacks. Source registration alone never
+means a parser has compiled, a helper has executed or a Dataset has been imported.
+
+Module metadata also supports typed capabilities, provenance and test declarations.
+In Module metadata, **Edit configuration fields…** declares an ordered JSON array
+of up to32 scalar settings. Each field supplies `id`, `type`, `label`, `default`
+and `required`. Types are `string`, `integer`, `number`, `double`, `boolean` and
+`choice`; choices also supply `values`, and numeric fields may supply `min`/`max`.
+For example, `{"id":"enabled","type":"boolean","label":"Enabled","default":true,"required":false}`
+uses a JSON Boolean. The generated `format_profile` setting is reserved. Keep
+draft retains the declaration locally; Save project metadata persists it through
+the same whole-project revision checks. Missing fields in an older source project
+appear as an empty array. Actual Module settings/defaults and their persistence
+remain with the normal framework configuration owner.
+
+**Edit input Contract declarations…** retains an ordered JSON array of literal
+IDs, for example `["table.generic","model/step"]`. **Edit provided Contract
+declarations…** retains definitions with exactly `id`, `description` and `parents`
+(an ID array). Up to64 input IDs and64 definitions are supported within the
+existing source-size limits. Keep draft and Save project metadata use the same
+typed editor and revision checks. Duplicate IDs, self-parents and local cycles
+refuse without replacing the saved source. Unknown external parent IDs remain
+declared data. These source declarations do not insert entries into the active
+Registry: CORE decides installed providers, dependencies, compatibility and actual
+scientific Dataset admission. An older project without either field reads as [].
+
+The shared JSON source editor keeps Find/Replace collapsed initially. Its Edit
+menu or Ctrl+F/H reveals the same search controls; Escape returns to source.
+Arrays display one encoded item per line, preserving typed values. Invalid JSON
+shows its refusal in the dialog and retains the text for repair; semantic field
+errors refuse Save without replacing the saved project or discarding the draft.
+Save metadata and Save profile are distinct primary actions. Unsaved changes in
+the other form remain local drafts. New/Open/Refresh/Close review changed drafts;
+Yes starts the current form's asynchronous Save and keeps the context for review,
+No discards the reviewed local changes, and Cancel keeps editing. A stale full
+project revision/file/profile SHA refuses without replacing the current buffers.
+Refresh explicitly reviews and reloads the saved project; it never silently
+retries a stale mutation against a newer context.
+
+File → Open source workspace delegates to the existing Development Workspace.
+Its File menu adds/imports/renames/removes registered C++ translation units,
+headers and typed Tcl/Python helpers. Use `src/*.cpp`, `include/*.hpp`,
+`helpers/*.tcl` or `helpers/*.py`, with explicit helper ID and entrypoint for
+scripts. The existing policy permits32 compiled files plus32 helpers,64KiB per
+file and1MiB total registered text. The shared Source Surface preserves exact
+UTF-8, BOM and CRLF bytes and provides the existing selection/clipboard/search
+and source-tab behavior. Opening and cancelling an Add dialog does not save a
+changed source; Apply first saves current changed sources through the same CAS
+owner. Source rename preserves bytes and lets the owner update declared profile
+file bindings atomically. Removing a still-referenced file refuses; change its
+profile bindings explicitly first. Save All preflights the whole registered
+closure, so an external helper edit can correctly refuse a save of another file.
+An outside edit or recovery conflict preserves buffers and explains the refusal.
+
+Source notes are enabled only when the target/backend and that exact source row
+admit the existing Source Note service. An unavailable target must show its actual
+reason; it must not create a second note store or label a Tcl helper as C++.
+Registered C++ sources/headers and Python helpers use their actual language and
+the same Source Note owner. Tcl helpers retain editable source but do not offer
+Notes. Select the note page before using Save source (Ctrl+S): it saves that
+note, without replacing the source code. Without a Session this saves a local
+project draft; in an applicable Session an explicit Save creates or updates the
+canonical source-associated Markdown Dataset. Save All also snapshots canonical
+notes and their managed images for the existing source-project portability owner.
+Closing or switching projects reviews unsaved note buffers. A stale whole source/
+helper revision refuses without silently retargeting the note or discarding text.
+While a Note is selected, the existing workspace temporarily collapses the SDK
+reference pane and hides diagnostics and the duplicate code Find row. Returning
+to code restores their prior layout and focus; optional reference-tab choices,
+code buffers, Undo and queries are retained. The Note's own Find controls start
+collapsed: Edit → Find or Ctrl+F reveals them, and Edit → Replace in Note or
+Ctrl+H reveals the same replacement controls. Escape from Source or any Find/
+Replace control collapses that row and returns focus to the Note source without
+clearing its query or changing the text.
+Run → Validate checks the actual saved project and callbacks; changed declaration
+forms use the existing Save/Discard/Cancel review before a request starts. A
+matching current AST receipt enables Build and Export candidate. Build uses the
+normal Acquisition toolchain, and Export candidate uses the ordinary package
+writer; its actual package path appears in status. The selected profile remains
+selected through this refresh. Status shows the first compiler diagnostic; full
+diagnostics and output are available through File → Open source workspace in its
+existing Diagnostics and Build / runtime output panels. A refused validation
+does not make a profile eligible or replace a previous candidate package.
+
+The SDK tab uses the fixed readonly current-target inspector: Acquisition SDK v1
+for an Acquisition project, and the original Viewer header on a Viewer project.
+Its bytes and SHA are checked before display. An unavailable inspector reports
+that state instead of substituting a Viewer header. The API Browser binds the
+saved Acquisition project to its declared capability requests. In a current
+catalog its eight AcquisitionHost method references identify the actual target
+header and distinguish requested/admitted reference metadata from unrequested
+methods. This reference admission is separate from source/AST validation, Build
+and active runtime grants. No Viewer design is required for an Acquisition
+reference context. Trusted maintenance stays an unbound reference catalog. Test/
+runtime buttons remain disabled when the actual backend reports unavailable;
+compiled code or a normal candidate ZIP is not proof of native runtime admission.
+
+Actual parser recognition/inspection, selected RAW grants, progress/cancellation,
+full Test, typed outputs, publication/rollback, Group and independently installable
+package/Preview admission remain with the existing CORE Acquisition and restricted
+Development/toolchain services. A profile's public permissions and dependencies
+are declarations until those services admit them. The GUI never supplies an
+actor override, arbitrary compiler command, source read grant or canonical write
+path. Follow the actual backend diagnostics and ordinary Module install workflow;
+this source-project screen is not a vendor-format compatibility claim.
+
+### Acquisition project Test (P032)
+
+The primary **Run → Test** command in Acquisition Plugin Builder and **Develop → Test**
+in its C++ source Workspace share one CORE selection/configuration dialog. Choose
+1–64 ordinary files, an actual saved format profile and typed configuration.
+Configuration values here are transient Test overrides of the declared defaults;
+they do not change ModuleCfg, Configuration or a Session Manifest. Cancel keeps
+source and drafts. Changed source revisions refuse and require a fresh review.
+
+`VIEWER_DEVELOPMENT_API_v1` retains its `test` operation. For an Acquisition target
+its `request_json` uses `gxtxt.acquisition_project_test.v1` with `expected_revision`
+(from public ProjectFiles `describe`), `profile_id`, absolute chosen `sources`,
+and optional typed `config`. The complete request is bounded to64KiB; files are
+bounded to2GiB aggregate and the actual native Test to60seconds after admission.
+No private Tcl command is required. `project_test_available` is distinct from the
+Viewer-style `runtime_available` flag; Acquisition has no synthetic Viewer Demo.
+
+Test uses the existing normal candidate exporter and distributed native admission
+without installing/registering the module. The same Source Grant checks full SHA,
+the existing guarded broker executes the actual compiled callbacks, and the same
+typed buffer owner verifies/seals then discards provisional outputs after reap.
+No Session, Registry entry, Dataset, Dataset Group or scientific publication is
+created. The current producer/profile/config/source closure remains pinned;
+foreign profiles, stale revisions, unknown config, FIFO/linked sources, protected
+producer replacement and malformed output identity refuse. The private
+`derived/acquisition-test.json` reports actual guard, configuration and source
+identities, discarded output schema/SHA and reap; it explicitly does not certify
+scientific correctness or final installed-module behavior. Normal Plugin Manager
+admission and real canonical import/rollback/GUI acceptance remain separate.
+
+Before source-Workspace Test, the existing public ProjectFiles description is
+refreshed so saved profiles and configuration from the other Builder window are
+current. This adopts metadata only when module identity and registered source
+closure are unchanged. Source/Notes widgets, local drafts, Undo and layout remain
+in place. Test retains its explicit Save All/CAS behavior for local source edits.
+An outside source/roster or module identity change refuses with review/reopen
+guidance; it never silently reloads a draft.

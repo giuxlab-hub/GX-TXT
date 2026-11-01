@@ -1,0 +1,137 @@
+{
+  "format": "task210.tutorial_plots_coverage_shell.v1",
+  "content_id": "tutorial.ticino_valley_3d",
+  "status": "NOT_TESTED",
+  "complete": false,
+  "actual_build": null,
+  "actual_gui_inventory_observed": false,
+  "actual_control_rows": [],
+  "inventory_denominator": null,
+  "coverage_percentage": null,
+  "inherited_tutorial_outcomes": false,
+  "expected_graph_contexts": [
+    {
+      "source_declared_suffix": "terrain",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "river",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "settlements",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "population",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "landcover_built",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "landcover_forest",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "landcover_agriculture",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "landcover_water",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "source_declared_suffix": "hydraulic",
+      "actual_graph_id": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    }
+  ],
+  "preparation_categories": [
+    {
+      "category": "selection_panels_provider_graph",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "category": "variants_series_legends",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "category": "axes_units_ranges_colours_labels",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "category": "fit_zoom_pan_native_consultation",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "category": "presentation_rerender",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    },
+    {
+      "category": "export_print_persistence",
+      "literal_observed_control_label": null,
+      "status": "NOT_TESTED",
+      "actual_applicability": null,
+      "evidence": []
+    }
+  ],
+  "row_completion_requirements": [
+    "Actual version and graph/provider/source context",
+    "Exact visible label and normal supported user action",
+    "Observed applicability/enabled state with reason; no source-only not-applicable verdict",
+    "Actual outcome with immutable evidence and retained failures/retakes",
+    "Scientific meaning and source/unit limits",
+    "No thermal outcome inheritance or unobserved percentage"
+  ],
+  "scientific_bounds": [
+    "Full grid and irregular corridor remain distinct",
+    "DSM elevation, population colour and fractions are separate quantities",
+    "Synthetic water height, depth and velocity are not measured hydraulics",
+    "No false time traces from IDs, class codes or source years",
+    "Profiles require meaningful actual coordinates, ordering and retained grouping identities",
+    "No synthetic uncertainty, missing cells or extra data for coverage"
+  ]
+}

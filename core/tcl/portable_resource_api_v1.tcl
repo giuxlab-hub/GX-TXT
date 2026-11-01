@@ -2,7 +2,7 @@
 # Resource packages use the Portable Session helper's path, symlink and SHA
 # rules; all content is validated in a private staging area before commit.
 # SPDX-License-Identifier: GPL-3.0-or-later
-namespace eval ::GX { variable portableResourceApiVersion 1 }
+namespace eval ::GX { variable portableResourceApiVersion 1;variable portableDocumentImportActive 0;variable portableDocumentImportOwners {} }
 
 proc ::GX::_portableResourceHelper {} {
     variable scriptDir
@@ -17,8 +17,8 @@ proc ::GX::_portableResourceRun {args} {
     }
     return $output
 }
-proc ::GX::_portableResourceFields {path {schema 0} {graph 0}} {
-    set operation [expr {$graph ? "emit-graph-state" : ($schema ? "emit-schema" : "emit-fields")}]
+proc ::GX::_portableResourceFields {path {schema 0} {graph 0} {group 0}} {
+    set operation [expr {$group ? "emit-group" : ($graph ? "emit-graph-state" : ($schema ? "emit-schema" : "emit-fields"))}]
     set output [_portableResourceRun $operation $path]
     set result [dict create]
     foreach line [split $output "\n"] {
@@ -36,6 +36,33 @@ proc ::GX::portableResourceValidate {archive} {
     return [_sessionPortableParseOutput [_portableResourceRun inspect $archive]]
 }
 proc ::GX::portableResourceInspect {archive} {portableResourceValidate $archive}
+proc ::GX::_portableResourceExportWithAssets {datasetIds args} {
+    set session [_interactiveDocumentRequireSession]
+    if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::_portableResourceExportWithAssets $datasetIds {*}$args]}
+    set rows {}
+    foreach id [lsort -unique $datasetIds] {
+        set assets [datasetPublicationV2DictDefault [datasetPrivateMetadataRead $session $id] _gxtxt.framework.document_assets_v1 {}]
+        _documentAssetsValidate $assets
+        dict for {name reference} $assets {
+            lappend rows [dict create dataset_id $id name $name reference $reference path [_documentResourceIdentity $reference]]
+            if {[llength $rows]>4096} {error {Portable document resource plan exceeds its bound}}
+        }
+    }
+    if {![llength $rows]} {return [_portableResourceRun {*}$args]}
+    set allocation [resourceManagementAllocate portable_document_assets [dict create category temporary lifetime request retention_seconds 0]]
+    set channel {}
+    try {
+        set plan [file join [dict get $allocation path] document-assets.tsv]
+        set channel [open $plan {WRONLY CREAT EXCL}]
+        fconfigure $channel -encoding utf-8 -translation lf
+        _portableResourceWriteStateField $channel schema gxtxt.portable_document_assets.v1
+        _portableResourceWriteStateField $channel count [llength $rows]
+        set index 0
+        foreach row $rows {incr index;dict for {key value} $row {_portableResourceWriteStateField $channel asset.$index.$key $value}}
+        close $channel;set channel {}
+        return [_portableResourceRun {*}$args --document-assets-plan $plan]
+    } finally {if {$channel ne {}} {close $channel};documentInteractiveAllocationRelease $allocation}
+}
 proc ::GX::portableResourceExportDataset {datasetId archive} {
     variable currentSession
     variable version
@@ -44,7 +71,111 @@ proc ::GX::portableResourceExportDataset {datasetId archive} {
     if {[datasetField $datasetId id ""] eq ""} {error "Unknown Dataset '$datasetId'"}
     set archive [file normalize $archive]
     if {![string match *.zip [string tolower $archive]]} {append archive .gxtxt-dataset.zip}
-    return [_sessionPortableParseOutput [_portableResourceRun export-dataset $session $datasetId $archive $version]]
+    set groupId [datasetGroupForDataset $session $datasetId]
+    set args {};if {$groupId ne {}} {set args [list --original-group $groupId]}
+    return [_sessionPortableParseOutput [_portableResourceExportWithAssets [list $datasetId] export-dataset $session $datasetId $archive $version {*}$args]]
+}
+proc ::GX::portableResourceGroupApiInfo {} {
+    return [dict create api_id PORTABLE_RESOURCE_API_v2 api_version 2 resource_types dataset_group compatibility {Dataset Graph Workspace v1 remain unchanged}]
+}
+proc ::GX::portableResourceExportGroup {groupId archive} {
+    set session [_sessionPortableRequireSession]
+    if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::portableResourceExportGroup $groupId $archive]}
+    set group [datasetGroupGet $session $groupId]
+    if {[dict get $group status] ne {COMPLETE}} {error {Cannot export a degraded Dataset Group}}
+    set archive [file normalize $archive]
+    if {![string match *.zip [string tolower $archive]]} {append archive .gxtxt-dataset-group.zip}
+    set plan [file join $session metadata ".portable_group_[pid]_[clock clicks].tsv"]
+    set fd [open $plan {WRONLY CREAT EXCL}]
+    try {
+        fconfigure $fd -encoding utf-8 -translation lf
+        foreach field {group_id display_name group_contract revision namespace primary_dataset_id} {_portableResourceWriteStateField $fd $field [dict get $group $field]}
+        if {[dict exists $group created_at]} {_portableResourceWriteStateField $fd created_at [dict get $group created_at]}
+        set history [datasetPublicationV2DictDefault $group history {}]
+        _portableResourceWriteStateField $fd history_count [llength $history]
+        set index 0
+        foreach event $history {
+            incr index
+            foreach field {action at revision} {_portableResourceWriteStateField $fd history.$index.$field [dict get $event $field]}
+            _portableResourceWriteStateField $fd history.$index.details [dict get $event details]
+        }
+        _portableResourceWriteStateField $fd member_count [llength [dict get $group members]]
+        set index 0
+        set memberIds {}
+        foreach member [dict get $group members] {
+            incr index;set id [dict get $member dataset_id]
+            lappend memberIds $id
+            foreach field {dataset_id role required contract canonical_sha256} {_portableResourceWriteStateField $fd member.$index.$field [dict get $member $field]}
+            foreach field {source_module source_sha256} {_portableResourceWriteStateField $fd member.$index.$field [dict get $group source $id $field]}
+            set sourceName [datasetPublicationV2DictDefault [dict get $group source $id] source_name [file tail [dict get $group source $id source_raw]]]
+            _portableResourceWriteStateField $fd member.$index.source_name $sourceName
+        }
+        close $fd;set fd {}
+        return [_sessionPortableParseOutput [_portableResourceExportWithAssets $memberIds export-group $session $plan $archive $::GX::version]]
+    } finally {if {$fd ne {}} {close $fd};file delete -force -- $plan}
+}
+proc ::GX::_portableResourceImportGroup {staging options} {
+    set session [_sessionPortableRequireSession]
+    if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::_portableResourceImportGroup $staging $options]}
+    foreach key [dict keys $options] {if {$key ni {group_id dataset_id_map destination_namespace}} {error "Invalid Dataset Group import option '$key'"}}
+    set fields [_portableResourceFields [file join $staging group descriptor.json] 0 0 1]
+    set history {}
+    for {set i 1} {$i<=[datasetPublicationV2DictDefault $fields history_count 0]} {incr i} {
+        set event {}
+        foreach field {action at revision details} {dict set event $field [dict get $fields history.$i.$field]}
+        lappend history $event
+    }
+    _datasetGroupHistoryValidate $history
+    set sourceGroup [dict get $fields group_id]
+    set groupId [datasetPublicationV2DictDefault $options group_id $sourceGroup]
+    acquisitionHandlerValidateDatasetId $groupId {Dataset Group import ID}
+    if {[dict exists [_datasetGroupStoreRead $session] groups $groupId]} {error "Dataset Group '$groupId' already exists"}
+    set mapping [datasetPublicationV2DictDefault $options dataset_id_map {}]
+    if {[catch {dict size $mapping}]} {error {Dataset Group ID mapping must be a dictionary}}
+    set destination [datasetNamespaceNormalize [datasetPublicationV2DictDefault $options destination_namespace [datasetNamespaceCurrentGet $session]]]
+    if {[lindex [split $destination /] 0] eq {pending}} {error {Pending is not a published Dataset Group destination}}
+    set members {};set targets {};set sourceIds {};set actualMap {}
+    set count [dict get $fields member_count]
+    if {![string is integer -strict $count] || $count<1 || $count>1000} {error {Invalid Dataset Group member count}}
+    for {set i 1} {$i<=$count} {incr i} {
+        set sourceId [dict get $fields member.$i.dataset_id]
+        set target [datasetPublicationV2ValidateId dataset [datasetPublicationV2DictDefault $mapping $sourceId $sourceId]]
+        if {$target in $targets || [datasetField $target id {}] ne {}} {error "Dataset Group member ID collides: '$target'"}
+        set payload [lindex [glob -nocomplain -types f [file join $staging datasets $sourceId payload *]] 0]
+        foreach path [list [file join $session datasets imported "$target[file extension $payload]"] [file join $session metadata datasets $target.ini] [datasetNotePath $target $session]] {
+            if {[file exists $path]} {error "Dataset Group member destination already exists: '$target'"}
+        }
+        dict set actualMap $sourceId $target
+        lappend targets $target;lappend sourceIds $sourceId
+        lappend members [dict create dataset_id $target role [dict get $fields member.$i.role] required [dict get $fields member.$i.required]]
+    }
+    foreach id [dict keys $mapping] {if {$id ni $sourceIds} {error "Dataset Group remap contains unrequested Dataset '$id'"}}
+    set results {}
+    foreach sourceId $sourceIds target $targets {
+        lappend results [_portableResourceImportDataset $staging $target [file join datasets $sourceId]]
+        datasetNamespaceSet $session $target $destination
+    }
+    foreach target $targets {
+        set references [split [datasetField $target source_dataset_ids {}] {;}]
+        set mapped {}
+        foreach id $references {lappend mapped [datasetPublicationV2DictDefault $actualMap $id $id]}
+        if {[datasetField $target source_dataset_ids {}] ne {}} {datasetRegister $target [list source_dataset_ids [join $mapped {;}]]}
+    }
+    saveDatasetRegistry $session
+    set primary [dict get $actualMap [dict get $fields primary_dataset_id]]
+    datasetGroupCreate $session [dict create group_id $groupId display_name [dict get $fields display_name] group_contract [dict get $fields group_contract] primary_dataset_id $primary members $members]
+    set store [_datasetGroupStoreRead $session]
+    dict set store groups $groupId revision [dict get $fields revision]
+    if {[dict exists $fields created_at]} {dict set store groups $groupId created_at [dict get $fields created_at]}
+    dict set store groups $groupId history $history
+    _datasetGroupHistoryAppend store $groupId import [dict create source_group_id $sourceGroup source_namespace [dict get $fields namespace] destination_namespace $destination]
+    for {set i 1} {$i<=$count} {incr i} {
+        set target [dict get $actualMap [dict get $fields member.$i.dataset_id]]
+        dict set store groups $groupId source $target source_name [dict get $fields member.$i.source_name]
+    }
+    dict set store groups $groupId origin [dict create source_group_id $sourceGroup source_namespace [dict get $fields namespace] id_mapping $actualMap descriptor $fields]
+    _datasetGroupStoreWrite $session $store
+    return [dict create resource_type dataset_group group_id $groupId imported_dataset_ids $targets id_mapping $actualMap atomic 1 datasets $results]
 }
 proc ::GX::_portableResourceWriteStateField {fd key value} {
     if {[regexp {[\r\n]} $key]} {error "Invalid graph state key"}
@@ -155,11 +286,38 @@ proc ::GX::portableResourceExportGraph {artifact archive} {
     set archive [file normalize $archive]
     if {![string match *.zip [string tolower $archive]]} {append archive .gxtxt-graph.zip}
     try {
-        return [_sessionPortableParseOutput [_portableResourceRun export-graph $session $artifact $statePath $note $metadata $annotation $renderMeta $snapshot [join [lsort -unique $dependencies] {;}] $archive $version]]
+        return [_sessionPortableParseOutput [_portableResourceExportWithAssets $dependencies export-graph $session $artifact $statePath $note $metadata $annotation $renderMeta $snapshot [join [lsort -unique $dependencies] {;}] $archive $version]]
     } finally {
         catch {file delete -force -- $statePath}
         catch {file delete -force -- $scientific}
     }
+}
+proc ::GX::_portableResourceAdoptDocumentAssets {root metadata sourceId newId} {
+    set assets [datasetPublicationV2DictDefault $metadata _gxtxt.framework.document_assets_v1 {}]
+    if {![dict size $assets]} {return [dict create metadata $metadata owner {}]}
+    set index [_portableResourceFields [file join $root document-assets.json]]
+    if {[dict get $index schema] ne {gxtxt.portable_document_assets.v1} || [dict get $index count]!=[dict size $assets] || [dict size $assets]>32} {error {Invalid portable document asset closure}}
+    set owner [_datasetDocumentAssetOwnerCreateForImport [dict create operation portable_dataset_import source_dataset_id $sourceId destination_dataset_id $newId]]
+    if {$::GX::portableDocumentImportActive} {lappend ::GX::portableDocumentImportOwners $owner}
+    set remapped {};set complete 0
+    try {
+        for {set i 1} {$i<=[dict get $index count]} {incr i} {
+            set name [dict get $index asset.$i.name]
+            set source [dict get $index asset.$i.reference]
+            if {![dict exists $assets $name] || [dict get $assets $name] ne $source || [dict exists $remapped $name]} {error {Portable document asset association changed}}
+            set blob [dict get $index asset.$i.blob]
+            if {![regexp {^assets/[a-f0-9]{64}[.]blob$} $blob]} {error {Invalid portable document asset path}}
+            set path [file join $root $blob]
+            if {[file type $path] ne {file} || [file size $path]!=[dict get $source size_bytes] || [sha256File $path] ne [dict get $source sha256]} {error {Portable document asset bytes changed during adoption}}
+            set reference [interactiveDocumentResourceImportNumeric [dict get $owner document_id] $path [dict get $source metadata]]
+            if {[dict get $reference sha256] ne [dict get $source sha256] || [dict get $reference size_bytes]!=[dict get $source size_bytes]} {error {Imported managed image differs from its portable source}}
+            dict set remapped $name $reference
+        }
+        _documentAssetsValidate $remapped
+        dict set metadata _gxtxt.framework.document_assets_v1 $remapped
+        set complete 1
+        return [dict create metadata $metadata owner $owner]
+    } finally {if {!$complete && !$::GX::portableDocumentImportActive} {_datasetDocumentAssetOwnerCloseForImport $owner}}
 }
 proc ::GX::_portableResourceImportDataset {staging {newId ""} {prefix dataset}} {
     if {![datasetAuthorityActive $::GX::currentSession]} {return [datasetAuthorityTransaction $::GX::currentSession ::GX::_portableResourceImportDataset $staging $newId $prefix]}
@@ -204,7 +362,7 @@ proc ::GX::_portableResourceImportDataset {staging {newId ""} {prefix dataset}} 
     foreach resource [list $registryPath $manifestPath $final $metadataTarget $noteTarget $snapshotTarget] {
         if {$resource ne {}} {datasetAuthorityEnlist $resource}
     }
-    set committed 0
+    set committed 0;set documentAssetOwner {}
     try {
         file mkdir [file dirname $final]
         file copy -- $payload $final
@@ -260,10 +418,18 @@ proc ::GX::_portableResourceImportDataset {staging {newId ""} {prefix dataset}} 
         # the imported Dataset in this Session's current namespace. The generic
         # Metadata editor must never gain this privileged restore capability.
         set metadata [expr {[file isfile $metadataPath]?[_portableResourceFields $metadataPath]:{}}]
+        if {[llength [info commands ::GX::sourceNotePortableMetadata]]} {
+            set metadata [sourceNotePortableMetadata $metadata $sourceId $newId]
+        } elseif {[dict exists $metadata _gxtxt.framework.source_note_v1]} {
+            error {Source-note portable metadata requires its current public owner}
+        }
+        set adopted [_portableResourceAdoptDocumentAssets $root $metadata $sourceId $newId]
+        set metadata [dict get $adopted metadata];set documentAssetOwner [dict get $adopted owner]
         set namespace [datasetNamespaceCurrentGet $currentSession]
         if {[lindex [split $namespace /] 0] eq "pending"} {set namespace base}
         dict set metadata _gxtxt.framework.dataset_namespace $namespace
         _datasetMetadataWriteAll $currentSession $newId $metadata
+        if {$documentAssetOwner ne {} && !$::GX::portableDocumentImportActive} {_datasetDocumentAssetOwnerCloseForImport $documentAssetOwner}
         if {[file isfile $notePath]} {
             set fd [open $notePath r]
             fconfigure $fd -encoding utf-8 -translation lf
@@ -284,6 +450,7 @@ proc ::GX::_portableResourceImportDataset {staging {newId ""} {prefix dataset}} 
             if {!$registryExisted} {catch {file delete -force -- $registryPath}}
             if {[file isfile $manifestBackup]} {catch {file rename -force -- $manifestBackup $manifestPath}}
             if {!$manifestExisted} {catch {file delete -force -- $manifestPath}}
+            if {$documentAssetOwner ne {} && !$::GX::portableDocumentImportActive} {_datasetDocumentAssetOwnerCloseForImport $documentAssetOwner}
         } else {
             catch {file delete -force -- $registryBackup}
             catch {file delete -force -- $manifestBackup}
@@ -436,25 +603,30 @@ proc ::GX::portableResourceImport {archive {options {}}} {
     if {$::GX::DatasetPrivate::activeContext ne {}} {error {Portable Resource import is a user/admin Session operation. Modules publish through Dataset Publication in their assigned namespace.}}
     variable currentSession
     if {[catch {dict size $options}]} {error "Portable Resource import options must be a dictionary"}
-    foreach key [dict keys $options] {if {$key ni {dataset_id rendered_only}} {error "Unknown Portable Resource import option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {dataset_id rendered_only group_id dataset_id_map destination_namespace}} {error "Unknown Portable Resource import option '$key'"}}
     if {[dict exists $options rendered_only] && ![string is boolean -strict [dict get $options rendered_only]]} {error "rendered_only must be a boolean"}
     set session [_sessionPortableRequireSession]
     if {$session ne [file normalize $currentSession]} {error "Open the target Session first"}
     set info [portableResourceValidate $archive]
+    if {$::GX::portableDocumentImportActive} {error {Another portable Resource import is still completing}}
+    set ::GX::portableDocumentImportActive 1;set ::GX::portableDocumentImportOwners {}
     set stage [file join $session metadata ".portable_resource_stage_[pid]_[clock clicks]"]
     try {
         _portableResourceRun extract [file normalize $archive] $stage
         switch -- [dict get $info resource_type] {
             dataset {
+                foreach key [dict keys $options] {if {$key ne {dataset_id}} {error "Invalid individual Dataset import option '$key'"}}
                 if {[dict exists $options rendered_only]} {error "rendered_only is a Graph import option"}
                 set result [_portableResourceImportDataset $stage [expr {[dict exists $options dataset_id] ? [dict get $options dataset_id] : ""}]]
                 dict set result id_mapping [dict create [dict get $result source_dataset_id] [dict get $result dataset_id]]
             }
             graph {
+                foreach key [dict keys $options] {if {$key ne {rendered_only}} {error "Invalid Graph import option '$key'"}}
                 if {[dict exists $options dataset_id]} {error "dataset_id is a Dataset import option"}
                 set result [_portableResourceImportGraph $stage $options]
                 dict set result id_mapping [dict create [dict get $info resource_identity] [dict get $result clone_id]]
             }
+            dataset_group {set result [_portableResourceImportGroup $stage $options]}
             default {error "Unsupported resource package type"}
         }
         dict set result source_identity [dict get $info resource_identity]
@@ -462,8 +634,30 @@ proc ::GX::portableResourceImport {archive {options {}}} {
         dict set result integrity verified
         dict set result package_info $info
         dict set result warnings [expr {[dict get $info resource_type] eq "graph" && [dict get $result capture_mode] eq "rendered" ? [list "Graph imported as a rendered-only Detached Clone"] : {}}]
+        if {[dict get $info resource_type] eq {dataset} && [datasetField [dict get $result dataset_id] original_group_id {}] ne {}} {
+            dict lappend result warnings {Individual Dataset imported detached; its original Group was not reconstructed}
+        }
         return $result
-    } finally {catch {file delete -force -- $stage}}
+    } finally {
+        # Dataset/Group/Graph authority has now committed or rolled back every
+        # metadata member. Retire only this request's newly created carriers;
+        # ordinary resource retention protects successfully adopted references.
+        set failures {}
+        foreach owner $::GX::portableDocumentImportOwners {
+            if {[catch {_datasetDocumentAssetOwnerCloseForImport $owner} reason]} {lappend failures [dict create document_id [dict get $owner document_id] error $reason]}
+        }
+        set ::GX::portableDocumentImportActive 0;set ::GX::portableDocumentImportOwners {}
+        catch {file delete -force -- $stage}
+        if {[llength $failures]} {error "Portable document resource retirement requires review: $failures"}
+    }
+}
+proc ::GX::portableResourceGuiExportGroup {groupId} {
+    set session [sessionInspectionCurrentSession]
+    set group [datasetGroupGet $session $groupId]
+    set archive [tk_getSaveFile -parent .top -title {Export Dataset Group ZIP} -defaultextension .gxtxt-dataset-group.zip -initialfile "$groupId.gxtxt-dataset-group.zip" -filetypes {{{Dataset Group ZIP} {.zip}}}]
+    if {$archive eq {}} return
+    if {$session ne [sessionInspectionCurrentSession]} {error {Session changed; reopen Group export}}
+    if {[catch {portableResourceExportGroup $groupId $archive} message]} {tk_messageBox -parent .top -icon error -message $message} else {tk_messageBox -parent .top -message "Exported [llength [dict get $group members]] Dataset members to $archive"}
 }
 
 proc ::GX::portableResourceGuiExportDataset {{targetId {}}} {
@@ -501,6 +695,7 @@ proc ::GX::_portableResourceGuiImportCommit {window mode} {
     variable ui
     set archive $ui(portableResourceImportArchive)
     set info $ui(portableResourceImportInfo)
+    if {$ui(portableResourceImportSessionToken) ne [interactiveDocumentSessionToken]} {tk_messageBox -parent $window -icon error -message {Session changed; reopen Resource import};return}
     if {$mode eq "dataset"} {
         set datasetId [string trim $ui(portableResourceDatasetId)]
         if {[catch {datasetPublicationV2ValidateId dataset $datasetId} reason]} {
@@ -510,6 +705,10 @@ proc ::GX::_portableResourceGuiImportCommit {window mode} {
             tk_messageBox -parent $window -icon error -title "Dataset ID collision" -message "Dataset '$datasetId' already exists. Enter a new ID.";return
         }
         set options [dict create dataset_id $datasetId]
+    } elseif {$mode eq {dataset_group}} {
+        set mapping [string trim [$window.mapping get 1.0 end-1c]]
+        if {[catch {dict size $mapping}]} {tk_messageBox -parent $window -icon error -message {Enter one original-ID and destination-ID pair per line};return}
+        set options [dict create group_id [string trim $ui(portableResourceGroupId)] dataset_id_map $mapping destination_namespace [string trim $ui(portableResourceGroupNamespace)]]
     } else {
         set options [dict create rendered_only [expr {$mode eq "rendered"}]]
         if {$mode eq "scientific" && !$ui(portableResourceScientificPossible)} {
@@ -522,7 +721,7 @@ proc ::GX::_portableResourceGuiImportCommit {window mode} {
     destroy $window
     catch {refreshGraphs}
     catch {refreshNativeVariablesGui}
-    set identity [expr {$mode eq "dataset" ? [dict get $result dataset_id] : [dict get $result clone_id]}]
+    set identity [expr {$mode eq "dataset" ? [dict get $result dataset_id] : ($mode eq {dataset_group} ? [dict get $result group_id] : [dict get $result clone_id])}]
     tk_messageBox -icon info -title "Resource ZIP imported" -message "[dict get $info resource_type] imported as $identity.\nIntegrity: [dict get $info integrity]."
 }
 proc ::GX::portableResourceGuiImport {{expectedType ""}} {
@@ -535,6 +734,7 @@ proc ::GX::portableResourceGuiImport {{expectedType ""}} {
     if {$expectedType ne "" && $type ne $expectedType} {tk_messageBox -icon error -title "Resource type" -message "This is a $type package. Choose a $expectedType package.";return}
     set ui(portableResourceImportArchive) $archive
     set ui(portableResourceImportInfo) $info
+    set ui(portableResourceImportSessionToken) [interactiveDocumentSessionToken]
     set details "Type: $type\nSource GX-TXT: [dict get $info source_gxtxt_version]\nSource Session: [dict get $info source_session_name]\nIntegrity: SHA-256 verified\nFiles: [dict get $info file_count]\nPayload bytes: [dict get $info total_bytes]\nContract/provider: [dict get $info contract] / [dict get $info provider]"
     set w .gxPortableResourceImport
     catch {destroy $w}
@@ -553,6 +753,18 @@ proc ::GX::portableResourceGuiImport {{expectedType ""}} {
             ttk::label $w.collision -text "Collision: $sourceId already exists; enter a new ID." -foreground #9b2f20
             pack $w.collision -anchor w -padx 10
         }
+    } elseif {$type eq {dataset_group}} {
+        set ui(portableResourceGroupId) [dict get $info group_id]
+        set ui(portableResourceGroupNamespace) [datasetNamespaceCurrentGet]
+        ttk::label $w.identity -text "Group: [dict get $info group_id]; [dict get $info group_member_count] actual members\nDestination Group ID:"
+        ttk::entry $w.id -textvariable ::GX::ui(portableResourceGroupId)
+        ttk::label $w.namespaceLabel -text {Destination Namespace:}
+        ttk::entry $w.namespace -textvariable ::GX::ui(portableResourceGroupNamespace)
+        ttk::label $w.mappingLabel -text {Reviewed member IDs (original destination, one pair per line):}
+        text $w.mapping -height 6 -width 60 -wrap none
+        foreach id [split [dict get $info group_member_ids] {;}] {$w.mapping insert end "$id $id\n"}
+        pack $w.identity $w.id $w.namespaceLabel $w.namespace $w.mappingLabel -fill x -padx 10 -pady 3
+        pack $w.mapping -fill both -expand 1 -padx 10 -pady 3
     } else {
         set module [dict get $info module_id]
         set dependencies [split [dict get $info dependency_ids] {;}]
@@ -574,6 +786,9 @@ proc ::GX::portableResourceGuiImport {{expectedType ""}} {
     ttk::frame $w.buttons
     if {$type eq "dataset"} {
         ttk::button $w.buttons.import -text "Import Dataset" -command [list ::GX::_portableResourceGuiImportCommit $w dataset]
+        pack $w.buttons.import -side left -padx 4
+    } elseif {$type eq {dataset_group}} {
+        ttk::button $w.buttons.import -text {Import whole Group} -command [list ::GX::_portableResourceGuiImportCommit $w dataset_group]
         pack $w.buttons.import -side left -padx 4
     } else {
         ttk::button $w.buttons.scientific -text "Import scientific Clone" -command [list ::GX::_portableResourceGuiImportCommit $w scientific]

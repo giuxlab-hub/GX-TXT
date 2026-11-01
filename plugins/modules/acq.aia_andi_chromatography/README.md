@@ -1,4 +1,13 @@
-# AIA/ANDI Chromatography Importer 1.0.2
+# AIA/ANDI Chromatography Importer 1.1.0
+
+On CORE Dataset Group API v1 (P028), a newly imported source creates one
+`chromatography.measurement` Group `<id>.group`. Its primary trace has role
+`chromatography.trace`; actual exporter peaks and optional byte-identical source
+container have roles `chromatography.peaks` and `chromatography.source_container`.
+`trace_only` is a one-member Group; absent source peaks never create an empty
+member. CORE owns the atomic descriptor, exact source/SHA provenance, Namespace
+move, Group ZIP and explicit detachment. Existing ungrouped Sessions are unchanged.
+This additive release changes no parser, integration records or numeric values.
 
 **Source/API baseline:** officially deposited GX-TXT 0.9.8.10-dev-109; integration target dev110. The upstream 1.0.0 package targeted dev108. **License:** GNU GPL v3 or later; full license text is included in `LICENSE`. All UI, source comments and documentation are in English. The module does not modify CORE. Version 1.0.2 has source/parser tests, actual public canonical import/rollback/reopen evidence and real-CORE callback checks. Installed GUI and independent vendor-reference acceptance remain pending.
 

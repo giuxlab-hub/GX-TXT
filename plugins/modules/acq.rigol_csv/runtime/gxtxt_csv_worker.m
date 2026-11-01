@@ -33,6 +33,7 @@ opts.dt = NaN;
 opts.channels = '';
 opts.make_rigol = true;
 opts.make_canonical = false;
+opts.make_binary = false;
 opts.manifest = '';
 opts.workers = 1;
 opts.chunk_rows = 250000;
@@ -60,6 +61,7 @@ while k <= numel(args)
     case '--channels',       opts.channels = val;
     case '--make-rigol',     opts.make_rigol = logical(str2double(val));
     case '--make-canonical', opts.make_canonical = logical(str2double(val));
+    case '--make-binary',    opts.make_binary = logical(str2double(val));
     case '--manifest',       opts.manifest = val;
     case '--workers',        opts.workers = max(1, round(str2double(val)));
     case '--chunk-rows',     opts.chunk_rows = max(1000, round(str2double(val)));
@@ -189,6 +191,7 @@ for i = 1:numel(rawch)
   channels(i).canonical_integrity = false;
   channels(i).rigol_fid = -1;
   channels(i).canonical_fid = -1;
+  channels(i).binary_fid = -1;
 endfor
 
 % Determine fixed time metadata before streaming.
@@ -236,7 +239,19 @@ if strcmp(opts.parser, 'generic_time') && (opts.time_col < 1 || opts.time_col > 
 endif
 
 % Prepare temporary outputs. They are intentionally visible while processing.
+time_binary_fid = -1;
+if opts.make_binary
+  time_binary_tmp = fullfile(opts.out, 'time_s.f64le.part');
+  time_binary_fid = fopen(time_binary_tmp, 'wb', 'ieee-le');
+  if time_binary_fid < 0, error('Unable to create private time transport'); endif
+endif
 for i = 1:numel(channels)
+  if opts.make_binary
+    channels(i).binary_tmp = fullfile(opts.out, [channels(i).safe '.f64le.part']);
+    channels(i).binary_final = fullfile(opts.out, [channels(i).safe '.f64le']);
+    channels(i).binary_fid = fopen(channels(i).binary_tmp, 'wb', 'ieee-le');
+    if channels(i).binary_fid < 0, error('Unable to create private signal transport'); endif
+  endif
   if opts.make_rigol
     channels(i).rigol_final = fullfile(opts.out, [channels(i).safe '_rigol.csv']);
     channels(i).rigol_tmp = [channels(i).rigol_final '.part'];
@@ -277,10 +292,18 @@ sequence_checked = 0;
 time_dt_samples = [];
 block_index = 0;
 last_report_clock = time();
+parse_seconds = 0;
+validation_seconds = 0;
+statistics_seconds = 0;
+output_seconds = 0;
+stream_clock = tic();
 
 while !feof(fid)
+  phase_clock = tic();
   C = textscan(fid, fmt, opts.chunk_rows, 'Delimiter', delim, 'CollectOutput', true, ...
                'EmptyValue', NaN, 'ReturnOnError', false);
+  parse_seconds += toc(phase_clock);
+  phase_clock = tic();
   if isempty(C) || isempty(C{1})
     break;
   endif
@@ -331,7 +354,14 @@ while !feof(fid)
   goodt = t(isfinite(t));
   if !isempty(goodt), last_time = goodt(end); endif
 
+  validation_seconds += toc(phase_clock);
+  if opts.make_binary
+    phase_clock = tic();
+    if fwrite(time_binary_fid, t, 'double') != nr, error('Time transport write failed'); endif
+    output_seconds += toc(phase_clock);
+  endif
   for i = 1:numel(channels)
+    phase_clock = tic();
     v = data(:, channels(i).column);
     if channels(i).written_N == 0 && !isempty(v)
       channels(i).first_raw = v(1);
@@ -347,14 +377,20 @@ while !feof(fid)
       channels(i).sum += sum(vf);
     endif
 
+    statistics_seconds += toc(phase_clock);
+    phase_clock = tic();
     if opts.make_rigol
       block = [seq, v]';
       fprintf(channels(i).rigol_fid, '%.12g,%.12g\n', block);
     endif
     if opts.make_canonical
       block = [t, v]';
-      fprintf(channels(i).canonical_fid, '%.12g,%.12g\n', block);
+      fprintf(channels(i).canonical_fid, '%.17g,%.17g\n', block);
     endif
+    if opts.make_binary
+      if fwrite(channels(i).binary_fid, v, 'double') != nr, error('Signal transport write failed'); endif
+    endif
+    output_seconds += toc(phase_clock);
   endfor
 
   N += nr;
@@ -375,6 +411,14 @@ while !feof(fid)
   clear C rawdata data t seq;
 endwhile
 fclose(fid);
+if opts.make_binary
+  fclose(time_binary_fid);
+  for i = 1:numel(channels), fclose(channels(i).binary_fid); endfor
+endif
+stream_seconds = toc(stream_clock);
+printf('[PROFILE] parse=%.6f validation=%.6f statistics=%.6f output=%.6f stream=%.6f seconds\n', ...
+       parse_seconds, validation_seconds, statistics_seconds, output_seconds, stream_seconds);
+fflush(stdout);
 
 if N == 0
   error('Numeric import failed or dataset is empty.');
@@ -416,6 +460,18 @@ endif
 fflush(stdout);
 
 printf('[STAGE 4/5] Finalization, integrity checks and statistics\n'); fflush(stdout);
+if opts.make_binary
+  binary_info = dir(time_binary_tmp);
+  if binary_info.bytes != 8*N, error('Time transport byte count mismatch'); endif
+  [ok,msg] = movefile(time_binary_tmp, fullfile(opts.out, 'time_s.f64le'));
+  if !ok, error('Time transport finalize failed: %s', msg); endif
+  for i = 1:numel(channels)
+    binary_info = dir(channels(i).binary_tmp);
+    if binary_info.bytes != 8*N, error('Signal transport byte count mismatch'); endif
+    [ok,msg] = movefile(channels(i).binary_tmp, channels(i).binary_final);
+    if !ok, error('Signal transport finalize failed: %s', msg); endif
+  endfor
+endif
 
 % Chiudere prima tutti gli output .part. Nessun file viene promosso a finale
 % finche tutti i controlli di integrita non sono superati.
@@ -594,6 +650,12 @@ fprintf(rf, 'channels=%d\n', numel(channels));
 fprintf(rf, 'workers=%d\n', opts.workers);
 fprintf(rf, 'chunk_rows=%d\n', opts.chunk_rows);
 fprintf(rf, 'manifest=%s\n', opts.manifest);
+fprintf(rf, '\n[performance]\n');
+fprintf(rf, 'parse_seconds=%.9f\n', parse_seconds);
+fprintf(rf, 'validation_seconds=%.9f\n', validation_seconds);
+fprintf(rf, 'statistics_seconds=%.9f\n', statistics_seconds);
+fprintf(rf, 'output_seconds=%.9f\n', output_seconds);
+fprintf(rf, 'stream_seconds=%.9f\n', stream_seconds);
 fprintf(rf, '\n[integrity]\n');
 fprintf(rf, 'status=OK\n');
 fprintf(rf, 'expected_rows=%d\n', N);

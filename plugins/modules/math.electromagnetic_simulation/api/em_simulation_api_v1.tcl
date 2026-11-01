@@ -33,7 +33,7 @@ proc ::GX::ElectromagneticSimulation::saveModel {model {documentId {}} {workspac
     if {[dict get $prior module_id] ne {math.electromagnetic_simulation}||[dict get $prior provider_id] ne {em_models}||[dict get $prior format] ne {gxtxt.em_model}} {error {Foreign electromagnetic model owner}}
     ::GX::sessionWorkspacePromote $documentId
     set payload [dict get [::GX::sessionWorkspaceGet $documentId] payload];if {![dict exists $payload model]} {set payload {}};dict set payload model $model
-    return [::GX::sessionWorkspaceUpdate $documentId $payload]
+    return [::GX::sessionWorkspaceUpdate $documentId $payload $prior]
 }
 proc ::GX::ElectromagneticSimulation::listModels {} {::GX::interactiveDocumentList math.electromagnetic_simulation em_models}
 proc ::GX::ElectromagneticSimulation::loadModel {id} {
@@ -160,7 +160,7 @@ proc ::GX::ElectromagneticSimulation::fieldDescribe {dataset} {
 }
 proc ::GX::ElectromagneticSimulation::_register {} {
     variable provider
-    ::GX::sessionWorkspaceProviderRegister em_models {module_id math.electromagnetic_simulation type {Electromagnetics model} schema gxtxt.em_model version 1 validate ::GX::ElectromagneticSimulation::workspaceValidate open ::GX::ElectromagneticSimulation::workspaceOpen}
+    ::GX::sessionWorkspaceProviderRegister em_models {module_id math.electromagnetic_simulation type {Electromagnetics model} schema gxtxt.em_model version 1 validate ::GX::ElectromagneticSimulation::workspaceValidate open ::GX::ElectromagneticSimulation::workspaceOpen native_contract NATIVE_WORKSPACE_API_v1 encode ::GX::nativeWorkspaceEMEncode native_required_fields {model object}}
     set parameters {}
     foreach key {kind model_id formulation half_width_m height_m mesh_size_m radius_m current_density_A_m2 mu_r voltage_V eps_r} {
         set descriptor [dict create type [expr {$key in {kind model_id formulation}?{string}:{number}}] required 1]

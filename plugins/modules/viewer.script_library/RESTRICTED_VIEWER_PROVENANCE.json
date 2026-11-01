@@ -1,0 +1,25 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "b17bb6132504dd228a1bb6a25ba0b365c159449bccc5ce598f19b6095c67feda",
+  "design_sha256": "48eb587ac3a852568d9f69fe43f96b5c3a36b5bdfc8079da1822db82dd81aded",
+  "manual_assets": {},
+  "manual_sha256": "e6cb207c49491e23d0903b1df23106da9048f8c0e93e5fa50e036ddaf0544210",
+  "module_id": "viewer.script_library",
+  "policy_sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+  "project_digest_sha256": "f233383b2d52d145d27dba927fc55836d6e46bcac01d61f20c9b737660867309",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+  "source_manifest": [
+    {
+      "bytes": 11343,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "804fba4400756f3072243aa9f392bf433acd7bb868a772ec730617d40dd286c4"
+    }
+  ],
+  "source_sha256": "804fba4400756f3072243aa9f392bf433acd7bb868a772ec730617d40dd286c4",
+  "source_tree_sha256": "fa50a0432dab742b26fddf481c743d5f05fb4c8f880e8a6d62e354c91a660b65",
+  "version": "1.0.4"
+}

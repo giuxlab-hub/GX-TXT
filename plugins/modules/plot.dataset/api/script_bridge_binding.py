@@ -68,6 +68,19 @@ for _name, _fields in _V2_ARGUMENTS.items():
                                for name, kind in _fields]
     _operation["result_contract"] = _operation["result_convention"]
 
+_V2_AXIS_PUBLIC = {
+    "shared_x_axis_get": ("sharedXAxisGet", [("plot_ref", "struct")]),
+    "shared_x_axis_set": ("sharedXAxisSet", [("plot_ref", "struct"), ("fields", "struct")]),
+    "set_panel_axis": ("setPanelAxis", [("plot_ref", "struct"), ("panel_id", "string"), ("axis", "string"), ("fields", "struct")]),
+}
+for _name, (_command, _fields) in _V2_AXIS_PUBLIC.items():
+    REGISTRATION["operations"][_name] = {
+        "name": _name, "summary": f"Public Plot Dataset {_command}",
+        "arguments": [{"name": name, "kind": kind, "required": True} for name, kind in _fields],
+        "argument_convention": ", ".join(name for name, _ in _fields),
+        "result_contract": "axis or panel struct", "result_convention": "axis or panel struct",
+    }
+
 V3_REGISTRATION = {
     "api_id": "PLOT_DATASET_API_v3", "api_version": 3,
     "provider_kind": "module", "provider_id": "plot.dataset",
@@ -105,6 +118,8 @@ _V3_PUBLIC = {
     "move_panel": ("movePanel", [("plot_ref", "struct"), ("panel_id", "string"), ("delta", "integer")], "PlotSpec struct"),
     "set_panel_title": ("setPanelTitle", [("plot_ref", "struct"), ("panel_id", "string"), ("title", "string")], "panel struct"),
     "set_panel_axis": ("setPanelAxis", [("plot_ref", "struct"), ("panel_id", "string"), ("axis", "string"), ("fields", "struct")], "panel struct"),
+    "shared_x_axis_get": ("sharedXAxisGet", [("plot_ref", "struct")], "shared X axis struct"),
+    "shared_x_axis_set": ("sharedXAxisSet", [("plot_ref", "struct"), ("fields", "struct")], "shared X axis struct"),
     "set_series_panel": ("setSeriesPanel", [("plot_ref", "struct"), ("series_id", "string"), ("panel_id", "string")], "PlotSpec struct"),
     "interactive_sources": ("interactiveSources", [], "cell of plot references"),
     "interactive_source_info": ("interactiveSourceInfo", [("plot_ref", "struct")], "source struct"),
@@ -163,6 +178,8 @@ def invoke_api(host, api_id, operation, args):
             result = host.call(prefix + command, *args)
             if operation in {"save_spec", "remove_spec", "delete_plot", "set_plot_enabled", "multi_panel_enabled", "set_multi_panel"}:
                 normalized = 1 if operation == "save_spec" else int(result)
+            elif operation in {"shared_x_axis_get", "shared_x_axis_set"}:
+                normalized = host.as_dict(result)
             elif operation == "load_spec":
                 normalized = _plot_spec(host, result)
             elif operation in {"panel_ids", "interactive_sources", "interactive_representations"}:
@@ -178,6 +195,11 @@ def invoke_api(host, api_id, operation, args):
 def invoke(host, operation, args):
     host.call("::GX::modulePublicApiActivate", "plot.dataset", "PLOT_DATASET_API_v2")
     prefix = "::GX::PlotDatasetAPIv2::"
+    if operation in _V2_AXIS_PUBLIC:
+        command, fields = _V2_AXIS_PUBLIC[operation]
+        if len(args) == len(fields) and all(isinstance(value, dict) if field[1] == "struct" else isinstance(value, str) for value, field in zip(args, fields)):
+            result = host.call(prefix + command, *args)
+            return host.normalize(result) if operation == "set_panel_axis" else host.as_dict(result)
     if operation == "api_info" and not args:
         return host.as_dict(host.call(prefix + "apiInfo"))
     if operation == "validate_spec" and len(args) == 1 and isinstance(args[0], dict):

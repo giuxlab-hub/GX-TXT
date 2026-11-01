@@ -4,7 +4,7 @@
 # parent canonical Dataset authority and yields only before its atomic commit.
 namespace eval ::GX::DatasetTransform {variable executions;array set executions {}}
 proc ::GX::datasetTransformResponsiveApiInfo {} {
-    return [dict create api_id DATASET_TRANSFORM_API_v1 api_version 1 operations {execute_responsive cancel} maximum_chunk_rows 65536 default_chunk_rows 8192 cancellation precommit source_authority immutable implicit_publication 0 split_family_responsive 0]
+    return [dict create api_id DATASET_TRANSFORM_API_v1 api_version 1 operations {plan_responsive execute_responsive cancel} maximum_chunk_rows 65536 default_chunk_rows 8192 cancellation precommit source_authority immutable implicit_publication 0 split_family_responsive 0]
 }
 proc ::GX::datasetTransformCancel {job} {
     variable ::GX::DatasetTransform::executions
@@ -83,6 +83,15 @@ proc ::GX::_datasetTransformResponsiveWorker {job command} {
     }
 }
 proc ::GX::datasetTransformExecuteResponsive {session manifestOrPlan {options {}}} {
+    return [_datasetTransformResponsiveRun $session $manifestOrPlan $options 0]
+}
+# Planning performs no publication. The caller owns the returned standard plan
+# and releases it explicitly, allowing exact worker work before an atomic batch.
+proc ::GX::datasetTransformPlanResponsive {session manifest {options {}}} {
+    if {[dict exists $manifest plan_id]} {error {Responsive planning requires a manifest, not an existing plan}}
+    return [_datasetTransformResponsiveRun $session $manifest $options 1]
+}
+proc ::GX::_datasetTransformResponsiveRun {session manifestOrPlan options planOnly} {
     variable ::GX::DatasetTransform::executions;variable ::GX::DatasetTransform::serial
     if {[catch {dict size $options}]} {error "Responsive Dataset Transform options must be a dictionary"}
     foreach key [dict keys $options] {if {$key ni {progress_command cancel_command chunk_rows}} {error "Unknown responsive transform option '$key'"}}
@@ -98,13 +107,14 @@ proc ::GX::datasetTransformExecuteResponsive {session manifestOrPlan {options {}
     if {$operation eq "split_family"} {error "Responsive execution currently supports one output Dataset; use the atomic split-family API for a bundle"}
     set job "transform-execution#[pid]-[incr serial]"
     set executions($job) [dict create options $options lifetime [interactiveDocumentSessionToken] cancelled 0 native_run "" timer "" fault {}]
-    set plan ""
+    set plan "";set transferred 0
     try {
         if {$own} {set plan [_datasetTransformPlanInternal $session $manifestOrPlan $job]} else {set plan $manifestOrPlan}
         _datasetTransformResponsiveBoundary $job planned 0 [dict get $plan row_count]
+        if {$planOnly} {set transferred 1;return $plan}
         return [_datasetTransformMaterialize $session $plan "" $job]
     } finally {
         set timer [dict get $executions($job) timer];if {$timer ne ""} {after cancel $timer}
-        try {if {$own&&$plan ne ""} {datasetTransformReleasePlan [dict get $plan plan_id]}} finally {unset executions($job)}
+        try {if {$own&&!$transferred&&$plan ne ""} {datasetTransformReleasePlan [dict get $plan plan_id]}} finally {unset executions($job)}
     }
 }

@@ -125,6 +125,13 @@ void push(Tcl_Interp *ip, Collector &collector, Tcl_Obj *columns, Tcl_WideInt ta
         if (static_cast<std::uint64_t>(take) > values.size())
             throw std::runtime_error("Categorical column is shorter than the selected row prefix");
         auto &column = collector.columns[at];
+        // Once the value cap has actually excluded a distinct admitted key,
+        // this column cannot retain another key or become complete. Continue
+        // validating incoming chunk shapes above, but avoid revalidating every
+        // remaining continuous numeric value for this derived inventory.
+        if (collector.valueBudget > 0 && column.truncated &&
+            column.order.size() >= static_cast<std::uint64_t>(collector.valueBudget))
+            continue;
         for (Tcl_WideInt row = 0; row < take; ++row) {
             auto *value = values[static_cast<std::size_t>(row)]; const auto lexical = key(value);
             // Already-retained exact lexical keys were admitted by this same

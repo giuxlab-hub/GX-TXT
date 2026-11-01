@@ -339,6 +339,20 @@ def gxtxt_api_has_operation(api_id, operation):
 _REQUIREMENT = re.compile(r"^([A-Za-z0-9_]+)(?:@([0-9]+))?(?::([A-Za-z0-9._-]+))?(?:\+([A-Za-z0-9_|.-]+))?$")
 
 
+def gxtxt_api_export(declaration):
+    """Inert provided-API marker; static Builder/CORE validation grants no rights."""
+    return None
+
+
+def gxtxt_parameter_declare(name, type, *, required=False, default='', description='', values=None, min=None, max=None, alpha=None, allow_inherit=None):
+    """Literal parameter declaration v1. Runtime-safe; never mutates Registry.
+
+    Discovery and validation happen statically when saving registered source.
+    Read effective invocation values from gxtxt_context()['parameters'].
+    """
+    return None
+
+
 def gxtxt_api_require(requirements):
     if isinstance(requirements, (str, dict)):
         requirements = [requirements]
@@ -401,5 +415,5 @@ def gxtxt_callback_release(handle):
 
 __all__ = ["GXTXTBridgeError", "gxtxt_bridge_info", "gxtxt_context", "gxtxt_api_list",
            "gxtxt_api_has", "gxtxt_api_describe", "gxtxt_api_has_operation",
-           "gxtxt_api_require", "gxtxt_api_call", "CallbackHandle",
+           "gxtxt_api_require", "gxtxt_parameter_declare", "gxtxt_api_call", "CallbackHandle",
            "gxtxt_callback_register", "gxtxt_callback_release"]

@@ -20,6 +20,7 @@ proc ::GX::launchGui {} {
     # remain owned by the Session controller, beside the unchanged selector.
     ttk::label .top.sessionbar.loadedSession -textvariable ::GX::ui(sessionPath) -anchor w
     pack .top.sessionbar.loadedSession -side left -padx {12 3}
+    acquisitionPrimaryMenuCreate .top.sessionbar
     sessionActionGuiRefresh
     .top.nb.sessionfiles.navigation configure -values {{Session files} {Session scripts} Workspaces {Configuration / Manifest} {Session Parameters} Experiment Instrumentation {Preview Cache}}
     # Remove the notebook entry only after the established panel and Session

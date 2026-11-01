@@ -174,7 +174,6 @@ proc ::RigolCsv::inspect {request} {
         if {$primary eq ""} { set primary "C$col" }
         set canonical [_canonical $primary "C$col" used]
         set unit [expr {$parser eq "rigol_ds1000z" ? [_unit $secondary] : ""}]
-        if {$unit eq "" && $parser eq "rigol_ds1000z"} { set unit V }
         lappend signalCols $col
         lappend vars [dict create source_column $col source_channel $primary original_header $primary canonical $canonical unit $unit semantic_role signal]
     }
@@ -248,8 +247,15 @@ proc ::RigolCsv::import {request} {
         lappend channels "$col|$scope|$name"
         lappend paths [file join $base "${name}_canonical.csv"]
     }
-    set worker [file join $runtimeDir gxtxt_csv_worker.m]
-    set octave [::GX::runtimeToolRequired octave]
+    set storage [_config $request storage auto]
+    if {$storage ni {auto csv hdf5}} {error {Rigol storage must be auto, csv or hdf5}}
+    if {$storage eq {auto}} {set storage [expr {[file size [dict get $request raw_path]]>=8388608 ? "hdf5" : "csv"}]}
+    set backend [_config $request worker_backend auto]
+    if {$backend ni {auto octave native}} {error {Rigol worker must be auto, octave or native}}
+    set native [file join $runtimeDir .. native rigol_csv_worker]
+    if {$backend eq {auto}} {set backend [expr {$storage eq {hdf5} && [file executable $native] ? "native" : "octave"}]}
+    if {$backend eq {native} && ($storage ne {hdf5} || ![file executable $native])} {error {Native Rigol worker requires its installed binary and HDF5 storage}}
+    if {$backend eq {native}} {set command [list $native]} else {set command [list [::GX::runtimeToolRequired octave] --quiet --no-gui [file join $runtimeDir gxtxt_csv_worker.m]]}
     set delimiter [_delimiter [dict get $cfg delimiter]]
     if {$delimiter eq "\t"} { set delimiter tab }
     set workers [::GX::configurationGet computation.default_workers]
@@ -257,31 +263,64 @@ proc ::RigolCsv::import {request} {
     set dt [dict get $cfg dt]
     if {$tstart eq ""} { set tstart NaN }
     if {$dt eq ""} { set dt NaN }
-    set cmd [list $octave --quiet --no-gui $worker \
+    foreach value [list $tstart $dt] {if {![string is double -strict $value]} {error {Rigol time start/increment must be numeric}}}
+    set cmd [concat $command [list \
         --input [dict get $request raw_path] --out $workOut \
         --parser [dict get $cfg parser] --delimiter $delimiter \
         --header-lines [dict get $cfg header_rows] \
         --sequence-col [dict get $cfg sequence_col] --time-col [dict get $cfg time_col] \
         --tstart $tstart --dt $dt \
-        --channels [join $channels {;}] --make-rigol 0 --make-canonical 1 \
+        --channels [join $channels {;}] --make-rigol 0 --make-canonical [expr {$storage eq {csv}}] \
         --workers $workers --chunk-rows [dict get $cfg chunk_rows] \
         --raw-fields [dict get $cfg raw_fields] \
         --drop-trailing-fields [dict get $cfg drop_trailing_fields] \
-        --strict-sequence [dict get $cfg strict_sequence]]
-    if {[catch {exec {*}$cmd 2>@1} output]} { error "Rigol CSV worker failed: $output" }
+        --strict-sequence [dict get $cfg strict_sequence]]]
+    if {$backend eq {octave}} {lappend cmd --make-binary [expr {$storage eq {hdf5}}]}
+    if {[catch {
+        if {[llength [info commands ::GX::acquisitionHandlerExecuteWorker]]} {
+            ::GX::acquisitionHandlerExecuteWorker $cmd $request
+        } else {
+            exec {*}$cmd 2>@1
+        }
+    } output]} {error "Rigol CSV worker failed: $output"}
+    set workerReceipt [::GX::parseIni [file join $workOut import_result.ini]]
+    if {![dict exists $workerReceipt integrity.status] || [dict get $workerReceipt integrity.status] ne {OK}} {error {Rigol worker did not validate its outputs}}
+    set rows [dict get $workerReceipt dataset.rows]
+    set plans {};set members {}
     set datasets {}
     set index 0
     foreach v $variables path $paths {
         incr index
-        if {![file isfile [file join $outDir $path]]} { error "Rigol worker did not publish '$path'." }
         set name [dict get $v canonical]
         set id [expr {$index == 1 ? $base : "$base.$name"}]
+        lappend members [dict create dataset_id $id role oscilloscope.channel required 1]
+        set metadata [dict create acquisition.parser [dict get $cfg parser] acquisition.worker_backend $backend \
+            acquisition.worker_parallelism 1 oscilloscope.source_channel [::GX::datasetPublicationV2DictDefault $v source_channel $name] \
+            oscilloscope.source_column [dict get $v source_column] oscilloscope.sample_count $rows]
+        foreach field {tStart_s dt_s sample_rate_Sa_s duration_s sequence_first sequence_last sequence_errors} {
+            if {[dict exists $workerReceipt dataset.$field]} {dict set metadata oscilloscope.$field [dict get $workerReceipt dataset.$field]}
+        }
+        dict for {key value} $workerReceipt {if {[string match performance.* $key]} {dict set metadata acquisition.$key $value}}
+        if {$storage eq {hdf5}} {
+            set definition [dict create dataset_id $id contract [dict get $request contract] storage hdf5 \
+                producer_version 2.3.0 source [dict get $request source_path] \
+                provenance "Rigol source column [dict get $v source_column]; $backend parser; CORE Publication v2" structured_metadata $metadata]
+            set timeSchema [dict create dtype float64 name time_s canonical time_s display_label Time unit s semantic_role time value_kind number]
+            set signalSchema [dict create dtype float64 name $name canonical $name display_label $name unit [dict get $v unit] semantic_role [dict get $v semantic_role] value_kind number]
+            set payloads [list [dict create variable_id v0001 schema $timeSchema path [file join $base time_s.f64le]] \
+                [dict create variable_id v0002 schema $signalSchema path [file join $base "$name.f64le"]]]
+            lappend plans [dict create definition $definition row_count $rows variables $payloads]
+            continue
+        }
+        if {![file isfile [file join $outDir $path]]} { error "Rigol worker did not publish '$path'." }
         lappend datasets [dict create dataset_id $id contract [dict get $request contract] \
             format csv path $path variables [list time_s $name] \
             units [list s [dict get $v unit]] semantic_roles [list time [dict get $v semantic_role]] \
             source [dict get $request source_path] \
             provenance "Rigol streaming CSV worker; source column [dict get $v source_column]" \
-            notes "parser=[dict get $cfg parser]; worker_verified=1"]
+            notes "parser=[dict get $cfg parser]; worker_verified=1" structured_metadata $metadata]
     }
-    return [dict create datasets $datasets]
+    set result [dict create datasets $datasets dataset_group [dict create group_id "$base.group" display_name "Rigol measurement — $base" group_contract oscilloscope.measurement primary_dataset_id $base members $members]]
+    if {$plans ne {}} {dict set result prepared_publications $plans;dict set result prepared_buffers_consumable 1}
+    return $result
 }

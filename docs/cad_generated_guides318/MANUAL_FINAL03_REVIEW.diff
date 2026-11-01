@@ -1,0 +1,96 @@
+--- current normal Builder manual source
++++ proposed final03 normal Builder manual source (not a direct module patch)
+@@ -1,6 +1,6 @@
+ # 3D CAD Workbench
+ 
+-Development candidate 0.1.6. All scientific operations below are connected to existing public owners through the official Builder and C++ Workspace. Final installed GUI, numerical, persistence and full feature-parity acceptance are pending. The guide describes the declared workflow; it contains no fabricated screenshots or unexecuted scientific result claims.
++Create, inspect and retain scientific geometry in the active GX-TXT Session. Keep source inputs, physical units and the saved geometry document together; save the interface Workspace separately when its layout is needed.
+ 
+ ## Open a scientific document
+ 
+@@ -16,7 +16,7 @@
+ 
+ The single-ID shortcut and extended list use the same owner-projected canonical IDs; older layouts retain their existing single-choice Select behavior. Do not treat a highlighted list row as an accepted transform, group or solid. Groups and other actions operate on the actual owner selection after Select.
+ 
+-In **Layers / sets / saved views…**, select a current saved Selection Set and use **Activate / restore** to replace the selection, **Add Selection Set** to include its members, or **Subtract Selection Set** to remove them. A stale or missing source must be explicitly resolved; changing a Set name does not recapture its geometry. Bodies and supported native anchors retain their original identities. These new015 controls require independent installed GUI validation; contract/Builder success alone is not that validation.
++In **Layers / sets / saved views…**, select a current saved Selection Set and use **Activate / restore** to replace the selection, **Add Selection Set** to include its members, or **Subtract Selection Set** to remove them. A stale or missing source must be explicitly resolved; changing a Set name does not recapture its geometry. Bodies and supported native anchors retain their original identities.
+ 
+ The optional **Reference fields (inactive)** checkbox below the document controls exposes preserved earlier project field declarations. It is off by default. Those reference controls do not execute current operations; use the normal purpose-form actions. Actual primitive dimensions on Solids and the canonical document/object controls remain operative.
+ 
+@@ -24,11 +24,11 @@
+ 
+ On **Solids**, choose **box** or **cylinder**. Box X/Y/Z, cylinder radius and cylinder height are positive lengths in the displayed canonical working unit. Enter a name and use **Create solid** in the main toolbar. No geometry exists merely because a default value is displayed. The default box dimensions are 20 × 12 × 8; the initial document normally uses mm, but always check its actual unit.
+ 
+-**Object properties / role…** opens the original owner form for name, visibility, lock, color, attributes and geometry role. **regular**, **construction** and **reference** roles are distinct from visibility. Nonregular geometry is excluded from normal complete-geometry publication. Select objects by their actual logical IDs; a rendered triangle or pixel is not a persistent OCCT face identity.
++**Object properties / role…** opens the original owner form for name, visibility, lock, color, attributes and geometry role. **regular**, **construction** and **reference** roles are distinct from visibility. Nonregular geometry is excluded from normal complete-geometry publication. Select objects by their actual logical IDs; use the face identity supplied by the current live pick when an operation requires a face.
+ 
+ **Translate…**, **Rotate…**, **Scale geometry…** and **Reset placement…** use the original transform forms and commit owner. Translation and pivots are in the working length unit. Rotation input degrees are converted by the owner to native radians; scale factors are dimensionless. Physical Scale changes geometry, whereas **Convert working length unit…** changes coordinate representation while preserving physical size. Unit conversion can make captured measurements/comparisons stale and requires the existing saved-view unit checks.
+ 
+-**Duplicate object** on **Model** (also on **Solids**) copies exactly one selected accepted, unlocked object through the original geometry owner. First prepare one canonical ID and press **Select**, then choose Duplicate object. The copy receives an independent canonical object ID while the source and its scientific bindings remain preserved. The copy can initially overlap the source; check the IDs, then use **Translate…** for explicit placement. The action creates one normal semantic History operation. Use **Undo geometry** and **Redo geometry** to reverse or restore it, then **Save geometry** for normal persistence. Empty, multiple, stale or locked selection must be resolved through the ordinary owner controls. **Duplicate group** on **Organize** remains a separate operation on a canonical group; it is not the single-object command. Installed0.1.6 Duplicate/Undo/Redo/SaveOpen acceptance remains OPEN.
++**Duplicate object** on **Model** (also on **Solids**) copies exactly one selected accepted, unlocked object through the original geometry owner. First prepare one canonical ID and press **Select**, then choose Duplicate object. The copy receives an independent canonical object ID while the source and its scientific bindings remain preserved. The copy can initially overlap the source; check the IDs, then use **Translate…** for explicit placement. The action creates one normal semantic History operation. Use **Undo geometry** and **Redo geometry** to reverse or restore it, then **Save geometry** for normal persistence. Empty, multiple, stale or locked selection must be resolved through the ordinary owner controls. **Duplicate group** on **Organize** remains a separate operation on a canonical group; it is not the single-object command.
+ 
+ **Working plane…** opens the validated shared plane form. Its origin has length units; normal and U axis are directions. The owner normalizes the right-handed frame. Choose XY/XZ/YZ or provide the intended arbitrary frame through the actual form controls. Changing the current working plane does not change the plane already captured in an existing retained profile.
+ 
+@@ -101,7 +101,7 @@
+ 
+ **Scientific Recipe…** opens the existing recorder for inspect, validate, replay and Python export through the original owner. Replay validates retained resources, units, APIs/plugins and exact source fingerprints, stages original native geometry and commits one semantic History action. **Extensions / publication…** opens the shared compatible-action chooser; extension proposals use the original Begin/Apply/Commit/Rollback adapter and source guards. It does not grant arbitrary Tcl commands or a second geometry store.
+ 
+-**Interactive Documents…** offers the normal reviewed deletion workflow. Inspect exact logical owner/revision/generation and confirm explicitly. A changed source or Session invalidates the review. Source Datasets and published resources remain preserved; deleting a derived runtime cache is not deleting the scientific document.
++**Interactive Documents…** lists the scientific owners in the current Session. Select the intended document, review its identity and current revision, then choose **Delete selected document…**. **No** cancels; **Yes** deletes only that reviewed owner and its unreferenced owned resources. If the document or Session changes while confirmation is open, deletion refuses and the list must be refreshed and reviewed again. Source Datasets, published results and resources retained by another document are preserved.
+ 
+ **Undo geometry** and **Redo geometry** restore the original canonical semantic geometry/history rather than merely changing labels. Logical allocation counters remain monotonic. A postcommit cleanup/Recovery notice means the scientific commit may already exist; do not assume failure implies rollback or retry a committed operation blindly.
+ 
+@@ -111,7 +111,7 @@
+ 
+ Reopen the Session, choose its original canonical document and open it through normal controls. On unclean exit, existing Recovery offers Recover, Open last saved state and inspection details; Cancel leaves the saved Session untouched. A corrupt journal is retained with an explicit diagnostic. Recovery is an aid to normal Session/Document save, not another scientific source. Closing a view releases its owned native resources and callbacks through the existing lifecycle.
+ 
+-The earlier Viewer and old scientific Sessions remain preserved. The new presentation uses the same original Workbench3D document schema and registered Planar destination. An older source-bound interface snapshot is not permission to rewrite callback hashes; open its original canonical scientific document through the compatible owner.
++The earlier Viewer and old scientific Sessions remain preserved. The new presentation uses the same original Workbench3D document schema and registered Planar destination. If an older saved interface cannot restore its source association, open its original canonical geometry document through the normal document controls.
+ 
+ ## 3D → Curve Workbench → original 3D owner
+ 
+@@ -123,13 +123,39 @@
+ 
+ Closing or recreating the originating component, changing Session, deleting the origin, or changing its captured revision/generation/frame expires or rejects return according to the original owner checks. An expired presentation destination cannot attach to a different editor. A stale source, incompatible unit or changed working frame must be resolved explicitly. A retained path preserves exact straight vertices and closure; other supported curve families use explicitly sampled257-point reconstruction and cannot restore lost depth. Boundary projection uses actual supported source boundaries; it is not a general closed-solid silhouette.
+ 
+-MAIN's scoped review254 accepted the genuine217 section/projection/direct-return, idempotent retry, negative lifetime and SaveCloseOpen evidence for criteria13-37/38/39. The accepted example edited the retained outer dimension20→22mm, yielding profile area236mm² and perimeter110mm; a separate3mm extrusion gave708mm³ and802mm² with two solids, preserving original source geometry. Its source-grounded five-vertex open-mesh boundary projection dropped source Z1mm to plane Z0, with area14mm² and perimeter14.67004637770997mm. These are scoped prior015/shared-owner results, not new0.1.6 author tests. Canonical STEP resources and semantic geometry/history were preserved; native serialization fingerprints are not promised identical after STEP restore. Evidence: main_cad_review254/ACCEPTANCE.json and cad_planar_roundtrip217/HANDOFF76.json. Remaining246 organization and other feature tails, all45 acceptance and release/deposition remain OPEN.
++For the separate illustrated three-contour example, changing the retained outer dimension from 20 to 22 mm gives profile area 236 mm² and perimeter 110 mm; a new 3 mm extrusion gives volume 708 mm³ and surface area 802 mm² in two solids while preserving the source geometry. The five-vertex open-mesh boundary projection drops source Z=1 mm to plane Z=0, with area 14 mm² and perimeter 14.67004637770997 mm. These are different operations: a projection does not preserve lost depth, and a section is a physical intersection with a plane. Canonical STEP geometry and semantic History persist; native serialization fingerprints are not promised identical after STEP restore.
+ 
+-## Development provenance and remaining acceptance
+ 
+-This candidate exposes50 finite purpose actions plus the original10 lifecycle/primitive actions through Host::workbench_command. CORE owns every form capture, kernel, canonical Dataset, Job, Geometry, History, Resource, Recovery, renderer and publication. C++ contains presentation dispatch only. Scientific native requests do not become durable Jobs merely because a form opens or a callback returns.
++## Start from generated practice inputs
+ 
+-Installed startup and GUI events must execute the distributed precompiled native/viewer.so with zero C++ compiler/linker calls. Only genuine new source/build dependency changes require an explicit development Build. Closing/reopening an unchanged installed Viewer must reuse its distributed artifact.
++Use **New Session → Generate Session…**. If needed, choose **Manage Libraries… →
++Import Library…** and select the official Workbench Source Practice library.
++Choose **CAD and Geometry → CAD Geometry Practice**, version 1.0.0. The registered
++identity is `org.giuxlab.gxtxt.workbench_validation/cad_geometry_practice`.
++The host records the actual library/generator versions and creation timestamp in
++`metadata/session_generator.ini`.
+ 
+-All45 mandatory parity rows remain subject to installed Debian pointer/keyboard, scientific numerical, lifecycle and negative-case acceptance. Builder validation, compiled event plans and exported ZIPs do not establish those results. Debugger: NOT USED in this source integration; no observed C++ behavioral failure has required it. Final authentic screenshots and the separate illustrated HTML tutorial ZIP are still pending real installed execution. No final acceptance or TODO removal is implied by this guide.
++The generator supplies independent mesh, coordinate and image inputs, reference
++quantities and instructions. It does not create finished CAD bodies, profiles,
++History, Workspaces or managed face textures. Import the inputs through the
++normal CAD forms. Declare **mm** explicitly for unitless STL. A historical user
++model is not required to begin.
+ 
++After changing the document working unit, close and reopen retained measurement,
++constraint, Translate and Edit constraint forms before entering values. An old
++captured context refuses with **Geometry document changed; reopen this form**.
++Reopening a form gives its fields the current physical unit. For example,
++translating by 0.02 cm moves the object 0.2 mm physically. Editing a constraint target or tolerance
++makes it pending without silently solving the geometry.
++
++Heal B-Rep can correctly leave an already valid solid geometrically unchanged.
++Mesh seam healing needs compatible open boundaries; ambiguity or an unrepairable
++configuration can refuse with DEGENERATE. Missing Selection Set or Saved View
++references require **Edit / recapture…** before **Activate / restore**. Changing a
++record's name does not refresh its source geometry.
++
++## Work in a narrow window or with large text
++
++When the main toolbar changes to **Actions…** in a narrow window, open that menu to reach its original document, inspection and geometry actions. The wide window restores the normal toolbar buttons. Use the inspector’s vertical scrollbar to reach document controls and the **Solids**, **Mesh**, **Inspect**, **Organize** and **Publish** pages. If a page is wider than the inspector, use the horizontal scrollbar at its bottom to bring the left or right action column fully into view. Pressing Tab moves focus between controls and brings the focused control into view. Different scroll positions show different columns; controls need not all be visible at once. The native geometry view remains separate from the inspector, and scrolling the inspector does not change geometry, units or History.
++
++For source-grounded worked examples, extract the separate illustrated HTML guide and open its index. It covers generated inputs, exact solids, measurements, constraints, units, publication, face images, Recipe replay and document recovery.

@@ -23,6 +23,7 @@ proc ::GX::acquisitionHandlerHasPluginDescriptor {moduleId} {
 }
 
 proc ::GX::acquisitionHandlerSourceKind {moduleId} {
+    if {[acquisitionHandlerSectionField $moduleId runtime {}] eq {managed_cpp}} {return [dict get [_acquisitionNativeProfile $moduleId] source_kind]}
     set k [string tolower [string trim [acquisitionHandlerSectionField $moduleId source_kind "text"]]]
     if {$k eq ""} { set k text }
     if {$k ni {text binary}} { error "$moduleId: acquisition_handler.source_kind must be text or binary." }
@@ -142,6 +143,11 @@ proc ::GX::acquisitionHandlerValidateDescriptors {} {
         }
         set api [acquisitionHandlerSectionField $moduleId api_version ""]
         if {$api ne "1"} { error "$moduleId: acquisition_handler.api_version must be 1." }
+        if {[acquisitionHandlerSectionField $moduleId runtime {}] eq {managed_cpp}} {
+            if {[acquisitionHandlerSectionField $moduleId format_profiles_manifest {}] ne {source/project.json}} {error {Native Acquisition requires its registered source manifest}}
+            acquisitionHandlerVariableMappingMode $moduleId
+            continue
+        }
         foreach key {script inspect_proc import_proc} {
             if {[string trim [acquisitionHandlerSectionField $moduleId $key ""]] eq ""} { error "$moduleId: acquisition_handler.$key is required." }
         }
@@ -165,7 +171,7 @@ proc ::GX::acquisitionHandlerInspect {moduleId sourcePath {previewDir ""}} {
     }
     set sourcePath [file normalize $sourcePath]
     if {![file isfile $sourcePath]} { error "$moduleId: input file does not exist: $sourcePath" }
-    set sourceKind [acquisitionHandlerField $handlerId source_kind [acquisitionHandlerSourceKind $moduleId]]
+    set sourceKind [expr {[acquisitionHandlerField $handlerId runtime {}] eq {managed_cpp}?[acquisitionHandlerSourceKind $moduleId]:[acquisitionHandlerField $handlerId source_kind [acquisitionHandlerSourceKind $moduleId]]}]
     if {[string trim $previewDir] ne ""} {
         set previewDir [file normalize $previewDir]
         file mkdir $previewDir
@@ -184,7 +190,9 @@ proc ::GX::acquisitionHandlerInspect {moduleId sourcePath {previewDir ""}} {
     foreach key {recognized format variables metadata preview_rows warnings} {
         if {![dict exists $result $key]} { dict set result $key [expr {$key in {variables preview_rows warnings} ? [list] : ($key eq "metadata" ? [dict create] : "")}] }
     }
-    dict set result source_kind $sourceKind
+    if {[acquisitionHandlerField $handlerId runtime {}] eq {managed_cpp}} {
+        if {![dict exists $result source_kind] || [dict get $result source_kind] ni {text binary}} {error {Native inspection lost its captured source kind}}
+    } else {dict set result source_kind $sourceKind}
     return $result
 }
 
@@ -697,6 +705,13 @@ proc ::GX::acquisitionHandlerRegisterResult {moduleId session rawRel rawHash out
         return -options $options $failure
     }
     if {$registryBackup ne ""} { catch {file delete -force -- $registryBackup} }
+    if {[dict exists $result dataset_group]} {
+        set declaration [dict get $result dataset_group]
+        set groupedIds {}
+        foreach member [dict get $declaration members] {lappend groupedIds [dict get $member dataset_id]}
+        if {[lsort $groupedIds] ne [lsort $ids]} {error {Acquisition Dataset Group must contain exactly its actual returned Datasets}}
+        datasetGroupCreate $session $declaration
+    }
     return $ids
 }
 
@@ -847,8 +862,24 @@ proc ::GX::acquisitionHandlerCurrentModuleIsPlugin {} {
     return [acquisitionHandlerIsPluginModule $cfg(acquisition_module)]
 }
 
-proc ::GX::acquisitionHandlerDefaultContract {moduleId} {
+proc ::GX::acquisitionHandlerDefaultContract {moduleId {inspection {}}} {
     set ds [splitList [moduleField $moduleId output_datasets ""]]
+    if {[acquisitionHandlerSectionField $moduleId runtime {}] eq {managed_cpp}} {
+        # A module's output union is not the selected format's default. An
+        # ambiguous profile must stay unselected until explicitly reviewed;
+        # rank, file extension and importer identity do not imply a contract.
+        set declared [dict get [_acquisitionNativeProfile $moduleId] output_contracts]
+        foreach contract $declared {
+            if {$contract ni $ds} {error {Native profile output contract is not declared by its module}}
+        }
+        if {$inspection ne {} && [dict exists $inspection contract] && [dict get $inspection contract] ne {}} {
+            set hint [dict get $inspection contract]
+            if {$hint ni $declared} {error {Inspection contract is not declared by the selected profile}}
+            return $hint
+        }
+        if {[llength $declared]==1} {return [lindex $declared 0]}
+        return {}
+    }
     if {[llength $ds]} { return [lindex $ds 0] }
     return "table.generic"
 }
@@ -1005,6 +1036,12 @@ proc ::GX::genericCsvBatchEnsureVariables_v089_before_group_inspect {row {force 
     set p [expr {[info exists genericCsvBatch($row,path)] ? [string trim $genericCsvBatch($row,path)] : ""}]
     if {$p eq "" || ![file isfile $p]} { return 0 }
     set result [acquisitionHandlerInspect $cfg(acquisition_module) $p]
+    # Inspection may resolve only an otherwise empty choice. Never replace an
+    # explicit reviewed row contract or guess from dimensionality.
+    if {[genericCsvBatchResolvedContract $row] eq {}} {
+        set proposed [acquisitionHandlerDefaultContract $cfg(acquisition_module) $result]
+        if {$proposed ne {}} {genericCsvBatchSetContract $row $proposed}
+    }
     genericCsvBatchClearVariables $row
     set j 0
     foreach v [dict get $result variables] {
@@ -1251,6 +1288,7 @@ proc ::GX::acquisitionHandlerModuleSupportsBatch {moduleId} {
 # safety checks and mandatory inspect/import callbacks.
 proc ::GX::acquisitionHandlerLoadModule {moduleId} {
     variable acquisitionHandlerRegistry
+    if {[acquisitionHandlerSectionField $moduleId runtime {}] eq {managed_cpp}} {return [acquisitionHandlerNativeLoad $moduleId]}
     set previous [moduleRunnerHandler $moduleId]
     set cached [expr {[acquisitionHandlerRegistered $previous] &&
         [acquisitionHandlerField $previous kind ""] eq "plugin" &&
@@ -1333,6 +1371,9 @@ proc ::GX::acquisitionHandlerCancelRequested {} {
     return $acquisitionHandlerCancelFlag
 }
 proc ::GX::acquisitionHandlerRequestCallbacks {moduleId} {
+    if {[info exists ::GX::AcquisitionManaged::worker] && $::GX::AcquisitionManaged::worker ne {}} {
+        return [dict create progress_callback [list ::GX::_acquisitionManagedWorkerProgress $moduleId] log_callback [list ::GX::_acquisitionManagedWorkerLog $moduleId] cancel_callback ::GX::_acquisitionManagedWorkerCancel]
+    }
     return [dict create \
         progress_callback [list ::GX::acquisitionHandlerProgressCallback $moduleId] \
         log_callback [list ::GX::acquisitionHandlerLogCallback $moduleId] \
@@ -1840,6 +1881,87 @@ proc ::GX::genericCsvBatchImportIntoCurrentSessionSync {} {
 }
 
 # The built-in CSV row follows the same no-overwrite, rollback-on-failure rule.
+proc ::GX::_acquisitionCsvRecipeRegenerate {datasetId input output mappings} {
+    # Reuse the same parser/recipe owner from the immutable captured definition.
+    # A later live recipe must never change scientific reconstruction semantics.
+    set snapshots {}
+    foreach kind {row reviewed} {
+        set json [datasetField $datasetId importer_${kind}_config_json {}]
+        if {$json eq {} || [string bytelength $json]>1048576} {error {Captured CSV reconstruction configuration is unavailable}}
+        set typed [nativeWorkspaceJsonDecode [encoding convertto utf-8 $json]]
+        if {[lindex $typed 0] ne {object}} {error {Captured CSV configuration is not an object}}
+        set snapshot [importerBuilderSnapshot [nativeWorkspaceDecode $typed]]
+        if {[dict get $snapshot config_sha256] ne [datasetField $datasetId importer_${kind}_config_sha256 {}]} {error {Captured CSV configuration SHA differs; refusing scientific reconstruction}}
+        if {[dict get $snapshot parser_sha256] ne [datasetField $datasetId importer_${kind}_parser_sha256 {}]} {error {Captured CSV parser is unavailable or changed; refusing an unreviewed reconstruction}}
+        dict set snapshots $kind $snapshot
+    }
+    set definition [dict get $snapshots row definition]
+    set original {};foreach mapping [dict get $snapshots reviewed definition mappings] {dict set original [dict get $mapping name] $mapping}
+    set schema [datasetVariableSchema $datasetId];set replay {}
+    foreach pair $mappings {
+        lassign $pair column canonical
+        set matches {}
+        foreach variable $schema {
+            if {[dict get $variable enabled] && [dict get $variable source_column] eq $column && [dict get $variable canonical] eq $canonical} {lappend matches $variable}
+        }
+        if {[llength $matches]!=1} {error {CSV reconstruction mapping lacks one exact canonical Variable identity}}
+        set variable [lindex $matches 0];set identity [dict get $variable original_header]
+        if {![dict exists $original $identity]} {error {CSV reconstruction variable lacks its reviewed recipe mapping identity}}
+        set mapping [dict get $original $identity]
+        dict set mapping column $column;dict set mapping name $canonical;dict set mapping unit [dict get $variable unit]
+        lappend replay $mapping
+    }
+    dict set definition mappings $replay
+    importerBuilderRequireExecutable $definition
+    set effective [importerBuilderEffectiveSnapshot $definition $input]
+    set sourceHash [sha256File $input]
+    if {$sourceHash ne [datasetField $datasetId source_sha256 {}]} {error {CSV recipe reconstruction requires its exact reviewed RAW SHA}}
+    set command [importerBuilderCommand $definition $input $output]
+    if {[catch {exec {*}$command 2>@1} report]} {error "Canonical recipe regeneration failed for $datasetId: $report"}
+    if {[sha256File $input] ne $sourceHash || [sha256File [file join $::GX::scriptDir plugins modules acq.generic_csv runtime canonicalize_csv.py]] ne [dict get $effective parser_sha256]} {error {CSV reconstruction source/parser changed during execution}}
+    datasetRegister $datasetId [list importer_regenerated_config_json [dict get $effective effective_config_json] \
+        importer_regenerated_config_sha256 [dict get $effective effective_config_sha256] \
+        importer_regenerated_source_sha256 $sourceHash importer_regenerated_parser_sha256 [dict get $effective parser_sha256]]
+    return $report
+}
+
+# Capture the actual queued recipe and row mapping before execution. The row's
+# linear transforms stay on their original mapping identity; every override is
+# recorded in the effective definition, never taken from a later live recipe.
+proc ::GX::_acquisitionCsvReviewedDefinition {row} {
+    variable genericCsvBatch
+    variable genericCsvBatchVar
+    variable genericCsvBatchVarCount
+    set id $genericCsvBatch($row,importer_definition)
+    if {![info exists genericCsvBatch($row,importer_snapshot)]} {error {Queued CSV recipe has no reviewed identity; reselect the importer to review it}}
+    set captured $genericCsvBatch($row,importer_snapshot)
+    set current [importerBuilderDescribe $id]
+    if {[dict get $current file_sha256] ne [dict get $captured file_sha256]} {error {Queued CSV recipe changed; reselect the importer to review the new definition}}
+    if {[sha256File [file join $::GX::scriptDir plugins modules acq.generic_csv runtime canonicalize_csv.py]] ne [dict get $captured parser_sha256]} {error {CSV parser changed since queue review; reselect the importer}}
+    set d [dict get $captured definition]
+    set pattern [dict get $d match_regex]
+    if {$pattern ne {} && ![regexp -- $pattern [file tail $genericCsvBatch($row,path)]]} {error {Queued source does not match its reviewed CSV recipe}}
+    dict set d delimiter $genericCsvBatch($row,delimiter)
+    dict set d header_rows $genericCsvBatch($row,header_rows)
+    dict set d contract [genericCsvBatchResolvedContract $row]
+    set original {};set mappings {}
+    foreach mapping [dict get $d mappings] {dict set original [dict get $mapping name] $mapping}
+    for {set j 1} {$j<=$genericCsvBatchVarCount($row)} {incr j} {
+        if {!$genericCsvBatchVar($row,$j,enabled)} continue
+        set origin $genericCsvBatchVar($row,$j,original_header)
+        if {![dict exists $original $origin]} {error {Queued CSV variable has no reviewed mapping identity; edit the recipe in CSV Importer Builder and reselect it}}
+        set mapping [dict get $original $origin]
+        dict set mapping column $genericCsvBatchVar($row,$j,source_column)
+        dict set mapping name [string trim $genericCsvBatchVar($row,$j,canonical)]
+        dict set mapping unit $genericCsvBatchVar($row,$j,unit)
+        lappend mappings $mapping
+    }
+    dict set d mappings $mappings
+    set effective [importerBuilderSnapshot $d]
+    importerBuilderRequireExecutable [dict get $effective definition]
+    return [dict create reviewed $captured effective $effective]
+}
+
 proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
     variable cfg
     variable genericCsvBatch
@@ -1853,7 +1975,6 @@ proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
     set src [file normalize $genericCsvBatch($i,path)]
     if {![file isfile $src]} { error "Batch row $i: source does not exist: $src" }
     set builderId [expr {[info exists genericCsvBatch($i,importer_definition)] ? $genericCsvBatch($i,importer_definition) : ""}]
-    if {$builderId ne ""} { set builder [importerBuilderGet $builderId] }
     set id [acquisitionHandlerValidateDatasetId [string trim $genericCsvBatch($i,dataset_id)] "Batch row $i Dataset ID"]
     if {[datasetField $id id ""] ne ""} { error "Batch row $i: Dataset ID '$id' already exists." }
     set kind [genericCsvBatchResolvedContract $i]
@@ -1866,6 +1987,10 @@ proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
     }
     genericCsvBatchEnsureVariables $i
     genericCsvBatchValidateVariables $i
+    if {$builderId ne {}} {
+        set recipe [_acquisitionCsvReviewedDefinition $i]
+        set builder [dict get $recipe effective definition]
+    }
     set txnRoot [file join $session .acquisition-txn]
     file mkdir $txnRoot
     set txn [file join $txnRoot [format "csv-%s-%s-%s" $id [pid] [clock clicks]]]
@@ -1880,9 +2005,12 @@ proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
         set stageData [file join $txn canonical.csv]
         file copy -- $src $stageRaw
         set srcHash [sha256File $stageRaw]
-        if {$builderId ne "" && [dict get $builder delimiter] eq "whitespace"} {
-            set token whitespace
-            set canonicalToken comma
+        if {[sha256File $src] ne $srcHash} {error {CSV source changed while its RAW snapshot was copied}}
+        if {$builderId ne {}} {
+            set effectivePacket [importerBuilderEffectiveSnapshot $builder $stageRaw]
+            set resolved [dict get $effectivePacket effective_delimiter]
+            set token [expr {$resolved eq {,} ? {comma} : ($resolved eq {;} ? {semicolon} : ($resolved eq "\t" ? {tab} : $resolved))}]
+            set canonicalToken [expr {$token eq {whitespace} ? {comma} : $token}]
         } else {
             set delim [csvDelimiter $stageRaw $genericCsvBatch($i,delimiter)]
             set token [expr {$delim eq "," ? "comma" : ($delim eq ";" ? "semicolon" : "tab")}]
@@ -1912,6 +2040,8 @@ proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
         if {![regexp {(?m)^kinds=([a-z;]+)$} [string trim $out] -> kinds]} {
             error "Batch row $i ($id): canonical CSV conversion did not report column types."
         }
+        if {[sha256File $stageRaw] ne $srcHash || ![file isfile $src] || [sha256File $src] ne $srcHash} {error {CSV source changed during conversion; outputs were not committed}}
+        if {$builderId ne {} && [sha256File $helper] ne [dict get $effectivePacket parser_sha256]} {error {CSV parser changed during conversion; outputs were not committed}}
         set inferredKinds [split $kinds {;}]
         if {[llength $inferredKinds] != [llength $vars]} {error "Batch row $i ($id): inferred column count differs from canonical columns."}
         set activeColumn -1
@@ -1937,7 +2067,19 @@ proc ::GX::genericCsvBatchImportRowToSession_v089_before_grouping {session i} {
             notes "Canonical CSV generated by GX-TXT multi-CSV variable mapping"]
         if {$builderId ne ""} {
             lappend fields importer_definition $builderId importer_version [dict get $builder version]
-            dict for {key value} [importerBuilderMetadata $builder $src] { lappend fields $key $value }
+            set reviewed [dict get $recipe reviewed]
+            set effective [dict get $recipe effective]
+            foreach key {definition_json definition_sha256 config_json config_sha256 science_json science_sha256 parser_sha256 codec} {
+                lappend fields importer_reviewed_$key [dict get $reviewed $key]
+                lappend fields importer_row_$key [dict get $effective $key]
+            }
+            lappend fields importer_file_sha256 [dict get $reviewed file_sha256] \
+                importer_effective_config_json [dict get $effectivePacket effective_config_json] \
+                importer_effective_config_sha256 [dict get $effectivePacket effective_config_sha256] \
+                importer_header_prefix_sha256 [dict get $effectivePacket prefix_sha256] \
+                importer_header_bytes_read [dict get $effectivePacket bytes_read] \
+                importer_header_digest_scope prefix importer_mapping_binding original_mapping_name
+            dict for {key value} [importerBuilderMetadataFromText $builder $src [dict get $effectivePacket header_text]] {lappend fields $key $value}
         }
         datasetRegister $id [concat $fields $varMeta]
         saveDatasetRegistry $session
@@ -1961,8 +2103,8 @@ proc ::GX::genericCsvBatchImportRowToSession {session i} {
 }
 
 # Preserve the public single-source helper while routing it through N-source code.
-proc ::GX::acquisitionHandlerImportSourceToSession {moduleId session src proposedId proposedContract variableMap} {
-    return [acquisitionHandlerImportSourcesToSession $moduleId $session [list $src] $proposedId $proposedContract $variableMap]
+proc ::GX::acquisitionHandlerImportSourceToSession {moduleId session src proposedId proposedContract variableMap {dispatchOptions {}}} {
+    return [acquisitionHandlerImportSourcesToSession $moduleId $session [list $src] $proposedId $proposedContract $variableMap $dispatchOptions]
 }
 
 # --- Non-CSV imported dataset preview ---------------------------------------
@@ -2344,9 +2486,23 @@ proc ::GX::augmentStandardGui_v089_before_session_files {} {
 
 # v0.9.7.81: import into a private staging area, then commit one Dataset group.
 # A failed handler never owns an existing RAW/payload/registry path.
-proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePaths proposedId proposedContract variableMap} {
+proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePaths proposedId proposedContract variableMap {dispatchOptions {}}} {
     variable moduleCfg
     variable datasetRegistry
+    if {[catch {dict size $dispatchOptions}] || [string bytelength $dispatchOptions]>65536} {error {Invalid bounded Acquisition dispatch options}}
+    foreach key [dict keys $dispatchOptions] {if {$key ni {source_provenance destination_namespace}} {error "Unknown Acquisition dispatch option '$key'"}}
+    if {$dispatchOptions ne {} && $::GX::DatasetPrivate::activeContext ne {}} {error {Acquisition source dispatch requires user/admin authority}}
+    set libraryProvenance [datasetPublicationV2DictDefault $dispatchOptions source_provenance {}]
+    if {[catch {dict size $libraryProvenance} size] || $size>64} {error {Library source provenance requires at most 64 fields}}
+    dict for {key value} $libraryProvenance {
+        _datasetMetadataValidateKey $key
+        if {![string match library.* $key]} {error {Library dispatch provenance fields must use the library namespace}}
+    }
+    set destination [datasetPublicationV2DictDefault $dispatchOptions destination_namespace {}]
+    if {$destination ne {}} {
+        set destination [datasetNamespaceNormalize $destination]
+        if {[lindex [split $destination /] 0] eq {pending}} {error {Pending is not a canonical acquisition destination}}
+    }
     set hid [acquisitionHandlerLoadModule $moduleId]
     set session [file normalize $session]
     if {![file isdirectory $session]} { error "$moduleId: target session does not exist: $session" }
@@ -2366,6 +2522,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     set storagePolicy [acquisitionHandlerSourceStoragePolicy $moduleId]
 
     # Inspection and handler preflight are read-only and precede all session writes.
+    set inspectionHashes [lmap path $norm {sha256File $path}]
     set inspect [acquisitionHandlerInspectSources $moduleId $norm]
     if {[dict exists $inspect recognized] && ![dict get $inspect recognized]} {
         error [_acquisitionHandlerUnrecognizedReason $moduleId $inspect]
@@ -2392,6 +2549,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     set txn [file join $txnRoot [format "%s-%s-%s" [sanitize $proposedId] [pid] [clock clicks]]]
     file mkdir [file join $txn datasets]
     set stagedRaws {}; set rawHashes {}; set moved {}; set ids {}
+    _acquisitionManagedStageTrack $txn
     set priorRegistry [array get datasetRegistry]
     set registryPath [datasetRegistryPath $session]
     set registryExisted [file isfile $registryPath]
@@ -2400,7 +2558,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     set metadataDir [file join $session metadata datasets]
     set priorMetadata [glob -nocomplain -directory $metadataDir *]
     set status [catch {
-        foreach src $norm rel $rawRels {
+        foreach src $norm rel $rawRels inspectedHash $inspectionHashes {
             if {$storagePolicy eq "reference"} {
                 set dst $src
             } else {
@@ -2409,7 +2567,9 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
                 file copy -- $src $dst
             }
             lappend stagedRaws $dst
-            lappend rawHashes [sha256File $dst]
+            set rawHash [sha256File $dst]
+            if {![string equal -nocase $rawHash $inspectedHash]} {error {Acquisition source changed after inspection; no outputs were committed}}
+            lappend rawHashes $rawHash
         }
         set cfgDict [dict create]
         foreach key [moduleConfigKeys $moduleId] {
@@ -2431,6 +2591,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
             }
         }
         if {[dict exists $result outcome] && [dict get $result outcome] eq {registered_session_script}} {
+            if {$dispatchOptions ne {}} {error {Library dispatch requires canonical Dataset outputs, not Script registration}}
             if {$moduleId ne {acq.text_document}} {error {This importer has not declared a registered Session script outcome}}
             lassign [acquisitionHandlerSafeDatasetPath $session [file join $txn datasets] [dict get $result source_path]] scriptSource unused
             set scriptReceipt [scriptRegistryImportSource $session $scriptSource [dict get $result script_id] [dict get $result name] [dict get $result language] [dict get $result provenance]]
@@ -2438,6 +2599,33 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
         } else {
         if {[catch {dict size $result}] || ![dict exists $result datasets]} {
             error "$moduleId: import_proc must return a dict with datasets."
+        }
+        set preparedPlans {}
+        if {[dict exists $result prepared_publications]} {
+            if {[dict get $result datasets] ne {}} {error {Acquisition must choose file outputs or prepared numeric Publication, not both}}
+            set preparedPlans [acquisitionPreparedPublicationsPreflight $moduleId $session [file join $txn datasets] [dict get $result prepared_publications]]
+        }
+        set publicationCallbacks [acquisitionHandlerRequestCallbacks $moduleId]
+        if {[dict exists $result prepared_buffers_consumable]} {
+            set consume [dict get $result prepared_buffers_consumable]
+            if {![string is boolean -strict $consume]} {error {prepared_buffers_consumable must be boolean}}
+            if {$consume} {
+                if {$preparedPlans eq {} || ![acquisitionHandlerHasCapability $hid consumable_prepared_buffers]} {error {Producer did not declare consumable prepared buffers}}
+                dict set publicationCallbacks prepared_consumable_root [file join $txn datasets]
+            }
+        }
+        if {$libraryProvenance ne {}} {
+            set normalized {}
+            foreach ds [dict get $result datasets] {
+                set metadata [datasetPublicationV2DictDefault $ds structured_metadata {}]
+                dict for {key value} $libraryProvenance {
+                    if {[dict exists $metadata $key] && [dict get $metadata $key] ne $value} {error "Conflicting pinned Library source field '$key'"}
+                    dict set metadata $key $value
+                }
+                dict set ds structured_metadata $metadata
+                lappend normalized $ds
+            }
+            dict set result datasets $normalized
         }
         set seenIds {}; set finalPayloads {}
         foreach ds [dict get $result datasets] {
@@ -2460,7 +2648,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
             }
             lappend finalPayloads $final
         }
-        if {![llength $finalPayloads]} { error "$moduleId: import_proc returned no datasets." }
+        if {![llength $finalPayloads] && $preparedPlans eq {}} { error "$moduleId: import_proc returned no datasets." }
         if {$storagePolicy eq "copy"} {
             foreach staged $stagedRaws final $finalRaws {
                 file mkdir [file dirname $final]
@@ -2476,13 +2664,42 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
             file rename -- $staged $final
             lappend moved $final
         }
-        set ids [acquisitionHandlerRegisterResult $moduleId $session [lindex $rawRels 0] \
-            [lindex $rawHashes 0] [file join $session datasets] $result]
+        if {$preparedPlans ne {}} {
+            set ids [acquisitionPublishPrepared $moduleId $session $preparedPlans $libraryProvenance $publicationCallbacks]
+        } else {
+            set ids [acquisitionHandlerRegisterResult $moduleId $session [lindex $rawRels 0] \
+                [lindex $rawHashes 0] [file join $session datasets] $result]
+        }
         foreach id $ids {
             datasetRegister $id [list source_count [llength $norm] source_raw_list [join $rawRels {;}] \
                 source_sha256_list [join $rawHashes {;}] acquisition_capabilities [join [acquisitionHandlerCapabilities $hid] {;}] \
                 source_storage_policy $storagePolicy source_original_path [lindex $norm 0] \
-                source_size_bytes [file size [lindex $norm 0]] source_mtime [file mtime [lindex $norm 0]]]
+                source_size_bytes [file size [lindex $norm 0]] source_mtime [file mtime [lindex $norm 0]] \
+                source_module $moduleId source_raw [lindex $rawRels 0] source_sha256 [lindex $rawHashes 0]]
+            if {[acquisitionHandlerField $hid runtime {}] eq {managed_cpp}} {
+                set sourceKind [dict get $result source_kind]
+                if {$sourceKind ni {text binary}} {error {Native Acquisition lost its captured source kind}}
+                datasetRegister $id [list source_kind $sourceKind]
+            }
+        }
+        # Namespace/metadata owners may refresh the persisted Registry inside
+        # this same lock. Publish the Acquisition provenance before those
+        # nested owner operations so they cannot reload an earlier v2 record.
+        saveDatasetRegistry $session
+        if {$preparedPlans ne {} && [dict exists $result dataset_group]} {
+            set declaration [dict get $result dataset_group]
+            set groupedIds [lmap member [dict get $declaration members] {dict get $member dataset_id}]
+            if {[lsort $groupedIds] ne [lsort $ids]} {error {Prepared Acquisition Group must contain exactly its actual outputs}}
+            datasetGroupCreate $session $declaration
+        }
+        if {$destination ne {}} {
+            if {[dict exists $result dataset_group]} {
+                set groupId [dict get $result dataset_group group_id]
+                set group [datasetGroupGet $session $groupId]
+                datasetGroupMove $session $groupId $destination [dict get $group revision]
+            } else {
+                foreach id $ids {datasetNamespaceSet $session $id $destination}
+            }
         }
         saveDatasetRegistry $session
         }
@@ -2529,3 +2746,9 @@ proc ::GX::acquisitionHandlerReceiptSave {session module sources outputs} {
     resourceLifecycleWriteBytes [file join $directory $id.tcldict] [encoding convertto utf-8 $receipt]
     return $receipt
 }
+source [file join [file dirname [info script]] acquisition_publication_v1.tcl]
+
+# Existing owner, additive host-managed auxiliary path. Synchronous public
+# operations above retain their six/seven-argument result contracts.
+source [file join [file dirname [info script]] acquisition_managed_v1.tcl]
+source [file join [file dirname [info script]] acquisition_native_v1.tcl]

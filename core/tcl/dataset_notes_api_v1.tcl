@@ -336,11 +336,13 @@ proc ::GX::_experimentDocumentsFlushPending {} {
 # -----------------------------------------------------------------------------
 # Generic GX-Markup v1 editing engine
 # -----------------------------------------------------------------------------
-proc ::GX::markupRegisterEditor {source preview {changeCommand {}}} {
+proc ::GX::markupRegisterEditor {source preview {changeCommand {}} {imageCommand {}}} {
     variable markupPreviewBySource
     variable markupChangeCommand
+    variable markupImageCommand
     set markupPreviewBySource($source) $preview
     set markupChangeCommand($source) $changeCommand
+    set markupImageCommand($source) $imageCommand
 }
 
 proc ::GX::markupPreviewForSource {source} {
@@ -410,14 +412,19 @@ proc ::GX::markupPreviewInsertInline {w text} {
     set pos 0
     set n [string length $text]
     while {$pos < $n} {
+        # Plain runs have no inline delimiters. Insert once instead of copying
+        # the entire remaining paragraph for every Unicode character.
+        if {[string index $text $pos] ni [list \[ * `]} {
+            set stop $n
+            foreach marker [list \[ * `] {set at [string first $marker $text $pos];if {$at>=0 && $at<$stop} {set stop $at}}
+            $w insert end [string range $text $pos [expr {$stop-1}]]
+            set pos $stop;continue
+        }
         set rest [string range $text $pos end]
-        if {[regexp -indices {^\[([^]]+)\]\((https?://[^ )]+)\)} $rest whole title target]} {
+        if {[regexp -indices {^\[([^]\r\n]+)\]\(([^)\r\n]+)\)} $rest whole title target]} {
             lassign $whole _ e; lassign $title ts te; lassign $target us ue
             set url [string range $rest $us $ue]
-            set tag "gx_link_[clock clicks]_$pos"
-            $w tag configure $tag -foreground #0645ad -underline 1
-            $w tag bind $tag <Button-1> [list ::GX::markupOpenWebLink $url]
-            $w insert end [string range $rest $ts $te] $tag
+            markupNavigationLinkInsert $w [string range $rest $ts $te] $url
             incr pos [expr {$e+1}]
             continue
         }
@@ -461,37 +468,32 @@ proc ::GX::markupOpenWebLink {url} {
 }
 
 proc ::GX::markupConfigurePreviewTags {w} {
-    $w tag configure gx_h1 -font {TkDefaultFont 18 bold} -spacing1 8 -spacing3 4
-    $w tag configure gx_h2 -font {TkDefaultFont 15 bold} -spacing1 7 -spacing3 3
-    $w tag configure gx_h3 -font {TkDefaultFont 12 bold} -spacing1 6 -spacing3 2
-    $w tag configure gx_italic -font {TkDefaultFont 10 italic}
-    $w tag configure gx_bold -font {TkDefaultFont 10 bold}
+    set family [font actual TkDefaultFont -family]
+    set size [font actual TkDefaultFont -size]
+    foreach {tag ratio style} {gx_h1 1.8 bold gx_h2 1.5 bold gx_h3 1.2 bold gx_italic 1 italic gx_bold 1 bold gx_list 1 bold} {
+        set scaled [expr {max(4,round(abs($size)*$ratio))}]
+        $w tag configure $tag -font [list $family [expr {$size<0?-$scaled:$scaled}] $style]
+    }
+    $w tag configure gx_h1 -spacing1 8 -spacing3 4
+    $w tag configure gx_h2 -spacing1 7 -spacing3 3
+    $w tag configure gx_h3 -spacing1 6 -spacing3 2
     $w tag configure gx_code -font TkFixedFont -background #eeeeee
     $w tag configure gx_codeblock -font TkFixedFont -background #eeeeee -lmargin1 8 -lmargin2 8
-    $w tag configure gx_list -font {TkDefaultFont 10 bold} -lmargin1 12 -lmargin2 24
+    $w tag configure gx_list -lmargin1 12 -lmargin2 24
     $w tag configure gx_table -font TkFixedFont -background #f4f4f4
+    $w tag configure gx_quote -foreground #4a5568 -lmargin1 16 -lmargin2 16 -spacing1 4 -spacing3 4
+    $w tag configure gx_rule -foreground #666666 -spacing1 5 -spacing3 5
 }
 
 proc ::GX::markupPreviewRefreshFor {source} {
     set preview [markupPreviewForSource $source]
     if {$preview eq "" || ![winfo exists $source] || ![winfo exists $preview]} return
-    set src [$source get 1.0 "end-1c"]
-    $preview configure -state normal
-    $preview delete 1.0 end
-    set inCode 0
-    foreach line [split $src "\n"] {
-        if {[string trim $line] eq "```"} { set inCode [expr {!$inCode}]; continue }
-        if {$inCode} { $preview insert end "$line\n" gx_codeblock; continue }
-        if {[regexp {^(#{1,3})[[:space:]]+(.*)$} $line -> marks body]} {
-            set tag "gx_h[string length $marks]"
-            $preview insert end $body $tag
-            $preview insert end "\n"
-            continue
-        }
-        markupPreviewInsertInline $preview $line
-        $preview insert end "\n"
-    }
-    $preview configure -state disabled
+    variable markupImageCommand
+    set images [expr {[info exists markupImageCommand($source)]?$markupImageCommand($source):{}}]
+    set context {}
+    if {$images ne {} && [lindex $images 0] eq {::GX::_documentEditorImageRender}} {_documentEditorImagesClear [lindex $images 1]}
+    if {$images ne {} && [lindex $images 0] eq {::GX::_documentEditorImageRender}} {set context [_documentEditorNavigationContext [lindex $images 1]]}
+    markupRenderStringToWidget $preview [$source get 1.0 "end-1c"] $images $context
 }
 
 # Compatibility entry point used by the original v0.9.2 top-level editor.
@@ -510,7 +512,11 @@ proc ::GX::markupToggleWrap {w} {
     }
 }
 
-proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}}} {
+proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}} {options {}}} {
+    set toolbar [datasetPublicationV2DictDefault $options toolbar 1]
+    set surface [datasetPublicationV2DictDefault $options source_surface 0]
+    if {![string is boolean -strict $toolbar]} {error {Markup toolbar option must be boolean}}
+    if {![string is boolean -strict $surface]} {error {Markup source_surface option must be boolean}}
     grid rowconfigure $parent 1 -weight 1
     grid columnconfigure $parent 0 -weight 1
 
@@ -521,7 +527,7 @@ proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}}} {
     $parent.pw add $parent.pw.edit -weight 1
     $parent.pw add $parent.pw.preview -weight 1
 
-    set source $parent.pw.edit.t
+    set source [expr {$surface?"$parent.pw.edit.surface.text":"$parent.pw.edit.t"}]
     set preview $parent.pw.preview.t
     ttk::button $parent.tb.undo -text "Undo" -command [list catch [list $source edit undo]]
     ttk::button $parent.tb.redo -text "Redo" -command [list catch [list $source edit redo]]
@@ -536,12 +542,16 @@ proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}}} {
     ttk::button $parent.tb.color -text "Color..." -command [list ::GX::markupChooseColor $source]
     ttk::button $parent.tb.preview -text "Refresh preview" -command [list ::GX::markupPreviewRefreshFor $source]
     pack $parent.tb.undo $parent.tb.redo $parent.tb.wrap $parent.tb.h1 $parent.tb.h2 $parent.tb.h3 $parent.tb.i $parent.tb.b $parent.tb.code $parent.tb.block $parent.tb.color $parent.tb.preview -side left -padx 2 -pady 4
-    grid $parent.tb -row 0 -column 0 -sticky ew -padx 4 -pady {2 0}
+    if {$toolbar} {grid $parent.tb -row 0 -column 0 -sticky ew -padx 4 -pady {2 0}}
     grid $parent.pw -row 1 -column 0 -sticky nsew -padx 4 -pady 4
 
     grid rowconfigure $parent.pw.edit 1 -weight 1; grid columnconfigure $parent.pw.edit 0 -weight 1
     grid rowconfigure $parent.pw.preview 1 -weight 1; grid columnconfigure $parent.pw.preview 0 -weight 1
     ttk::label $parent.pw.edit.l -text "GX-Markup / Markdown source"
+    if {$surface} {
+        set source [sourceSurfaceCreate $parent.pw.edit.surface {mode editable language markdown find_bar 1}]
+        grid $parent.pw.edit.surface -row 1 -column 0 -columnspan 2 -sticky nsew
+    } else {
     text $source -wrap word -undo 1 -autoseparators 1 -maxundo 0 -font TkFixedFont
     ttk::scrollbar $parent.pw.edit.sy -orient vertical -command [list $source yview]
     ttk::scrollbar $parent.pw.edit.sx -orient horizontal -command [list $source xview]
@@ -550,6 +560,7 @@ proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}}} {
     grid $source -row 1 -column 0 -sticky nsew
     grid $parent.pw.edit.sy -row 1 -column 1 -sticky ns
     grid $parent.pw.edit.sx -row 2 -column 0 -sticky ew
+    }
 
     ttk::label $parent.pw.preview.l -text "Preview"
     text $preview -wrap word -state disabled
@@ -560,10 +571,16 @@ proc ::GX::buildMarkupEditorWidget {parent initial {changeCommand {}}} {
     grid $parent.pw.preview.sy -row 1 -column 1 -sticky ns
     markupConfigurePreviewTags $preview
 
-    markupRegisterEditor $source $preview $changeCommand
-    $source insert 1.0 $initial
-    bind $source <KeyRelease> [list after idle [list ::GX::markupSourceChanged $source]]
+    markupRegisterEditor $source $preview $changeCommand [datasetPublicationV2DictDefault $options image_command {}]
+    if {$surface} {
+        sourceSurfaceSet $source $initial
+        sourceSurfaceConfigure $source [dict create change_command [list ::GX::markupSourceChanged $source]]
+    } else {
+        $source insert 1.0 $initial
+        bind $source <KeyRelease> [list after idle [list ::GX::markupSourceChanged $source]]
+    }
     markupPreviewRefreshFor $source
+    uiTextEditingAttach [winfo toplevel $parent] [list $source $preview]
     return [list $source $preview]
 }
 
@@ -824,9 +841,10 @@ proc ::GX::launchGui_before_plugin_install_v1 {} {
 # v0.9.2 refinement: Session files renders Markdown notes by default.
 # The source markup is shown only inside the GX-Markup editor.
 # -----------------------------------------------------------------------------
-proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
+proc ::GX::markupRenderStringToWidget {w src {imageCommand {}} {linkContext {}}} {
     if {![winfo exists $w]} return
     markupConfigurePreviewTags $w
+    markupNavigationBegin $w $linkContext
     $w configure -state normal -wrap word
     $w delete 1.0 end
     set inCode 0
@@ -838,6 +856,8 @@ proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
             ![regexp {^```[[:alnum:]_+.-]*$} [string trim $line]] &&
             !($imageCommand ne {} && [regexp {^!\[([^]]*)\]\(([^)]+)\)[[:space:]]*$} $line]) &&
             ![regexp {^(#{1,3})[[:space:]]+} $line] &&
+            ![regexp {^[[:space:]]*>[[:space:]]?} $line] &&
+            ![regexp {^[[:space:]]*(-{3,}|\*{3,}|_{3,})[[:space:]]*$} $line] &&
             ![regexp {^[[:space:]]*([-*]|[0-9]+[.])[[:space:]]+} $line] &&
             ![regexp {^[[:space:]]*\|.*\|[[:space:]]*$} $line]} {
             lappend paragraph $line
@@ -850,11 +870,20 @@ proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
         }
         if {[regexp {^```[[:alnum:]_+.-]*$} [string trim $line]]} { set inCode [expr {!$inCode}]; continue }
         if {$inCode} { $w insert end "$line\n" gx_codeblock; continue }
+        if {[regexp {^[[:space:]]*>[[:space:]]?(.*)$} $line -> body]} {
+            set begin [$w index end-1c]
+            markupPreviewInsertInline $w $body;$w insert end "\n"
+            $w tag add gx_quote $begin end-1c;continue
+        }
+        if {[regexp {^[[:space:]]*(-{3,}|\*{3,}|_{3,})[[:space:]]*$} $line]} {
+            $w insert end "────────────────────────\n" gx_rule;continue
+        }
         if {$imageCommand ne {} && [regexp {^!\[([^]]*)\]\(([^)]+)\)[[:space:]]*$} $line -> caption relative]} {
             {*}$imageCommand $w $relative $caption
             continue
         }
         if {[regexp {^(#{1,3})[[:space:]]+(.*)$} $line -> marks body]} {
+            markupNavigationHeading $w $body [$w index end-1c]
             $w insert end $body "gx_h[string length $marks]"
             $w insert end "\n"
             continue
@@ -889,18 +918,38 @@ proc ::GX::sessionFileExplorerOpenSelected {} {
         return
     }
     set path [sessionSelectedPath]
-    if {$path eq ""} { return [::GX::sessionFileExplorerOpenSelected_v092_before_rendered_markdown] }
+    if {$path eq ""} {
+        if {[info exists ui(sessionFileText)] && [winfo exists $ui(sessionFileText)]} {_markupNavigationRetire $ui(sessionFileText)}
+        return [::GX::sessionFileExplorerOpenSelected_v092_before_rendered_markdown]
+    }
     set rel [sessionFileExplorerRelative $path]
-    if {[string tolower [file extension $path]] ne ".md"} {
+    if {[string tolower [file extension $path]] ni {.md .markdown}} {
+        if {[info exists ui(sessionFileText)] && [winfo exists $ui(sessionFileText)]} {_markupNavigationRetire $ui(sessionFileText)}
         set r [::GX::sessionFileExplorerOpenSelected_v092_before_rendered_markdown]
         # The plain-file viewer is monospaced and non-wrapping; restore its
         # historical presentation after a rendered Markdown document.
         if {[info exists ui(sessionFileText)] && [winfo exists $ui(sessionFileText)]} { $ui(sessionFileText) configure -wrap none -font TkFixedFont }
         return $r
     }
-    if {[catch {set src [sessionFileExplorerRead $path]} err]} { set src "ERROR\n$err\n" }
     set w $ui(sessionFileText)
     $w configure -font TkDefaultFont
-    markupRenderStringToWidget $w $src
+    set context {};set navigationError {}
+    catch {set context [markdownNavigationContext session_file $rel [dict create status_command [list set ::GX::ui(sessionFileInfo)]]]} navigationError
+    # Programmatic selection also queues the ordinary TreeviewSelect opener.
+    # Preserve the already-rendered authenticated view instead of rebuilding it
+    # after link navigation has positioned its heading. Changed source/Session,
+    # a replaced widget or a different document still takes the normal read path.
+    if {$context ne {} && ![catch {set shown [_markupNavigationView $w]}]
+        && [dict exists $shown context kind] && [dict get $shown context kind] eq {session_file}
+        && [dict get $shown context id] eq $rel
+        && ![catch {set current [_markdownNavigationContextCheck [dict get $shown context]]}]
+        && [dict get $current identity] eq [dict get $context identity]} {
+        markupConfigurePreviewTags $w
+        return
+    }
+    if {[catch {set src [sessionFileExplorerRead $path]} err]} { set src "ERROR\n$err\n" }
+    markupRenderStringToWidget $w $src {} $context
     set ui(sessionFileInfo) "$rel — [file size $path] bytes — rendered Markdown (Edit note... shows source)"
+    if {$context eq {} && $navigationError ne {}} {append ui(sessionFileInfo) " — relative links unavailable: $navigationError"}
 }
+source [file join [file dirname [info script]] markdown_navigation_v1.tcl]

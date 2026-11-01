@@ -156,6 +156,8 @@ class ExclusionControls:
         self._assist_proposal_stale = self.assisted_proposal is not None
         self.exclusion_refresh_list()
         self.exclusion_status.set(message)
+        if self._assist_proposal_stale:
+            self.assist_status.set("Trace constraints changed. Click Propose again, inspect the new trace, then Accept.")
         self.persist();self.redraw()
 
     def exclusion_new_path(self):

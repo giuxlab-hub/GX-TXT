@@ -271,3 +271,12 @@ This section documents source implementation. A rebuilt precompiled bridge,
 central API adoption, allocated native/encoding checks and actual GUI acceptance
 are still required. No render, video, caption readability, codec initialization,
 scientific demonstration or installed-runtime PASS follows from this source batch.
+
+## Explicit Software execution with GLVND
+
+On Unix, an isolated Software renderer selects `__GLX_VENDOR_LIBRARY_NAME=mesa`
+in addition to the existing llvmpipe/Mesa driver hints. Mesa driver hints alone
+do not select the Mesa library when NVIDIA owns the X screen. The v1 host saves
+and restores the parent environment; v2 supplies variables only in the child
+launch command. Auto/Hardware selection and native rendering algorithms are
+unchanged. This is an execution-policy adapter, not a remote-X11 support claim.

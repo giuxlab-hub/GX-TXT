@@ -1,6 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Optional CORE Workspace context, with exact row lineage and no History.
 proc ::GX::InteractiveCurveBuilder::_uiWorkspaceCurrent {w} {variable ui;return $ui($w,document)}
+proc ::GX::InteractiveCurveBuilder::_uiWorkspaceCallbacks {w} {
+    return [dict create current [list ::GX::InteractiveCurveBuilder::_uiWorkspaceCurrent $w] save [list ::GX::InteractiveCurveBuilder::_uiWorkspaceSave $w] close [list ::GX::InteractiveCurveBuilder::_uiWorkspaceClose $w] open ::GX::InteractiveCurveBuilder::open dirty [list ::GX::InteractiveCurveBuilder::_uiWorkspaceDirty $w] discard [list ::GX::InteractiveCurveBuilder::_uiClose $w 0]]
+}
+proc ::GX::InteractiveCurveBuilder::_uiWorkspaceClose {w} {::GX::sessionWorkspaceViewerAction curve_builder [_uiWorkspaceCallbacks $w] $w close}
+proc ::GX::InteractiveCurveBuilder::_uiWorkspaceDirty {w} {variable ui;return [expr {[_uiWorkspacePayload $w] ne $ui($w,saved_payload)}]}
 proc ::GX::InteractiveCurveBuilder::_uiWorkspacePayload {w} {
     variable ui;_uiScope $w
     set settings {}
@@ -28,7 +33,7 @@ proc ::GX::InteractiveCurveBuilder::_uiWorkspaceSave {w} {
         set current [::GX::sessionWorkspaceGet $ui($w,document)]
         set currentPayload [dict remove [dict get $current payload] workspace_metadata]
         if {[dict get $current generation] ne $ui($w,document_generation) || ([dict get $current revision] ne $ui($w,document_revision) && $currentPayload ne $ui($w,saved_payload))} {error {Builder Workspace changed in another window; reopen before saving}}
-        if {$currentPayload ne $payload} {::GX::sessionWorkspaceUpdate $ui($w,document) $payload}
+        if {$currentPayload ne $payload} {::GX::sessionWorkspaceUpdate $ui($w,document) $payload $current}
     }
     set current [::GX::sessionWorkspaceGet $ui($w,document)]
     set ui($w,document_generation) [dict get $current generation];set ui($w,document_revision) [dict get $current revision]
@@ -71,10 +76,11 @@ proc ::GX::InteractiveCurveBuilder::_uiWorkspaceAttach {w context} {
         set ui($w,document) $id;set ui($w,workspace_name) [dict get $record name]
         set ui($w,document_generation) [dict get $record generation];set ui($w,document_revision) [dict get $record revision];set ui($w,saved_payload) [dict remove $payload workspace_metadata]
     }
+    if {$id in {{} new}} {set ui($w,saved_payload) [_uiWorkspacePayload $w]}
     ::GX::sessionWorkspaceViewerTitle $w {Interactive Curve Builder} [list ::GX::InteractiveCurveBuilder::_uiWorkspaceCurrent $w] [list set ::GX::InteractiveCurveBuilder::ui($w,workspace_name)]
 }
-proc ::GX::InteractiveCurveBuilder::_uiDispose {w} {
+proc ::GX::InteractiveCurveBuilder::_uiDispose {w {saveChanges 1}} {
     variable ui
     if {[info exists ui($w,epoch)]} {set ui($w,epoch) [incr ::GX::InteractiveCurveBuilder::epoch]}
-    if {[info exists ui($w,document)] && $ui($w,document) ne {} && ![catch {_uiScope $w}]} {_uiWorkspaceSave $w}
+    if {$saveChanges && [info exists ui($w,document)] && $ui($w,document) ne {} && ![catch {_uiScope $w}]} {_uiWorkspaceSave $w}
 }

@@ -13,6 +13,7 @@ class UncertaintyDialog(tk.Toplevel):
     def __init__(self, app):
         super().__init__(app.root)
         self.app=app
+        self.dual_y=(app.project.y2_axis is not None)
         self.title('Pixel and calibration uncertainty')
         self.transient(app.root)
         self.geometry('830x640')
@@ -23,8 +24,14 @@ class UncertaintyDialog(tk.Toplevel):
             ('mode','Error model',spec.get('mode','none'),('none','pixel_calibration','physical_override')),
             ('pixel_distribution','Pixel scale meaning',spec.get('pixel_distribution','rectangular_full_width'),('rectangular_full_width','normal_standard_uncertainty')),
             ('pixel_scale','Pixel X/Y widths or standard uncertainties',spec.get('pixel_scale',[]),None),
-            ('calibration_standard_uncertainty','8 corner + 4 axis-endpoint standard uncertainties',spec.get('calibration_standard_uncertainty',[]),None),
-            ('override_standard_uncertainty','Physical X/Y standard uncertainties',spec.get('override_standard_uncertainty',[]),None),
+            ('calibration_standard_uncertainty',
+             '8 corners + 6 axis endpoints (X, Y1, Y2)' if self.dual_y
+             else '8 corners + 4 axis endpoints (X, Y1)',
+             spec.get('calibration_standard_uncertainty',[]),None),
+            ('override_standard_uncertainty',
+             'Physical X / Y1 / Y2 standard uncertainties' if self.dual_y
+             else 'Physical X/Y standard uncertainties',
+             spec.get('override_standard_uncertainty',[]),None),
             ('rationale','Evidence / reason for declared uncertainty',spec.get('rationale',''),None),
         ]
         self.values={}
@@ -35,9 +42,10 @@ class UncertaintyDialog(tk.Toplevel):
             w=ttk.Combobox(self,textvariable=v,values=options,state='readonly') if options else ttk.Entry(self,textvariable=v,width=46)
             w.grid(row=row,column=1,sticky='ew',padx=7,pady=5)
         ttk.Label(self,wraplength=760,justify='left',text=(
-            'Corner input order: BL X/Y, BR X/Y, TL X/Y, TR X/Y (pixels); '
-            'then X minimum/maximum and Y minimum/maximum (physical units). '
-            'Zero pixel-localization uncertainty is valid when explicitly justified. '
+            'Corner input order: BL X/Y, BR X/Y, TL X/Y, TR X/Y (pixels); ' +
+            ('then X min/max, Y1 min/max, and Y2 min/max (physical units). '
+             if self.dual_y else 'then X minimum/maximum and Y1 minimum/maximum. ')
+            + 'Zero pixel-localization uncertainty is valid when explicitly justified. '
             'Pixel width is NOT a standard uncertainty unless a distribution is justified. '
             'For SEM scale bars, nonzero corner sigmas do not describe physical bar-length uncertainty.'))\
             .grid(row=6,column=0,columnspan=2,padx=8,pady=7,sticky='ew')
@@ -82,12 +90,15 @@ class UncertaintyDialog(tk.Toplevel):
         if mode=='none':return {'mode':'none'}
         spec={'mode':mode,'rationale':self.values['rationale'].get().strip()}
         if mode=='physical_override':
-            spec['override_standard_uncertainty']=parse('override_standard_uncertainty',2)
+            spec['override_standard_uncertainty']=parse(
+                'override_standard_uncertainty',3 if self.dual_y else 2)
         elif mode=='pixel_calibration':
             spec['pixel_distribution']=self.values['pixel_distribution'].get()
             spec['pixel_scale']=parse('pixel_scale',2)
-            spec['calibration_standard_uncertainty']=parse('calibration_standard_uncertainty',12)
-        return checked_spec(spec,scale_bar=bool(self.app.config.get('scale_reference')))
+            spec['calibration_standard_uncertainty']=parse(
+                'calibration_standard_uncertainty',14 if self.dual_y else 12)
+        return checked_spec(spec,scale_bar=bool(self.app.config.get('scale_reference')),
+                            dual_y=self.dual_y)
 
     def apply(self):
         try:

@@ -11,7 +11,8 @@ The importer package requires GX-TXT 0.9.8.09 or newer and a configured Python
 No additional Python package or viewer is required for import.
 
 See `MANUAL.md` for the workflow and precise format-validation scope,
-`docs/ARCHITECTURE.md` for the portable parser/runtime boundaries.
+`docs/CORE_EXTRACTION.md` for the isolated reusable components, and
+`TEST_RESULTS.md` for validation performed on the supplied baseline.
 
 The Native 3D viewer selects imported Datasets directly from the Session.
 For VTI, enter a scalar array name and one or more isovalues before rendering.

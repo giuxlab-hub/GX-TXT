@@ -1,0 +1,2257 @@
+{
+  "accepted_source": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+  "bundled": [
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.aia_andi_chromatography",
+      "source_module_path": "plugins/modules/acq.aia_andi_chromatography",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.audio",
+      "source_module_path": "plugins/modules/acq.audio",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "viewer.crystal_structure"
+      ],
+      "id": "acq.crystal_density",
+      "source_module_path": "plugins/modules/acq.crystal_density",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "contract.electronics_component"
+      ],
+      "id": "acq.electronics_component",
+      "source_module_path": "plugins/modules/acq.electronics_component",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "MISSING",
+      "depends": [],
+      "id": "acq.generic_csv",
+      "source_module_path": "plugins/modules/acq.generic_csv",
+      "type": "module",
+      "version": "3"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.geometry_3d",
+      "source_module_path": "plugins/modules/acq.geometry_3d",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.image_binary",
+      "source_module_path": "plugins/modules/acq.image_binary",
+      "type": "module",
+      "version": "1.2.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.metrohm_icnet_chw",
+      "source_module_path": "plugins/modules/acq.metrohm_icnet_chw",
+      "type": "module",
+      "version": "0.4.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.molecule_structure",
+      "source_module_path": "plugins/modules/acq.molecule_structure",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.nmr",
+      "source_module_path": "plugins/modules/acq.nmr",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.nmr_multidimensional",
+      "source_module_path": "plugins/modules/acq.nmr_multidimensional",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.pdf_document",
+      "source_module_path": "plugins/modules/acq.pdf_document",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.rigol_csv",
+      "source_module_path": "plugins/modules/acq.rigol_csv",
+      "type": "module",
+      "version": "2.3.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.scientific_measurement",
+      "source_module_path": "plugins/modules/acq.scientific_measurement",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "contract.scientific_publication"
+      ],
+      "id": "acq.scientific_publication",
+      "source_module_path": "plugins/modules/acq.scientific_publication",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.scientific_spectrum",
+      "source_module_path": "plugins/modules/acq.scientific_spectrum",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.sketch_dataset",
+      "source_module_path": "plugins/modules/acq.sketch_dataset",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.tektronix_current_log",
+      "source_module_path": "plugins/modules/acq.tektronix_current_log",
+      "type": "module",
+      "version": "2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.text_document",
+      "source_module_path": "plugins/modules/acq.text_document",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "acq.touchstone",
+      "source_module_path": "plugins/modules/acq.touchstone",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "acq.wav",
+      "source_module_path": "plugins/modules/acq.wav",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "MISSING",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "acq.xas",
+      "source_module_path": "plugins/modules/acq.xas",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "analysis.audio_decode",
+      "source_module_path": "plugins/modules/analysis.audio_decode",
+      "type": "module",
+      "version": "2.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.cepstrum",
+      "source_module_path": "plugins/modules/analysis.cepstrum",
+      "type": "module",
+      "version": "1.1.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.envelope_spectrum",
+      "source_module_path": "plugins/modules/analysis.envelope_spectrum",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.fft_spectrum",
+      "source_module_path": "plugins/modules/analysis.fft_spectrum",
+      "type": "module",
+      "version": "2.3.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "analysis.fractional_octave_spectrum",
+      "source_module_path": "plugins/modules/analysis.fractional_octave_spectrum",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.harmonic_analysis",
+      "source_module_path": "plugins/modules/analysis.harmonic_analysis",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "analysis.octave_script",
+      "source_module_path": "plugins/modules/analysis.octave_script",
+      "type": "module",
+      "version": "1.8.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "analysis.python_script",
+      "source_module_path": "plugins/modules/analysis.python_script",
+      "type": "module",
+      "version": "1.6.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "analysis.spectral_features",
+      "source_module_path": "plugins/modules/analysis.spectral_features",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.spectroscopy.ir",
+      "source_module_path": "plugins/modules/analysis.spectroscopy.ir",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.spectroscopy.uvvis",
+      "source_module_path": "plugins/modules/analysis.spectroscopy.uvvis",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.spectroscopy.uvvis_exploration",
+      "source_module_path": "plugins/modules/analysis.spectroscopy.uvvis_exploration",
+      "type": "module",
+      "version": "1.0.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.statistics.descriptive",
+      "source_module_path": "plugins/modules/analysis.statistics.descriptive",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.statistics.grouped",
+      "source_module_path": "plugins/modules/analysis.statistics.grouped",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "analysis.time_dependent_fft",
+      "source_module_path": "plugins/modules/analysis.time_dependent_fft",
+      "type": "module",
+      "version": "1.3.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "analysis.welch_spectrum",
+      "source_module_path": "plugins/modules/analysis.welch_spectrum",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "core.scientific_execution",
+      "source_module_path": "plugins/modules/core.scientific_execution",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "curve.replicate_analysis",
+      "source_module_path": "plugins/modules/curve.replicate_analysis",
+      "type": "module",
+      "version": "16.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "curvefit.family_global",
+      "source_module_path": "plugins/modules/curvefit.family_global",
+      "type": "module",
+      "version": "12"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "dataset.extract",
+      "source_module_path": "plugins/modules/dataset.extract",
+      "type": "module",
+      "version": "1.3.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "export.session_html",
+      "source_module_path": "plugins/modules/export.session_html",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "gxtxt.ir_waveform",
+        "math.numeric"
+      ],
+      "id": "gxtxt.ir_identify",
+      "source_module_path": "plugins/modules/gxtxt.ir_identify",
+      "type": "module",
+      "version": "2.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "gxtxt.ir_waveform",
+      "source_module_path": "plugins/modules/gxtxt.ir_waveform",
+      "type": "module",
+      "version": "3.6.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "library.reference.json",
+      "source_module_path": "plugins/modules/library.reference.json",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "library.spectroscopy.ir.reference",
+      "source_module_path": "plugins/modules/library.spectroscopy.ir.reference",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "library.spectroscopy.nmr.reference",
+      "source_module_path": "plugins/modules/library.spectroscopy.nmr.reference",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "math.electromagnetic_simulation",
+      "source_module_path": "plugins/modules/math.electromagnetic_simulation",
+      "type": "module",
+      "version": "0.2.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "math.magnetics",
+      "source_module_path": "plugins/modules/math.magnetics",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "math.numeric",
+      "source_module_path": "plugins/modules/math.numeric",
+      "type": "module",
+      "version": "1.64.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "math.rf_network",
+      "source_module_path": "plugins/modules/math.rf_network",
+      "type": "module",
+      "version": "1.2.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "math.signal",
+      "source_module_path": "plugins/modules/math.signal",
+      "type": "module",
+      "version": "1.5.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "model.spice_build_validate",
+      "source_module_path": "plugins/modules/model.spice_build_validate",
+      "type": "module",
+      "version": "6"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "plot.dataset",
+      "source_module_path": "plugins/modules/plot.dataset",
+      "type": "module",
+      "version": "4.4.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "sequence.table_join",
+      "source_module_path": "plugins/modules/sequence.table_join",
+      "type": "module",
+      "version": "3"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "tool.script_module_builder",
+      "source_module_path": "plugins/modules/tool.script_module_builder",
+      "type": "module",
+      "version": "1.4.7"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "viewer.engine_3d",
+        "math.numeric"
+      ],
+      "id": "viewer.3d_workbench",
+      "source_module_path": "plugins/modules/viewer.3d_workbench",
+      "type": "module",
+      "version": "0.3.6"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "viewer.circuit_workbench",
+      "source_module_path": "plugins/modules/viewer.circuit_workbench",
+      "type": "module",
+      "version": "1.10.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.code_dataset",
+      "source_module_path": "plugins/modules/viewer.code_dataset",
+      "type": "module",
+      "version": "1.1.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "viewer.native_3d"
+      ],
+      "id": "viewer.crystal_structure",
+      "source_module_path": "plugins/modules/viewer.crystal_structure",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "viewer.curve_digitizer",
+      "source_module_path": "plugins/modules/viewer.curve_digitizer",
+      "type": "module",
+      "version": "2.0.26"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.curve_viewer",
+      "source_module_path": "plugins/modules/viewer.curve_viewer",
+      "type": "module",
+      "version": "0.4.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "viewer.curve_workbench",
+      "source_module_path": "plugins/modules/viewer.curve_workbench",
+      "type": "module",
+      "version": "2.21.20"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric",
+        "curvefit.family_global"
+      ],
+      "id": "viewer.dataset_curve_fit",
+      "source_module_path": "plugins/modules/viewer.dataset_curve_fit",
+      "type": "module",
+      "version": "0.46.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.dataset_table_next",
+      "source_module_path": "plugins/modules/viewer.dataset_table_next",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "viewer.dev107_restricted_native3d",
+      "source_module_path": "plugins/modules/viewer.dev107_restricted_native3d",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "viewer.interface_builder"
+      ],
+      "id": "viewer.development_workspace",
+      "source_module_path": "plugins/modules/viewer.development_workspace",
+      "type": "module",
+      "version": "1.2.6"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "viewer.document_extractors",
+      "source_module_path": "plugins/modules/viewer.document_extractors",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.electromagnetic_simulation"
+      ],
+      "id": "viewer.electromagnetics",
+      "source_module_path": "plugins/modules/viewer.electromagnetics",
+      "type": "module",
+      "version": "0.2.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.electromagnetics_studio",
+      "source_module_path": "plugins/modules/viewer.electromagnetics_studio",
+      "type": "module",
+      "version": "0.3.4"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.html",
+      "source_module_path": "plugins/modules/viewer.html",
+      "type": "module",
+      "version": "1.2.3"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.ic_chromatograms",
+      "source_module_path": "plugins/modules/viewer.ic_chromatograms",
+      "type": "module",
+      "version": "0.1.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "viewer.interactive_curve_builder",
+      "source_module_path": "plugins/modules/viewer.interactive_curve_builder",
+      "type": "module",
+      "version": "1.2.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "plot.dataset"
+      ],
+      "id": "viewer.interface_builder",
+      "source_module_path": "plugins/modules/viewer.interface_builder",
+      "type": "module",
+      "version": "1.2.13"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "viewer.mathematics_explorer",
+      "source_module_path": "plugins/modules/viewer.mathematics_explorer",
+      "type": "module",
+      "version": "0.1.3"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "acq.molecule_structure",
+        "viewer.native_3d"
+      ],
+      "id": "viewer.molecule_3d",
+      "source_module_path": "plugins/modules/viewer.molecule_3d",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "acq.nmr_multidimensional"
+      ],
+      "id": "viewer.nmr_multidimensional",
+      "source_module_path": "plugins/modules/viewer.nmr_multidimensional",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "library.spectroscopy.nmr.reference"
+      ],
+      "id": "viewer.nmr_reference",
+      "source_module_path": "plugins/modules/viewer.nmr_reference",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "plot.dataset"
+      ],
+      "id": "viewer.nmr_spectrum",
+      "source_module_path": "plugins/modules/viewer.nmr_spectrum",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.pcb_source_snapshot_inspector",
+      "source_module_path": "plugins/modules/viewer.pcb_source_snapshot_inspector",
+      "type": "module",
+      "version": "0.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [],
+      "id": "viewer.pdf_ocr",
+      "source_module_path": "plugins/modules/viewer.pdf_ocr",
+      "type": "module",
+      "version": "1.0.5"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.pdf_reader",
+      "source_module_path": "plugins/modules/viewer.pdf_reader",
+      "type": "module",
+      "version": "0.2.4"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.reference_library",
+      "source_module_path": "plugins/modules/viewer.reference_library",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "id": "viewer.replicate_curve_analysis",
+      "source_module_path": "plugins/modules/viewer.replicate_curve_analysis",
+      "type": "module",
+      "version": "1.2.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.scientific_3d_workbench",
+      "source_module_path": "plugins/modules/viewer.scientific_3d_workbench",
+      "type": "module",
+      "version": "0.1.9"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.scientific_latex",
+      "source_module_path": "plugins/modules/viewer.scientific_latex",
+      "type": "module",
+      "version": "0.2.6"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.scientific_library_manager",
+      "source_module_path": "plugins/modules/viewer.scientific_library_manager",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.scientific_library_workspace",
+      "source_module_path": "plugins/modules/viewer.scientific_library_workspace",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric",
+        "math.signal",
+        "math.rf_network",
+        "math.magnetics",
+        "plot.dataset"
+      ],
+      "id": "viewer.scientific_worksheet",
+      "source_module_path": "plugins/modules/viewer.scientific_worksheet",
+      "type": "module",
+      "version": "2.1.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric",
+        "viewer.native_3d"
+      ],
+      "id": "viewer.section_profile",
+      "source_module_path": "plugins/modules/viewer.section_profile",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "plot.dataset"
+      ],
+      "id": "viewer.signal_analysis",
+      "source_module_path": "plugins/modules/viewer.signal_analysis",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "math.numeric"
+      ],
+      "id": "viewer.spectral_library",
+      "source_module_path": "plugins/modules/viewer.spectral_library",
+      "type": "module",
+      "version": "1.0.16"
+    },
+    {
+      "always_available": false,
+      "core_literal": "1",
+      "depends": [
+        "plot.dataset"
+      ],
+      "id": "viewer.statistical_analysis",
+      "source_module_path": "plugins/modules/viewer.statistical_analysis",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.stderr_diagnostics",
+      "source_module_path": "plugins/modules/viewer.stderr_diagnostics",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "depends": [],
+      "id": "viewer.table_extractor",
+      "source_module_path": "plugins/modules/viewer.table_extractor",
+      "type": "module",
+      "version": "1.0.3"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.test_cad_1",
+      "source_module_path": "plugins/modules/viewer.test_cad_1",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.test_cad_2",
+      "source_module_path": "plugins/modules/viewer.test_cad_2",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [],
+      "id": "viewer.unified_document_extraction",
+      "source_module_path": "plugins/modules/viewer.unified_document_extraction",
+      "type": "module",
+      "version": "0.1.2"
+    },
+    {
+      "always_available": true,
+      "core_literal": "0",
+      "depends": [
+        "plot.dataset"
+      ],
+      "id": "viewer.xas_spectra",
+      "source_module_path": "plugins/modules/viewer.xas_spectra",
+      "type": "module",
+      "version": "1.0.5"
+    },
+    {
+      "id": "example.ir_chain_metrics_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/analysis_definitions/example.ir_chain_metrics_v1",
+      "type": "analysis_definition",
+      "version": "1"
+    },
+    {
+      "id": "instrument.generic",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/instruments/instrument.generic",
+      "type": "instrument",
+      "version": "1"
+    },
+    {
+      "id": "instrument.oscilloscope",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/instruments/instrument.oscilloscope",
+      "type": "instrument",
+      "version": "1"
+    },
+    {
+      "id": "baseline.constant_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/baseline.constant_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "baseline.linear_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/baseline.linear_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "decay.exponential_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/decay.exponential_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "diode.shockley_series_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/diode.shockley_series_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "kinetics.arrhenius_temperature_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/kinetics.arrhenius_temperature_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "peak.gaussian_height_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/peak.gaussian_height_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "peak.lorentzian_height_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/peak.lorentzian_height_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "peak.voigt_area_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/peak.voigt_area_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "piecewise.linear_knee_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/piecewise.linear_knee_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "region.cubic_increment_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/region.cubic_increment_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "region.exponential_increment_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/region.exponential_increment_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "region.linear_increment_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/region.linear_increment_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "region.quadratic_increment_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/region.quadratic_increment_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "response.logistic_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/response.logistic_v1",
+      "type": "model",
+      "version": "1.0.0"
+    },
+    {
+      "id": "triode.koren_v1",
+      "reason": "Accepted legacy unmanaged source; no manufactured registry",
+      "source_module_path": "plugins/models/triode.koren_v1",
+      "type": "model",
+      "version": "1"
+    }
+  ],
+  "counts": {
+    "demo_modules": 15,
+    "framework_modules": 149,
+    "legacy_other_types": 18,
+    "literal_core0": 114,
+    "literal_core1": 47,
+    "missing_core": 3,
+    "other_bundled_modules": 100,
+    "preinstalled_managed": 49,
+    "source_modules": 164
+  },
+  "demo_plugins": [
+    {
+      "always_available": false,
+      "core_literal": "MISSING",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [],
+      "filename": "analysis.definition_demo_1_accepted.zip",
+      "id": "analysis.definition_demo",
+      "sha256": "d688219c70a2a4cbf8e9d21b326e4417f48e6fee44865ea50b401109ce32b7fe",
+      "source_module_path": "plugins/modules/analysis.definition_demo",
+      "type": "module",
+      "version": "1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "filename": "demo.environmental.levoglucosan_campaign_1.3.0.zip",
+      "id": "demo.environmental.levoglucosan_campaign",
+      "sha256": "2c58da611e716d20d88f4a4bc10ebad5cf1c070c44672dc4fcc2a376cadee6b3",
+      "source_module_path": "plugins/modules/demo.environmental.levoglucosan_campaign",
+      "type": "module",
+      "version": "1.3.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "filename": "demo.geospatial.ticino_valley_3d_2.0.0_accepted.zip",
+      "id": "demo.geospatial.ticino_valley_3d",
+      "sha256": "268cced5355da903ecae000f411a0822564a3887ed4c69c792f7562a78b1c1e6",
+      "source_module_path": "plugins/modules/demo.geospatial.ticino_valley_3d",
+      "type": "module",
+      "version": "2.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.calculus_1.1.0.zip",
+      "id": "demo.numeric.calculus",
+      "sha256": "311f7d92c8ffc5e248b02a20c632a4ec2028690cb2b6ab886ab0aa6db3b6edc4",
+      "source_module_path": "plugins/modules/demo.numeric.calculus",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.interpolation_1.1.0.zip",
+      "id": "demo.numeric.interpolation",
+      "sha256": "5a10580d56b9cfbecfbec0cb2ae3e75fc85727c3e9962d6efa9829c43f90f7b3",
+      "source_module_path": "plugins/modules/demo.numeric.interpolation",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.minimization_1.0.2_accepted.zip",
+      "id": "demo.numeric.minimization",
+      "sha256": "2c84e9d7f657a2239dae8dae4020a0dd4e68273b49295c8f74ada8faaa11779b",
+      "source_module_path": "plugins/modules/demo.numeric.minimization",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.nonlinear_fit_1.1.0.zip",
+      "id": "demo.numeric.nonlinear_fit",
+      "sha256": "1bff7c9ba44739b317780fd1d29cc4073cbb61114133aa171b2f3b9e45263e4f",
+      "source_module_path": "plugins/modules/demo.numeric.nonlinear_fit",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.peaks_1.0.2_accepted.zip",
+      "id": "demo.numeric.peaks",
+      "sha256": "8e6f80ebe8ca52512ea54ed6642ac991e76d29a661eb7a3ebe63ae2685b9f3b1",
+      "source_module_path": "plugins/modules/demo.numeric.peaks",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.regression_1.1.0.zip",
+      "id": "demo.numeric.regression",
+      "sha256": "e732169bcfe06619b24cf0d39d5ff39c5745df786f7687eff5a76db2dc4e3ce0",
+      "source_module_path": "plugins/modules/demo.numeric.regression",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.root_finding_1.0.2_accepted.zip",
+      "id": "demo.numeric.root_finding",
+      "sha256": "32d0aaaad97843c689ebf9d19888bfeadd41bcce900474cef0590a73e9932b2f",
+      "source_module_path": "plugins/modules/demo.numeric.root_finding",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.smoothing_1.1.0.zip",
+      "id": "demo.numeric.smoothing",
+      "sha256": "1e1501ad356e181071e477f3953ae9f27074429e54354ed4dc7ce9f66cd77be8",
+      "source_module_path": "plugins/modules/demo.numeric.smoothing",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.statistics_1.1.0.zip",
+      "id": "demo.numeric.statistics",
+      "sha256": "e55e8e5e04f21caddabd7015f260b9f35e45929a1c422e04c97aced8ced5437c",
+      "source_module_path": "plugins/modules/demo.numeric.statistics",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "demo.numeric.uncertainty_1.1.0.zip",
+      "id": "demo.numeric.uncertainty",
+      "sha256": "99031ce58cd6e97a65ce065dd8540b9216b362a09cc3e707ecf0046795f4ab8a",
+      "source_module_path": "plugins/modules/demo.numeric.uncertainty",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [
+        "math.numeric",
+        "plot.dataset"
+      ],
+      "filename": "demo.visualization.surface3d_1.0.3_linux_dev109.zip",
+      "id": "demo.visualization.surface3d",
+      "sha256": "9f3ded1a596cedecd9b154ec574eecf3a9ba4205a39a90770dfd6a8d6b20c089",
+      "source_module_path": "plugins/modules/demo.visualization.surface3d",
+      "type": "module",
+      "version": "1.0.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "SEPARATE_DEMO_EXPLICIT_INSTALL_ONLY",
+      "depends": [],
+      "filename": "viewer.dev107_native3d_embedded_1.0.1_linux_dev109.zip",
+      "id": "viewer.dev107_native3d_embedded",
+      "sha256": "2a1231ab93c4b0a521fca400c9f20ac7e403e0318841d284654efece9414d67c",
+      "source_module_path": "plugins/modules/viewer.dev107_native3d_embedded",
+      "type": "module",
+      "version": "1.0.1"
+    }
+  ],
+  "distribution_variant": "public-no-private-data",
+  "installation": "All149 nonDemo modules already expanded.49 normal API registrations are frozen actual preparation output; no user base installation.",
+  "optional_packages": [
+    {
+      "id": "org.giuxlab.gxtxt.geospatial_examples",
+      "installation": "explicit existing Generator Library owner; never replace a default/user Library automatically",
+      "original_path": "/srv/gxtxt/releases/GXTXT/session_generators/archives/gxtxt_geospatial_examples_1.0.1.zip",
+      "path": "distribution/packages/gxtxt_geospatial_examples_1.0.1.zip",
+      "sha256": "c41084762fc20568142e70a55439a4c59a6fc2e14c2621282c2635298ba3e35e",
+      "type": "generator_library",
+      "version": "1.0.1"
+    }
+  ],
+  "plugins": [
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.cross_spectral_transfer_1.1.3_accepted.zip",
+      "id": "analysis.cross_spectral_transfer",
+      "path": "distribution/packages/analysis.cross_spectral_transfer_1.1.3_accepted.zip",
+      "sha256": "a99a40ebf1a9ddddfdd30c0a640fa34b6cd66de1a1f8d86a32ce19481a64930f",
+      "source_module_path": "plugins/modules/analysis.cross_spectral_transfer",
+      "type": "module",
+      "version": "1.1.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.dataset_expression_1.0.1_accepted.zip",
+      "id": "analysis.dataset_expression",
+      "path": "distribution/packages/analysis.dataset_expression_1.0.1_accepted.zip",
+      "sha256": "38b95583ea20e28871439f355d0f4a3a1e77f1f3145b6d532c5606e1e53e8fb7",
+      "source_module_path": "plugins/modules/analysis.dataset_expression",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.regression_1.1.0.zip",
+      "id": "analysis.regression",
+      "path": "distribution/packages/analysis.regression_1.1.0.zip",
+      "sha256": "bb7c383dd26ad2bd20fe09c1ce2731bf16ba8ce06cd7d0ded19d062a9f1c0d15",
+      "source_module_path": "plugins/modules/analysis.regression",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.spectroscopy.nmr_1.0.0.zip",
+      "id": "analysis.spectroscopy.nmr",
+      "path": "distribution/packages/analysis.spectroscopy.nmr_1.0.0.zip",
+      "sha256": "95097fbc3591cdf3c4a5bf7ddff910c5a9ba80d191c0825f71244b2d559fd5cf",
+      "source_module_path": "plugins/modules/analysis.spectroscopy.nmr",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.anova_1.1.0.zip",
+      "id": "analysis.statistics.anova",
+      "path": "distribution/packages/analysis.statistics.anova_1.1.0.zip",
+      "sha256": "a3446423798156184c4567c24f341842bc117f09018a6ae6ffcfbfefe4cc7df8",
+      "source_module_path": "plugins/modules/analysis.statistics.anova",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.correlation_1.1.0.zip",
+      "id": "analysis.statistics.correlation",
+      "path": "distribution/packages/analysis.statistics.correlation_1.1.0.zip",
+      "sha256": "460c1f6718558b6cda013cce1320419889ac14f43f321f1089e4c6f2c319a6d5",
+      "source_module_path": "plugins/modules/analysis.statistics.correlation",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.distribution_1.0.1_accepted.zip",
+      "id": "analysis.statistics.distribution",
+      "path": "distribution/packages/analysis.statistics.distribution_1.0.1_accepted.zip",
+      "sha256": "c4053900654d79401c68457096b90b782ebf28116efc652bed8947666f21371b",
+      "source_module_path": "plugins/modules/analysis.statistics.distribution",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.outliers_1.0.1_accepted.zip",
+      "id": "analysis.statistics.outliers",
+      "path": "distribution/packages/analysis.statistics.outliers_1.0.1_accepted.zip",
+      "sha256": "b0496d7d00264a6ece125fc6adedb123461d92ccd693a4a61919ec89232d0884",
+      "source_module_path": "plugins/modules/analysis.statistics.outliers",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.pca_1.1.0.zip",
+      "id": "analysis.statistics.pca",
+      "path": "distribution/packages/analysis.statistics.pca_1.1.0.zip",
+      "sha256": "b6c25f591f7c18ab66805bb0fe3fe5f1770e8568bf6b7c8e77e669d75ce0b762",
+      "source_module_path": "plugins/modules/analysis.statistics.pca",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.resampling_1.1.0.zip",
+      "id": "analysis.statistics.resampling",
+      "path": "distribution/packages/analysis.statistics.resampling_1.1.0.zip",
+      "sha256": "f72a0c4c2d9b4b130f0944dd30839c0868cf2aaff91516cfd66a73074f8eb6a2",
+      "source_module_path": "plugins/modules/analysis.statistics.resampling",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.tests_1.1.0.zip",
+      "id": "analysis.statistics.tests",
+      "path": "distribution/packages/analysis.statistics.tests_1.1.0.zip",
+      "sha256": "7f627b588875cb2144ffefb6fd112444c77faeaafca986eb107907f9c2a5a734",
+      "source_module_path": "plugins/modules/analysis.statistics.tests",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.weighted_1.1.0.zip",
+      "id": "analysis.statistics.weighted",
+      "path": "distribution/packages/analysis.statistics.weighted_1.1.0.zip",
+      "sha256": "4ec40787b2e60b61f8f1c89257b85b693755faa76a122ec037b3d567421f0d29",
+      "source_module_path": "plugins/modules/analysis.statistics.weighted",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.xas.normalize_1.0.2_accepted.zip",
+      "id": "analysis.xas.normalize",
+      "path": "distribution/packages/analysis.xas.normalize_1.0.2_accepted.zip",
+      "sha256": "c8cc967feba98b20ad93095db20f957a1767ce9ac9a3332dcfbee393e81a4603",
+      "source_module_path": "plugins/modules/analysis.xas.normalize",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.electronics_component_1.0.0_dev111_p028.zip",
+      "id": "contract.electronics_component",
+      "path": "distribution/packages/contract.electronics_component_1.0.0_dev111_p028.zip",
+      "sha256": "489dd6147e9ef020df9cc5ed738555f653fe1a1a18c749e03117e9d3ecb3e010",
+      "source_module_path": "plugins/modules/contract.electronics_component",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "id": "contract.scientific_measurement",
+      "path": "distribution/packages/contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "sha256": "b6076ea9e6c5fd2e066bf35dca6965d640353b10d5c56a88f4ea47e1d5d2a084",
+      "source_module_path": "plugins/modules/contract.scientific_measurement",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.scientific_publication_1.0.0_dev111_p028.zip",
+      "id": "contract.scientific_publication",
+      "path": "distribution/packages/contract.scientific_publication_1.0.0_dev111_p028.zip",
+      "sha256": "ebf493833c0f52d992feb104a4f04e918d1c84592464256908f50c7a84ea21cc",
+      "source_module_path": "plugins/modules/contract.scientific_publication",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.chemistry_1.0.0_dev111_p028.zip",
+      "id": "domain.chemistry",
+      "path": "distribution/packages/domain.chemistry_1.0.0_dev111_p028.zip",
+      "sha256": "367f8010ed57d0dbc2c93429f9d3f74dafa8a7194513b83d37a79bfbe23579df",
+      "source_module_path": "plugins/modules/domain.chemistry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.electronics_1.0.1_dev111_p028_r2.zip",
+      "id": "domain.electronics",
+      "path": "distribution/packages/domain.electronics_1.0.1_dev111_p028_r2.zip",
+      "sha256": "e3dd29766fbf362bf3e7c93fed72427bd0f443964fbbd5127d73331f5a46b8be",
+      "source_module_path": "plugins/modules/domain.electronics",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.publications_1.0.0_dev111_p028.zip",
+      "id": "domain.publications",
+      "path": "distribution/packages/domain.publications_1.0.0_dev111_p028.zip",
+      "sha256": "750aa17af344d4ac6235ed83aeaf64a2c2763daa671c558eb9525983a91f645d",
+      "source_module_path": "plugins/modules/domain.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "id": "domain.scientific_spectra",
+      "path": "distribution/packages/domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "sha256": "aae6c6670b89e4c6b5c85fc8e816fa556421cf9e3bcaca48e574d02ca6f152e0",
+      "source_module_path": "plugins/modules/domain.scientific_spectra",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.technical_resources_1.0.0_dev111_p028.zip",
+      "id": "domain.technical_resources",
+      "path": "distribution/packages/domain.technical_resources_1.0.0_dev111_p028.zip",
+      "sha256": "b2239b21b374dc05817088d69cc23566ce7abded49c9c725f39c705855a8aa3d",
+      "source_module_path": "plugins/modules/domain.technical_resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "export.curve_dataset_1.0.0_linux_dev109.zip",
+      "id": "export.curve_dataset",
+      "path": "distribution/packages/export.curve_dataset_1.0.0_linux_dev109.zip",
+      "sha256": "e76c9198bc2cb767d27c0d3fca0d398084278c49fd20909399a9739e72c580fd",
+      "source_module_path": "plugins/modules/export.curve_dataset",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "export.native2d_presentation_1.0.1_linux_dev109.zip",
+      "id": "export.native2d_presentation",
+      "path": "distribution/packages/export.native2d_presentation_1.0.1_linux_dev109.zip",
+      "sha256": "814f57525e659184d5b916d71572bcda2d72350c5dfe68ac5ad1abc7dcb9a4c6",
+      "source_module_path": "plugins/modules/export.native2d_presentation",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "viewer.curve_digitizer",
+        "plot.dataset"
+      ],
+      "filename": "preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "id": "preview.curve_digitizer",
+      "path": "distribution/packages/preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "sha256": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2",
+      "source_module_path": "plugins/modules/preview.curve_digitizer",
+      "type": "module",
+      "version": "0.1.12"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.markdown_document_1.0.0_dev111_p030.zip",
+      "id": "preview.markdown_document",
+      "path": "distribution/packages/preview.markdown_document_1.0.0_dev111_p030.zip",
+      "sha256": "fb8e4429ecd1df42eed79b254871beaf672a2a624c1bc47c79b084ace6847363",
+      "source_module_path": "plugins/modules/preview.markdown_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.oscilloscope_waveform_1.0.0_dev111_p028.zip",
+      "id": "preview.oscilloscope_waveform",
+      "path": "distribution/packages/preview.oscilloscope_waveform_1.0.0_dev111_p028.zip",
+      "sha256": "7f2fb480447e75f17bdac1196c3be1bbcbc7ade663d2f4f03ec0269be5b0a787",
+      "source_module_path": "plugins/modules/preview.oscilloscope_waveform",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_frame",
+      "path": "distribution/packages/preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "sha256": "70c6521ca9f342987845aa2b0d07ece8d9d1c1371a1b1ae7ff60a6406edd26f3",
+      "source_module_path": "plugins/modules/preview.scientific_frame",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_spectrum",
+      "path": "distribution/packages/preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "sha256": "8e95ebf19645563e120c51cc1af9108f8eba870eba523cbfc176a6a5c4c56b35",
+      "source_module_path": "plugins/modules/preview.scientific_spectrum",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_trace",
+      "path": "distribution/packages/preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "sha256": "e7d781ff40c74399fdad28a3a9fb86211b62271b216e97213c2c5a9833ffd781",
+      "source_module_path": "plugins/modules/preview.scientific_trace",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.uml_document_1.0.0_dev111_p031.zip",
+      "id": "preview.uml_document",
+      "path": "distribution/packages/preview.uml_document_1.0.0_dev111_p031.zip",
+      "sha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "source_module_path": "plugins/modules/preview.uml_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "viewer.comparison_example_1.0.2.zip",
+      "id": "viewer.comparison_example",
+      "path": "distribution/packages/viewer.comparison_example_1.0.2.zip",
+      "sha256": "4cc0878a07dc6a528a6988cfe50be8801fb2993ad0d6cd14c5a90b59badcbb26",
+      "source_module_path": "plugins/modules/viewer.comparison_example",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.dev107_scientific_xy_1.0.1_accepted.zip",
+      "id": "viewer.dev107_scientific_xy",
+      "path": "distribution/packages/viewer.dev107_scientific_xy_1.0.1_accepted.zip",
+      "sha256": "938e9bc2240d2a93e05c1db2ae40cb622a975644f4e5d584cf345b9e8d020178",
+      "source_module_path": "plugins/modules/viewer.dev107_scientific_xy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.engine_3d_0.1.6_linux_dev103.zip",
+      "id": "viewer.engine_3d",
+      "path": "distribution/packages/viewer.engine_3d_0.1.6_linux_dev103.zip",
+      "sha256": "bf23632329aceb0ee1ca8389c289802f3580c35f8aa55055fc055c63f4954fe7",
+      "source_module_path": "plugins/modules/viewer.engine_3d",
+      "type": "module",
+      "version": "0.1.6"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "viewer.ir_spectroscopy_1.0.1.zip",
+      "id": "viewer.ir_spectroscopy",
+      "path": "distribution/packages/viewer.ir_spectroscopy_1.0.1.zip",
+      "sha256": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+      "source_module_path": "plugins/modules/viewer.ir_spectroscopy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.markdown_documents_1.0.2_dev111_p030.zip",
+      "id": "viewer.markdown_documents",
+      "path": "distribution/packages/viewer.markdown_documents_1.0.2_dev111_p030.zip",
+      "sha256": "6a94ff11bd9f8a0801203d3b144f748057634be68183b2999d30c9301a476b2a",
+      "source_module_path": "plugins/modules/viewer.markdown_documents",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.native_3d_0.9.9_accepted.zip",
+      "id": "viewer.native_3d",
+      "path": "distribution/packages/viewer.native_3d_0.9.9_accepted.zip",
+      "sha256": "9e4d750e6a768769d1b7169bd24c3b33b7f13bb1de5f9aeb911253bbc996a00e",
+      "source_module_path": "plugins/modules/viewer.native_3d",
+      "type": "module",
+      "version": "0.9.9"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.scientific_image_inspector_0.4.3_accepted.zip",
+      "id": "viewer.scientific_image_inspector",
+      "path": "distribution/packages/viewer.scientific_image_inspector_0.4.3_accepted.zip",
+      "sha256": "cc94894ff5fbb0943c11137151767eb629539d1de6f743cd9668bbf24fba4653",
+      "source_module_path": "plugins/modules/viewer.scientific_image_inspector",
+      "type": "module",
+      "version": "0.4.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.script_library_1.0.4_dev111_p033.zip",
+      "id": "viewer.script_library",
+      "path": "distribution/packages/viewer.script_library_1.0.4_dev111_p033.zip",
+      "sha256": "4320405e468bfb5ab93018c22f7e910d03a485da1983fd27b98141090a277320",
+      "source_module_path": "plugins/modules/viewer.script_library",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "id": "viewer.uml_editor",
+      "path": "distribution/packages/viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "sha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "source_module_path": "plugins/modules/viewer.uml_editor",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "viewer.engine_3d"
+      ],
+      "filename": "export.native3d_geometry_1.0.0_linux_dev109.zip",
+      "id": "export.native3d_geometry",
+      "path": "distribution/packages/export.native3d_geometry_1.0.0_linux_dev109.zip",
+      "sha256": "1a1a531305e26dbf0774f4b36898640ec4b7b798a6d412ebac423533d3554378",
+      "source_module_path": "plugins/modules/export.native3d_geometry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.chemistry"
+      ],
+      "filename": "library.chemistry.records_1.0.0_dev111_p028.zip",
+      "id": "library.chemistry.records",
+      "path": "distribution/packages/library.chemistry.records_1.0.0_dev111_p028.zip",
+      "sha256": "5351c1296f5e8a556aa1169af846901cea492554644b07d695ee270c53a3c34e",
+      "source_module_path": "plugins/modules/library.chemistry.records",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.electronics"
+      ],
+      "filename": "library.electronics.components_1.0.0_dev111_p028.zip",
+      "id": "library.electronics.components",
+      "path": "distribution/packages/library.electronics.components_1.0.0_dev111_p028.zip",
+      "sha256": "3bc7facdc9b133938b5ecd8aae74ae006683c91c71c7f5f4ea0bf3e0c59008d7",
+      "source_module_path": "plugins/modules/library.electronics.components",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.chemistry"
+      ],
+      "filename": "library.molecular.structures_1.0.0_dev111_p028.zip",
+      "id": "library.molecular.structures",
+      "path": "distribution/packages/library.molecular.structures_1.0.0_dev111_p028.zip",
+      "sha256": "97f7bf9184ed7524a7ec58f5245dc2425ef00b6dd158409f390b7d44e82b7203",
+      "source_module_path": "plugins/modules/library.molecular.structures",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.publications"
+      ],
+      "filename": "library.scientific.publications_1.0.0_dev111_p028.zip",
+      "id": "library.scientific.publications",
+      "path": "distribution/packages/library.scientific.publications_1.0.0_dev111_p028.zip",
+      "sha256": "2f2173bd31e34ed3e212bba1146e32f82e76f2fa4e94ecfcce24e4c2151905c9",
+      "source_module_path": "plugins/modules/library.scientific.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.scientific_spectra"
+      ],
+      "filename": "library.scientific.spectra_1.0.0_dev111_p028.zip",
+      "id": "library.scientific.spectra",
+      "path": "distribution/packages/library.scientific.spectra_1.0.0_dev111_p028.zip",
+      "sha256": "aa7debd31bf73517d3ea4c7c0ab2de62f63ce2688ff2037511a0395a6ce57123",
+      "source_module_path": "plugins/modules/library.scientific.spectra",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.technical_resources"
+      ],
+      "filename": "library.technical.resources_1.0.0_dev111_p028.zip",
+      "id": "library.technical.resources",
+      "path": "distribution/packages/library.technical.resources_1.0.0_dev111_p028.zip",
+      "sha256": "d47a6e6baaeb8b2b3a150dd9c9efd04bc9fee2d3ac2ef009859eb8e0bde47397",
+      "source_module_path": "plugins/modules/library.technical.resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.electronics.components"
+      ],
+      "filename": "source.lcsc_1.0.1_dev111_p028_r2.zip",
+      "id": "source.lcsc",
+      "path": "distribution/packages/source.lcsc_1.0.1_dev111_p028_r2.zip",
+      "sha256": "65ff0bb94a80e38dd31ede4c7963fffada9260bed056fd58f9f71b0fbd4f37d8",
+      "source_module_path": "plugins/modules/source.lcsc",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.electronics.components"
+      ],
+      "filename": "source.mouser_1.0.1_dev111_p028_r2.zip",
+      "id": "source.mouser",
+      "path": "distribution/packages/source.mouser_1.0.1_dev111_p028_r2.zip",
+      "sha256": "321eb2a8448b91fabf6ab5e96aadbce57eb09f753fb22bfda0a87154b366f2d1",
+      "source_module_path": "plugins/modules/source.mouser",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.chemistry.records",
+        "library.molecular.structures",
+        "library.scientific.publications"
+      ],
+      "filename": "source.pubchem_1.0.1_dev111_p028_r2.zip",
+      "id": "source.pubchem",
+      "path": "distribution/packages/source.pubchem_1.0.1_dev111_p028_r2.zip",
+      "sha256": "ab15a5440195874eb0f986dee1573b7c5f7433dba5e3fe920bdbe45b248697bf",
+      "source_module_path": "plugins/modules/source.pubchem",
+      "type": "module",
+      "version": "1.0.1"
+    }
+  ],
+  "registry_seed": {
+    "manifest_sha256": "90e3e5ddb0f8ffd7ac86a0fba68565bf7d7275dd1636f5363db289eb2679a2af",
+    "mode": 436,
+    "path": "plugins/.registry/installed.ini",
+    "sha256": "ac8f9ed04deb5ac9f1e74ad8b269958453539866e773cc09930e532b36a5d5d5",
+    "size": 14095
+  },
+  "release": "0.9.8.10-dev-112",
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8",
+  "supplemental_packages": [
+    {
+      "always_available": true,
+      "core_literal": "1",
+      "delivery": "BUNDLED_CORE_ORIGINAL_PROVENANCE_ONLY",
+      "depends": [],
+      "filename": "viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip",
+      "id": "viewer.curve_digitizer",
+      "origin": {
+        "executable_bit_compatible": true,
+        "kind": "EXACT_PUBLISHED_ORIGINAL",
+        "member_count": 147,
+        "member_modes": {
+          "ASSISTED_TRACING_DESIGN.md": 420,
+          "CALIBRATION_API_v1.md": 420,
+          "CHANGELOG.md": 436,
+          "CURVE_DATASET_SCHEMA_API_v1.md": 420,
+          "IMAGE_PROCESSING_API_v1.md": 420,
+          "LICENSE": 420,
+          "MANUAL.md": 420,
+          "QUALITY_API_v2.md": 420,
+          "README.md": 420,
+          "RELEASE_VALIDATION.md": 420,
+          "SHA256SUMS.txt": 436,
+          "STROKE_WIDTH_API_v1.md": 420,
+          "UNCERTAINTY_API_v1.md": 436,
+          "api/configuration_schema.tcl": 420,
+          "api/curve_digitizer_calibration_api_v1.tcl": 420,
+          "api/curve_digitizer_companion_api_v1.tcl": 436,
+          "api/curve_digitizer_core_consumers.tcl": 420,
+          "api/curve_digitizer_dataset_schema_api_v1.tcl": 420,
+          "api/curve_digitizer_factor_guard.tcl": 420,
+          "api/curve_digitizer_image_processing_api_v1.tcl": 420,
+          "api/curve_digitizer_numeric_core.tcl": 436,
+          "api/curve_digitizer_quality_api_v2.tcl": 420,
+          "api/curve_digitizer_stroke_width_api_v1.tcl": 420,
+          "api/curve_digitizer_uncertainty_api_v1.tcl": 420,
+          "api/curve_digitizer_viewer_api_v1.tcl": 436,
+          "api/script_bridge_binding.py": 420,
+          "api/workspace_provider.tcl": 436,
+          "icons/curve_digitizer.png": 420,
+          "icons/curve_digitizer.svg": 420,
+          "module.ini": 436,
+          "plugin-package.ini": 436,
+          "python/assisted_constraints.py": 420,
+          "python/assisted_exclusion_ui.py": 420,
+          "python/assisted_sampling.py": 420,
+          "python/assisted_tracing.py": 420,
+          "python/auto_enhancement.py": 420,
+          "python/calibration_manifest.py": 420,
+          "python/calibration_verification.py": 436,
+          "python/calibration_verification_dialog.py": 436,
+          "python/companion_bridge.py": 420,
+          "python/digitizer_model.py": 420,
+          "python/gxtxt_curve_digitizer.py": 436,
+          "python/image_canvas.py": 420,
+          "python/image_processing.py": 420,
+          "python/point_ordering.py": 420,
+          "python/processing_controls.py": 420,
+          "python/publication_planning.py": 420,
+          "python/publication_y2.py": 436,
+          "python/quality_diagnostics.py": 420,
+          "python/scale_bar.py": 420,
+          "python/stroke_width_measure.py": 420,
+          "python/stroke_width_ui.py": 420,
+          "python/uncertainty_dialog.py": 420,
+          "python/uncertainty_engine.py": 420,
+          "requirements.txt": 420,
+          "tests/test_assisted_constraints_205.py": 420,
+          "tests/test_assisted_count_1223_gui.py": 420,
+          "tests/test_assisted_sampling_1223.py": 420,
+          "tests/test_assisted_tracing.py": 420,
+          "tests/test_assisted_tracing_advanced.py": 420,
+          "tests/test_assisted_tracing_gui.py": 420,
+          "tests/test_calibration_api_extended.tcl": 420,
+          "tests/test_calibration_identity.py": 420,
+          "tests/test_calibration_inline_layout_2023_gui.py": 436,
+          "tests/test_calibration_replicates.tcl": 420,
+          "tests/test_calibration_scrolling_2012_gui.py": 436,
+          "tests/test_calibration_verification_2022.py": 436,
+          "tests/test_calibration_verification_gui_2022.py": 436,
+          "tests/test_catalog_gui.py": 420,
+          "tests/test_catalog_namespace.tcl": 420,
+          "tests/test_comparison_initial_fit_gui.py": 420,
+          "tests/test_core_configuration.tcl": 420,
+          "tests/test_core_guidance.tcl": 420,
+          "tests/test_core_inline_202.py": 420,
+          "tests/test_core_settings_gui.py": 420,
+          "tests/test_curve_dataset_schema.tcl": 420,
+          "tests/test_curve_dataset_schema_y2_2024.tcl": 436,
+          "tests/test_curves_list_and_proposal_order_1227_gui.py": 420,
+          "tests/test_curves_scrolling_1229_gui.py": 420,
+          "tests/test_curves_two_column_gui.py": 420,
+          "tests/test_dataset_notes_export.tcl": 420,
+          "tests/test_density_partial_1223.py": 420,
+          "tests/test_exclusion_persistence_2019_gui.py": 436,
+          "tests/test_exclusion_undo_206.py": 420,
+          "tests/test_far_correction_1224_gui.py": 420,
+          "tests/test_full_factor_consistency_203.tcl": 420,
+          "tests/test_group_legacy_multicalibration_2024.py": 436,
+          "tests/test_guided_edit_and_appearance_gui.py": 420,
+          "tests/test_guides_before_proposal_2013_gui.py": 436,
+          "tests/test_image_processing_api.tcl": 420,
+          "tests/test_image_processing_bridge.py": 420,
+          "tests/test_image_processing_gui.py": 420,
+          "tests/test_image_publication.tcl": 420,
+          "tests/test_manager_actions_gui.py": 420,
+          "tests/test_measurement_gui.py": 420,
+          "tests/test_multi_publish_gui.py": 420,
+          "tests/test_naming_template_validation.tcl": 420,
+          "tests/test_numeric_core_guard_201.tcl": 420,
+          "tests/test_numeric_public_only_202.py": 420,
+          "tests/test_ordering_settings_1222_gui.py": 420,
+          "tests/test_point_ordering_1222_gui.py": 420,
+          "tests/test_processing_comparison_gui.py": 420,
+          "tests/test_proposal_context_and_session_restore_1226.py": 420,
+          "tests/test_proposal_zoom_and_corrections_2015_gui.py": 436,
+          "tests/test_publication_classification_2020.tcl": 436,
+          "tests/test_publication_manifest.tcl": 420,
+          "tests/test_publication_planning.py": 420,
+          "tests/test_publication_three_curves_2020_gui.py": 436,
+          "tests/test_quality_api_v2.tcl": 420,
+          "tests/test_quality_v2.py": 420,
+          "tests/test_raster_points_api.tcl": 420,
+          "tests/test_repeated_calibration.py": 420,
+          "tests/test_session_refresh_and_output_1225.py": 420,
+          "tests/test_settings_apply_1223_gui.py": 420,
+          "tests/test_smooth_prior_effect_2014.py": 436,
+          "tests/test_smoothing_mode_refresh_2014_gui.py": 436,
+          "tests/test_step_20_2018_gui.py": 436,
+          "tests/test_step_range_and_quality_2018.py": 436,
+          "tests/test_stroke_companion_208.py": 420,
+          "tests/test_stroke_curve_switch_209.py": 420,
+          "tests/test_stroke_measure_209.py": 420,
+          "tests/test_stroke_width_208.py": 420,
+          "tests/test_stroke_width_public_208.tcl": 420,
+          "tests/test_trace_ground_truth_2017.py": 436,
+          "tests/test_tracing_ui_206.py": 420,
+          "tests/test_uncertainty_api_v2.tcl": 420,
+          "tests/test_uncertainty_dialog_200_gui.py": 420,
+          "tests/test_uncertainty_dual_y_f5.py": 436,
+          "tests/test_uncertainty_f5_backend.tcl": 436,
+          "tests/test_uncertainty_f5_dialog_gui.py": 436,
+          "tests/test_uncertainty_f5_publication_gui.py": 436,
+          "tests/test_uncertainty_f5_transport.py": 436,
+          "tests/test_uncertainty_f5_transport.tcl": 436,
+          "tests/test_uncertainty_publication_v2.tcl": 420,
+          "tests/test_uncertainty_v2.py": 420,
+          "tests/test_unified_history_206.py": 420,
+          "tests/test_workspace_config_2016_gui.py": 436,
+          "tests/test_workspace_rename_2016.tcl": 436,
+          "tests/test_y2_f1_companion.py": 436,
+          "tests/test_y2_f1_gui_bridge.py": 436,
+          "tests/test_y2_f2_gui.py": 436,
+          "tests/test_y2_f2_log_scale.py": 436,
+          "tests/test_y2_f3_gui_publication.py": 436,
+          "tests/test_y2_f3_planning.py": 436,
+          "tests/test_y2_f3_publication_api.tcl": 436,
+          "tests/test_y2_group_producer_2024.tcl": 436,
+          "tests/test_y2_model_f1.py": 436
+        },
+        "original_modes": [
+          420,
+          436
+        ],
+        "original_path": "/srv/gxtxt/releases/GXTXT/external_plugins/archives/viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip"
+      },
+      "path": "distribution/packages/viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip",
+      "sha256": "ded07ad9a85c79f68fa53866edef9a4a186ef06546882940526b56d9894a1198",
+      "source_module_path": "plugins/modules/viewer.curve_digitizer",
+      "type": "module",
+      "version": "2.0.26"
+    }
+  ]
+}

@@ -176,6 +176,14 @@ class ResourceManager:
             raise ValueError("Unknown resource ID")
         return json.loads(row[0])
 
+    def inspect(self, resource_id):
+        """Read one existing owner/lease record, without a global rescan/write."""
+        if not isinstance(resource_id, str) or len(resource_id) > 128:
+            raise ValueError("Invalid resource identity")
+        record = self._get(resource_id)
+        self._refresh(record, False)
+        return record
+
     def policy(self, **changes):
         with self._transaction():
             for key, value in changes.items():
@@ -492,7 +500,7 @@ def main():
     parser.add_argument("--storage-root")
     parser.add_argument("--caller-pid", type=int)
     parser.add_argument("--tcl", action="store_true")
-    parser.add_argument("operation", choices=["allocate", "observe", "release", "inventory", "reconcile", "cleanup", "policy"])
+    parser.add_argument("operation", choices=["allocate", "observe", "release", "inspect", "inventory", "reconcile", "cleanup", "policy"])
     parser.add_argument("arguments", nargs="*")
     args = parser.parse_args()
     manager = ResourceManager(args.root, args.storage_root, args.caller_pid)

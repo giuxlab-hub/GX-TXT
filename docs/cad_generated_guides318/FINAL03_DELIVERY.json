@@ -1,0 +1,75 @@
+{
+  "status": "VERIFIED_EXTERNAL_FINAL03_CANDIDATE_MAIN_EDITORIAL_ACCEPTANCE_REQUIRED",
+  "archive": "/srv/gxtxt/agents/tests/cad_generated_guides318/final03/GXTXT_3D_WORKBENCH_HTML_GUIDES_CANDIDATE318_FINAL03.zip",
+  "sha256": "82a32c2f9dbb6f889518a449c4f60f0d02c3e4c2f6636e5e5f98ff6570daabd2",
+  "bytes": 9869278,
+  "zip_members": 409,
+  "html_pages": 32,
+  "png_files": 96,
+  "local_references": 684,
+  "new_native_screenshots_exact": 7,
+  "changed_pages": [
+    "24-evidence318.html",
+    "26-lifecycle-layout-final02.html",
+    "index.html"
+  ],
+  "current_final_browser_pairs": [
+    {
+      "page": "24-evidence318.html",
+      "width": 1250,
+      "epoch": "browser03",
+      "sha256": "937ee2ad6fc6f53e17340fe163ff167b111519b5ebdf31282a176bd69fabd617",
+      "screenshot": "24-evidence318_1250.png"
+    },
+    {
+      "page": "24-evidence318.html",
+      "width": 430,
+      "epoch": "browser03",
+      "sha256": "937ee2ad6fc6f53e17340fe163ff167b111519b5ebdf31282a176bd69fabd617",
+      "screenshot": "24-evidence318_430.png"
+    },
+    {
+      "page": "26-lifecycle-layout-final02.html",
+      "width": 1250,
+      "epoch": "browser02",
+      "sha256": "dee6e36ce85661fdc41e0e117ccfd64aa9d4036df7a732703c59754aeee10bc0",
+      "screenshot": "26-lifecycle-layout-final02_1250.png"
+    },
+    {
+      "page": "26-lifecycle-layout-final02.html",
+      "width": 430,
+      "epoch": "browser02",
+      "sha256": "dee6e36ce85661fdc41e0e117ccfd64aa9d4036df7a732703c59754aeee10bc0",
+      "screenshot": "26-lifecycle-layout-final02_430.png"
+    },
+    {
+      "page": "index.html",
+      "width": 1250,
+      "epoch": "browser01",
+      "sha256": "b9bea7d4648876da06ccad809e5b131e2bb2c36bfebb95b2cccfdcb04e8da067",
+      "screenshot": "index_1250.png"
+    },
+    {
+      "page": "index.html",
+      "width": 430,
+      "epoch": "browser01",
+      "sha256": "b9bea7d4648876da06ccad809e5b131e2bb2c36bfebb95b2cccfdcb04e8da067",
+      "screenshot": "index_430.png"
+    }
+  ],
+  "original_final02_immutable": true,
+  "all_other_final02_member_bytes_exact": true,
+  "original45_literal_rows_and_criteria_exact": true,
+  "product_manual_applied": false,
+  "manual_source_for_normal_Builder": "/srv/gxtxt/agents/worktrees/cad_generated_guides318/docs/cad_generated_guides318/MANUAL_FINAL03_SOURCE_361.md",
+  "manual_source_sha256": "6b300b444e1b8f9716127f5b06ba00ff0815d27bb249e26fd89fefa7e126c55f",
+  "sealed_actual_font_receipt": "main_scoped_acceptance342/INSPECTOR_CAPTION356_ACCEPTANCE.json + NATIVE_VIEWPORT350_ACCEPTANCE.json; precise presentation scopes only, current changed manual/Help361 pending",
+  "full13_accepted": false,
+  "official_deposition": false,
+  "scientific_GUI_replayed": false,
+  "module_or_framework_or_Session_mutated": false,
+  "remaining": [
+    "Normal restrictedBuilder361 final researcher manual0.1.7 and focused installedHelp verification",
+    "MAIN final current45/editorial/source/legacy/whole13 and official release/deposition"
+  ]
+}

@@ -5,7 +5,21 @@
   "language": "C++17, ordinary language with reviewed public CORE integration",
   "language_support": {
     "standard": "C++17 including C facilities",
-    "features": ["functions", "pointers/references", "classes/structs/enums/unions", "inheritance/virtual dispatch/RTTI", "overloads/templates", "recursion", "callbacks/lambdas", "malloc/free/new/delete/RAII", "containers/algorithms", "preprocessing/macros/assert", "exceptions", "threads/synchronization", "fork/wait"],
+    "features": [
+      "functions",
+      "pointers/references",
+      "classes/structs/enums/unions",
+      "inheritance/virtual dispatch/RTTI",
+      "overloads/templates",
+      "recursion",
+      "callbacks/lambdas",
+      "malloc/free/new/delete/RAII",
+      "containers/algorithms",
+      "preprocessing/macros/assert",
+      "exceptions",
+      "threads/synchronization",
+      "fork/wait"
+    ],
     "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
     "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
     "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation"
@@ -96,7 +110,13 @@
     "numeric_evaluate",
     "numeric_statistics",
     "numeric_compare",
-    "numeric_publish"
+    "numeric_publish",
+    "input",
+    "data",
+    "cad_command",
+    "diagnostics_command",
+    "text_runs",
+    "table"
   ],
   "allowed_state_members": [
     "values",
@@ -114,23 +134,60 @@
   "capabilities": {
     "WORKBENCH_3D_API_v1": {
       "version": 1,
-      "operations": ["activateDocument", "guiMount", "guiInspect", "selectionSet", "guiCommand"]
+      "operations": [
+        "activateDocument",
+        "guiMount",
+        "guiInspect",
+        "selectionSet",
+        "guiCommand"
+      ]
     },
     "CONFIGURATION_API_v1": {
       "version": 1,
-      "operations": ["open_page"]
+      "operations": [
+        "open_page"
+      ]
     },
     "FILE_PUBLICATION_API_v1": {
       "version": 1,
-      "operations": ["publish_bundle"]
+      "operations": [
+        "publish_bundle"
+      ]
     },
     "ELECTROMAGNETIC_SIMULATION_API_v1": {
       "version": 1,
-      "operations": ["defaultModel", "validate", "saveModel", "listModels", "loadModel", "runAsync", "jobStatus", "jobLog", "cancel", "resultDescribe", "resultPreview", "publish", "fieldDescribe"]
+      "operations": [
+        "defaultModel",
+        "validate",
+        "saveModel",
+        "listModels",
+        "loadModel",
+        "runAsync",
+        "jobStatus",
+        "jobLog",
+        "cancel",
+        "resultDescribe",
+        "resultPreview",
+        "publish",
+        "fieldDescribe"
+      ]
     },
     "SCIENTIFIC_LIBRARY_MANAGER_API_v1": {
       "version": 1,
-      "operations": ["libraryCatalogPage", "getProviderCapabilities", "getLibraryCapabilities", "listLibraryEntries", "openLibraryViewer", "verifyLibrary", "installLibrary", "updateLibrary", "removeLibrary", "registerLibrary", "unregisterLibrary", "invokeLibraryAction"]
+      "operations": [
+        "libraryCatalogPage",
+        "getProviderCapabilities",
+        "getLibraryCapabilities",
+        "listLibraryEntries",
+        "openLibraryViewer",
+        "verifyLibrary",
+        "installLibrary",
+        "updateLibrary",
+        "removeLibrary",
+        "registerLibrary",
+        "unregisterLibrary",
+        "invokeLibraryAction"
+      ]
     },
     "VIEWER_GUI_HOST_API_v1": {
       "version": 1,
@@ -143,7 +200,14 @@
         "raster_command",
         "tex_command",
         "em_command",
-        "workbench_command"
+        "workbench_command",
+        "transform_form",
+        "pcb_source_form",
+        "value_get",
+        "cad_command",
+        "diagnostics_command",
+        "text_runs",
+        "table_set"
       ]
     },
     "VIEWER_COMPONENT_DEMO_API_v1": {
@@ -220,18 +284,56 @@
     },
     "PARALLEL_EXECUTION_API_v1": {
       "version": 1,
-      "operations": ["parallelExecutionExecute"]
+      "operations": [
+        "parallelExecutionExecute"
+      ]
     },
     "PLOT_DATASET_API_v4": {
       "version": 4,
       "operations": [
-        "widgetCreate", "cellFieldProfileSpec", "upsertPlotFromSpec", "render", "widgetExport"
+        "widgetCreate",
+        "cellFieldProfileSpec",
+        "upsertPlotFromSpec",
+        "render",
+        "widgetExport"
+      ]
+    },
+    "DATASET_TRANSFORM_API_v1": {
+      "version": 1,
+      "operations": [
+        "execute_responsive",
+        "cancel",
+        "provenance"
       ]
     },
     "DATASET_PUBLICATION_API_v2": {
       "version": 2,
       "operations": [
         "datasetPublicationV2Finalize"
+      ]
+    },
+    "NATIVE2D_API_v1": {
+      "version": 1,
+      "operations": [
+        "cad_sketch_create",
+        "cad_sketch_command",
+        "cad_sketch_state",
+        "cad_action_catalog",
+        "cad_action_invoke"
+      ]
+    },
+    "STDERR_DIAGNOSTICS_API_v1": {
+      "version": 1,
+      "operations": [
+        "info",
+        "status",
+        "meta",
+        "read",
+        "request",
+        "cancel",
+        "subscribe",
+        "unsubscribe",
+        "export"
       ]
     }
   },
@@ -264,9 +366,12 @@
       "SESSION_WORKSPACE_API_v1",
       "SCIENTIFIC_RECIPE_API_v1",
       "PLOT_DATASET_API_v4",
-      "DATASET_PUBLICATION_API_v2"
+      "DATASET_PUBLICATION_API_v2",
+      "NATIVE2D_API_v1",
+      "STDERR_DIAGNOSTICS_API_v1"
     ],
     "scientific_view_v1": [
+      "DATASET_TRANSFORM_API_v1",
       "WORKBENCH_3D_API_v1",
       "CONFIGURATION_API_v1",
       "FILE_PUBLICATION_API_v1",

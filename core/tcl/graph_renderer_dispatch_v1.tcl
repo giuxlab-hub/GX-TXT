@@ -43,6 +43,9 @@ proc ::GX::graphRendererEffectiveSpec {reference spec} {
     variable axisOverride; variable legendOverride; variable levelScale
     set reference [graphResourceRef $reference]
     if {[dict get $reference kind] eq {clone}} {return $spec}
+    if {[dict get $spec graph_id] ne {plot.dataset.xyz} && [llength [info commands ::GX::PlotDatasetAPIv2::_sharedXAxisProject]]} {
+        set spec [::GX::PlotDatasetAPIv2::_sharedXAxisProject $spec]
+    }
     set mid [dict get $reference module_id];set gid [dict get $reference graph_id]
     set vid [dict get $reference variant_id];set key [graphAxisAddress $mid $gid $vid]
     set supplied [datasetPublicationV2DictDefault $spec native_presentation {}]
@@ -152,6 +155,12 @@ proc ::GX::graphRendererEffectiveSpec {reference spec} {
             }
         }
         dict set panelOverrides $id $overrides
+        if {[dict exists $panel axes x tick_positions] && [dict exists $overrides x_unit]} {
+            set source [dict get $panel axes x display_unit]
+            set target [dict get $overrides x_unit]
+            if {$target in {{} source auto inherit}} {set target [::GX::PlotDatasetAPIv2::_sharedXSourceUnit $spec]}
+            dict set panel axes x [::GX::PlotDatasetAPIv2::_axisTicksConvert [dict get $panel axes x] $source $target]
+        }
         foreach {prefix axis} {x x y y_left y2 y_right z z} {
             foreach {suffix target} {label label unit display_unit scale scale min min max max step major_step} {
                 if {[dict exists $overrides ${prefix}_$suffix]} {

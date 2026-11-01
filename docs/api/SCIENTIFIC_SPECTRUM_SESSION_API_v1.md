@@ -22,8 +22,9 @@ retains its normal Session/ID/contract/admission checks.
 
 `publishExperimental` first validates the complete
 [Scientific Spectrum](SCIENTIFIC_SPECTRUM_API_v1.md) value. It prepares a
-spectrum.scientific Dataset owned by acq.spectrum, storage auto, producer1.0.0,
-with source_identity and Spectrum provenance. It opens the standard writer,
+spectrum.scientific Dataset attributed to the actual admitted producer and its
+registered version (or the registered CORE scientific-execution service for a
+trusted CORE call), using storage auto, source_identity and Spectrum provenance. It opens the standard writer,
 declares extendible `spectral_point`, and writes:
 
 | Stable Variable ID | Shape/type | Unit and role |
@@ -66,3 +67,10 @@ Dataset/Import services; catalog discovery alone grants no filesystem/Session
 write capability. See [Dataset Publication](DATASET_PUBLICATION_API_v2.md) and
 [Variable Schema](DATASET_VARIABLE_SCHEMA_API_v3.md). This reference is
 source-backed documentation, not a new publication/science test.
+
+P035 publication attribution: an existing active producer context retains its
+actual registered module identity and current version. Trusted CORE calls use the
+already registered `core.scientific_execution` publication service. The old
+unregistered `acq.spectrum` literal is not manufactured as a metadata contributor;
+normal Publication v2 authority/namespace/contributor checks remain unchanged.
+Previously published data/provenance are never rewritten by this correction.

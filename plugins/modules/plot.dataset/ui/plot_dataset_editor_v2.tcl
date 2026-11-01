@@ -28,12 +28,40 @@ proc ::GX::PlotDatasetAPIv2::_presentationClearValues {arrayName key} {
     set values($key,histogram_normalization) count
     set values($key,box_whisker_iqr) 1.5
     set values($key,box_show_outliers) 1
+    set values($key,presentation_identity) {}
 }
 
-proc ::GX::PlotDatasetAPIv2::_presentationLoadValues {arrayName key presentation} {
+proc ::GX::PlotDatasetAPIv2::_presentationOptionFields {kind} {
+    switch -- $kind {
+        histogram {return {histogram_bins histogram_normalization}}
+        box_whisker {return {box_whisker_iqr box_show_outliers}}
+        default {return {step_mode bar_width bar_baseline x_error_mode x_error_variable_id x_error_lower_variable_id x_error_upper_variable_id y_error_mode y_error_variable_id y_error_lower_variable_id y_error_upper_variable_id band_lower_variable_id band_upper_variable_id band_draw_center bar_lower_variable_id bar_upper_variable_id}}
+    }
+}
+proc ::GX::PlotDatasetAPIv2::_presentationIdentity {ref sid binding} {
+    if {$sid eq {} || $binding eq {}} {return {}}
+    set identity [list $::GX::currentSession $ref $sid]
+    foreach field {dataset_id x_variable_id y_variable_id} {lappend identity [dict get $binding $field]}
+    return $identity
+}
+proc ::GX::PlotDatasetAPIv2::_presentationLoadValues {arrayName key presentation {identity {}}} {
     upvar #0 $arrayName values
+    set kind [expr {[dict exists $presentation kind] ? [string tolower [string trim [dict get $presentation kind]]] : "auto"}]
+    set inactive {}
+    # Keep only inactive UI drafts for the same source-bound series. Canonical
+    # fields loaded below always win; another source/series starts fresh.
+    if {$identity ne {} && [info exists values($key,presentation_identity)] && $values($key,presentation_identity) eq $identity} {
+        set active [_presentationOptionFields $kind]
+        foreach optionKind {line histogram box_whisker} {
+            foreach field [_presentationOptionFields $optionKind] {
+                if {$field ni $active && [info exists values($key,$field)]} {dict set inactive $field $values($key,$field)}
+            }
+        }
+    }
     _presentationClearValues $arrayName $key
-    set values($key,kind) [expr {[dict exists $presentation kind] ? [dict get $presentation kind] : "auto"}]
+    dict for {field value} $inactive {set values($key,$field) $value}
+    set values($key,presentation_identity) $identity
+    set values($key,kind) $kind
     foreach field {color line_style line_width marker marker_size marker_fill opacity} {
         if {[dict exists $presentation style $field]} { set values($key,$field) [dict get $presentation style $field] }
     }
@@ -61,13 +89,15 @@ proc ::GX::PlotDatasetAPIv2::_presentationLoadValues {arrayName key presentation
             if {[dict exists $bounds $field]} { set values($key,bar_$field) [dict get $bounds $field] }
         }
     }
+    _presentationSetDetailsState $key.style $key.unc $arrayName $key
 }
 
 proc ::GX::PlotDatasetAPIv2::_presentationCollectValues {arrayName key} {
     upvar #0 $arrayName values
-    set kind [string trim $values($key,kind)]
+    set kind [string tolower [string trim $values($key,kind)]]
     if {$kind eq ""} { set kind auto }
     set out [dict create kind $kind]
+    set active [_presentationOptionFields $kind]
 
     set style [dict create]
     foreach field {color line_style line_width marker marker_size marker_fill opacity} {
@@ -77,10 +107,12 @@ proc ::GX::PlotDatasetAPIv2::_presentationCollectValues {arrayName key} {
     if {[dict size $style]} { dict set out style $style }
 
     foreach field {step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers} {
+        if {$field ni $active} continue
         set value [string trim $values($key,$field)]
         if {$value ne ""} { dict set out $field $value }
     }
 
+    if {$kind ni {histogram box_whisker}} {
     foreach e {x_error y_error} {
         set mode [string tolower [string trim $values($key,${e}_mode)]]
         if {$mode eq ""} { set mode none }
@@ -109,10 +141,26 @@ proc ::GX::PlotDatasetAPIv2::_presentationCollectValues {arrayName key} {
     if {$barLower ne "" || $barUpper ne ""} {
         dict set out bar_bounds [dict create lower_variable_id $barLower upper_variable_id $barUpper]
     }
+    }
     if {[info exists values($key,panel_id)] && [string trim $values($key,panel_id)] ne ""} {
         dict set out __panel_id [string trim $values($key,panel_id)]
     }
     return $out
+}
+
+proc ::GX::PlotDatasetAPIv2::_presentationSetDetailsState {styleFrame uncFrame arrayName key} {
+    if {![llength [info commands winfo]] || ![winfo exists $styleFrame]} {return}
+    upvar #0 $arrayName values
+    set active [_presentationOptionFields [string tolower [string trim $values($key,kind)]]]
+    foreach kind {line histogram box_whisker} {
+        foreach field [_presentationOptionFields $kind] {
+            set state [expr {$field in $active ? "!disabled" : "disabled"}]
+            foreach frame [list $styleFrame $uncFrame] {
+                foreach prefix {e l} {if {[winfo exists $frame.$prefix$field]} {$frame.$prefix$field state $state}}
+            }
+        }
+    }
+    if {[winfo exists $uncFrame.drawcenter]} {$uncFrame.drawcenter state [expr {{band_draw_center} in $active ? "!disabled" : "disabled"}]}
 }
 
 proc ::GX::PlotDatasetAPIv2::_presentationVariableIds {datasetId} {
@@ -197,6 +245,10 @@ proc ::GX::PlotDatasetAPIv2::_presentationBuildDetails {styleFrame uncFrame arra
     set row [expr {($ur + 1) / 2}]
     ttk::checkbutton $uncFrame.drawcenter -text "Draw center series with band" -variable ${arrayName}($key,band_draw_center)
     grid $uncFrame.drawcenter -row $row -column 0 -columnspan 4 -sticky w -padx 3 -pady 2
+    foreach widget [list $key.ekind $key.representation.ekind] {
+        if {[winfo exists $widget]} {bind $widget <<ComboboxSelected>> [list ::GX::PlotDatasetAPIv2::_presentationSetDetailsState $styleFrame $uncFrame $arrayName $key]}
+    }
+    _presentationSetDetailsState $styleFrame $uncFrame $arrayName $key
 }
 
 # -----------------------------------------------------------------------------
@@ -301,7 +353,7 @@ proc ::GX::PlotDatasetAPIv2::_seriesExtensionLoadGui {context} {
             if {$panelId ne ""} break
         }
     }
-    _presentationLoadValues ::GX::PlotDatasetAPIv2::seriesPresentationEditor $key $presentation
+    _presentationLoadValues ::GX::PlotDatasetAPIv2::seriesPresentationEditor $key $presentation [_presentationIdentity [_seriesExtensionPlotRef $context] $sid $generic]
     if {$panelId eq ""} {
         if {[llength $ids]} {set panelId [lindex $ids 0]}
     }
@@ -314,7 +366,25 @@ proc ::GX::PlotDatasetAPIv2::_seriesExtensionLoadGui {context} {
 
 proc ::GX::PlotDatasetAPIv2::_seriesExtensionCollectGui {context} {
     set key [dict get $context parent]
-    return [_presentationCollectValues ::GX::PlotDatasetAPIv2::seriesPresentationEditor $key]
+    set fields [_presentationCollectValues ::GX::PlotDatasetAPIv2::seriesPresentationEditor $key]
+    # Unexposed provider fields come from the current canonical series, not a
+    # stale UI copy. CORE's explicitly edited family selection remains authority.
+    set sid [dict get $context series_id]
+    foreach panel [dict get [loadSpec [_seriesExtensionPlotRef $context] 1] panels] {
+        foreach series [dict get $panel series] {
+            if {[dict get $series id] ne $sid} continue
+            foreach field {family_variable_id family_label_prefix source_row_continuity} {
+                if {[dict exists $series $field]} {dict set fields $field [dict get $series $field]}
+            }
+        }
+    }
+    set generic [dict get $context generic_series]
+    if {[dict exists $generic family_variable_id]} {
+        set family [string trim [dict get $generic family_variable_id]]
+        if {$family eq {}} {dict unset fields family_variable_id;dict unset fields family_label_prefix
+        } else {dict set fields family_variable_id $family}
+    }
+    return $fields
 }
 proc ::GX::PlotDatasetAPIv2::_seriesExtensionCloseGui {context} {
     variable seriesPresentationEditor
@@ -654,11 +724,14 @@ proc ::GX::PlotDatasetAPIv2::_axisConfigApply {context} {
     set pid [string trim $axisConfigEditor($key,panel_id)]
     if {$pid eq ""} {return [tk_messageBox -parent [winfo toplevel $parent] -icon error -message "Select a panel first."]}
     if {[catch {
+        set axes [winfo toplevel $parent]
+        set draftReceipt [::GX::axisTickDraftOwnerMutationBegin $axes $ref]
         set p [panelInfo $ref $pid]
         setPanelTitle $ref $pid $axisConfigEditor($key,panel_title)
         setPanelAxis $ref $pid y_left [_axisConfigMergedAxis $p y_left $key yl]
         set p [panelInfo $ref $pid]
         setPanelAxis $ref $pid y_right [_axisConfigMergedAxis $p y_right $key yr]
+        ::GX::axisTickDraftOwnerMutationEnd $axes $draftReceipt
     } err]} {
         tk_messageBox -parent [winfo toplevel $parent] -icon error -message $err
         return 0
@@ -710,7 +783,7 @@ proc ::GX::PlotDatasetAPIv2::_axisConfigBuildGui {context} {
     ttk::button $parent.apply -text "Apply plot.dataset panel presentation" -command [list ::GX::PlotDatasetAPIv2::_axisConfigApply $context]
     grid $parent.apply -row 4 -column 0 -columnspan 4 -sticky e -padx 3 -pady 4
     ttk::label $parent.note -text "These are PlotSpec presentation fields. CORE Multi-panel axes above remain authoritative for Y/Y2 numeric range, tick format and grid overrides." -wraplength 880 -justify left -foreground #555555
-    grid $parent.note -row 4 -column 0 -columnspan 4 -sticky ew -padx 3 -pady {2 4}
+    grid $parent.note -row 5 -column 0 -columnspan 4 -sticky ew -padx 3 -pady {2 4}
     grid columnconfigure $parent 3 -weight 1
     _axisConfigLoadPanel $context
     return $parent
@@ -841,7 +914,7 @@ proc ::GX::PlotDatasetAPIv2::_editorLoad {f ref} {
     if {$s eq ""} return
     set editor($f,panel_id) $pid
     foreach field {id dataset_id x_variable_id y_variable_id axis label enabled} {set editor($f,$field) [expr {[dict exists $s $field] ? [dict get $s $field] : ""}]}
-    _presentationLoadValues ::GX::PlotDatasetAPIv2::editor $f [_presentationFromSeries $s]
+    _presentationLoadValues ::GX::PlotDatasetAPIv2::editor $f [_presentationFromSeries $s] [_presentationIdentity $ref $sid $s]
     set editor($f,panel_id) $pid
     _editorDatasetChanged $f
 }
@@ -856,7 +929,14 @@ proc ::GX::PlotDatasetAPIv2::_editorSave {f ref} {
         } else {
             set pid [dict get [lindex [dict get $spec panels] 0] id]
         }
-        set s [dict create id $sid dataset_id [string trim $editor($f,dataset_id)] x_variable_id [string trim $editor($f,x_variable_id)] y_variable_id [string trim $editor($f,y_variable_id)] axis [string trim $editor($f,axis)] label [string trim $editor($f,label)] enabled $editor($f,enabled)]
+        # Preserve existing unexposed source/filter/grouping fields. Only the
+        # explicitly edited bindings and this adapter's presentation are replaced.
+        set s {}
+        foreach panel $panels {foreach prior [dict get $panel series] {if {[dict get $prior id] eq $sid} {set s $prior}}}
+        foreach field {kind style step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers x_error y_error band bar_bounds} {dict unset s $field}
+        dict set s id $sid
+        foreach field {dataset_id x_variable_id y_variable_id axis label} {dict set s $field [string trim $editor($f,$field)]}
+        dict set s enabled $editor($f,enabled)
         set presentation [_presentationCollectValues ::GX::PlotDatasetAPIv2::editor $f]
         if {[dict exists $presentation __panel_id]} {dict unset presentation __panel_id}
         dict for {field value} $presentation { dict set s $field $value }

@@ -1,0 +1,15 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "2ac6ae8ffe8de91eb95e02d63c61cec14607288ef9ad68cc9d43aed20593d571",
+  "design_sha256": "7f6b2ccd7fb62e89b697e5eee73592013c51a41cdaaca2ae2284848f3157a176",
+  "manual_assets": {},
+  "manual_sha256": "3d116c49213038f066633505616b6ad9c0dab45e724aeaad6e85b6b4c2f792a0",
+  "module_id": "viewer.stderr_diagnostics",
+  "policy_sha256": "edbdc602453f92afd0ed31a8b2b4ed7e8107569c5bf9c91ff36e80d4b9fd8f9b",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "c3b458972c81bcda43866f6baf03b77ca730649e03ddc2a3c5b7ef5100e300c0",
+  "source_sha256": "abb8ba5e8627231759dfd073a3b7c27056d47a483e8a98c706270f0d0ec60623",
+  "version": "1.0.0"
+}

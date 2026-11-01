@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::PythonEnvironment {variable generation 0;variable inventory {};variable request {};variable status {Refresh to inspect the exact configured local Python environment.}}
-proc ::GX::pythonEnvironmentApiInfo {} {return [dict create api_id PYTHON_ENVIRONMENT_API_v1 api_version 1 local_only 1 operations {inventory preflight organize} discovery nonexecuting package_installation forbidden]}
+proc ::GX::pythonEnvironmentApiInfo {} {return [dict create api_id PYTHON_ENVIRONMENT_API_v1 api_version 1 local_only 1 operations {inventory preflight organize audit_imports audit_cancel} audit_scopes {script project framework} audit_source_admission Script_Registry_and_enabled_Module_Catalog discovery nonexecuting package_installation forbidden]}
 proc ::GX::pythonEnvironmentCommand {operation args} {
     return [list [runtimeToolRequired python] -B [file join $::GX::scriptDir core python gxtxt_python_environment.py] $operation {*}$args]
 }
@@ -11,6 +11,7 @@ proc ::GX::pythonEnvironmentPreflight {source {report {}}} {
     if {![dict get $response ok]} {error [dict get $response error]}
     return [dict get $response result]
 }
+source [file join [file dirname [info script]] python_environment_audit_v1.tcl]
 proc ::GX::pythonEnvironmentPanelBuild {parent row} {
     set p $parent.python
     ttk::labelframe $p -text {Local Python environment — read-only} -padding 8
@@ -119,6 +120,7 @@ proc ::GX::pythonImportsChoose {w} {variable ::GX::PythonImports::state;if {$sta
 proc ::GX::pythonImportsPreview {w} {
     variable ::GX::PythonImports::state
     pythonImportsChoose $w
+    set state($w,sourceIdentity) [scriptSourceTabsIdentity $::GX::PythonScriptEditorUI::ui(tabs)]
     set state($w,original) [sourceSurfaceGet $::GX::PythonScriptEditorUI::ui(text)]
     set command [pythonEnvironmentCommand organize]
     foreach statement $state($w,statements) {lappend command --statement $statement}
@@ -130,6 +132,7 @@ proc ::GX::pythonImportsPreviewed {w response} {
     if {![winfo exists $w]} return
     variable ::GX::PythonImports::state
     set state($w,previewRequest) {}
+    if {[catch {set current [scriptSourceTabsIdentity $::GX::PythonScriptEditorUI::ui(tabs)]}] || $current ne $state($w,sourceIdentity)} {set state($w,status) {Active source changed; request a new import preview};return}
     if {![dict get $response ok]} {set state($w,status) [dict get $response error];return}
     set state($w,result) [dict get $response result]
     sourceSurfaceSet $w.preview [dict get $state($w,result) source]
@@ -140,6 +143,7 @@ proc ::GX::pythonImportsApply {w} {
     variable ::GX::PythonImports::state
     if {[catch {
         if {![info exists state($w,result)]} {error {Preview the proposed imports first}}
+        if {[scriptSourceTabsIdentity $::GX::PythonScriptEditorUI::ui(tabs)] ne $state($w,sourceIdentity)} {error {Source file or registered identity changed after preview; generate a new preview}}
         if {($::GX::PythonScriptEditorUI::ui(scope) ne {user} && $state($w,token) ne [scriptWorkspaceSessionToken]) || $state($w,runtime) ne [runtimeToolResolve python]} {error {Session or interpreter changed; reopen Manage imports}}
         if {[sourceSurfaceGet $::GX::PythonScriptEditorUI::ui(text)] ne $state($w,original)} {error {Source changed after preview; generate a new preview}}
         if {[dict get $state($w,result) changed]} {sourceSurfaceReplace $::GX::PythonScriptEditorUI::ui(text) [dict get $state($w,result) source]}
@@ -157,6 +161,7 @@ proc ::GX::pythonImportsDestroyed {w actual} {
 
 proc ::GX::pythonEnvironmentConfigurationChanged {id} {
     if {$id ne {runtime.python}} return
+    if {[llength [info commands ::GX::pythonEnvironmentAuditRuntimeEdited]]} {pythonEnvironmentAuditRuntimeEdited}
     incr ::GX::PythonEnvironment::generation
     if {$::GX::PythonEnvironment::request ne {}} {catch {scriptJobRequestCancel $::GX::PythonEnvironment::request};set ::GX::PythonEnvironment::request {}}
     set ::GX::PythonEnvironment::inventory {};set ::GX::PythonEnvironment::status {Interpreter changed. Refresh its environment inventory.}

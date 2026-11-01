@@ -112,6 +112,8 @@ proc ::GX::scriptJobDetailsWindow {id {session {}}} {
     ttk::button $w.actions.reconnect -text Reconnect -command [list ::GX::scriptJobDetailReconnect $w]
     ttk::button $w.actions.cancel -text {Cancel Job…} -command [list ::GX::scriptJobDetailCancel $w] -state disabled
     pack $w.actions.reconnect $w.actions.cancel -side left -padx 3 -pady 3
+    ttk::button $w.actions.sourceFiles -text {Open source files} -command [list ::GX::scriptJobDetailSourceFiles $w] -state disabled
+    pack $w.actions.sourceFiles -side left -padx 3 -pady 3
     foreach {name label command} {script {Copy Script ID} scriptJobDetailCopyScript id {Copy Job ID} scriptJobDetailCopyId details {Copy details} scriptJobDetailCopyDetails copy {Copy selection} scriptJobDetailCopySelection all {Select visible page} scriptJobDetailSelectLog full {Copy entire source} scriptJobDetailCopyFull save {Save source to file…} scriptJobDetailSaveLog} {
         ttk::button $w.actions.$name -text $label -command [list ::GX::$command $w];pack $w.actions.$name -side left -padx 3 -pady 3
     }
@@ -218,6 +220,7 @@ proc ::GX::scriptJobDetailReady {w id gen response} {
         return
     }
     set job [dict get $response result];set scriptJobDetail($w,record) $job
+    $w.actions.sourceFiles state [expr {!$scriptJobDetail($w,remote) && [scriptJobField $job snapshot_validation {}] eq {verified} && [scriptJobField $job language {}] in {Python Octave} ? {!disabled} : {disabled}}]
     if {$scriptJobDetail($w,remote)} {
         lassign [_scientificRemoteRoute $id] node remoteSession localJob
         dict set job node_local_job_id [scriptJobField $job id $localJob]
@@ -388,4 +391,20 @@ proc ::GX::scriptJobUtf8CompleteLength {bytes} {
     if {$i<0 || $i<$length-4} {return $length}
     set need [expr {$byte<128?1:($byte&224)==192?2:($byte&240)==224?3:($byte&248)==240?4:1}]
     return [expr {$length-$i<$need?$i:$length}]
+}
+
+proc ::GX::scriptJobDetailSourceFiles {w} {
+    variable scriptJobDetail
+    if {$scriptJobDetail($w,remote)} {return}
+    if {[catch {
+        set job $scriptJobDetail($w,record)
+        if {[scriptJobField $job snapshot_validation {}] ne {verified}} {error {The retained source snapshot is not verified. Reconnect to inspect it.}}
+        set language [dict get $job language]
+        if {$language ni {Python Octave}} {error {No source Workspace for this Job language}}
+        modulePublicApiActivate [scriptAnalysisModule $language] [string toupper $language]_SCRIPT_EDITOR_API_v1
+        ::GX::${language}ScriptEditor::_ensureUi
+        ::GX::${language}ScriptEditorUI::open
+        upvar #0 ::GX::${language}ScriptEditorUI::ui ui
+        scriptSourceTabsOpenSnapshot $ui(tabs) $job
+    } reason]} {set scriptJobDetail($w,status) "Source files unavailable: $reason"}
 }

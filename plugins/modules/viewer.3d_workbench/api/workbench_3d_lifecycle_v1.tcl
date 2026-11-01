@@ -22,13 +22,7 @@ rename ::GX::Workbench3D::buildPanel ::GX::Workbench3D::buildPanel_lifecycle_bas
 proc ::GX::Workbench3D::buildPanel {args} {
     variable panel;variable document;variable lifecycleSubscription;variable ownerSession
     buildPanel_lifecycle_base {*}$args
+    workspaceMenuAttach $::GX::Engine3D::window
     ttk::button $panel.documents -text "Interactive Documents…" -command [list ::GX::interactiveDocumentManagerDialog $::GX::Engine3D::window]
     pack $panel.documents -fill x
-}
-rename ::GX::Workbench3D::close ::GX::Workbench3D::close_lifecycle_base
-proc ::GX::Workbench3D::close {} {
-    variable lifecycleSubscription;variable invalidationAfter
-    if {$lifecycleSubscription ne {}} {::GX::interactiveDocumentLifecycleUnsubscribe $lifecycleSubscription;set lifecycleSubscription {}}
-    if {$invalidationAfter ne {}} {after cancel $invalidationAfter;set invalidationAfter {}}
-    tailcall close_lifecycle_base
 }

@@ -77,7 +77,7 @@ proc ::GX::PlotDatasetAPIv2::_bool {v label} {
 proc ::GX::PlotDatasetAPIv2::_numOrAuto {v label} {
     set q [string trim $v]
     if {$q eq "" || [string equal -nocase $q auto]} {return $q}
-    if {![string is double -strict $q]} {_error "$label must be numeric, blank or auto"}
+    if {![string is double -strict $q] || [catch {expr {abs(double($q))<=1e300}} finite] || !$finite} {_error "$label must be finite numeric within +/-1e300, blank or auto"}
     return $q
 }
 proc ::GX::PlotDatasetAPIv2::_dictOrEmpty {d label} {
@@ -109,46 +109,112 @@ proc ::GX::PlotDatasetAPIv2::newSpec {args} {
 }
 
 # One shared PlotSpec X definition serves the module editor and CORE Plot tab.
-proc ::GX::PlotDatasetAPIv2::sharedXAxisGet {plotRef} {
-    set spec [loadSpec $plotRef 1]
-    if {[dict get $spec graph_id] eq "plot.dataset.xyz"} {_error "shared X grid applies to 2D plots"}
-    set result [dict create scale linear major_step "" minor_grid off]
-    foreach panel [dict get $spec panels] {
-        foreach field {scale major_step minor_grid} {
-            if {[dict exists $panel axes x $field] && [string trim [dict get $panel axes x $field]] ne ""} {
-                dict set result $field [string tolower [dict get $panel axes x $field]]
-            }
-        }
+# Numeric positions are coordinates in this axis's display unit, not categories.
+proc ::GX::PlotDatasetAPIv2::_axisTickPairs {axis where} {
+    if {[dict exists $axis tick_positions] != [dict exists $axis tick_labels]} {_error "$where tick_positions and tick_labels must be supplied together"}
+    if {![dict exists $axis tick_positions]} {return {}}
+    set positions [split [dict get $axis tick_positions] {;}]
+    set labels [split [dict get $axis tick_labels] {;}]
+    if {[llength $positions]!=[llength $labels] || [llength $positions]<1 || [llength $positions]>1024} {_error "$where requires 1..1024 matching tick position/label pairs"}
+    set result {};set seen {}
+    foreach position $positions label $labels {
+        set position [string trim $position]
+        if {![string is double -strict $position] || [catch {expr {double($position)}} number] ||
+            [catch {expr {abs($number)<=1e300}} finite] || !$finite} {_error "$where tick positions must be finite numbers within +/-1e300"}
+        set identity [expr {$number==0?{0}:[format %.17g $number]}]
+        if {[dict exists $seen $identity]} {_error "$where repeats numeric tick position '$position'"}
+        dict set seen $identity 1
+        if {[string trim $label] eq {} || [regexp {[\x00\r\n;]} $label] || [string length $label]>256 || [string length [encoding convertto utf-8 $label]]>1024} {_error "$where tick labels require nonempty single-line text up to256 characters/1024 UTF-8 bytes, without semicolons"}
+        lappend result [list $identity $label]
     }
     return $result
 }
-
-proc ::GX::PlotDatasetAPIv2::sharedXAxisSet {plotRef fields} {
-    if {[catch {dict size $fields}]} {_error "shared X fields must be a dict"}
-    dict for {field value} $fields {
-        if {$field ni {scale major_step minor_grid}} {_error "unknown shared X field '$field'"}
-        if {$field eq "scale" && [string tolower $value] ni {linear log}} {_error "X scale must be linear or log"}
-        if {$field eq "minor_grid" && [string tolower $value] ni {off auto}} {_error "X minor grid must be off or auto"}
-        if {$field eq "major_step" && $value ne "" &&
-            (![string is double -strict $value] || $value <= 0)} {_error "X major step must be positive or blank"}
-    }
-    set spec [loadSpec $plotRef 1]
-    if {[dict get $spec graph_id] eq "plot.dataset.xyz"} {_error "shared X grid applies to 2D plots"}
-    set panels {}
+proc ::GX::PlotDatasetAPIv2::_sharedXSourceUnit {spec} {
     foreach panel [dict get $spec panels] {
-        dict for {field value} $fields {
-            if {$field eq "major_step" && $value eq ""} {catch {dict unset panel axes x $field}} \
-            else {dict set panel axes x $field [expr {$field eq "major_step" ? $value : [string tolower $value]}]}
+        foreach series [dict get $panel series] {
+            if {[dict exists $series enabled] && ![_bool [dict get $series enabled] enabled]} continue
+            return [dict get [::GX::datasetVariableV3ById [dict get $series dataset_id] [dict get $series x_variable_id]] unit]
         }
+    }
+    return {}
+}
+proc ::GX::PlotDatasetAPIv2::_sharedXAxisResolve {spec} {
+    set axis [_sharedXAxisCheck [dict get $spec panels]]
+    if {![dict exists $axis display_unit] || [dict get $axis display_unit] in {{} source auto inherit}} {dict set axis display_unit [_sharedXSourceUnit $spec]}
+    return $axis
+}
+proc ::GX::PlotDatasetAPIv2::_sharedXAxisProject {spec {resolveUnit 1}} {
+    if {[dict get $spec graph_id] eq {plot.dataset.xyz}} {return $spec}
+    set shared [expr {$resolveUnit?[_sharedXAxisResolve $spec]:[_sharedXAxisCheck [dict get $spec panels]]}];set panels {}
+    foreach panel [dict get $spec panels] {
+        set axis [expr {[dict exists $panel axes x]?[dict get $panel axes x]:{}}]
+        dict set panel axes x [dict merge $axis $shared]
         lappend panels $panel
     }
     dict set spec panels $panels
+    return $spec
+}
+proc ::GX::PlotDatasetAPIv2::_axisTicksConvert {axis source target} {
+    if {![dict exists $axis tick_positions] || $source eq $target} {return $axis}
+    set positions {};foreach pair [_axisTickPairs $axis {X axis}] {lappend positions [lindex $pair 0]}
+    # Reuse actual physical conversion, including offsets; this is presentation
+    # only. Explicit new pairs are already in the requested display unit.
+    set converted [::GX::unitRegistryConvertValues $source $target $positions]
+    dict set axis tick_positions [join $converted {;}]
+    _axisTickPairs $axis {Converted X axis}
+    return $axis
+}
+proc ::GX::PlotDatasetAPIv2::sharedXAxisGet {plotRef} {
+    set spec [loadSpec $plotRef 1]
+    if {[dict get $spec graph_id] eq {plot.dataset.xyz}} {_error {shared X axis applies to2D plots}}
+    return [dict merge {scale linear major_step {} minor_grid off tick_positions {} tick_labels {}} [_sharedXAxisResolve $spec]]
+}
+# Pure candidate builder, also used to reject GUI conflicts before any save.
+proc ::GX::PlotDatasetAPIv2::_sharedXAxisFieldsApply {spec fields} {
+    if {[catch {dict size $fields}]} {_error {shared X fields must be a dict}}
+    if {[dict get $spec graph_id] eq {plot.dataset.xyz}} {_error {shared X axis applies to2D plots}}
+    dict for {field value} $fields {
+        if {$field ni {scale major_step minor_grid display_unit tick_positions tick_labels}} {_error "unknown shared X field '$field'"}
+    }
+    set explicit [dict exists $fields tick_positions]
+    if {$explicit != [dict exists $fields tick_labels]} {_error {X tick_positions and tick_labels must be supplied together}}
+    set previous [_sharedXAxisResolve $spec]
+    if {[dict exists $fields display_unit]} {
+        set target [string trim [dict get $fields display_unit]]
+        if {$target in {{} source auto inherit}} {set target [_sharedXSourceUnit $spec]}
+        if {!$explicit && [dict exists $previous tick_positions]} {
+            set converted [_axisTicksConvert $previous [dict get $previous display_unit] $target]
+            foreach field {tick_positions tick_labels} {dict set fields $field [dict get $converted $field]}
+        }
+    } elseif {$explicit && [string trim [dict get $fields tick_positions]] ne {}} {
+        dict set fields display_unit [dict get $previous display_unit]
+    }
+    set panels {}
+    foreach panel [dict get $spec panels] {
+        set axis [expr {[dict exists $panel axes x]?[dict get $panel axes x]:{}}]
+        dict for {field value} $fields {
+            if {$field ne {tick_labels}} {set value [string trim $value]}
+            if {$value eq {}} {catch {dict unset axis $field}
+            } else {
+                if {$field in {scale minor_grid}} {set value [string tolower $value]}
+                dict set axis $field $value
+            }
+        }
+        _validateAxis $axis "panel '[dict get $panel id]' axis x"
+        if {[dict size $axis]} {dict set panel axes x $axis} else {catch {dict unset panel axes x}}
+        lappend panels $panel
+    }
+    dict set spec panels $panels
+    validateSpec $spec
+    return $spec
+}
+proc ::GX::PlotDatasetAPIv2::sharedXAxisSet {plotRef fields} {
+    set spec [_sharedXAxisFieldsApply [loadSpec $plotRef 1] $fields]
     saveSpec $plotRef $spec
-    # A legacy CORE X override can shadow PlotSpec during the final PNG
-    # pass. A public shared-X write takes ownership of these fields too.
+    # A public shared-X write takes ownership of these legacy shadow fields.
     if {[llength [info commands ::GX::plotVariantKey]] && [info exists ::GX::axisOverride]} {
         set key [::GX::plotVariantKey [dict get $plotRef graph_id] [dict get $plotRef variant_id]]
-        foreach field {x_scale x_step} {set ::GX::axisOverride($key,$field) ""}
+        foreach field {x_scale x_step} {set ::GX::axisOverride($key,$field) {}}
     }
     return [sharedXAxisGet $plotRef]
 }
@@ -213,7 +279,7 @@ proc ::GX::PlotDatasetAPIv2::_validateAxis {axis where} {
     }
     if {[dict exists $axis major_step]} {
         set v [string trim [dict get $axis major_step]]
-        if {$v ne "" && (![string is double -strict $v] || $v <= 0)} {
+        if {$v ne "" && (![string is double -strict $v] || [catch {expr {$v>0 && $v<=1e300}} finite] || !$finite)} {
             _error "$where major_step must be positive or blank"
         }
     }
@@ -225,18 +291,11 @@ proc ::GX::PlotDatasetAPIv2::_validateAxis {axis where} {
         set a [string trim [dict get $axis min]]; set b [string trim [dict get $axis max]]
         if {[string is double -strict $a] && [string is double -strict $b] && $a >= $b} {_error "$where min must be less than max"}
     }
-    if {[dict exists $axis tick_positions] != [dict exists $axis tick_labels]} {
-        _error "$where tick_positions and tick_labels must be supplied together"
-    }
-    if {[dict exists $axis tick_positions]} {
-        if {![string match "*axis x" $where]} {_error "$where custom ticks are supported only for X"}
-        set positions [split [dict get $axis tick_positions] {;}]
-        set labels [split [dict get $axis tick_labels] {;}]
-        if {[llength $positions] != [llength $labels] || [llength $positions] < 1} {_error "$where tick positions/labels count mismatch"}
-        foreach p $positions l $labels {
-            set p [string trim $p]
-            if {![string is double -strict $p] || [expr {abs(double($p)) > 1e300}]} {_error "$where tick positions must be finite numbers"}
-            if {[string trim $l] eq "" || [regexp {[\r\n]} $l]} {_error "$where tick labels must be nonempty single-line text"}
+    if {[dict exists $axis tick_positions] || [dict exists $axis tick_labels]} {
+        if {![string match {*axis x} $where]} {_error "$where custom ticks are supported only for X"}
+        set pairs [_axisTickPairs $axis $where]
+        if {[dict exists $axis scale] && [string equal -nocase [dict get $axis scale] log]} {
+            foreach pair $pairs {if {[lindex $pair 0]<=0} {_error "$where logarithmic tick positions must be positive"}}
         }
     }
     return $axis
@@ -410,19 +469,29 @@ proc ::GX::PlotDatasetAPIv2::_validateAnnotation {a index} {
 
 
 proc ::GX::PlotDatasetAPIv2::_sharedXAxisCheck {panels} {
-    set shared [dict create]
-    foreach p $panels {
-        if {![dict exists $p axes x]} continue
-        set ax [dict get $p axes x]
-        foreach f {display_unit scale min max tick_positions tick_labels major_step minor_grid} {
-            if {![dict exists $ax $f]} continue
-            set v [string trim [dict get $ax $f]]
-            if {$v eq "" || [string equal -nocase $v auto]} continue
-            if {[dict exists $shared $f] && [dict get $shared $f] ne $v} {
-                _error "shared-X panels have conflicting axis.x $f values ('[dict get $shared $f]' vs '$v')"
-            }
-            dict set shared $f $v
+    set shared {};set identities {}
+    foreach panel $panels {
+        if {![dict exists $panel axes x]} continue
+        set axis [dict get $panel axes x]
+        foreach field {display_unit scale direction min max tick_positions tick_labels major_step minor_grid} {
+            if {![dict exists $axis $field]} continue
+            set value [dict get $axis $field]
+            if {$field ne {tick_labels}} {set value [string trim $value]}
+            if {$value eq {} || ($field ni {tick_positions tick_labels} && [string equal -nocase $value auto])} continue
+            set identity $value
+            if {$field eq {tick_positions}} {
+                set identity {};foreach pair [_axisTickPairs $axis {Shared X axis}] {lappend identity [lindex $pair 0]}
+            } elseif {$field in {min max major_step} && [string is double -strict $value]} {
+                set identity [expr {double($value)==0?{0}:[format %.17g $value]}]
+            } elseif {$field in {scale direction minor_grid}} {set identity [string tolower $value];set value $identity}
+            if {[dict exists $identities $field] && [dict get $identities $field] ne $identity} {_error "shared-X panels have conflicting axis.x $field values"}
+            dict set identities $field $identity
+            if {![dict exists $shared $field]} {dict set shared $field $value}
         }
+    }
+    # A log declaration on one panel applies to the entire shared domain.
+    if {[dict exists $shared scale] && [dict get $shared scale] eq {log} && [dict exists $shared tick_positions]} {
+        foreach pair [_axisTickPairs $shared {Shared X axis}] {if {[lindex $pair 0]<=0} {_error {Shared logarithmic X ticks must be positive}}}
     }
     return $shared
 }
@@ -553,12 +622,27 @@ proc ::GX::PlotDatasetAPIv2::validateSpec {spec} {
             incr ai; _validateAnnotation $a $ai
         }
     }
-    if {$totalSeries == 0} {_error "PlotSpec requires at least one series across its panels"}
+    if {[dict exists $spec comparison]} {
+        # This versioned CORE profile owns source pins/derived display; it must
+        # never manufacture canonical Graph Series or mix a second source owner.
+        if {$gid ne {plot.dataset.xy} || $totalSeries!=0} {_error {Comparison PlotSpec requires its own source pins without canonical Graph Series}}
+        ::GX::comparisonPlotValidate [dict get $spec comparison]
+        ::GX::_comparisonPlotPresentation $spec
+        set expected {}
+        if {[dict get $spec comparison mode] eq {top_bottom}} {
+            set index 0;foreach source [dict get $spec comparison sources] {lappend expected source_$index;incr index}
+        } else {set expected {comparison}}
+        if {$seenPanels ne $expected} {_error {Comparison PlotSpec panels must retain the exact declared source-order identities}}
+        if {[dict exists $spec multi_panel] && [_bool [dict get $spec multi_panel] multi_panel]!=([dict get $spec comparison mode] eq {top_bottom})} {_error {Comparison mode owns its panel composition; select another comparison mode explicitly}}
+    } elseif {$totalSeries == 0} {_error "PlotSpec requires at least one series across its panels"}
     if {$distributionKind ne ""} {
         if {$ordinarySeries} {_error "$distributionKind series may not be mixed with Cartesian trace kinds"}
         if {$gid ne "plot.dataset.xy"} {_error "$distributionKind is supported only by plot.dataset.xy"}
         set multiPanel [expr {[dict exists $spec multi_panel] ? [_bool [dict get $spec multi_panel] multi_panel] : [llength $panels] > 1}]
         if {[llength $panels] != 1 || $multiPanel} {_error "$distributionKind requires one single panel"}
+        foreach panel $panels {
+            if {[dict exists $panel axes x tick_positions]} {_error "$distributionKind owns its derived X axis; clear custom X tick pairs first"}
+        }
     }
     _sharedXAxisCheck $panels
     return 1
@@ -582,13 +666,27 @@ proc ::GX::PlotDatasetAPIv2::_specPath {plotRef} {
 proc ::GX::PlotDatasetAPIv2::_writeOpt {fd key dictValue field} {
     if {[dict exists $dictValue $field]} {
         ::GX::putKV $fd "${key}.${field}.present" 1
-        ::GX::putKV $fd "${key}.${field}.value" [dict get $dictValue $field]
+        set value [dict get $dictValue $field]
+        if {$field eq {tick_labels}} {
+            ::GX::putKV $fd "${key}.${field}.encoding" utf8-base64
+            set value [binary encode base64 -maxlen 0 [encoding convertto utf-8 $value]]
+        }
+        ::GX::putKV $fd "${key}.${field}.value" $value
     }
 }
 proc ::GX::PlotDatasetAPIv2::_readOpt {d section prefix field outVar} {
     upvar 1 $outVar out
     if {[::GX::descriptorValue $d $section "${prefix}.${field}.present" 0]} {
-        dict set out $field [::GX::descriptorValue $d $section "${prefix}.${field}.value" ""]
+        set value [::GX::descriptorValue $d $section "${prefix}.${field}.value" ""]
+        set encoding [::GX::descriptorValue $d $section "${prefix}.${field}.encoding" ""]
+        if {$encoding ne {}} {
+            if {$field ne {tick_labels} || $encoding ne {utf8-base64} || [string length $value]>1398104 ||
+                [catch {binary decode base64 -strict $value} bytes] || [binary encode base64 -maxlen 0 $bytes] ne $value ||
+                [catch {::GX::documentUtf8Prefix $bytes [string length $bytes]}] ||
+                [catch {encoding convertfrom utf-8 $bytes} decoded] || [encoding convertto utf-8 $decoded] ne $bytes} {_error {Invalid or unsupported PlotSpec caption encoding}}
+            set value $decoded
+        }
+        dict set out $field $value
     }
 }
 
@@ -596,6 +694,9 @@ proc ::GX::PlotDatasetAPIv2::_readOpt {d section prefix field outVar} {
 proc ::GX::PlotDatasetAPIv2::saveSpec {plotRef spec} {
     variable schemaId; variable styleFields; variable axisFields; variable errorFields
     _requireFramework; validateSpec $spec
+    # Persist one declared shared map. Keep automatic unit omission intact;
+    # rendering resolves its actual common source unit without writing it back.
+    if {[dict get $spec graph_id] ne {plot.dataset.xyz} && [dict exists [_sharedXAxisCheck [dict get $spec panels]] tick_positions]} {set spec [_sharedXAxisProject $spec 0]}
     set ref [_normalizePlotRef $plotRef]
     if {[dict get $spec graph_id] ne [dict get $ref graph_id]} {_error "PlotSpec graph_id does not match plot reference"}
     set path [_specPath $ref]; file mkdir [file dirname $path]
@@ -609,6 +710,10 @@ proc ::GX::PlotDatasetAPIv2::saveSpec {plotRef spec} {
         ::GX::putKV $fd graph_type [dict get $spec graph_type]
         ::GX::putKV $fd graph_id [dict get $ref graph_id]
         ::GX::putKV $fd variant_id [dict get $ref variant_id]
+        if {[dict exists $spec comparison]} {
+            ::GX::comparisonPlotValidate [dict get $spec comparison]
+            ::GX::putKV $fd comparison_utf8_base64 [binary encode base64 -maxlen 0 [encoding convertto utf-8 [dict get $spec comparison]]]
+        }
         set panels [dict get $spec panels]
         ::GX::putKV $fd panel_count [llength $panels]
         if {[dict exists $spec multi_panel]} {::GX::putKV $fd multi_panel_present 1; ::GX::putKV $fd multi_panel [_bool [dict get $spec multi_panel] multi_panel]} else {::GX::putKV $fd multi_panel_present 0}
@@ -742,6 +847,14 @@ proc ::GX::PlotDatasetAPIv2::_seriesEquivalent {a b} {
 }
 
 proc ::GX::PlotDatasetAPIv2::_reconcilePersistedSpec {ref spec} {
+    if {[dict exists $spec comparison]} {
+        # Do not delete a legitimate transient comparison because it has no
+        # canonical series. Missing/stale source pins explicitly refuse instead
+        # of dropping their identities or deriving an unrelated neighbor Plot.
+        validateSpec $spec
+        if {[llength [::GX::graphSeriesList plot.dataset [dict get $ref graph_id] [dict get $ref variant_id] 1]]} {_error {Comparison Plot has a conflicting canonical Graph Series owner}}
+        return $spec
+    }
     set graphId [dict get $ref graph_id]
     set variantId [dict get $ref variant_id]
     set generic [::GX::graphSeriesList plot.dataset $graphId $variantId 1]
@@ -815,6 +928,14 @@ proc ::GX::PlotDatasetAPIv2::loadSpec {plotRef {deriveIfMissing 1}} {
     set spec [dict create schema $schemaId graph_type [::GX::descriptorValue $d plotspec graph_type cartesian_2d] \
         graph_id [dict get $ref graph_id] defaults [dict create style [dict create]] panels {} output [dict create]]
     dict set spec output extra_format [::GX::descriptorValue $d plotspec output_extra_format none]
+    set encodedComparison [::GX::descriptorValue $d plotspec comparison_utf8_base64 {}]
+    if {$encodedComparison ne {}} {
+        if {[string length $encodedComparison]>87384 || [catch {binary decode base64 -strict $encodedComparison} bytes] || [binary encode base64 -maxlen 0 $bytes] ne $encodedComparison || [catch {::GX::documentUtf8Prefix $bytes [string length $bytes]}]} {_error {Invalid bounded comparison configuration encoding}}
+        set comparison [encoding convertfrom utf-8 $bytes]
+        if {[encoding convertto utf-8 $comparison] ne $bytes} {_error {Comparison configuration is not exact UTF-8}}
+        ::GX::comparisonPlotValidate $comparison
+        dict set spec comparison $comparison
+    }
     if {[::GX::descriptorValue $d plotspec multi_panel_present 0]} {dict set spec multi_panel [_bool [::GX::descriptorValue $d plotspec multi_panel 0] multi_panel]}
     if {[::GX::descriptorValue $d plotspec title_present 0]} {dict set spec title [::GX::descriptorValue $d plotspec title ""]}
     set dst [dict create]; foreach f $styleFields {_readOpt $d plotspec default_style $f dst}; dict set spec defaults style $dst
@@ -1393,21 +1514,29 @@ proc ::GX::PlotDatasetAPIv2::setPanelTitle {plotRef panelId title} {
 }
 
 proc ::GX::PlotDatasetAPIv2::setPanelAxis {plotRef panelId axis fields} {
-    if {$axis ni {x y_left y_right}} {_error "panel axis must be x, y_left or y_right"}
-    set ref [_normalizePlotRef $plotRef]
-    set spec [loadSpec $ref 1]
-    set idx [_panelIndex $spec $panelId]
-    set clean [dict create]
-    if {[catch {dict size $fields}]} {_error "panel axis fields must be a dict"}
+    if {$axis ni {x y_left y_right}} {_error {panel axis must be x, y_left or y_right}}
+    set ref [_normalizePlotRef $plotRef];set spec [loadSpec $ref 1]
+    set idx [_panelIndex $spec $panelId];set panel [lindex [dict get $spec panels] $idx]
+    if {[catch {dict size $fields}]} {_error {panel axis fields must be a dict}}
+    if {[dict exists $fields tick_positions] != [dict exists $fields tick_labels]} {_error {tick_positions and tick_labels must be supplied together}}
+    set clean {}
     dict for {key value} $fields {
-        if {$key ni {label display_unit scale min max major_step minor_grid}} {_error "unknown panel axis field '$key'"}
-        set value [string trim $value]
-        if {$value ne ""} {dict set clean $key $value}
+        if {$key ni {label display_unit scale direction min max major_step minor_grid tick_positions tick_labels}} {_error "unknown panel axis field '$key'"}
+        if {$key ne {tick_labels}} {set value [string trim $value]}
+        if {$value ne {}} {dict set clean $key $value}
+    }
+    # Preserve legacy replacement of ordinary axis fields. An unrelated edit
+    # retains the new paired map, transformed if its display unit changes.
+    if {$axis eq {x} && [dict size $fields] && ![dict exists $fields tick_positions] && [dict exists $panel axes x tick_positions]} {
+        set previous [_sharedXAxisResolve $spec]
+        foreach field {tick_positions tick_labels} {dict set clean $field [dict get $panel axes x $field]}
+        set target [expr {[dict exists $clean display_unit]?[dict get $clean display_unit]:[_sharedXSourceUnit $spec]}]
+        if {$target in {source auto inherit}} {set target [_sharedXSourceUnit $spec]}
+        set clean [_axisTicksConvert $clean [dict get $previous display_unit] $target]
     }
     _validateAxis $clean "panel '$panelId' axis $axis"
-    set panels [dict get $spec panels]; set panel [lindex $panels $idx]
     if {[dict size $clean]} {dict set panel axes $axis $clean} else {catch {dict unset panel axes $axis}}
-    lset panels $idx $panel; dict set spec panels $panels
+    set panels [dict get $spec panels];lset panels $idx $panel;dict set spec panels $panels
     saveSpec $ref $spec
     return $panel
 }

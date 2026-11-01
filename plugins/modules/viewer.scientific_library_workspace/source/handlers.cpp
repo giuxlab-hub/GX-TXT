@@ -9,7 +9,10 @@ constexpr Command commands[] = {
     {18, "open"}, {19, "entry_open"}, {20, "verify"},
     {22, "install"}, {23, "update"}, {24, "remove"},
     {25, "register_external"}, {26, "register_remote"},
-    {27, "unregister"}, {33, "extra_action"}
+    {27, "unregister"}, {33, "extra_action"},
+    {38, "entry_search"}, {39, "entry_next"}, {40, "entry_previous"},
+    {49, "browse_records"}, {50, "browse_sources"},
+    {51, "browse_manual"}
 };
 bool dispatch(gx::Host& host, const gx::Event& event) {
     if (event.kind == gx::EventKind::open) {
@@ -18,7 +21,7 @@ bool dispatch(gx::Host& host, const gx::Event& event) {
     }
     if (event.kind != gx::EventKind::invoke &&
         event.kind != gx::EventKind::changed) return false;
-    if (event.component == 2 || event.component == 4) {
+    if (event.component == 2 || event.component == 4 || event.component == 34) {
         host.number(page, 1);
         host.catalog_refresh(form);
         return true;
@@ -27,7 +30,11 @@ bool dispatch(gx::Host& host, const gx::Event& event) {
         host.catalog_refresh(form);
         return true;
     }
-    if (event.component == 5 || event.component == 13 ||
+    if (event.component == 13) {
+        host.catalog_action(form, "entry_info");
+        return true;
+    }
+    if (event.component == 5 ||
         event.component == 32) {
         host.catalog_inspect(form);
         return true;

@@ -6,7 +6,7 @@
 namespace eval ::GX {
     variable sessionFileExplorerApiVersion 1
     variable sessionFileMaxBytes 4194304
-    variable sessionFileExtensions {.txt .csv .tsv .md .ini .log .json .yaml .yml .cfg .dat .asc .cir .net .lib}
+    variable sessionFileExtensions {.txt .csv .tsv .md .markdown .ini .log .json .yaml .yml .cfg .dat .asc .cir .net .lib}
 }
 
 proc ::GX::sessionFileExplorerAllowed {path} {
@@ -181,14 +181,7 @@ proc ::GX::sessionScriptExplorerInspect {} {
 
 proc ::GX::sessionScriptExplorerOpen {} {
     set id [sessionScriptExplorerSelected]
-    scriptLibraryDialog
-    if {$id ne ""} {
-        set tree .gxtxtScriptLibrary.body.left.tree
-        if {[$tree exists session:$id]} {
-            $tree selection set session:$id
-            $tree see session:$id
-        }
-    }
+    return [scriptLibraryDialog [expr {$id eq {} ? {} : "session:$id"}]]
 }
 
 proc ::GX::sessionScriptExplorerRun {} {
@@ -265,6 +258,10 @@ proc ::GX::augmentStandardGui_before_dataset_preview_v1 {} {
 proc ::GX::updateSessionUi_before_sessions_page {} {
     set r [::GX::updateSessionUi_v089_before_session_files]
     catch {sessionFileExplorerPopulate}
+    # The Analysis and Library projections also exist when this optional
+    # Explorer page has not been built.
+    catch {scriptWorkspaceRefreshChoices}
+    catch {scriptLibraryRefresh}
     return $r
 }
 

@@ -6,7 +6,7 @@
   "date_utc": "2026-10-22T15:38:46.506886+00:00",
   "upstream": {
     "module_version": "1.0.0",
-    "archive": "[PRIVATE_UPSTREAM_ARCHIVE_PATH_REDACTED_SHA256_47dca48f10b4]",
+    "archive": "/home/giu/electronics-server/GUIDA/VIEWER/importatori/cromatografo/acq.aia_andi_chromatography_1.0.0.zip",
     "archive_sha256": "105bd6bdc74a9df8cbb95bb676f697386a8308f7510cbd510c3b6e3e4159a189",
     "archive_bytes": 18470,
     "selection": "Only AIA package present in source folder at recheck; newest appropriate package then available",
@@ -228,5 +228,11 @@
     "commit": "9854fd6356ed051d2c11a7f6ad1bcfd3f087cd3e",
     "runtime_sha256": "236eda0ba7258f4fb81aaaf5181d79f7c99093594d2459dfd5d076764b9a5427",
     "provenance_sha256": "2d4ac99396b9c14342d0e05710a5f0ad2b348e9a429aa7139b7c49dc75b9a74d"
+  },
+  "p028_group_extension": {
+    "version": "1.1.0",
+    "scope": "Declarative actual-output Dataset Group only; original decoder/scientific bytes unchanged",
+    "core_owner": "DATASET_GROUP_API_v1",
+    "scientific_reference": "Existing source/native parity; independent vendor reference remains separate"
   }
 }

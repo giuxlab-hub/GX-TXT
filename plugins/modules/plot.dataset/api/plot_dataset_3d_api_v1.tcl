@@ -59,9 +59,9 @@ proc ::GX::PlotDataset3DAPIv1::sourceFingerprint {plotRef} {
 }
 
 proc ::GX::PlotDataset3DAPIv1::_representation {id} {
-    set document [::GX::interactiveDocumentRead $id]
+    set document [::GX::PlotWorkspace3D::read $id]
     if {[dict get $document module_id] ne "plot.dataset" ||
-        [dict get $document provider_id] ne "native_3d" ||
+        [dict get $document provider_id] ne "plot_dataset_3d" ||
         [dict get $document format] ne "gxtxt.plot_dataset.interactive_scene"} {
         error "Interactive representation '$id' does not belong to Plot Dataset."
     }
@@ -70,7 +70,7 @@ proc ::GX::PlotDataset3DAPIv1::_representation {id} {
 
 proc ::GX::PlotDataset3DAPIv1::representations {} {
     set out {}
-    foreach item [::GX::interactiveDocumentList plot.dataset native_3d] {
+    foreach item [::GX::nativeWorkspaceQuery plot_dataset_3d plot.dataset] {
         if {[dict get $item format] ne "gxtxt.plot_dataset.interactive_scene"} continue
         lappend out [dict create id [dict get $item id] status [syncStatus [dict get $item id]] \
             plot_ref [dict get [_representation [dict get $item id]] source_plot_reference]]
@@ -100,20 +100,21 @@ proc ::GX::PlotDataset3DAPIv1::_currentRepresentation {state} {
 }
 
 proc ::GX::PlotDataset3DAPIv1::_saveActiveRepresentation {} {
-    foreach item [::GX::interactiveDocumentList plot.dataset native_3d] {
+    foreach item [::GX::nativeWorkspaceQuery plot_dataset_3d plot.dataset] {
         if {[dict get $item format] ne "gxtxt.plot_dataset.interactive_scene"} continue
         set id [dict get $item id]
         set state [_representation $id]
         if {![_currentRepresentation $state]} continue
         dict set state viewer_scene [::GX::viewerSceneGet viewer.native_3d native_3d]
         dict set state layers [_activeLayers]
-        ::GX::interactiveDocumentUpdate $id $state
+        ::GX::PlotWorkspace3D::save $id $state
         return $id
     }
     return ""
 }
 
 proc ::GX::PlotDataset3DAPIv1::activateRepresentation {representationId} {
+    ::GX::PlotWorkspace3D::activate $representationId
     set state [_representation $representationId]
     _saveActiveRepresentation
     foreach id [::GX::viewerLayerIds viewer.native_3d native_3d] {
@@ -269,12 +270,12 @@ proc ::GX::PlotDataset3DAPIv1::buildScene {plotRef {representationId ""}} {
         source_dataset_id $sourceId source_dataset_sha256 $sourceSha \
         viewer_scene [::GX::viewerSceneGet viewer.native_3d native_3d] layers [_activeLayers]]
     if {$representationId eq ""} {
-        set item [::GX::interactiveDocumentCreate plot.dataset native_3d \
-            gxtxt.plot_dataset.interactive_scene 1.0 $provenance]
+        set item [::GX::PlotWorkspace3D::create plot_dataset_3d $provenance]
         set representationId [dict get $item id]
     } else {
-        ::GX::interactiveDocumentUpdate $representationId $provenance
+        ::GX::PlotWorkspace3D::save $representationId $provenance
     }
+    ::GX::PlotWorkspace3D::activate $representationId
     ::GX::sessionPersistenceCommit
     return [dict create plot_ref $ref plot_type $plotType source_dataset_id $sourceId \
         source_sha256 $sourceSha layer_ids [::GX::viewerLayerIds viewer.native_3d native_3d] \

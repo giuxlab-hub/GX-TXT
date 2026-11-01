@@ -6,6 +6,7 @@ function gxtxt_numeric_worker_main(args)
   try
     cfg=gxtxt_ini_read(request);op=lower(strtrim(gxtxt_ini_get(cfg,'request.operation','')));opts=read_options(cfg);S=read_selection(cfg);if(S.enabled),opts.selection=S;endif
     switch(op)
+      case 'comparison_curves',out=gxtxt_numeric_v1(op,read_string(cfg,'mode'),read_vector(cfg,'x1'),read_vector(cfg,'y1'),read_vector(cfg,'x2'),read_vector(cfg,'y2'),opts);
       case 'array_unary',out=gxtxt_numeric_v1(op,read_string(cfg,'name'),read_array(cfg,'a'),opts);
       case 'array_binary',out=gxtxt_numeric_v1(op,read_string(cfg,'name'),read_array(cfg,'a'),read_array(cfg,'b'),opts);
       case 'array_compare',out=gxtxt_numeric_v1(op,read_string(cfg,'name'),read_array(cfg,'a'),read_array(cfg,'b'),opts);
@@ -132,6 +133,7 @@ function opts=read_options(cfg)
   % The public Tcl smoothing boundary rejects unknown controls before dispatch.
   opts=struct();names={'nonfinite','axis','probability','ties','scale','bin_mode','bin_count','bin_width','period','replace','scalar_first','method','extrapolation','start','stop','rtol','atol','chunk_rows','mode','rank_policy','rank_tolerance','condition_limit','exponent','weight_semantics','has_intercept','intercept','center_scale','window','degree','min_height','min_prominence','min_distance','distance_mode','relative_height','value','estimator','anchor_method','input_kind','weight_variable_id','max_iterations','tolerance','function_tolerance','derivative_order','nfft','normalization','representation','ordering','scaling','sampling'};
   names{end+1}='robust_iterations';
+  if(strcmp(gxtxt_ini_get(cfg,'request.operation',''),'comparison_curves')),names=[names {'offset','denominator_floor'}];endif
   for i=1:numel(names),key=['options.' names{i}];if(gxtxt_ini_has(cfg,key)),opts.(names{i})=gxtxt_ini_get(cfg,key,'');endif,endfor
 endfunction
 function S=read_selection(cfg)

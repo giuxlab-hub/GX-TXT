@@ -1,0 +1,27 @@
+{
+  "schema": "gxtxt.acquisition_development_policy.v1",
+  "profile": "acquisition_v1",
+  "sdk_version": 1,
+  "language": "C++17 through the existing fixed admitted compiler",
+  "source_limit_bytes": 65536,
+  "source_tree_limit_bytes": 1048576,
+  "headers_owner": "core/development/policy_v1.json",
+  "sdk_calls": ["source_info", "source_read", "progress", "cancelled", "prepare_output", "output_write", "output_finish", "helper_call", "scientific_spectrum_parse", "scientific_spectrum_read"],
+  "scientific_source_parser": {"formats": ["csv", "jcamp"], "source_bytes_max": 33554432, "samples_per_request_max": 1000000, "parses_per_request_max": 4, "page_rows_max": 2048, "metadata_bytes_max": 49152, "source_data_pages": "bounded x/y values from CORE SourceGrant only; no output, path, helper or Library authority"},
+  "capability_owner": "ACQUISITION_HANDLER_PLUGIN_API_v1",
+  "source_chunk_bytes": 65536,
+  "control_frame_bytes": 262144,
+  "numeric_bytes_on_control_wire": false,
+  "prepared_dimensions": {"rank_max": 16, "dimensions_max": 16, "order": "F", "endian": "little", "legacy_row_form": true, "owner": "DATASET_VARIABLE_SCHEMA_API_v3 and DATASET_PUBLICATION_API_v2"},
+  "process_creation": {"new_target_only": true, "fork_vfork_process_clone_exec": false, "clone3": "ENOSYS", "pthread_clone": "CLONE_THREAD only", "reason": "No process descendant may retain a typed buffer FD after the worker exits"},
+  "runtime_limits": {"cpu_seconds": 30, "address_space_bytes": 1073741824, "file_size_bytes": 536870912, "core_dump_bytes": 0},
+  "filesystem": {
+    "guard": "gxtxt.native_acquisition_read_policy.v1",
+    "must_precede_authored_library_load": true,
+    "source_fds_or_paths": false,
+    "runtime_read": "exact reviewed binary/system dependency files only",
+    "typed_buffer_write": "WRITE_FILE/TRUNCATE only under the exact existing CORE resource directory",
+    "typed_buffer_create_read_list_remove_rename_execute": false,
+    "fallback": false
+  }
+}

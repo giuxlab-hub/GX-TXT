@@ -28,3 +28,32 @@ ${api}::validateLibrary my-ir
 `bulkRank libraryId processedSpectrum options` scans a validated `.gxsrl` through CORE's read-only, NumPy-backed matcher. `processedSpectrum` is a dictionary with strictly ascending, finite `x` and `y` lists already processed by IR Analysis. Options include `experimental_representation`, `range_min`, `range_max`, `normalization`, `step`, `method`, `fingerprint_min`, `fingerprint_max`, `fingerprint_weight`, and positive `limit`. The result gives `scanned`, `skipped`, and ordered candidate dictionaries with `spectrum_id`, `match_score`, `full_spectrum_score` and `fingerprint_score`.
 
 This is a **candidate prescreen** for the simple no-baseline, no-smoothing, no-derivative IR path. IR Analysis 1.0.5 invokes it only for libraries with more than 100 spectra, then recomputes at least 30 shortlisted references using the existing public reference and numerical APIs. Other processing modes and small libraries use the original matching path. The shortlist is approximate; the final scores are exact for shortlisted candidates, but a global top-N guarantee is not asserted for every input. A same-trace 9,537-spectrum benchmark tests performance and retrieval, not independent identification accuracy. Library files and scientific payloads remain read-only during ranking.
+
+
+P035 additive managed read interoperability (version1)
+
+`managedValidateLibrary`, `managedLibraryInfo`, `managedListSpectra`,
+`managedReadSpectrum`, `managedEntityInfo` and `managedBulkRank` take the same
+logical identities/scientific arguments as their existing flat-root counterparts.
+They consult only normally registered installed managed Libraries whose provider
+explicitly declares `MANAGED_REFERENCE_READ_API=1`. Existing flat-root methods,
+writers and saved-data compatibility remain unchanged; no alias/copy/import or
+fallback to an unregistered path is performed by the managed methods.
+
+Scientific Library Manager remains the location/registry/provider/credential/
+read-policy/integrity owner. It holds its normal registry lock, verifies payload
+and original package before/after each complete read/rank and rechecks the exact
+registration. The existing Reference owner reads the selected immutable payload
+with SQLite read-only/query-only access. No storage path is returned. Large
+managed spectra require the existing bounded Manager range-read interface;
+`managedReadSpectrum` caps complete reads at32768 samples. There is no new Script
+Bridge or restricted native grant: native producers still use their separately
+admitted scientific public host operation.
+
+`managedLibraryInfo.version` is the actual managed package version;
+`scientific_version` retains the payload's original scientific-data version.
+`content_hash` remains the real scientific content hash, with separate
+`managed_payload_sha256`/`managed_package_sha256`; these meanings are never
+substituted. Managed bulk ranking invokes the unchanged existing CORE numerical
+algorithm and result protocol, with the same full scanned/skipped counts. This
+is source resolution/admission, not a second ranking engine.

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 fconfigure stdout -buffering none -translation lf -encoding utf-8
+namespace eval ::GXPlotDatasetV2Bridge {variable request $::argv}
 
 proc bridgeError {message} {
     puts "ERROR\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 $message]]"
@@ -66,10 +67,10 @@ if {[catch {
     source [file join $root gxtxt_pipeline.tcl]
     ::GX::defaults
     ::GX::loadModuleCatalog
-    set ::GX::currentSession $session
-    set manifest [file join $session metadata manifest.ini]
+    set ::GX::currentSession [file normalize [lindex $::GXPlotDatasetV2Bridge::request 0]]
+    set manifest [file join $::GX::currentSession metadata manifest.ini]
     if {[file isfile $manifest]} {::GX::loadManifest $manifest}
-    ::GX::loadDatasetRegistry $session
+    ::GX::loadDatasetRegistry $::GX::currentSession
 
     set descriptor [::GX::moduleField plot.dataset descriptor ""]
     if {$descriptor eq ""} {error "plot.dataset is not installed"}
@@ -78,6 +79,12 @@ if {[catch {
     if {$entry eq ""} {error "plot.dataset does not publish PLOT_DATASET_API_v2"}
     source [file join [file dirname $descriptor] api plot_dataset_api_v1.tcl]
     source [file join [file dirname $descriptor] $entry]
+
+    # Bootstrap/declaration files legitimately use ordinary top-level names
+    # such as kind. Decode the unchanged public request only after all sourcing;
+    # never let those temporary globals replace a validated caller argument.
+    lassign $::GXPlotDatasetV2Bridge::request session action kind sourceVariant graphId variantId doRender requestPath providerKey
+    set session [file normalize $session]
 
     set spec ""
     if {$requestPath ne ""} {

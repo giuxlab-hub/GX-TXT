@@ -8,7 +8,7 @@ set ::GX::mockMetadata [dict create]
 # The REAL plugin requires dev097 Numeric/CORE; the hermetic contract test
 # provides a deterministic mock ONLY to verify publication request wiring.
 # Never ship a scientific runtime fallback to this mock implementation.
-proc ::GX::CurveDigitizerNumericCore::propagate {doc rowsText mid rows source sha inline} {
+proc ::GX::CurveDigitizerNumericCore::propagate {doc rowsText mid rows source sha inline {factors {}}} {
     set n [dict get $rows count]
     if {$n != 2} {error {Test CORE stub expects exactly two source rows}}
     set columns [dict create x [dict get $rows x] y [dict get $rows y] \

@@ -24,6 +24,8 @@ proc ::GX::Workbench3D::textureForm {} {
     if {![dict exists $pick hit]||![dict get $pick hit]||[dict get $pick layer_id] ne $object||![dict exists $pick viewport_xy]} {error {Click the target planar face in the rendered view first}}
     set resources {};set choices {}
     foreach owner [::GX::interactiveDocumentList] {
+        if {[::GX::_sessionWorkspaceKnownObsolete $owner] && ![::GX::datasetPublicationV2DictDefault $owner native_workspace 0]} continue
+        if {[::GX::datasetPublicationV2DictDefault $owner native_workspace 0] && ![dict get [::GX::sessionWorkspaceMetadata [dict get $owner id]] compatible]} continue
         foreach resource [::GX::interactiveDocumentResourceReferences [dict get [::GX::interactiveDocumentRead [dict get $owner id]] payload]] {
             if {[dict get $resource size_bytes]<33||[dict get $resource size_bytes]>134217728} continue
             set header [::GX::interactiveDocumentResourceReadChunk $resource 0 33]

@@ -8,7 +8,9 @@ proc ::GX::viewerProviderEnabled {module viewer} {
         set name [descriptorValue $d viewer.$viewer short_title [descriptorValue $d viewer.$viewer name $viewer]]
         configurationRegister $key [dict create group Viewers label "Enable $name Viewer" type boolean default 1 scope user]
     }
-    return [configurationGet $key]
+    set enabled [configurationGet $key]
+    if {[descriptorValue [moduleField $module dict {}] contract_visualizers api_version {}] eq {1} && ![moduleIsEnabled $module]} {return 0}
+    return $enabled
 }
 proc ::GX::viewerProviderSetEnabled {module viewer value} {
     uiFieldNormalize {type boolean} $value
@@ -33,6 +35,10 @@ proc ::GX::viewerProviderCatalog {{includeReplaced 0}} {
     foreach module $::GX::moduleOrder {
         foreach viewer [viewerProviderIds $module] {
             set definition [viewerProviderDefinition $module $viewer 1]
+            # A deliberate compatibility route survives direct saved opens and
+            # explicit legacy inventory without reappearing as a normal tile
+            # when the owner disables its successor's presentation.
+            if {!$includeReplaced && [dict get $definition catalog_visibility] eq {compatibility}} continue
             set replacement [dict get $definition catalog_replacement]
             if {!$includeReplaced && $replacement ne {}} {
                 if {![regexp {^(viewer\.[a-z0-9_]+)/([a-z][a-z0-9_]*)$} $replacement -> targetModule targetViewer] || $replacement eq "$module/$viewer"} {error {Catalog replacement must name a different registered Viewer module/provider}}

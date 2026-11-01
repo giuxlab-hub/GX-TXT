@@ -21,14 +21,18 @@ import numpy as np
 from PIL import Image, ImageTk, UnidentifiedImageError
 
 from digitizer_model import AxisConfig, Calibration, CalibrationError, CORNER_ORDER, DigitizedPoint, Project, Series
+from calibration_verification import evaluate_verification, display_number
+from calibration_verification_dialog import CalibrationVerificationPanel
 from point_ordering import normalize as normalize_ordering, order_project, order_series
 from image_canvas import ImageCanvas
 from processing_controls import FilterControls, STANDARD_ORDER, merge_filter_operations
 from scale_bar import detect_scale_bar, ScaleDetectionError
 from calibration_manifest import build_manifest, metadata_fields, encode_metadata_records
 from publication_planning import DEFAULT_TEMPLATE, PUBLICATION_LAYOUTS, plan_datasets, validate_template
+from publication_y2 import plan_y2_datasets, metadata_for_y2
 from assisted_sampling import sample_proposal_segments
-from assisted_tracing import propose, samples_from_guides, repair, insert_correction
+from assisted_tracing import (propose, samples_from_guides, repair, insert_correction,
+                              ASSIST_STEP_MIN, ASSIST_STEP_MAX)
 from assisted_exclusion_ui import ExclusionControls
 from stroke_width_ui import StrokeWidthUI
 from quality_diagnostics import inspect as inspect_quality
@@ -45,7 +49,7 @@ STARTUP_TIMEOUT_SECONDS = 45.0
 RPC_TIMEOUT_SECONDS = 120.0
 CONFIG_FORMAT = "gxtxt.curve_digitizer.configuration"
 CONFIG_VERSION = "1.0"
-PLUGIN_VERSION = "2.0.9"
+PLUGIN_VERSION = "2.0.25"
 SERIES_COLORS = ("#d62728", "#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#8c564b", "#bcbd22")
 CORNER_LABELS = {"bottom_left": "BL", "bottom_right": "BR", "top_left": "TL", "top_right": "TR"}
 EDGE_MODES = {
@@ -149,6 +153,7 @@ class RpcClient:
     def __init__(self, root=None, *, timeout=RPC_TIMEOUT_SECONDS):
         self.counter = 0
         self.focus_callback = None
+        self.control_callback = None
         self.timeout = timeout
         self._root = None
         self._incoming = queue.Queue()
@@ -200,6 +205,18 @@ class RpcClient:
             self._focus_pending = True
             return
         fields = line.split("\t")
+        if len(fields) >= 4 and fields[:2] == ["CONTROL", "WORKSPACE"]:
+            request, action = fields[2:4]
+            try:
+                if self.control_callback is None:
+                    raise RpcError("Curve Digitalizer has not finished opening")
+                result = self.control_callback(action, *(b64d(x) for x in fields[4:]))
+                status = "OK"
+            except Exception as exc:
+                status, result = "ERR", str(exc)
+            if request != "notice":
+                self._write("\t".join(["WORKSPACE_RESULT", request, status, b64e(str(result))]))
+            return
         if len(fields) != 4 or fields[0] != "RES":
             LOG.warning("Ignoring an unrecognized host protocol frame")
             return
@@ -362,7 +379,7 @@ class SourcePreviewDialog(tk.Toplevel):
 
 
 class SeriesDialog(tk.Toplevel):
-    def __init__(self, master, series=None, family_name="Family parameter", family_unit=""):
+    def __init__(self, master, series=None, family_name="Family parameter", family_unit="", enable_y2=False):
         super().__init__(master)
         self.title("Edit curve" if series else "New curve")
         self.transient(master)
@@ -380,6 +397,12 @@ class SeriesDialog(tk.Toplevel):
         for row, (label, var) in enumerate(zip(labels, self.vars)):
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=4)
             ttk.Entry(frame, textvariable=var, width=32).grid(row=row, column=1, sticky="ew", pady=4)
+        self.axis_var = None
+        if enable_y2:
+            self.axis_var = tk.StringVar(value=(series.y_axis_id if series else "y1").upper())
+            ttk.Label(frame, text="Y axis").grid(row=3, column=0, sticky="w", padx=(0, 8), pady=4)
+            ttk.Combobox(frame, textvariable=self.axis_var, values=("Y1", "Y2"),
+                         width=29, state="readonly").grid(row=3, column=1, sticky="ew", pady=4)
         buttons = ttk.Frame(frame)
         buttons.grid(row=4, column=0, columnspan=2, sticky="e", pady=(10, 0))
         ttk.Button(buttons, text="Cancel", command=self.destroy).pack(side="right", padx=(6, 0))
@@ -393,6 +416,8 @@ class SeriesDialog(tk.Toplevel):
             messagebox.showerror(APP_NAME, "Curve label is required.", parent=self)
             return
         self.result = {"name": label, "parameter_value": value, "parameter_unit": unit}
+        if self.axis_var is not None:
+            self.result["y_axis_id"] = self.axis_var.get().lower()
         self.destroy()
 
 
@@ -426,6 +451,11 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.session_check_ms = 3000
         self.documents: dict[str, dict] = {}
         self.document_sha: dict[str, str] = {}
+        self.document_receipts: dict[str, tuple[str, str]] = {}
+        self._workspace_baseline = None
+        self._workspace_write_active = False
+        self._workspace_reviewing = False
+        self._workspace_review_serial = 0
         self.current_doc_id: str | None = None
         self.config: dict = {}
         self.project = Project()
@@ -524,6 +554,13 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.y_min = tk.StringVar(value="0")
         self.y_max = tk.StringVar(value="1")
         self.y_scale = tk.StringVar(value="linear")
+        self.y2_name = tk.StringVar(value="Y2")
+        self.y2_unit = tk.StringVar()
+        self.y2_role = tk.StringVar(value="measured")
+        self.y2_min = tk.StringVar(value="0")
+        self.y2_max = tk.StringVar(value="1")
+        self.y2_scale = tk.StringVar(value="linear")
+        self._y2_prior_sash = None
         self.show_numbers = tk.BooleanVar(value=False)
         self.snap_enabled = tk.BooleanVar(value=False)
         self.snap_radius = tk.IntVar(value=3)
@@ -535,15 +572,18 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.verification_measurement_caption = tk.StringVar(value="Verification uses active calibration")
         self.verify_point = None  # transient source-image pixel coordinate
         self.verify_panel_open = False
+        self.verification_dialog = None  # inline inside the scrollable Calibration tab
         self.hide_saved_scale_overlay = False  # view-only, does not reset calibration
         self.measurement_selected_id = None
         self.measurement_table = None
         self.publish_measurements = None
         self.publish_layout = tk.StringVar(value="separate")
+        self.publish_group_datasets = tk.BooleanVar(value=False)
         self.publish_name_template = tk.StringVar(value=DEFAULT_TEMPLATE)
         self.publish_selection = []
         self.exp_x = tk.StringVar()
         self.exp_y = tk.StringVar()
+        self.exp_y2 = tk.StringVar()
         self.scale_length = tk.StringVar(value="10")
         self.scale_unit = tk.StringVar(value="µm")
         self.scale_status = tk.StringVar(value="Auto-calibrate the full image first.")
@@ -563,12 +603,16 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.build_ui()
         self.exp_x.trace_add("write", lambda *_: self.update_verification())
         self.exp_y.trace_add("write", lambda *_: self.update_verification())
+        self.exp_y2.trace_add("write", lambda *_: self.update_verification())
         self.mode.trace_add("write", lambda *_: self._verification_mode_changed())
+        self.notebook.bind("<<NotebookTabChanged>>", self._verification_tab_changed, add="+")
         self.bind_keys()
         self._apply_shared_settings(self.shared_settings, self.shared_settings_origin, force=True)
         self.refresh_configuration_selector()
         if self.documents:
-            self.open_document(next(iter(self.documents)))
+            requested = sys.argv[sys.argv.index("--workspace") + 1] if "--workspace" in sys.argv else next(iter(self.documents))
+            self.open_document(requested)
+        self.rpc.control_callback = self.workspace_control
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.after(250, self._resolve_image_processing_tool)
         self.root.after(150, self._poll_image_processing)
@@ -631,18 +675,10 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             elif kind == "DATASET":
                 did, contract, fmt_, media, sha = fields
                 self.datasets[did] = {"contract": contract, "format": fmt_, "media_type": media, "sha256": sha}
-            elif kind == "DOCUMENT":
-                if len(fields) < 3:
-                    continue
-                doc_id, text, _updated = fields[:3]
-                document_sha = fields[3] if len(fields) >= 4 else ""
-                try:
-                    data = json.loads(text)
-                except json.JSONDecodeError:
-                    continue
-                if data.get("format") == CONFIG_FORMAT:
-                    self.documents[doc_id] = data
-                    self.document_sha[doc_id] = document_sha
+            elif kind == "DOCUMENT_INFO" and len(fields) == 5:
+                doc_id, name, _updated, generation, revision = fields
+                self.documents[doc_id] = {"name": name}
+                self.document_receipts[doc_id] = (generation, revision)
         if not self.session_token:
             raise RpcError("GX-TXT did not provide a Session token.")
 
@@ -688,16 +724,20 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             "notes": "",
         }
 
-    @staticmethod
-    def parse_document_result(payload: str) -> tuple[str, str]:
-        fields = payload.split("\t", 1)
-        return fields[0], fields[1] if len(fields) > 1 else ""
+    def parse_document_result(self, payload: str) -> tuple[str, str]:
+        fields = payload.split("\t")
+        if len(fields) != 4:
+            raise RpcError("Missing native Workspace generation/revision receipt")
+        doc_id, sha, generation, revision = fields
+        self.document_receipts[doc_id] = (generation, revision)
+        return doc_id, sha
 
     def config_to_project(self, cfg: dict) -> Project:
         p = Project.from_dict({
             "version": cfg.get("version", CONFIG_VERSION),
             "image": {"path": "", "width": cfg.get("source", {}).get("width", 0), "height": cfg.get("source", {}).get("height", 0)},
             "axes": cfg.get("axes", {}),
+            "axis_model_version": cfg.get("axis_model_version"),
             "calibration": cfg.get("calibration", {}),
             "series": cfg.get("curves", []),
             "notes": cfg.get("notes", ""),
@@ -717,11 +757,21 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         x["semantic_role"] = self.x_role.get().strip()
         y["semantic_role"] = self.y_role.get().strip()
         cfg["axes"] = {"x": x, "y": y}
+        if self.project.y2_axis is not None:
+            self.project.y2_axis.validate()
+            y2 = self.project.y2_axis.to_dict()
+            y2["semantic_role"] = (self.config.get("axes", {}).get("y2", {})
+                                   .get("semantic_role", "measured"))
+            cfg["axes"]["y2"] = y2
+            cfg["axis_model_version"] = 2
+        else:
+            cfg.pop("axis_model_version", None)
         cfg["calibration"] = self.project.calibration.to_dict()
         # Apply the selected point order before serialization so Undo/Redo,
         # Interactive Documents and scientific publication share one ordering.
         order_project(self.project, self._ordering_policy())
-        cfg["curves"] = [s.to_dict() for s in self.project.series]
+        cfg["curves"] = [s.to_dict(include_axis_id=self.project.y2_axis is not None)
+                         for s in self.project.series]
         cfg["curve_ordering"] = self._ordering_policy()
         try:
             saved_density=self._valid_assist_output_points()
@@ -762,6 +812,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             "display_name": self.output_display_name.get().strip(),
             "layout": self.publish_layout.get(),
             "selected_measurement_ids": self.selected_publication_ids(),
+            "group_datasets": bool(self.publish_group_datasets.get()),
         }
         if hasattr(self, "canvas"):
             cfg["view"] = {"scale": self.canvas.scale, "offset_x": self.canvas.offset_x, "offset_y": self.canvas.offset_y}
@@ -771,22 +822,29 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         # A Session transition must never commit a previous Session's draft.
         # The CORE token guard is still the authoritative second protection.
         if (self.loading_ui or not self.current_doc_id or
-                self.session_refreshing or self.catalog_session_invalid):
+                self.session_refreshing or self.catalog_session_invalid or self._workspace_reviewing):
             return False
         self.config = self.serialize_configuration()
         payload = json.dumps(self.config, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
         try:
             expected_sha = self.document_sha.get(self.current_doc_id, "")
-            result = self.rpc.call("DOC_UPDATE", self.current_doc_id, payload, self.session_token, expected_sha)
+            generation, revision = self.document_receipts[self.current_doc_id]
+            self._workspace_write_active = True
+            result = self.rpc.call("DOC_UPDATE", self.current_doc_id, payload, self.session_token, expected_sha, generation, revision)
             doc_id, doc_sha = self.parse_document_result(result)
             if doc_id != self.current_doc_id:
                 raise RpcError("GX-TXT returned an unexpected Interactive Document identity while saving.")
             self.document_sha[self.current_doc_id] = doc_sha
             self.documents[self.current_doc_id] = copy.deepcopy(self.config)
+            # Review dirtiness tracks scientific/configuration edits, never
+            # transient zoom, pan or viewport position.
+            self._workspace_baseline = self.workspace_payload()
             return True
         except RpcError as exc:
             messagebox.showerror(APP_NAME, f"Unable to save the digitizer configuration in the Session:\n{exc}")
             return False
+        finally:
+            self._workspace_write_active = False
 
     def _history_capture(self, configuration_override=None, proposal_override=None):
         return {"_history206": 1,
@@ -1024,6 +1082,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         configurations = tk.Menu(menubar, tearoff=False)
         configurations.add_command(label="New configuration...", command=self.new_config)
         configurations.add_command(label="Rename configuration...", command=self.rename_config)
+        configurations.add_command(label="Save configuration", command=self.persist)
         configurations.add_command(label="Duplicate configuration", command=self.duplicate_config)
         configurations.add_command(label="Delete configuration...", command=self.delete_config)
         configurations.add_separator()
@@ -1140,6 +1199,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             "verify_color": tk.StringVar(window, value=self.shared_settings["verification_marker_color"]),
             "publish_layout": tk.StringVar(window, value=self.shared_settings["publication_layout"]),
             "publish_template": tk.StringVar(window, value=self.shared_settings["publication_name_template"]),
+            "enable_y2": tk.BooleanVar(window, value=self.project.y2_axis is not None),
         }
         # Persistent footer is allocated before the growing Notebook; Apply never
         # disappears below the bottom edge on compact screens.
@@ -1251,12 +1311,39 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         ttk.Label(cal, text="Changing preferences does not reapply an existing calibration.",
                   wraplength=480).pack(anchor="w", pady=(12, 0))
 
-        output = tab("Axes & output")
+        output_host = tab("Axes & output")
+        output_canvas = tk.Canvas(output_host, borderwidth=0, highlightthickness=0,
+                                  background=ttk.Style().lookup("TFrame", "background") or "#f0f0f0")
+        output_scroll = ttk.Scrollbar(output_host, orient="vertical", command=output_canvas.yview)
+        output_scroll.pack(side="right", fill="y")
+        output_canvas.pack(side="left", fill="both", expand=True)
+        output_canvas.configure(yscrollcommand=output_scroll.set)
+        output = ttk.Frame(output_canvas, padding=(0, 0, 4, 4))
+        output_window = output_canvas.create_window((0, 0), anchor="nw", window=output)
+        def update_axes_scroll(_event=None):
+            if output_canvas.winfo_exists():
+                output_canvas.configure(scrollregion=output_canvas.bbox("all"))
+        output.bind("<Configure>", update_axes_scroll)
+        output_canvas.bind("<Configure>", lambda event: (
+            output_canvas.itemconfigure(output_window, width=max(1, event.width)),
+            update_axes_scroll()))
+        self.viewer_settings_axes_scroll = output_canvas
         ttk.Label(output, text="Scientific axes", font=("TkDefaultFont", 10, "bold")).pack(anchor="w")
-        ttk.Label(output, text=f"X: {self.x_name.get()} [{self.x_unit.get()}]   |   "
-                  f"Y: {self.y_name.get()} [{self.y_unit.get()}]", wraplength=470).pack(anchor="w", pady=(7, 3))
+        axis_caption = (f"X: {self.x_name.get()} [{self.x_unit.get()}]   |   "
+                        f"Y: {self.y_name.get()} [{self.y_unit.get()}]")
+        if self.project.y2_axis is not None:
+            axis_caption = (f"X: {self.x_name.get()} [{self.x_unit.get()}]   |   "
+                            f"Y1: {self.y_name.get()} [{self.y_unit.get()}]   |   "
+                            f"Y2: {self.y2_name.get()} [{self.y2_unit.get()}]")
+        ttk.Label(output, text=axis_caption, wraplength=470).pack(anchor="w", pady=(7, 3))
         ttk.Label(output, text="Edit scientific axis limits, labels, units and calibration in the Calibration tab.",
                   wraplength=470).pack(anchor="w", pady=(3, 10))
+        ttk.Checkbutton(output, text="Enable secondary Y axis",
+                        variable=draft["enable_y2"],
+                        state="normal" if self.config else "disabled").pack(anchor="w", pady=(5, 2))
+        ttk.Label(output, text="Y1 and Y2 are logical axes: neither implies left or right. "
+                  "All curves share the same four image corners.",
+                  wraplength=475).pack(anchor="w", pady=(0, 8))
         def to_axes():
             if apply():
                 window.destroy()
@@ -1343,6 +1430,13 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 messagebox.showerror("Invalid viewer settings", str(exc), parent=window)
                 apply_status.set("Invalid settings; nothing applied")
                 return False
+            if (not draft["enable_y2"].get() and self.project.y2_axis is not None
+                    and any(series.y_axis_id == "y2" for series in self.project.series)):
+                messagebox.showerror("Secondary Y axis",
+                                     "Reassign every Y2 curve to Y1 before disabling Y2.",
+                                     parent=window)
+                apply_status.set("Y2 remains enabled: reassignment required")
+                return False
             changed_prefs = {
                 "show_point_numbers": draft["numbers"].get(),
                 "show_scale_overlay": draft["overlay"].get(),
@@ -1373,6 +1467,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 return False
             if self.current_doc_id:
                 self.snapshot()
+            self.set_secondary_axis_enabled(draft["enable_y2"].get())
             self.output_dataset_id.set(draft["dataset_id"].get().strip())
             self.output_display_name.set(draft["display_name"].get().strip())
             self.curve_monotonicity.set(ordering["monotonicity"])
@@ -1984,14 +2079,108 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 try:self.rpc.call("IMAGE_STAGE_CANCEL", self.session_token, stage)
                 except RpcError:pass
 
+
+    def _calibration_scroll_region(self, _event=None):
+        # Whole Calibration form scrolls when taller than the available pane.
+        canvas = getattr(self, "calibration_scroll_canvas", None)
+        if canvas is None or not canvas.winfo_exists():
+            return
+        bbox = canvas.bbox("all")
+        if bbox is None:
+            return
+        canvas.configure(scrollregion=bbox)
+        height = canvas.winfo_height()
+        if height <= 1:
+            return
+        overflow = bbox[3] - bbox[1] > height + 1
+        self._calibration_page_scrollable = overflow
+        bar = self.calibration_scrollbar
+        if overflow:
+            if not bar.winfo_manager():
+                bar.pack(side="right", fill="y")
+        else:
+            if canvas.yview()[0] > 0:
+                canvas.yview_moveto(0)
+            if bar.winfo_manager():
+                bar.pack_forget()
+
+    def _calibration_scroll_resize(self, event):
+        canvas = self.calibration_scroll_canvas
+        canvas.itemconfigure(self.calibration_scroll_window, width=max(1,event.width))
+        self._calibration_scroll_region()
+        canvas.after_idle(self._calibration_scroll_region)
+
+    def _calibration_over_measurement_table(self, px, py):
+        tree = getattr(self, "measurement_table", None)
+        if tree is None or not tree.winfo_ismapped():
+            return False
+        x, y = tree.winfo_rootx(), tree.winfo_rooty()
+        return x <= px < x+tree.winfo_width() and y <= py < y+tree.winfo_height()
+
+    @staticmethod
+    def _calibration_wheel_steps(event):
+        if getattr(event,"num",None)==4: return -1
+        if getattr(event,"num",None)==5: return 1
+        delta=getattr(event,"delta",0)
+        return (-1 if delta>0 else 1) if delta else None
+
+    def _calibration_tree_mousewheel(self,event):
+        # Avoid scrolling the outer form a second time.
+        steps=self._calibration_wheel_steps(event)
+        if steps is None: return None
+        self.measurement_table.yview_scroll(steps,"units")
+        return "break"
+
+    def _calibration_mousewheel(self,event):
+        # Route the wheel by pointer position, never hijack ImageCanvas zoom.
+        canvas=getattr(self,"calibration_scroll_canvas",None)
+        if canvas is None or not self._is_calibration_tab() or not canvas.winfo_ismapped():
+            return None
+        px,py=canvas.winfo_pointerxy()
+        if self._calibration_over_measurement_table(px,py):
+            return "break"
+        x,y=canvas.winfo_rootx(),canvas.winfo_rooty()
+        if not (x<=px<x+canvas.winfo_width() and y<=py<y+canvas.winfo_height()):
+            return None
+        if not self._calibration_page_scrollable:
+            return "break"
+        steps=self._calibration_wheel_steps(event)
+        if steps is None: return None
+        canvas.yview_scroll(steps,"units")
+        return "break"
+
     def build_calibration_tab(self):
-        tab = ttk.Frame(self.notebook, padding=6)
-        self.notebook.add(tab, text="Calibration")
-        self.calibration_tab = tab
+        outer=ttk.Frame(self.notebook)
+        self.notebook.add(outer,text="Calibration")
+        self.calibration_tab=outer
+        viewport=tk.Canvas(outer,borderwidth=0,highlightthickness=0,
+                           background=ttk.Style().lookup("TFrame","background") or "#f0f0f0")
+        viewport.pack(side="left",fill="both",expand=True)
+        scrollbar=ttk.Scrollbar(outer,orient="vertical",command=viewport.yview)
+        scrollbar.pack(side="right",fill="y")
+        viewport.configure(yscrollcommand=scrollbar.set)
+        self.calibration_scroll_canvas=viewport
+        self.calibration_scrollbar=scrollbar
+        self._calibration_page_scrollable=False
+        tab=ttk.Frame(viewport,padding=6)
+        self.calibration_scroll_window=viewport.create_window((0,0),anchor="nw",window=tab)
+        tab.bind("<Configure>",self._calibration_scroll_region)
+        viewport.bind("<Configure>",self._calibration_scroll_resize)
+        self.root.bind("<MouseWheel>",self._calibration_mousewheel,add="+")
+        self.root.bind("<Button-4>",self._calibration_mousewheel,add="+")
+        self.root.bind("<Button-5>",self._calibration_mousewheel,add="+")
         # Scientific axes: retain complete variable-schema UI.
+        self.calibration_grid = tab
         for col, text in enumerate(("", "X axis", "Y axis")):
-            ttk.Label(tab, text=text, font=("TkDefaultFont", 9, "bold")).grid(
-                row=0, column=col, sticky="w", padx=2, pady=(0, 3))
+            heading = ttk.Label(tab, text=text, font=("TkDefaultFont", 9, "bold"))
+            heading.grid(row=0, column=col, sticky="w", padx=2, pady=(0, 3))
+            if col == 2:
+                self.calibration_y_heading = heading
+        self.y2_calibration_widgets = []
+        y2_head = ttk.Label(tab, text="Y2 axis", font=("TkDefaultFont", 9, "bold"))
+        y2_head.grid(row=0, column=3, sticky="w", padx=2, pady=(0, 3))
+        y2_head.grid_remove()
+        self.y2_calibration_widgets.append(y2_head)
         rows = [("Label", self.x_name, self.y_name, "entry"),
                 ("Unit", self.x_unit, self.y_unit, "unit"),
                 ("Semantic role", self.x_role, self.y_role, "role"),
@@ -2008,6 +2197,17 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 else:
                     widget = ttk.Entry(tab, textvariable=variable, width=15)
                 widget.grid(row=row, column=col, sticky="ew", padx=2, pady=2)
+            y2_var = (self.y2_name, self.y2_unit, self.y2_role,
+                      self.y2_min, self.y2_max, self.y2_scale)[row-1]
+            if kind in ("unit", "role", "scale"):
+                options = self.units if kind == "unit" else self.roles if kind == "role" else ("linear", "log")
+                extra = ttk.Combobox(tab, textvariable=y2_var, values=options,
+                                     state="readonly" if kind == "scale" else "normal", width=15)
+            else:
+                extra = ttk.Entry(tab, textvariable=y2_var, width=15)
+            extra.grid(row=row, column=3, sticky="ew", padx=2, pady=2)
+            extra.grid_remove()
+            self.y2_calibration_widgets.append(extra)
         ttk.Button(tab, text="Apply axis settings", command=lambda: self.commit_axes(True)).grid(
             row=7, column=0, columnspan=3, sticky="ew", pady=(4, 6))
         for col in (1, 2):
@@ -2047,38 +2247,50 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         ttk.Label(tab, textvariable=self.scale_status, wraplength=490).grid(
             row=9, column=0, columnspan=3, sticky="ew", pady=(0, 3))
 
-        calibration = ttk.LabelFrame(tab, text="Projective calibration and verification", padding=4)
+        # Projective calibration and verification are TWO VERTICAL ROWS.
+        # The complete four-point control row is always visible; the inline
+        # verification row grows only while the operator is verifying.
+        calibration = ttk.LabelFrame(tab, text="Projective calibration and verification", padding=5)
         calibration.grid(row=10, column=0, columnspan=3, sticky="ew")
         calibration.columnconfigure(0, weight=1)
-        calibration.columnconfigure(1, weight=2)
-        corners = ttk.Frame(calibration); corners.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+
+        corner_controls = ttk.Frame(calibration)
+        corner_controls.grid(row=0, column=0, sticky="ew", pady=(0, 4))
+        corner_controls.columnconfigure(0, weight=1)
+        actions = ttk.Frame(corner_controls)
+        actions.grid(row=0, column=0, sticky="ew")
         for i, corner in enumerate(CORNER_ORDER):
-            ttk.Button(corners, text=f"Set {CORNER_LABELS[corner]}",
+            ttk.Button(actions, text=f"Set {CORNER_LABELS[corner]}",
                        command=lambda c=corner: self.start_corner(c)).grid(
-                           row=i // 2, column=i % 2, sticky="ew", padx=1, pady=2)
-        for i in (0, 1): corners.columnconfigure(i, weight=1)
-        ttk.Button(corners, text="Clear corners", command=self.clear_calibration).grid(
-            row=2, column=0, columnspan=2, sticky="ew", pady=2)
-        ttk.Label(corners, textvariable=self.cal_status, wraplength=175, justify="left").grid(
-            row=3, column=0, columnspan=2, sticky="w", pady=(3, 0))
-        verification = ttk.LabelFrame(calibration, text="Calibration verification", padding=4)
-        verification.grid(row=0, column=1, sticky="nsew", padx=(3, 0))
-        ttk.Label(corners, textvariable=self.calibration_active_caption,
-                  wraplength=175, justify="left").grid(row=4, column=0,columnspan=2,sticky="w")
-        ttk.Label(verification, textvariable=self.verification_measurement_caption,
-                  wraplength=290, justify="left").pack(anchor="w",fill="x")
-        ttk.Button(verification, text="Verify calibration...",
-                   command=self.start_verification).pack(anchor="w", fill="x")
-        self.verification_details = ttk.Frame(verification)
-        expected = ttk.Frame(self.verification_details); expected.pack(fill="x", pady=(3, 0))
-        ttk.Label(expected, text="Expected X").pack(side="left")
-        ttk.Entry(expected, textvariable=self.exp_x, width=9).pack(side="left", padx=3)
-        ttk.Label(expected, text="Expected Y").pack(side="left")
-        ttk.Entry(expected, textvariable=self.exp_y, width=9).pack(side="left", padx=3)
-        ttk.Button(self.verification_details, text="Clear verification",
-                   command=self.clear_verification).pack(anchor="w", pady=2)
-        ttk.Label(self.verification_details, textvariable=self.verify_result,
-                  justify="left", wraplength=300).pack(anchor="w")
+                           row=0, column=i, sticky="ew", padx=2, pady=2)
+        ttk.Button(actions, text="Clear corners",
+                   command=self.clear_calibration).grid(
+                       row=0, column=4, sticky="ew", padx=(7, 2), pady=2)
+        for i in range(5):
+            actions.columnconfigure(i, weight=1)
+
+        ttk.Label(corner_controls, textvariable=self.cal_status,
+                  justify="left", wraplength=565).grid(
+                      row=1, column=0, sticky="ew", padx=3, pady=(2, 0))
+        ttk.Label(corner_controls, textvariable=self.calibration_active_caption,
+                  justify="left", wraplength=565).grid(
+                      row=2, column=0, sticky="ew", padx=3, pady=(1, 3))
+
+        verification = ttk.LabelFrame(calibration, text="Calibration verification", padding=5)
+        verification.grid(row=1, column=0, sticky="ew", pady=(4, 0))
+        verification.columnconfigure(0, weight=1)
+        toolbar = ttk.Frame(verification)
+        toolbar.grid(row=0, column=0, sticky="ew")
+        toolbar.columnconfigure(0, weight=1)
+        ttk.Label(toolbar, textvariable=self.verification_measurement_caption,
+                  wraplength=435, justify="left").grid(row=0, column=0, sticky="w")
+        self.verification_toggle = ttk.Button(
+            toolbar, text="Verify calibration...",
+            command=self._verification_toggle)
+        self.verification_toggle.grid(row=0, column=1, sticky="e", padx=(7, 0))
+        self.verification_expansion = ttk.Frame(verification)
+        # The expansion is deliberately not gridded until Verify is selected.
+        # Its content is part of the existing scrollable Calibration tab.
 
         manager = ttk.LabelFrame(tab, text="Calibration measurements", padding=4)
         manager.grid(row=11, column=0, columnspan=3, sticky="nsew", pady=(5, 0))
@@ -2094,6 +2306,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         sy.grid(row=0, column=1, sticky="ns")
         self.measurement_table.configure(yscrollcommand=sy.set)
         self.measurement_table.bind("<<TreeviewSelect>>", self.on_measurement_selected)
+        for wheel_event in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            self.measurement_table.bind(wheel_event,self._calibration_tree_mousewheel)
         buttons = ttk.Frame(manager); buttons.grid(row=1, column=0, columnspan=2, sticky="ew", pady=2)
         for label, command in (("New", self.new_measurement), ("Activate", self.activate_measurement),
                                ("Accept", self.accept_measurement), ("Reject", self.reject_measurement),
@@ -2109,37 +2323,205 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.refresh_measurements()
 
 
+    def _verification_toggle(self):
+        if self.verify_panel_open:
+            self.clear_verification()
+        else:
+            self.start_verification()
+
+    def _verification_scroll_into_view(self):
+        """Scroll existing Calibration viewport to the expanded result row."""
+        if not self.verify_panel_open or not self.verification_expansion.winfo_exists():
+            return
+        canvas=self.calibration_scroll_canvas
+        if not canvas.winfo_ismapped():
+            return
+        canvas.update_idletasks()
+        self._calibration_scroll_region()
+        bounds=canvas.bbox("all")
+        if not bounds:
+            return
+        # Position the verification heading near the top; the operator can
+        # scroll down for additional Y2 rows in a compact desktop pane.
+        world_y=(self.verification_toggle.winfo_rooty()
+                 - canvas.winfo_rooty() + canvas.canvasy(0))
+        full_height=max(1.0, float(bounds[3]-bounds[1]))
+        canvas.yview_moveto(max(0.0, min(1.0, (world_y-30)/full_height)))
+
+    def _verification_axes(self):
+        axes = [("x", self.project.x_axis), ("y1", self.project.y_axis)]
+        if self.project.y2_axis is not None:
+            axes.append(("y2", self.project.y2_axis))
+        return axes
+
+    def _verification_sync_dialog(self):
+        dialog = self.verification_dialog
+        if dialog is not None and dialog.window.winfo_exists():
+            dialog.sync_axes(self._verification_axes())
+
+    def _verification_tab_changed(self, _event=None):
+        if self.verify_panel_open and not self._is_calibration_tab():
+            self.clear_verification()
+
     def _verification_mode_changed(self):
-        if self.mode.get() != "verify" and self.verify_point is not None:
+        if self.mode.get() != "verify":
             self.verify_point = None
             self.verify_result.set("")
+            self.verify_panel_open = False
+            dialog = self.verification_dialog
+            self.verification_dialog = None
+            if dialog is not None:
+                dialog.destroy()
+            if hasattr(self, "verification_expansion"):
+                self.verification_expansion.grid_remove()
+            if hasattr(self, "verification_toggle"):
+                self.verification_toggle.configure(text="Verify calibration...")
+            self._calibration_scroll_region()
             self.redraw()
+
+    def _verification_clear_expected(self):
+        for var in (self.exp_x, self.exp_y, self.exp_y2):
+            var.set("")
 
     def start_verification(self):
         if not self.require_working_source():
             return
+        if not self.project.calibration_ready():
+            messagebox.showwarning(
+                APP_NAME, "Complete the four-corner calibration and valid "
+                "scientific axes before verifying a known point.", parent=self.root)
+            return
+        if self.verification_dialog is not None:
+            self.verification_dialog.lift()
+            self.mode.set("verify")
+            return
+        self.verification_expansion.grid(row=1, column=0, sticky="ew", pady=(4, 0))
+        self.verification_dialog = CalibrationVerificationPanel(
+            self.verification_expansion,
+            {"x": self.exp_x, "y1": self.exp_y, "y2": self.exp_y2},
+            on_close=self.clear_verification,
+            on_clear=self._verification_clear_expected)
+        self._verification_sync_dialog()
         self.verify_panel_open = True
-        self.verification_details.pack(fill="x", pady=3)
+        self.verification_toggle.configure(text="Close verification")
         self.mode.set("verify")
-        self.status.set("Verification mode: select a reference point on the image. Esc closes.")
-        self.redraw()
+        self.status.set(
+            "Verification active: click a known point on the image; "
+            "enter physical references in Calibration below.")
+        self.update_verification()
+        self.root.after_idle(self._verification_scroll_into_view)
 
     def clear_verification(self):
-        self.mode.set("add")
+        if self.mode.get() == "verify":
+            self.mode.set("add")
+        else:
+            self._verification_mode_changed()
         self.verify_point = None
         self.verify_result.set("")
         self.verify_panel_open = False
-        self.verification_details.pack_forget()
         self.redraw()
 
     def update_verification(self):
+        self._verification_sync_dialog()
         if self.verify_point is not None:
             self.verify(*self.verify_point, draw=False)
+        elif self.verification_dialog is not None:
+            self.verification_dialog.show_no_point()
 
     def _verification_escape(self, _event=None):
         if self.mode.get() == "verify":
             self.clear_verification()
             return "break"
+
+    def _secondary_y_controls_from_model(self):
+        axis = self.project.y2_axis or self.project.y_axis
+        for var, val in ((self.y2_name, axis.name if self.project.y2_axis else "Y2"),
+                         (self.y2_unit, axis.unit),
+                         (self.y2_role, self.config.get("axes", {}).get("y2", {}).get("semantic_role", "measured")),
+                         (self.y2_min, format(axis.minimum, ".17g")),
+                         (self.y2_max, format(axis.maximum, ".17g")),
+                         (self.y2_scale, axis.scale)):
+            var.set(val)
+
+    def _refresh_secondary_axis_widgets(self):
+        enabled = self.project.y2_axis is not None
+        self.calibration_y_heading.configure(text="Y1 axis" if enabled else "Y axis")
+        for widget in self.y2_calibration_widgets:
+            widget.grid() if enabled else widget.grid_remove()
+        self.calibration_grid.columnconfigure(3, weight=1 if enabled else 0)
+        for widget in self.calibration_grid.grid_slaves():
+            info = widget.grid_info()
+            if int(info.get("row", 0)) >= 7 and int(info.get("column", 0)) == 0:
+                if int(info.get("columnspan", 1)) in (3, 4):
+                    widget.grid_configure(columnspan=4 if enabled else 3)
+        if hasattr(self, "curve_tree"):
+            cols = ("label", "axis", "family", "points") if enabled else ("label", "family", "points")
+            self.curve_tree.configure(columns=cols)
+            # Reassign every label when columns are reconfigured: Tk may
+            # reset headings for the existing columns when Y2 is toggled.
+            self.curve_tree.heading("label", text="Curve")
+            self.curve_tree.heading("family", text="Family value")
+            self.curve_tree.heading("points", text="Points")
+            if enabled:
+                self.curve_tree.heading("axis", text="Y axis")
+                self.curve_tree.column("axis", width=51, minwidth=44, stretch=False)
+                self.curve_tree.column("label", width=142, minwidth=90, stretch=True)
+            else:
+                self.curve_tree.column("label", width=170, minwidth=90, stretch=True)
+            self.refresh_curve_tree()
+        self._calibration_scroll_region()
+        if enabled and self._y2_prior_sash is None and hasattr(self, "controls_pane"):
+            self._y2_prior_sash = max(455, self.controls_pane.sashpos(0))
+            self.root.after(150, self._ensure_secondary_axis_pane_visible)
+        elif not enabled and self._y2_prior_sash is not None:
+            previous = self._y2_prior_sash
+            self._y2_prior_sash = None
+            self.root.after_idle(lambda: self.controls_pane.sashpos(0, previous))
+
+    def _ensure_secondary_axis_pane_visible(self):
+        if self.project.y2_axis is None or not self.root.winfo_exists():
+            return
+        try:
+            if self.controls_pane.winfo_ismapped() and self.controls_pane.sashpos(0) < 575:
+                self.controls_pane.sashpos(0, min(745, max(650, self.root.winfo_width()-430)))
+            if self.controls_pane.sashpos(0) < 575:
+                self.root.after(150, self._ensure_secondary_axis_pane_visible)
+        except tk.TclError:
+            return
+
+    def set_secondary_axis_enabled(self, enabled):
+        """Update the shared axis model and ALL calibration realizations, no new corners."""
+        enabled = bool(enabled)
+        if enabled == (self.project.y2_axis is not None):
+            return
+        if not enabled and any(series.y_axis_id == "y2" for series in self.project.series):
+            raise CalibrationError("Reassign Y2 curves before disabling the secondary Y axis.")
+        group = self._measurements() if self.config else None
+        if enabled:
+            self.project.y2_axis = copy.deepcopy(self.project.y_axis)
+            self.project.y2_axis.name = "Y2"
+            if group:
+                for item in group["items"]:
+                    if "y2" not in item["axes"]:
+                        item["axes"]["y2"] = dict(item["axes"]["y"])
+                        item["axes"]["y2"]["name"] = "Y2"
+        else:
+            self.project.y2_axis = None
+            if group:
+                for item in group["items"]:
+                    item["axes"].pop("y2", None)
+        self.project.recalculate_all_points()
+        self._secondary_y_controls_from_model()
+        self._refresh_secondary_axis_widgets()
+        self.update_verification()
+        self.update_selected()
+        self.redraw()
+
+    def _project_axes_snapshot(self):
+        axes = {"x": self.project.x_axis.to_dict(), "y": self.project.y_axis.to_dict()}
+        if self.project.y2_axis is not None:
+            axes["y2"] = self.project.y2_axis.to_dict()
+        return axes
 
     def _measurements(self):
         group = self.config.get("calibration_measurements")
@@ -2149,7 +2531,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                      "items": []}
             group["items"].append({"id": group["active_id"], "label": "Measurement 1",
                                    "state": "accepted" if self.project.calibration_ready() else "draft",
-                                   "axes": {"x": self.project.x_axis.to_dict(), "y": self.project.y_axis.to_dict()},
+                                   "axes": self._project_axes_snapshot(),
                                    "calibration": self.project.calibration.to_dict(),
                                    "scale_reference": copy.deepcopy(self.config.get("scale_reference"))})
             self.config["calibration_measurements"] = group
@@ -2159,7 +2541,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         group = self._measurements()
         for item in group["items"]:
             if item["id"] == group["active_id"]:
-                item["axes"] = {"x": self.project.x_axis.to_dict(), "y": self.project.y_axis.to_dict()}
+                item["axes"] = self._project_axes_snapshot()
                 item["calibration"] = self.project.calibration.to_dict()
                 item["scale_reference"] = copy.deepcopy(self.config.get("scale_reference"))
                 # Preserve user rejection; a finished draft can be explicitly accepted.
@@ -2208,8 +2590,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.config["scale_reference"] = None
         group["active_id"] = mid
         group["items"].append({"id": mid, "label": f"Measurement {len(group['items'])+1}",
-                               "state": "draft", "axes": {"x": self.project.x_axis.to_dict(),
-                               "y": self.project.y_axis.to_dict()}, "calibration": self.project.calibration.to_dict(),
+                               "state": "draft", "axes": self._project_axes_snapshot(),
+                               "calibration": self.project.calibration.to_dict(),
                                "scale_reference": None})
         self.measurement_selected_id = mid
         self.scale_candidate = None
@@ -2231,12 +2613,22 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.project.calibration = Calibration.from_dict(selected["calibration"])
         self.project.x_axis = AxisConfig.from_dict(selected["axes"]["x"])
         self.project.y_axis = AxisConfig.from_dict(selected["axes"]["y"])
+        # Legacy measurements may predate the optional axis: inherit the
+        # configuration-wide Y2 declaration instead of deleting its binding.
+        if "y2" not in selected["axes"] and self.project.y2_axis is not None:
+            selected["axes"]["y2"] = self.project.y2_axis.to_dict()
+        self.project.y2_axis = (AxisConfig.from_dict(selected["axes"]["y2"])
+                                if "y2" in selected["axes"] else None)
         self.project.recalculate_all_points()
         self.config["scale_reference"] = copy.deepcopy(selected.get("scale_reference"))
         self.hide_saved_scale_overlay = False
         self.verify_point = None
         self.mode.set("add")
-        self.config["axes"] = {"x": self.project.x_axis.to_dict(), "y": self.project.y_axis.to_dict()}
+        self.config["axes"] = self._project_axes_snapshot()
+        if self.project.y2_axis is not None:
+            self.config["axis_model_version"] = 2
+        else:
+            self.config.pop("axis_model_version", None)
         self.config["calibration"] = self.project.calibration.to_dict()
         self.sync_controls_from_config(reload_source=False)
         self.refresh_measurements(); self.redraw(); self.persist()
@@ -2499,7 +2891,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                                    state="normal", width=24) if values else
                       ttk.Entry(family, textvariable=var, width=27))
             widget.grid(row=row_number, column=1, sticky="ew", pady=2)
-            widget.bind("<FocusOut>", lambda _e: self.persist())
+            widget.bind("<FocusOut>", lambda _e: self.workspace_focus_commit(self.persist))
         family.columnconfigure(1, weight=1)
 
         # This is a fixed-height, independently scrollable curve list. Its
@@ -2550,7 +2942,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         probe=ttk.Spinbox(head,from_=2,to=40,width=4,textvariable=self.stroke_probe,
                           command=self.stroke_preferences_changed)
         probe.pack(side="left")
-        probe.bind("<FocusOut>",self.stroke_preferences_changed)
+        probe.bind("<FocusOut>", lambda event: self.workspace_focus_commit(lambda: self.stroke_preferences_changed(event)))
         buttons2=ttk.Frame(self.stroke_panel);buttons2.pack(fill="x",pady=2)
         ttk.Button(buttons2,text="Auto detect",command=self.stroke_auto_measure).pack(side="left")
         ttk.Label(buttons2,text="Boundary").pack(side="left",padx=(8,2))
@@ -2607,13 +2999,15 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         row = ttk.Frame(settings)
         row.pack(fill="x", pady=(4, 0))
         ttk.Label(row, text="Step (px)").pack(side="left")
-        ttk.Spinbox(row, from_=.5, to=10, increment=.5, textvariable=self.assist_step,
-                    width=5).pack(side="right")
+        self.assist_step_spin = ttk.Spinbox(
+            row, from_=ASSIST_STEP_MIN, to=ASSIST_STEP_MAX, increment=.5,
+            textvariable=self.assist_step, width=5)
+        self.assist_step_spin.pack(side="right")
         ttk.Label(settings, text="Smooth curve prior").pack(anchor="w", pady=(7, 1))
         smooth=ttk.Combobox(settings,textvariable=self.assist_smoothness,
                             values=("Off","Gentle","Strong"),state="readonly",width=13)
         smooth.pack(fill="x")
-        smooth.bind("<<ComboboxSelected>>",self.exclusion_config_changed)
+        smooth.bind("<<ComboboxSelected>>",self.assist_smoothness_selected)
         ttk.Label(settings, text="Trace image").pack(anchor="w", pady=(8, 2))
         ttk.Combobox(settings, textvariable=self.assist_source, state="readonly",
                      values=("auto", "original", "processed"), width=13).pack(fill="x")
@@ -2636,7 +3030,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             textvariable=self.assist_output_points, width=6,
             command=self.assist_density_changed)
         self.assist_output_spin.pack(side="right")
-        self.assist_output_spin.bind("<FocusOut>", self.assist_density_changed)
+        self.assist_output_spin.bind("<FocusOut>", lambda event: self.workspace_focus_commit(lambda: self.assist_density_changed(event)))
         self.assist_output_spin.bind("<Return>", self.assist_density_changed)
         segment = ttk.Frame(actions)
         segment.pack(fill="x", pady=(5, 2))
@@ -2669,7 +3063,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         width_spin=ttk.Spinbox(width_row,from_=1,to=40,width=4,textvariable=self.exclusion_width,
                               command=self.exclusion_config_changed)
         width_spin.pack(side="right")
-        width_spin.bind("<FocusOut>",self.exclusion_config_changed)
+        width_spin.bind("<FocusOut>", lambda event: self.workspace_focus_commit(lambda: self.exclusion_config_changed(event)))
         edits=ttk.Frame(controls);edits.pack(fill="x",pady=(5,0))
         ttk.Button(edits,text="Delete X",command=self.exclusion_remove).pack(side="left")
         ttk.Button(edits,text="Remove path",command=lambda:self.exclusion_remove(True)).pack(side="left")
@@ -2706,7 +3100,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         spin=ttk.Spinbox(row,from_=0,to=25,textvariable=self.snap_radius,
                          width=4,command=self.snap_changed)
         spin.pack(side="left",padx=3)
-        spin.bind("<FocusOut>",lambda _e:self.snap_changed())
+        spin.bind("<FocusOut>", lambda _e: self.workspace_focus_commit(self.snap_changed))
 
         appearance = ttk.LabelFrame(body, text="Appearance (per configuration)", padding=6)
         appearance.pack(fill="x", pady=(6, 0))
@@ -2753,17 +3147,22 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                   row=7, column=0, columnspan=2, sticky="w", pady=(7, 1))
         ttk.Label(tab, textvariable=self.publish_name_template, wraplength=360).grid(
                   row=8, column=0, columnspan=2, sticky="w")
+        self.publish_group_check = ttk.Checkbutton(
+            tab, text="Group published Datasets (optional)",
+            variable=self.publish_group_datasets, command=self._publish_group_option_changed)
+        self.publish_group_check.grid(row=9, column=0, columnspan=2,
+                                      sticky="w", pady=(6, 2))
         self.publish_plan_preview = tk.StringVar(value="")
         ttk.Label(tab, textvariable=self.publish_plan_preview, wraplength=370,
-                  justify="left").grid(row=9, column=0, columnspan=2, sticky="w", pady=(3, 6))
+                  justify="left").grid(row=10, column=0, columnspan=2, sticky="w", pady=(3, 6))
         ttk.Button(tab, text="Uncertainty...",
                    command=lambda: UncertaintyDialog(self) if self.current_doc_id else None).grid(
-                   row=10, column=0, sticky="ew", padx=(0,4))
+                   row=11, column=0, sticky="ew", padx=(0,4))
         ttk.Button(tab, text="Publish selected calibrations", command=self.publish_dataset).grid(
-                   row=10, column=1, sticky="ew")
+                   row=11, column=1, sticky="ew")
         self.publish_result = tk.StringVar()
         ttk.Label(tab, textvariable=self.publish_result, wraplength=370,
-                  justify="left").grid(row=11, column=0, columnspan=2, sticky="w", pady=(7, 0))
+                  justify="left").grid(row=12, column=0, columnspan=2, sticky="w", pady=(7, 0))
         tab.columnconfigure(1, weight=1); tab.rowconfigure(6, weight=1)
         self.publish_measurements.bind("<<ListboxSelect>>", lambda _e: self.preview_publication())
         self.publish_layout.trace_add("write", lambda *_: self.preview_publication())
@@ -2801,6 +3200,31 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         ids = getattr(self, "publish_measurement_ids", [])
         return [ids[i] for i in self.publish_measurements.curselection() if i < len(ids)]
 
+    def _publish_group_option_changed(self):
+        self.preview_publication()
+        self.persist_later()
+
+    def _group_available(self):
+        try:
+            return self.rpc.call("GROUP_CAPABLE", self.session_token) == "1"
+        except (RpcError, ValueError):
+            return False
+
+    def _create_publication_group(self, outcomes):
+        if not self.publish_group_datasets.get() or len(outcomes)<2:
+            return None
+        if len(outcomes)>64:
+            raise ValueError("Dataset Group producer interface limits one Group to 64 outputs.")
+        group_id = "cdg_" + uuid.uuid4().hex
+        label = (self.output_display_name.get().strip() or
+                 self.config.get("name", "Digitized curves")) + " — published curves"
+        receipt = self.rpc.call(
+            "GROUP_CREATE", self.session_token, group_id, label,
+            "\n".join(outcomes))
+        if receipt != group_id:
+            raise ValueError("Dataset Group receipt differs from the requested Group ID.")
+        return group_id
+
     def preview_publication(self):
         if not hasattr(self, "publish_plan_preview"): return
         ids = self.selected_publication_ids()
@@ -2810,10 +3234,23 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             return
         try:
             name = self.output_dataset_id.get().strip() or slug_id(self.config.get("name", "digitized.curves"))
-            plan = plan_datasets(self._measurements()["items"], ids,
+            if self.project.y2_axis is not None:
+                plan = plan_y2_datasets(
+                    self._measurements()["items"], ids,
+                    layout=self.publish_layout.get(),
+                    template=self.publish_name_template.get(), name=name,
+                    configuration=self.config.get("name", "digitizer"),
+                    series=self.project.series,
+                    fallback_y2=self.project.y2_axis.to_dict())
+            else:
+                plan = plan_datasets(self._measurements()["items"], ids,
                     layout=self.publish_layout.get(), template=self.publish_name_template.get(),
                     name=name, configuration=self.config.get("name", "digitizer"))
-            self.publish_plan_preview.set("Output:\n" + "\n".join(x["dataset_id"] for x in plan[:5]) +
+            summary = "Output:\n" + "\n".join(x["dataset_id"] for x in plan[:5])
+            if self.publish_group_datasets.get():
+                summary += ("\nOne optional Dataset Group" if len(plan)>=2
+                            else "\nOne output: no Group needed")
+            self.publish_plan_preview.set(summary +
                         (f"\n… and {len(plan)-5} more" if len(plan) > 5 else ""))
         except (ValueError, KeyError) as exc:
             self.publish_plan_preview.set(str(exc))
@@ -2825,7 +3262,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         ttk.Label(tab, text="Configuration notes (plain UTF-8 text)").pack(anchor="w")
         self.notes = tk.Text(tab, wrap="word", height=24)
         self.notes.pack(fill="both", expand=True, pady=(6, 0))
-        self.notes.bind("<FocusOut>", lambda _e: self.persist())
+        self.notes.bind("<FocusOut>", lambda _e: self.workspace_focus_commit(self.persist))
 
     def bind_keys(self):
         self.root.bind_all("<Control-z>", lambda _e: self.undo())
@@ -2857,6 +3294,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.open_document(doc_id)
 
     def new_config(self):
+        if not self.workspace_review("New configuration"):
+            return
         name = simpledialog.askstring(APP_NAME, "Configuration name:", parent=self.root)
         if not name or not name.strip():
             return
@@ -2874,25 +3313,93 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.documents[doc_id] = cfg
         self.document_sha[doc_id] = doc_sha
         self.refresh_configuration_selector()
-        self.open_document(doc_id)
+        self.open_document(doc_id, reviewed=True)
 
     def rename_config(self):
         if not self.current_doc_id:
             return
-        name = simpledialog.askstring(APP_NAME, "Configuration name:", initialvalue=self.config.get("name", ""), parent=self.root)
-        if not name or not name.strip():
+        choice = self._workspace_review_choice("Rename configuration")
+        if choice == "cancelled":
             return
-        self.snapshot()
-        self.config["name"] = name.strip()
-        if not self.output_display_name.get().strip():
-            self.output_display_name.set(name.strip())
-        self.persist()
-        self.refresh_configuration_selector()
+        doc_id = self.current_doc_id
+        if choice == "discarded":
+            # The user explicitly refused to save the pending configuration.
+            # Work from its last durable state, not the unsaved edit buffer.
+            try:
+                if not self.open_document(doc_id, reviewed=True):
+                    return
+            except (RpcError, ValueError) as exc:
+                messagebox.showerror(APP_NAME, f"Unable to restore the saved configuration:\n{exc}", parent=self.root)
+                return
+        old_name = self.config.get("name", "")
+        name = simpledialog.askstring(APP_NAME, "Configuration name:",
+                                      initialvalue=old_name, parent=self.root)
+        if not name or not name.strip() or name.strip() == old_name:
+            return
+        name = name.strip()
+        old_configuration = copy.deepcopy(self.config)
+        old_receipt = self.document_receipts.get(doc_id)
+        if old_receipt is None:
+            messagebox.showerror(APP_NAME, "Missing configuration revision receipt; reopen the configuration.", parent=self.root)
+            return
+        try:
+            result = self.rpc.call("DOC_RENAME", doc_id, name, self.session_token,
+                                   self.document_sha.get(doc_id, ""), *old_receipt)
+            returned_id, doc_sha = self.parse_document_result(result)
+            if returned_id != doc_id:
+                raise RpcError("GX-TXT returned a different configuration identity during rename.")
+            self.document_sha[doc_id] = doc_sha
+        except (RpcError, KeyError, ValueError) as exc:
+            messagebox.showerror(APP_NAME, f"Unable to rename configuration:\n{exc}", parent=self.root)
+            return
+        # Native name has changed, with a NEW receipt. Persist the corresponding
+        # document JSON using that receipt; never apply a stale revision.
+        self.config["name"] = name
+        previous_display_name = self.output_display_name.get()
+        if not previous_display_name.strip():
+            self.output_display_name.set(name)
+        if self.persist():
+            # History is a scientific change only once both updates succeed.
+            self.refresh_configuration_selector()
+            return
+        # If the JSON save fails, try to restore the old native catalog name.
+        # An inability to roll back must remain explicit; never claim success.
+        compensated = False
+        try:
+            old_result = self.rpc.call("DOC_RENAME", doc_id, old_name,
+                        self.session_token, self.document_sha.get(doc_id, ""),
+                        *self.document_receipts[doc_id])
+            restored_id, restored_sha = self.parse_document_result(old_result)
+            if restored_id != doc_id:
+                raise RpcError("Unexpected configuration identity during rename rollback.")
+            self.document_sha[doc_id] = restored_sha
+            compensated = True
+        except (RpcError, KeyError, ValueError) as exc:
+            messagebox.showerror(APP_NAME, f"Native rename could not be rolled back after save failure:\n{exc}\nReopen the configuration before editing further.", parent=self.root)
+        if compensated:
+            self.restore_snapshot(old_configuration, persist=False)
+            self._workspace_baseline = self.workspace_payload()
+            self.documents[doc_id] = copy.deepcopy(old_configuration)
+            self.refresh_configuration_selector()
 
     def duplicate_config(self):
         if not self.current_doc_id:
             return
-        cfg = self.serialize_configuration()
+        choice = self._workspace_review_choice("Duplicate configuration")
+        if choice == "cancelled":
+            return
+        if choice == "discarded":
+            # "No" means use the LAST SAVED configuration, not pending GUI
+            # notes, points, axes or other unsaved changes.
+            saved = self.documents.get(self.current_doc_id)
+            if saved is None:
+                messagebox.showerror(APP_NAME,
+                    "Saved configuration is unavailable; reopen it before duplicating.",
+                    parent=self.root)
+                return
+            cfg = copy.deepcopy(saved)
+        else:
+            cfg = self.serialize_configuration()
         cfg["configuration_id"] = "digcfg_" + uuid.uuid4().hex
         # A duplicated document starts an independent measurement group.
         # Keep the numerical transformations, but not the identities of the
@@ -2917,7 +3424,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.documents[doc_id] = cfg
         self.document_sha[doc_id] = doc_sha
         self.refresh_configuration_selector()
-        self.open_document(doc_id)
+        self.open_document(doc_id, reviewed=True)
 
     def delete_config(self):
         if not self.current_doc_id:
@@ -2926,12 +3433,13 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             return
         doc_id = self.current_doc_id
         try:
-            self.rpc.call("DOC_DELETE", doc_id, self.session_token)
+            self.rpc.call("DOC_DELETE", doc_id, self.session_token, *self.document_receipts[doc_id])
         except RpcError as exc:
             messagebox.showerror(APP_NAME, f"Unable to delete configuration:\n{exc}")
             return
         self.documents.pop(doc_id, None)
         self.document_sha.pop(doc_id, None)
+        self.document_receipts.pop(doc_id, None)
         self.current_doc_id = None
         self.config = {}
         self.project = Project()
@@ -2946,13 +3454,29 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.clear_ui_no_config()
 
     def clear_ui_no_config(self):
+        self._secondary_y_controls_from_model()
+        self._refresh_secondary_axis_widgets()
         self.source_var.set("")
         self.source_diag.set("Create a configuration to begin.")
         self.status.set("No digitizer configuration is open.")
         self.refresh_source_info()
         self.refresh_curve_tree()
 
-    def open_document(self, doc_id: str):
+    def open_document(self, doc_id: str, *, reviewed=False):
+        if self.current_doc_id and not reviewed and not self.workspace_review("Open another configuration"):
+            self.refresh_configuration_selector()
+            return False
+        records = parse_records(self.rpc.call("DOC_READ", doc_id))
+        fields = next((fields for kind, fields in records if kind == "DOCUMENT"), None)
+        if fields is None or len(fields) != 6 or fields[0] != doc_id:
+            raise RpcError("Invalid native digitizer Workspace response")
+        _id, text, _updated, sha, generation, revision = fields
+        configuration = json.loads(text)
+        if configuration.get("format") != CONFIG_FORMAT or configuration.get("version") != CONFIG_VERSION:
+            raise RpcError("Incompatible digitizer configuration format/version")
+        self.documents[doc_id] = configuration
+        self.document_sha[doc_id] = sha
+        self.document_receipts[doc_id] = (generation, revision)
         # Each configuration starts with the optional per-curve panel collapsed.
         if hasattr(self,"stroke_panel") and self.stroke_visible:
             self.stroke_visible=False
@@ -2974,6 +3498,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.refresh_configuration_selector()
         self.refresh_curve_tree()
         self.redraw()
+        self._workspace_baseline = self.workspace_payload()
+        return True
 
     def sync_controls_from_config(self, reload_source=True):
         self.loading_ui = True
@@ -2987,6 +3513,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 (self.y_min, format(float(y.get("minimum", 0)), ".17g")), (self.y_max, format(float(y.get("maximum", 1)), ".17g")), (self.y_scale, y.get("scale", "linear")),
             ):
                 var.set(value)
+            self._secondary_y_controls_from_model()
+            self._refresh_secondary_axis_widgets()
             fam = self.config.get("family", {})
             self.family_enabled.set(bool(fam.get("enabled", False)))
             self.family_label.set(fam.get("quantity_label", "Family parameter"))
@@ -2998,6 +3526,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.output_display_name.set(pub.get("display_name", self.config.get("name", "")))
             requested_mode = pub.get("layout", self.shared_settings["publication_layout"])
             self.publish_layout.set(requested_mode if requested_mode in PUBLICATION_LAYOUTS else "separate")
+            self.publish_group_datasets.set(bool(pub.get("group_datasets", False)))
             self.publish_selection = list(pub.get("selected_measurement_ids", []))
             display = self.config.get("display", {})
             self.show_numbers.set(bool(display.get("show_point_numbers", False)))
@@ -3311,6 +3840,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.active_series_id = None
         self.documents.clear()
         self.document_sha.clear()
+        self.document_receipts.clear()
         self.datasets.clear()
         self.dataset_namespaces.clear()
         self.units.clear()
@@ -3661,10 +4191,17 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             x = AxisConfig(self.x_name.get().strip() or "X", self.x_unit.get().strip(), float(self.x_min.get()), float(self.x_max.get()), self.x_scale.get())
             y = AxisConfig(self.y_name.get().strip() or "Y", self.y_unit.get().strip(), float(self.y_min.get()), float(self.y_max.get()), self.y_scale.get())
             x.validate(); y.validate()
+            y2 = None
+            if self.project.y2_axis is not None:
+                y2 = AxisConfig(self.y2_name.get().strip() or "Y2", self.y2_unit.get().strip(),
+                                float(self.y2_min.get()), float(self.y2_max.get()), self.y2_scale.get())
+                y2.validate()
         except Exception as exc:
             messagebox.showerror(APP_NAME, f"Invalid axis configuration:\n{exc}")
             return False
-        changed = x.to_dict() != self.project.x_axis.to_dict() or y.to_dict() != self.project.y_axis.to_dict()
+        changed = (x.to_dict() != self.project.x_axis.to_dict()
+                   or y.to_dict() != self.project.y_axis.to_dict()
+                   or (y2 is not None and y2.to_dict() != self.project.y2_axis.to_dict()))
         if changed and push:
             self.snapshot()
         # Editing a display label is safe; changing physical bounds, units or
@@ -3679,8 +4216,10 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.config["scale_reference"] = None
             self.scale_status.set("Scale reference cleared after changing units, limits or axis mapping.")
         self.project.x_axis, self.project.y_axis = x, y
+        if y2 is not None: self.project.y2_axis = y2
         self.project.recalculate_all_points()
         self.update_cal_status()
+        self.update_verification()
         self.redraw()
         if changed or push:
             self.persist()
@@ -3706,6 +4245,10 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.snapshot()
         try:
             self.project.auto_calibrate_full_image(width, height, y_down=y_down)
+            if self.project.y2_axis is not None:
+                self.project.y2_axis = copy.deepcopy(self.project.y_axis)
+                self.project.y2_axis.name = "Y2"
+                self.project.recalculate_all_points()
         except CalibrationError as exc:
             # A failed action must not strand an undo entry or partial calibration.
             previous = self.undo_stack.pop()
@@ -3726,6 +4269,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             (self.x_scale, "linear"), (self.y_scale, "linear"),
         ):
             var.set(value)
+        if self.project.y2_axis is not None:
+            self._secondary_y_controls_from_model()
         self.verify_result.set("")
         self.update_cal_status()
         self.update_selected()
@@ -3824,6 +4369,10 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             # Validate without modifying current scientific state.
             trial = copy.deepcopy(self.project)
             factor = trial.scale_full_image(*self.image.size, px, real_length, unit)
+            if trial.y2_axis is not None:
+                trial.y2_axis = copy.deepcopy(trial.y_axis)
+                trial.y2_axis.name = "Y2"
+                trial.recalculate_all_points()
         except (ValueError, CalibrationError) as exc:
             messagebox.showerror(APP_NAME, f"Cannot apply scale:\n{exc}", parent=self.root)
             return
@@ -3845,6 +4394,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                            (self.x_unit, unit), (self.y_unit, unit),
                            (self.x_scale, "linear"), (self.y_scale, "linear")):
             var.set(value)
+        if self.project.y2_axis is not None:
+            self._secondary_y_controls_from_model()
         self.scale_status.set(f"Applied: {fmt(px)} px = {fmt(real_length)} {unit}; "
                               f"1 px = {fmt(factor)} {unit}. Saved in Session.")
         self.verify_result.set("")
@@ -3903,6 +4454,10 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
     def active_series(self):
         return self.project.find_series(self.active_series_id)
 
+    def active_axis_id(self):
+        series = self.active_series()
+        return series.y_axis_id if series is not None else "y1"
+
     def refresh_curve_tree(self):
         if not hasattr(self, "curve_tree"):
             return
@@ -3919,7 +4474,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             if family and series.parameter_unit:
                 family += f" {series.parameter_unit}"
             label = series.name + (" (hidden)" if not series.visible else "")
-            values = (label, family, len(series.points))
+            values = ((label, series.y_axis_id.upper(), family, len(series.points))
+                      if self.project.y2_axis is not None else (label, family, len(series.points)))
             if self.curve_tree.exists(series.id):
                 self.curve_tree.item(series.id, values=values)
                 self.curve_tree.move(series.id, "", index)
@@ -3943,6 +4499,11 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 self._assist_drag=None;self._assist_preview_cursor=None
             self.active_series_id = selected[0]
             self.selected_point_id = None
+            # Exclusion paths are persisted PER CURVE. Switching the active
+            # curve must refresh the table from that curve's stored entries,
+            # not leave the previous curve's path list visible. This affects
+            # presentation only; no exclusion nodes or saved data are changed.
+            self.exclusion_refresh_list()
             self.stroke_refresh()
             self.update_selected()
             self.redraw()
@@ -3950,7 +4511,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
     def new_series(self):
         if not self.current_doc_id:
             return
-        dialog = SeriesDialog(self.root, family_name=self.family_label.get().strip() or "Family parameter", family_unit=self.family_unit.get().strip())
+        dialog = SeriesDialog(self.root, family_name=self.family_label.get().strip() or "Family parameter", family_unit=self.family_unit.get().strip(), enable_y2=self.project.y2_axis is not None)
         self.root.wait_window(dialog)
         if not dialog.result:
             return
@@ -3958,7 +4519,8 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         result = dialog.result
         series = Series(name=result["name"], parameter_name=self.family_label.get().strip() or "Family parameter",
                         parameter_value=result["parameter_value"], parameter_unit=result["parameter_unit"],
-                        color=SERIES_COLORS[len(self.project.series) % len(SERIES_COLORS)])
+                        color=SERIES_COLORS[len(self.project.series) % len(SERIES_COLORS)],
+                        y_axis_id=result.get("y_axis_id", "y1"))
         self.project.series.append(series)
         self.active_series_id = series.id
         self.guide_points=[];self.assisted_proposal=None;self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
@@ -3968,7 +4530,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         series = self.active_series()
         if not series:
             return
-        dialog = SeriesDialog(self.root, series, self.family_label.get().strip() or "Family parameter", self.family_unit.get().strip())
+        dialog = SeriesDialog(self.root, series, self.family_label.get().strip() or "Family parameter", self.family_unit.get().strip(), enable_y2=self.project.y2_axis is not None)
         self.root.wait_window(dialog)
         if not dialog.result:
             return
@@ -3977,7 +4539,16 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         series.parameter_name = self.family_label.get().strip() or "Family parameter"
         series.parameter_value = dialog.result["parameter_value"]
         series.parameter_unit = dialog.result["parameter_unit"]
-        self.refresh_curve_tree(); self.redraw(); self.persist()
+        new_axis = dialog.result.get("y_axis_id", "y1")
+        if new_axis != series.y_axis_id:
+            self.project.y_axis_for(new_axis)
+            series.y_axis_id = new_axis
+            self.project.recalculate_all_points()
+            self.guide_points=[]; self.assisted_proposal=None
+            self.assist_accepted_segments=set();self.assist_accepted_point_ids={}
+            self._assist_sampling_spec=None
+            self._sort_series(series)
+        self.refresh_curve_tree(); self.update_selected(); self.redraw(); self.persist()
 
     def delete_series(self):
         series = self.active_series()
@@ -4050,7 +4621,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             if axis is not None:
                 def guide_key(pt):
                     try:
-                        sx,sy=self.project.pixel_to_calibrated(*pt)
+                        sx,sy=self.project.pixel_to_calibrated(*pt, self.active_axis_id())
                         return sx if axis=="x" else sy
                     except CalibrationError:
                         return pt[0] if axis=="x" else -pt[1]
@@ -4113,7 +4684,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         sx, sy = self.snap(x, y)
         point.manual_pixel_x, point.manual_pixel_y = x, y
         point.pixel_x, point.pixel_y = sx, sy
-        self.project.update_point_calibration(point)
+        self.project.update_point_calibration(point, self.active_axis_id())
         self._sort_series(self.active_series())
         self.update_selected(); self.redraw()
 
@@ -4135,26 +4706,45 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.refresh_curve_tree(); self.persist()
 
     def verify(self, x, y, *, draw=True):
+        """Non-destructive calibration check from physical expected values."""
         try:
-            cx, cy = self.project.pixel_to_calibrated(x, y)
-        except CalibrationError as exc:
-            messagebox.showerror(APP_NAME, str(exc))
+            result = evaluate_verification(
+                self.project, x, y,
+                {"x": self.exp_x.get(), "y1": self.exp_y.get(),
+                 "y2": self.exp_y2.get()})
+        except (CalibrationError, ValueError, OverflowError) as exc:
+            self.verify_result.set(f"Calibration verification unavailable: {exc}")
             return
-        group=self._measurements()
-        active=next((m for m in group['items'] if m['id']==group['active_id']),None)
-        cal_label=(f"{active['label']} [{active['id'][:11]}] ({active['state']})" if active else 'unavailable')
-        lines = [f"Calibration: {cal_label}", f"Pixel: {x:.3f}, {y:.3f}",
-                 f"Calculated X: {fmt(cx)} {self.project.x_axis.unit}",
-                 f"Calculated Y: {fmt(cy)} {self.project.y_axis.unit}"]
-        for label, text, value, unit in (("ΔX", self.exp_x.get().strip(), cx, self.project.x_axis.unit), ("ΔY", self.exp_y.get().strip(), cy, self.project.y_axis.unit)):
-            if text:
-                try:
-                    lines.append(f"{label}: {fmt(value - float(text))} {unit}")
-                except ValueError:
-                    lines.append(f"{label}: invalid expected value")
+        group = self._measurements()
+        active = next((m for m in group["items"] if m["id"]==group["active_id"]), None)
+        caption = (
+            f"{active['label']} [{active['id'][:11]}] ({active['state']})"
+            if active else "unavailable"
+        )
+        lines = [f"Calibration: {caption}", f"Pixel: {x:.3f}, {y:.3f}"]
+        for reading in result:
+            identifier=reading.axis_id
+            label = "X" if identifier=="x" else "Y2" if identifier=="y2" else "Y"
+            lines.append(
+                f"Calculated {label}: {display_number(reading.measured)} {reading.unit}")
+            if reading.error:
+                lines.append(f"Δ{label}: invalid expected reference — {reading.error}")
+            elif reading.reference is not None:
+                lines.append(
+                    f"Δ{label}: {display_number(reading.delta, signed=True)} {reading.unit}")
+                if reading.comparison_kind == "decades":
+                    lines.append(
+                        f"Δlog10({label}): {display_number(reading.comparison, signed=True)} decades")
+                elif reading.comparison_kind == "percent":
+                    lines.append(
+                        f"Relative Δ{label}: {display_number(reading.comparison, signed=True)} %")
         self.verify_result.set("\n".join(lines))
+        dialog=self.verification_dialog
+        if dialog is not None and dialog.window.winfo_exists():
+            self._verification_sync_dialog()
+            dialog.show_result(caption, float(x), float(y), result)
         if draw:
-            self.verify_point = (x, y)
+            self.verify_point = (float(x),float(y))
             self.redraw()
 
     def clear_guides(self):
@@ -4173,6 +4763,35 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.assist_status.set("Proposal rejected. Guide points kept for refinement.")
         self.redraw()
 
+    def assist_smoothness_selected(self, _event=None):
+        """Refresh an unaccepted trace on user-selected Off/Gentle/Strong.
+
+        The smoothness prior is part of the image-constrained search, not a
+        post-publication filter. Selecting a mode must produce a NEW proposal;
+        the old proposal is never silently accepted or presented as updated.
+        Existing accepted segments are protected: do not discard their
+        transient identity/segment bookkeeping by automatically reproposing.
+        """
+        if self.loading_ui or self.exclusion_loading:
+            return
+        selected = self.assist_smoothness.get()
+        previous = (self.config.get("tracing_constraints") or {}).get("smoothness", "Off")
+        self.exclusion_config_changed()
+        if selected == previous:
+            return
+        if self.assist_accepted_segments:
+            self.assist_status.set(f"Smoothness {selected} selected. Accepted segments exist; "
+                "review the current scientific points before making a new proposal.")
+            return
+        if len(self.guide_points) < 2 or self.assisted_proposal is None:
+            self.assist_status.set(f"Smoothness {selected} selected. Place guides and click Propose.")
+            return
+        if self.assist_baseline_request is not None:
+            self.assist_status.set(f"Smoothness {selected} selected during numeric preparation. "
+                "The pending proposal will use the currently selected mode.")
+            return
+        self.propose_guided_trace()
+
     def propose_guided_trace(self):
         if self.assist_baseline_request is not None:
             self.assist_status.set("The previous numerical guide request is still running.")
@@ -4183,9 +4802,19 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         if len(self.guide_points)<2:
             messagebox.showinfo(APP_NAME,"Place at least two guide points on the image.",parent=self.root);return
         try:
+            step = float(self.assist_step.get())
+        except (ValueError, TypeError, tk.TclError):
+            self.assist_status.set("Enter a numeric Step in original-image pixels.")
+            return
+        if not math.isfinite(step) or not ASSIST_STEP_MIN <= step <= ASSIST_STEP_MAX:
+            self.assist_status.set(
+                f"Step must be {ASSIST_STEP_MIN:g}..{ASSIST_STEP_MAX:g} original-image pixels.")
+            return
+        try:
             self._assist_context=(self.current_doc_id,self.active_series_id,
-                                  (self.config.get("source") or {}).get("sha256"),tuple(self.guide_points))
-            self._assist_pending_points=samples_from_guides(self.guide_points,step=float(self.assist_step.get()))
+                                  (self.config.get("source") or {}).get("sha256"),
+                                  tuple(self.guide_points), step)
+            self._assist_pending_points=samples_from_guides(self.guide_points,step=step)
             knots=[0.]
             for a,b in zip(self.guide_points,self.guide_points[1:]):knots.append(knots[-1]+math.dist(a,b))
             queries=[0.]
@@ -4197,7 +4826,9 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             # service; the fit may initialize an Octave worker. This call is
             # advisory only, never a commitment of user-created points.
             self.assist_baseline_request=self.rpc.begin("ASSIST_FIT",*payloads)
-            self.assist_status.set("Generating optional GX-TXT numeric guide fit...")
+            self.assist_status.set(
+                f"Generating a new {self.assist_smoothness.get()} tracing proposal "
+                "(optional GX-TXT numeric guide fit)...")
             self.root.after(80,self._poll_assisted_fit)
         except (RpcError,ValueError) as exc:
             self._finish_guided_proposal(None,f"CORE fitting unavailable: {exc}")
@@ -4223,11 +4854,18 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
 
     def _finish_guided_proposal(self,reference,note):
         if self._assist_context is not None:
+            try:
+                current_step = float(self.assist_step.get())
+            except (ValueError, TypeError, tk.TclError):
+                current_step = None  # Invalid edit during async fit: discard it.
             current=(self.current_doc_id,self.active_series_id,
-                     (self.config.get("source") or {}).get("sha256"),tuple(self.guide_points))
+                     (self.config.get("source") or {}).get("sha256"),
+                     tuple(self.guide_points), current_step)
             if current!=self._assist_context or not self._is_curves_tab():
                 self.assisted_proposal=None
-                self.assist_status.set("The source, curve or guides changed; the proposal was discarded.")
+                self.assist_status.set(
+                    "Source, curve, guides or Step changed while fitting. "
+                    "Proposal discarded; press Propose again.")
                 self._assist_context=None
                 return
         self._assist_context=None
@@ -4236,15 +4874,26 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             result=propose(use_image,self.guide_points,radius=int(self.assist_radius.get()),
                            step=float(self.assist_step.get()),reference=reference,
                            **self.exclusion_kwargs())
+            previous_proposal = self.assisted_proposal
+            difference = ""
+            if previous_proposal is not None and len(previous_proposal.points) == len(result.points):
+                distances = [math.dist(a, b) for a, b in zip(previous_proposal.points, result.points)]
+                count = sum(distance > 0.1 for distance in distances)
+                maximum = max(distances, default=0.0)
+                difference = (f" Compared with the previous proposal: {count}/{len(distances)} "
+                              f"positions changed (maximum {maximum:.2f} source px).")
             self.snapshot()
             self._assist_proposal_stale=False
+            self._assist_proposal_step = float(self.assist_step.get())
             self.assisted_proposal=result
             self._proposal_history.clear();self._proposal_last_insert=None
             self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
             self._sync_assist_segment_control()
-            self.assist_status.set(f"Proposal: {len(result.points)} points / {result.segment_count} segments; "
-                f"{len(result.ambiguous_segments)} possible ambiguous segment(s). {note}. "
-                "Edit or accept explicitly.")
+            self.assist_status.set(f"Proposal [{self.assist_smoothness.get()}] "
+                f"Step {self._assist_proposal_step:g} source px: "
+                f"{len(result.points)} points / {result.segment_count} segments; "
+                f"{len(result.ambiguous_segments)} possibly ambiguous segment(s). "
+                f"{note}.{difference} Inspect before Accept.")
             self.redraw()
         except (ValueError,TypeError) as exc:
             self.assisted_proposal=None
@@ -4297,7 +4946,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         if axis in ("x", "y"):
             def coord(pt):
                 try:
-                    xx, yy = self.project.pixel_to_calibrated(*pt)
+                    xx, yy = self.project.pixel_to_calibrated(*pt, self.active_axis_id())
                     return xx if axis == "x" else yy
                 except CalibrationError:
                     return pt[0] if axis == "x" else -pt[1]
@@ -4378,28 +5027,33 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         """Use the chronological Edit menu history, including proposal corrections."""
         self.undo()
 
-    def _proposal_hit(self,x,y,threshold=12):
-        """Select real raster guides or generated points in *screen pixels*.
+    def _proposal_hit(self, x, y, threshold=6.0):
+        """Select a guide or unaccepted vertex in ORIGINAL raster pixels.
 
-        The source image can be zoomed; a constant image-pixel tolerance would
-        become unusable or overly aggressive at different zoom levels.
+        The canvas adapter has ALREADY converted screen mouse coordinates to
+        source image coordinates. Transforming them back to canvas pixels
+        makes the selection tolerance depend on zoom; never do so here.
         """
-        if self.assisted_proposal is None:return None
-        cx,cy=self.canvas.image_to_canvas(x,y)
-        best=None;distance=threshold
-        for i,pt in enumerate(self.guide_points):
-            px,py=self.canvas.image_to_canvas(*pt)
-            d=math.hypot(px-cx,py-cy)
-            if d<=distance:
-                best=("guide",i);distance=d
-        if best and distance<=threshold:return best
-        for i,seg in enumerate(self.assisted_proposal.segments):
-            if i in self.assist_accepted_segments:continue
-            for j,pt in enumerate(seg[1:-1],1):
-                px,py=self.canvas.image_to_canvas(*pt)
-                d=math.hypot(px-cx,py-cy)
-                if d<distance:
-                    best=("generated",i,j);distance=d
+        pointer = (float(x), float(y))
+        best = None
+        distance = float(threshold)
+        for i, point in enumerate(self.guide_points):
+            d = math.dist(pointer, point)
+            if d <= distance:
+                best = ("guide", i)
+                distance = d
+        if best is not None:
+            return best
+        if self.assisted_proposal is None:
+            return None
+        for i, segment in enumerate(self.assisted_proposal.segments):
+            if i in self.assist_accepted_segments:
+                continue
+            for j, point in enumerate(segment[1:-1], 1):
+                d = math.dist(pointer, point)
+                if d <= distance:
+                    best = ("generated", i, j)
+                    distance = d
         return best
 
     def _scientific_hit(self,x,y,threshold=10):
@@ -4461,16 +5115,24 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.delete_selected_point()
 
     def _delete_proposal_point(self,hit):
-        """Delete generated vertex, or remove a correction guide and rejoin.
-
-        Deleting the last inserted correction restores the exact previous
-        proposal (not an approximate recalculation). Earlier edits are restored
-        with Undo proposal edit or rejoined by the image-guided engine.
-        """
-        if self.assisted_proposal is None:return
+        """Delete guide/vertex without repairing stale mixed-constraint paths."""
+        if self.assisted_proposal is not None and getattr(self,"_assist_proposal_stale",False):
+            self.assist_status.set("Proposal is stale: click Propose before editing.")
+            return
+        if self.assisted_proposal is None and hit[0]!="guide":return
         try:
             before=self._proposal_state()
             typ=hit[0]
+            if typ=="guide" and self.assisted_proposal is None:
+                index=hit[1]
+                if index<0 or index>=len(self.guide_points):
+                    return
+                self.guide_points.pop(index)
+                self._checkpoint_proposal(before)
+                self._sync_assist_segment_control()
+                self.assist_status.set("Guide deleted before tracing; use Undo to restore it.")
+                self.redraw()
+                return
             if typ=="guide":
                 index=hit[1]
                 if ((index>0 and index-1 in self.assist_accepted_segments) or
@@ -4513,12 +5175,16 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.assist_status.set("Delete rejected: "+str(exc))
 
     def add_correction_point(self,x,y):
-        """Insert a mandatory guide anywhere inside the source raster.
+        """Insert a source-pixel correction and recalculate only affected spans.
 
-        Neither the distance to the proposed path nor Corridor limits this
-        operation. For monotonic X/Y, the point selects its interval itself.
-        Scientific points are untouched until explicit Accept.
+        Unlike Edit proposal this deliberately accepts a correction far from
+        the current proposal. Source-pixel coordinates and calibrated X/Y
+        select the correct interval independently of zoom or pan.
         """
+        if getattr(self,"_assist_proposal_stale",False):
+            self.assist_status.set("Trace constraints changed: click Propose and "
+                                   "inspect the new trace before adding corrections.")
+            return
         if not self._is_curves_tab():
             self.assist_status.set("Switch to Curves before editing the proposal.")
             return
@@ -4542,6 +5208,17 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             guides,candidate=insert_correction(result,image,self.guide_points,seg,index,(x,y),
                                 radius=int(self.assist_radius.get()),step=float(self.assist_step.get()),
                                 **self.exclusion_kwargs())
+            # Do not accept a partially corrupted reassembly: exactly the
+            # affected segment is split, other segments and accepted points
+            # must remain byte-for-byte geometrically identical.
+            if (len(guides)!=len(self.guide_points)+1 or
+                    len(candidate.segments)!=len(result.segments)+1 or
+                    candidate.segments[:seg]!=result.segments[:seg] or
+                    candidate.segments[seg+2:]!=result.segments[seg+1:] or
+                    guides[seg+1]!=(float(x),float(y)) or
+                    candidate.segments[seg][-1]!=(float(x),float(y)) or
+                    candidate.segments[seg+1][0]!=(float(x),float(y))):
+                raise ValueError("Correction geometry verification failed; no points were changed.")
             self._checkpoint_proposal(before, inserted=(seg+1,(float(x),float(y))))
             self.guide_points,self.assisted_proposal=guides,candidate
             self.assist_accepted_segments={i if i<seg else i+1 for i in self.assist_accepted_segments}
@@ -4558,38 +5235,47 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             self.status.set(msg)
         self.redraw()
 
-    def _begin_proposal_edit(self,x,y):
-        result=self.assisted_proposal
-        if result is None:
-            self.assist_status.set("Generate a proposal before editing it.");return
-        cx,cy=self.canvas.image_to_canvas(x,y)
-        for k,p in enumerate(self.guide_points):
-            px,py=self.canvas.image_to_canvas(*p)
-            if math.hypot(px-cx,py-cy)<=12:
-                if (k and k-1 in self.assist_accepted_segments) or k in self.assist_accepted_segments:
-                    self.assist_status.set("This guide borders an already accepted segment; accepted points cannot be moved here.")
-                    return
-                self._assist_drag=("guide",k)
-                self._assist_preview_cursor=(float(x),float(y))
-                return
-        best=(float('inf'),None,None)
-        for k,seg in enumerate(result.segments):
-            if k in self.assist_accepted_segments:continue
-            for j,p in enumerate(seg[1:-1],1):
-                px,py=self.canvas.image_to_canvas(*p)
-                d=math.hypot(px-cx,py-cy)
-                if d<best[0]:best=(d,k,j)
-        if best[1] is None or best[0]>60:
-            self.assist_status.set("Click close to the proposed path to add a correction point.")
+    def _begin_proposal_edit(self, x, y):
+        """Edit only a nearby raster-space point; far changes use Correction.
+
+        The 6 px threshold is source-image distance and does not scale when
+        a user zooms in to position a point precisely.
+        """
+        if self.assisted_proposal is not None and getattr(self, "_assist_proposal_stale", False):
+            self.assist_status.set("This proposal uses outdated trace constraints. "
+                                   "Click Propose before editing or accepting.")
             return
-        self._assist_drag=("insert",best[1],best[2])
-        self._assist_preview_cursor=(float(x),float(y))
+        hit = self._proposal_hit(x, y, threshold=6.0)
+        if hit is None:
+            self.assist_status.set("No guide/proposal point within 6 original-image pixels. "
+                                   "Use Add correction point for a distant correction.")
+            return
+        if hit[0] == "guide":
+            index = hit[1]
+            if ((index > 0 and index-1 in self.assist_accepted_segments) or
+                    index in self.assist_accepted_segments):
+                self.assist_status.set("This guide borders an accepted segment; "
+                                       "accepted scientific points cannot be moved here.")
+                return
+            self._assist_drag = ("guide", index)
+        else:
+            segment = hit[1]
+            if segment in self.assist_accepted_segments:
+                self.assist_status.set("This segment was already accepted.")
+                return
+            self._assist_drag = ("insert", segment, hit[2])
+        self._assist_preview_cursor = (float(x), float(y))
         self.redraw()
 
     def _finish_proposal_edit(self,x,y):
         selection=self._assist_drag
         self._assist_drag=None;self._assist_preview_cursor=None
-        if selection is None or self.assisted_proposal is None:return
+        if selection is None:return
+        if self.assisted_proposal is not None and getattr(self,"_assist_proposal_stale",False):
+            self.assist_status.set("Proposal is stale: click Propose before editing.")
+            self.redraw()
+            return
+        if selection[0]!="guide" and self.assisted_proposal is None:return
         if not self.require_working_source():return
         try:
             image=self._trace_input_image()
@@ -4603,7 +5289,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 if axis is not None:
                     def axis_val(pt):
                         try:
-                            cx,cy=self.project.pixel_to_calibrated(*pt)
+                            cx,cy=self.project.pixel_to_calibrated(*pt, self.active_axis_id())
                             return cx if axis=="x" else cy
                         except CalibrationError:
                             return pt[0] if axis=="x" else -pt[1]
@@ -4613,17 +5299,17 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                         raise ValueError("Guide would reverse the monotonic axis order; add a new guide in the desired interval.")
                 previous_proposal=copy.deepcopy(self.assisted_proposal)
                 self.guide_points[index]=(x,y)
-                try:
-                    for changed in (index-1,index):
-                        if 0<=changed<len(self.guide_points)-1:
-                            self.assisted_proposal=repair(self.assisted_proposal,image,self.guide_points,changed,
-                                                         radius=radius,step=step,**self.exclusion_kwargs())
-                except Exception:
-                    # An error in the second interval must not leave half of a
-                    # two-sided guide edit applied. This is one atomic proposal edit.
-                    self.guide_points[index]=old
-                    self.assisted_proposal=previous_proposal
-                    raise
+                if self.assisted_proposal is not None:
+                    try:
+                        for changed in (index-1,index):
+                            if 0<=changed<len(self.guide_points)-1:
+                                self.assisted_proposal=repair(self.assisted_proposal,image,self.guide_points,changed,
+                                                             radius=radius,step=step,**self.exclusion_kwargs())
+                    except Exception:
+                        # A failed repair cannot leave a partially modified proposal.
+                        self.guide_points[index]=old
+                        self.assisted_proposal=previous_proposal
+                        raise
             else:
                 _,seg,point=selection
                 if self._proposal_guide_axis() is not None:
@@ -4649,15 +5335,32 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 self.assist_accepted_point_ids={i if i<seg else i+1:ids
                                                for i,ids in self.assist_accepted_point_ids.items()}
             self._checkpoint_proposal(before, inserted=(seg+1,(float(x),float(y))) if selection[0]!="guide" else None)
-            self.assist_status.set("Correction applied. Only affected intervals recalculated; "
-                                   "remaining proposal preserved. Accept or reject explicitly.")
+            if selection[0]=="guide" and self.assisted_proposal is None:
+                self.assist_status.set("Guide moved; generate a proposal after positioning the guides.")
+            else:
+                self.assist_status.set("Correction applied. Only affected intervals recalculated; "
+                                       "remaining proposal preserved. Accept or reject explicitly.")
         except (ValueError,IndexError,RuntimeError) as exc:
             self.assist_status.set("Correction rejected: "+str(exc))
         self.redraw()
 
     def _accept_assisted_segments(self, indices):
+        if self.assisted_proposal is not None and getattr(self, "_assist_proposal_step", None) is not None:
+            try:
+                step = float(self.assist_step.get())
+            except (ValueError, TypeError, tk.TclError):
+                self.assist_status.set("Invalid Step; correct it and click Propose again.")
+                return
+            if not math.isclose(step, self._assist_proposal_step, rel_tol=0, abs_tol=1e-9):
+                self.assist_status.set("Step changed after the proposal was generated. "
+                                       "Click Propose again before Accept.")
+                return
+        if self.assist_baseline_request is not None:
+            self.assist_status.set("A fresh proposal is still being generated. Inspect it before accepting.")
+            return
         if getattr(self,"_assist_proposal_stale",False):
-            self.assist_status.set("Constraints changed. Generate a fresh proposal before accepting.");return
+            self.assist_status.set("Trace constraints changed. Click Propose, inspect the new trace, then Accept.")
+            return
         if not self._is_curves_tab() or not self.require_working_source():return
         series=self.active_series();proposal=self.assisted_proposal
         if series is None or proposal is None:return
@@ -4684,7 +5387,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             stored=[]
             for x,y in seg[start:end]:
                 p=DigitizedPoint(manual_pixel_x=x,manual_pixel_y=y,pixel_x=x,pixel_y=y,origin="assisted")
-                self.project.update_point_calibration(p)
+                self.project.update_point_calibration(p, series.y_axis_id)
                 series.points.append(p)
                 stored.append(p.id)
             self.assist_accepted_point_ids[i]=stored
@@ -4735,7 +5438,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             ids=[]
             for x,y in fragment:
                 p=DigitizedPoint(manual_pixel_x=x,manual_pixel_y=y,pixel_x=x,pixel_y=y,origin="assisted")
-                self.project.update_point_calibration(p);series.points.append(p);ids.append(p.id)
+                self.project.update_point_calibration(p, series.y_axis_id);series.points.append(p);ids.append(p.id)
             replacement[i]=ids
         self.assist_accepted_point_ids=replacement
         self._assist_sampling_spec=self._valid_assist_output_points()
@@ -4828,7 +5531,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self.snapshot()
         sx, sy = self.snap(x, y)
         point = DigitizedPoint(manual_pixel_x=x, manual_pixel_y=y, pixel_x=sx, pixel_y=sy)
-        self.project.update_point_calibration(point)
+        self.project.update_point_calibration(point, series.y_axis_id)
         series.points.append(point)
         self._sort_series(series)
         self.selected_point_id = point.id
@@ -5002,6 +5705,9 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             try:
                 cx, cy = self.project.pixel_to_calibrated(x, y)
                 text += f"    |    {self.project.x_axis.name}: {fmt(cx)} {self.project.x_axis.unit}    |    {self.project.y_axis.name}: {fmt(cy)} {self.project.y_axis.unit}"
+                if self.project.y2_axis is not None:
+                    _, cy2 = self.project.pixel_to_calibrated(x, y, "y2")
+                    text += f"    |    {self.project.y2_axis.name}: {fmt(cy2)} {self.project.y2_axis.unit}"
             except CalibrationError:
                 pass
         self.status.set(text + f"    |    Mode: {self.mode.get()}")
@@ -5014,7 +5720,12 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             return
         lines = [f"Manual click: {point.manual_pixel_x:.3f}, {point.manual_pixel_y:.3f} px", f"Stored pixel: {point.pixel_x:.3f}, {point.pixel_y:.3f} px"]
         if point.calibrated_x is not None:
-            lines += [f"X = {fmt(point.calibrated_x)} {self.project.x_axis.unit}", f"Y = {fmt(point.calibrated_y)} {self.project.y_axis.unit}"]
+            series = self.active_series()
+            axis_id = series.y_axis_id if series else "y1"
+            axis = self.project.y_axis_for(axis_id)
+            axis_label = axis_id.upper() if self.project.y2_axis is not None else "Y"
+            lines += [f"X = {fmt(point.calibrated_x)} {self.project.x_axis.unit}",
+                      f"{axis_label} = {fmt(point.calibrated_y)} {axis.unit}"]
         self.selected_label.set("\n".join(lines))
         if hasattr(self,"selected_hint") and not self.selected_hint.winfo_manager():
             self.selected_hint.pack(before=self.assist_frame,anchor="w",pady=(2,0))
@@ -5075,7 +5786,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         self._persist_after = self.root.after(350, self.persist)
 
     @staticmethod
-    def _core_inline_uncertainty(linearization, spec, measurement_id):
+    def _core_inline_uncertainty(linearization, spec, measurement_id, *, axis_ids=None):
         """Transfer explicit physical Jacobians to the Tcl host without files.
 
         The host calls public NUMERIC_API_v1. Column-major binary64 matrices
@@ -5086,7 +5797,24 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         import zlib
         import numpy as np
         from uncertainty_engine import checked_spec
-        spec = checked_spec(spec)
+        m = len(linearization['calibration_ids'])
+        if m not in (12,14):
+            raise ValueError('CORE uncertainty transport requires exactly 12 or 14 inputs.')
+        spec = checked_spec(spec, dual_y=(m == 14))
+        n = len(linearization['coordinates'])
+        if m == 14:
+            if axis_ids is None or len(axis_ids) != n or any(
+                    axis not in ('y1','y2') for axis in axis_ids):
+                raise ValueError('Y2 Numeric transport requires a valid axis binding per row.')
+        if spec['mode'] == 'physical_override' and m == 14:
+            physical = spec['override_standard_uncertainty']
+            # The public Numeric API accepts a physical N×2 override matrix.
+            # Its managed transport is explicitly flattened column-major.
+            override = [physical[0]]*n + [
+                physical[1] if axis=='y1' else physical[2]
+                for axis in axis_ids]
+        else:
+            override = spec.get('override_standard_uncertainty', [])
         encode = lambda x: base64.b64encode(str(x).encode('utf-8')).decode('ascii')
         def packed(v):
             v = np.asarray(v, dtype='<f8')
@@ -5099,7 +5827,7 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
             encode(spec['rationale']), encode(spec.get('pixel_distribution', '')),
             ','.join(format(x,'.17g') for x in spec.get('pixel_scale', [])),
             ','.join(format(x,'.17g') for x in spec.get('calibration_standard_uncertainty', [])),
-            ','.join(format(x,'.17g') for x in spec.get('override_standard_uncertainty', [])),
+            ','.join(format(x,'.17g') for x in override),
             packed(linearization['coordinates']),
             packed(linearization['point_jacobian']),
             packed(linearization['calibration_jacobian']),
@@ -5111,8 +5839,343 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         ]
         return '\t'.join(fields)
 
+
+    def publish_y2_dataset(self):
+        """F3: publish physically consistent canonical X/Y tables with axis-row IDs.
+
+        This does not change the original Y1-only publication path. Publication
+        and Variable Schema ownership remain CORE DATASET_PUBLICATION_API_v2.
+        A second axis implies curve schema v2 even if only Y1 points are stored.
+        """
+        if not self.require_working_source():
+            return
+        if not self.commit_axes(False):
+            return
+        self._sync_active_measurement()
+        if not self.project.series or not any(s.points for s in self.project.series):
+            messagebox.showerror(APP_NAME, "Add at least one digitized point before publication.",
+                                 parent=self.root)
+            return
+        config = self.serialize_configuration()
+        saved_uncertainty = config.get("uncertainty") or {"mode": "none"}
+        if (saved_uncertainty.get("mode", "none") != "none" and
+                saved_uncertainty.get("review_fingerprint") != review_fingerprint(config)):
+            messagebox.showerror(
+                APP_NAME, "Y2 scientific sources, calibration or curve bindings changed "
+                "after uncertainty review. Reopen Uncertainty and approve a new "
+                "declaration before publication.", parent=self.root)
+            return
+        group = self._measurements()
+        selected = self.selected_publication_ids()
+        base_id = self.output_dataset_id.get().strip() or slug_id(
+            config.get("name", "digitized.curves"))
+        mode = "family" if self.family_enabled.get() else "generic"
+        try:
+            publication_set_id = "pubset_" + uuid.uuid4().hex
+            plan = plan_y2_datasets(
+                group["items"], selected, layout=self.publish_layout.get(),
+                template=self.publish_name_template.get(), name=base_id,
+                configuration=config.get("name", "digitizer"),
+                series=self.project.series,
+                fallback_y2=self.project.y2_axis.to_dict())
+            reviewed_uncertainty = checked_spec(saved_uncertainty, dual_y=True)
+            if reviewed_uncertainty["mode"] != "none":
+                for job in plan:
+                    if len(job["measurement_ids"]) != 1:
+                        raise ValueError(
+                            "Reviewed Y1/Y2 uncertainty cannot merge distinct calibration "
+                            "realizations in one Dataset. Choose Separate layout for multiple "
+                            "calibrations, or disable uncertainty.")
+            if self.publish_group_datasets.get() and len(plan)>1:
+                if len(plan)>64:
+                    raise ValueError(
+                        "Dataset Group supports at most 64 outputs; select fewer "
+                        "calibrations or disable grouping before publication.")
+                if not self._group_available():
+                    raise ValueError(
+                        "GX-TXT did not grant the Dataset Group producer capability. "
+                        "Disable grouping or reopen through an authorized Viewer.")
+            if mode == "family":
+                for series in self.project.series:
+                    if not series.points: continue
+                    param = float(series.parameter_value.strip())
+                    if not math.isfinite(param):
+                        raise ValueError(f"Curve '{series.name}' requires a finite numerical family parameter.")
+                    if (series.parameter_unit.strip() and
+                            series.parameter_unit.strip() != self.family_unit.get().strip()):
+                        raise ValueError(f"Curve '{series.name}' family unit differs from the declared family unit.")
+            if self.publish_layout.get() == "combined" and len(selected) > 1:
+                if not messagebox.askyesno(APP_NAME,
+                        "Combined calibration output stores multiple scientific realizations. "
+                        "Consumers must group by calibration_key as well as curve_key. Continue?",
+                        parent=self.root):
+                    return
+            # Preflight ALL scientific jobs before the first canonical write.
+            staged = []
+            by_id = {m["id"]: m for m in group["items"]}
+            source = config["source"]
+            for job in plan:
+                selected_item = by_id[job["primary_id"]]
+                y_axis_id = "y1" if job["axis_mode"] == "mixed" else job["axis_mode"]
+                y_axis_key = "y" if y_axis_id == "y1" else "y2"
+                selected_axis = selected_item["axes"].get(
+                    y_axis_key, self.project.y2_axis.to_dict())
+                dataset_project = copy.deepcopy(self.project)
+                dataset_project.calibration = Calibration.from_dict(selected_item["calibration"])
+                dataset_project.x_axis = AxisConfig.from_dict(selected_item["axes"]["x"])
+                dataset_project.y_axis = AxisConfig.from_dict(selected_axis)
+                dataset_project.y2_axis = AxisConfig.from_dict(
+                    selected_item["axes"].get("y2", self.project.y2_axis.to_dict()))
+                if not dataset_project.calibration_ready():
+                    raise ValueError(f"Calibration '{selected_item['label']}' is invalid.")
+                # Calibration manifest v1 documents one concrete canonical X/Y
+                # realization. Metadata axis_schema_v1 documents BOTH logical
+                # transforms and their per-curve binding (adapter follows F4).
+                publication_config = copy.deepcopy(config)
+                publication_config["calibration_measurements"]["active_id"] = job["primary_id"]
+                publication_config["scale_reference"] = copy.deepcopy(
+                    selected_item.get("scale_reference"))
+                # Historical measurement records may predate Y2. Materialize
+                # a local inherited axis declaration for reproducible metadata
+                # without mutating the saved Interactive Document.
+                for measurement in publication_config["calibration_measurements"]["items"]:
+                    if "y2" not in measurement["axes"]:
+                        measurement["axes"]["y2"] = copy.deepcopy(config["axes"]["y2"])
+                if job["axis_mode"] == "y2":
+                    # The existing calibration manifest describes the actual Y
+                    # unit of this split Dataset, not the other axis's unit.
+                    for measurement in publication_config["calibration_measurements"]["items"]:
+                        axes = measurement["axes"]
+                        axes["y"] = copy.deepcopy(axes.get("y2", config["axes"]["y2"]))
+                        # A Y1 physical scale-bar is not a Y2 calibration
+                        # when the axes carry different scientific units.
+                        measurement["scale_reference"] = None
+                    publication_config["scale_reference"] = None
+                manifest = build_manifest(
+                    publication_config, dataset_project, *self.image.size)
+                manifest["publication_calibration_mode"] = self.publish_layout.get()
+                manifest["publication_calibration_ids"] = list(job["measurement_ids"])
+                meta = metadata_fields(manifest)
+                included = [s for s in self.project.series if s.id in job["curve_ids"]]
+                meta.update(metadata_for_y2(
+                    config, job, [by_id[mid] for mid in job["measurement_ids"]],
+                    included, publication_set_id))
+                meta.update({
+                    "curve_digitizer.publication_calibration_mode": self.publish_layout.get(),
+                    "curve_digitizer.publication_calibration_ids": json.dumps(
+                        job["measurement_ids"], separators=(",", ":")),
+                    "curve_digitizer.publication_measurement_id": job["primary_id"],
+                    "curve_digitizer.publication_measurement_label": selected_item["label"],
+                    "curve_digitizer.point_ordering_source": self.point_order_source.get(),
+                    "curve_digitizer.point_monotonicity": self.curve_monotonicity.get(),
+                    "curve_digitizer.quality_status": "not_assessed_for_f3_y2",
+                    "curve_digitizer.quality_accuracy_assessed": "0",
+                })
+                rows = []
+                uncertainty_points = []
+                allowed = set(job["curve_ids"])
+                for mid in job["measurement_ids"]:
+                    measurement = by_id[mid]
+                    p = copy.deepcopy(self.project)
+                    p.calibration = Calibration.from_dict(measurement["calibration"])
+                    p.x_axis = AxisConfig.from_dict(measurement["axes"]["x"])
+                    p.y_axis = AxisConfig.from_dict(measurement["axes"]["y"])
+                    p.y2_axis = AxisConfig.from_dict(
+                        measurement["axes"].get("y2", self.project.y2_axis.to_dict()))
+                    if not p.calibration_ready():
+                        raise ValueError(f"Calibration '{measurement['label']}' is invalid.")
+                    p.recalculate_all_points()
+                    order_project(p, self._ordering_policy())
+                    for series in p.series:
+                        if series.id not in allowed: continue
+                        for index, point in enumerate(series.points):
+                            if (point.calibrated_x is None or point.calibrated_y is None
+                                    or not all(map(math.isfinite, (
+                                        point.calibrated_x, point.calibrated_y,
+                                        point.pixel_x, point.pixel_y)))):
+                                raise ValueError(
+                                    f"Nonfinite or uncalibrated point {index} in '{series.name}'.")
+                            values = [
+                                b64e(series.id), b64e(series.name), str(index),
+                                format(point.calibrated_x, ".17g"),
+                                format(point.calibrated_y, ".17g"),
+                                series.parameter_value.strip(),
+                                format(point.pixel_x, ".17g"),
+                                format(point.pixel_y, ".17g"),
+                            ]
+                            if self.publish_layout.get() == "combined":
+                                values.extend([b64e(mid), b64e(measurement["label"])])
+                            values.extend([b64e(point.id), series.y_axis_id])
+                            rows.append("\t".join(values))
+                            if reviewed_uncertainty["mode"] != "none":
+                                uncertainty_points.append((
+                                    series.id, point.id, mid, values[3], values[4],
+                                    point.pixel_x, point.pixel_y, series.y_axis_id))
+                if not rows:
+                    raise ValueError(f"Publication '{job['dataset_id']}' contains no scientific points.")
+                uncertainty_payload = ""
+                core_inline = ""
+                if reviewed_uncertainty["mode"] != "none":
+                    if len(rows)>4096:
+                        raise ValueError(
+                            "Public Numeric uncertainty is bounded to 4096 rows "
+                            "per Dataset. Select fewer curves or calibrations.")
+                    if len(uncertainty_points) != len(rows):
+                        raise ValueError("Y2 uncertainty point ordering differs from Dataset rows.")
+                    input_pixels = [(r[5],r[6]) for r in uncertainty_points]
+                    input_axes = [r[7] for r in uncertainty_points]
+                    measurement_id = job["measurement_ids"][0]
+                    measurement = by_id[measurement_id]
+                    # This remains the same Project and point ordering as the
+                    # canonical Y1/Y2 scientific rows, with one four-corner H.
+                    active_project = copy.deepcopy(self.project)
+                    active_project.calibration = Calibration.from_dict(measurement["calibration"])
+                    active_project.x_axis = AxisConfig.from_dict(measurement["axes"]["x"])
+                    active_project.y_axis = AxisConfig.from_dict(measurement["axes"]["y"])
+                    active_project.y2_axis = AxisConfig.from_dict(measurement["axes"].get(
+                        "y2", self.project.y2_axis.to_dict()))
+                    active_spec = checked_spec(
+                        reviewed_uncertainty, dual_y=True,
+                        scale_bar=bool(measurement.get("scale_reference")))
+                    response = propagate(active_project, input_pixels, active_spec,
+                                         axis_ids=input_axes,
+                                         scale_bar=bool(measurement.get("scale_reference")))
+                    linearization = active_project.calibration_linearization(
+                        input_pixels, axis_ids=input_axes)
+                    if (len(response["calibration_ids"]) != 14 or
+                            response["shared_factors"].shape != (2*len(rows),14)):
+                        raise ValueError("Y2 must retain all 14 shared calibration factors.")
+                    factors = compact_factors(
+                        [response["local_factors"]],[response["shared_factors"]])
+                    if factors["shape_shared"] != [2*len(rows),14]:
+                        raise ValueError("Y2 retained factor record has the wrong scientific dimension.")
+                    report = {
+                        "schema":"gxtxt.curve_digitizer.uncertainty.v2",
+                        "axes_schema_version":1,
+                        "mode":active_spec["mode"],
+                        "declaration":active_spec,
+                        "calibration_input_count":14,
+                        "calibration_ids":linearization["calibration_ids"],
+                        "calibration_units":linearization["calibration_units"],
+                        "row_count":len(rows),
+                        # Full per-row logical IDs are already canonical via
+                        # the typed y_axis_id Variable and must never be
+                        # duplicated into a potentially unbounded JSON report.
+                        "axis_binding_variable_id":"y_axis_id",
+                        "axes_in_dataset":sorted(set(input_axes)),
+                        "calibration_measurement_id":measurement_id,
+                        "publication_set_id":publication_set_id,
+                        "source_sha256":source.get("sha256",""),
+                        "physical_units":linearization["coordinate_units"],
+                        "shared_calibration":response["shared_calibration"],
+                        "within_point_correlation":response["within_point_correlation"],
+                        "interpretation":"First-order CORE Numeric propagation from reviewed pixel and 14 shared calibration inputs, not a measured accuracy.",
+                        "cross_dataset_scope":"Common calibration corners and X endpoints are identified across separate published outputs; no cross-Dataset local-pixel covariance is asserted.",
+                    }
+                    meta["curve_digitizer.uncertainty_axes_schema_version"] = "1"
+                    meta["curve_digitizer.uncertainty_calibration_input_count"] = "14"
+                    meta["curve_digitizer.uncertainty_shared_measurement_id"] = measurement_id
+                    meta["curve_digitizer.uncertainty_cross_dataset_scope"] =                         "shared_calibration_only_not_materialized"
+                    head=[b64e(json.dumps(report,ensure_ascii=False,separators=(",",":"),
+                                         allow_nan=False)),
+                          b64e(json.dumps(factors,separators=(",",":")))]
+                    for i,record in enumerate(uncertainty_points):
+                        cid,pid,mid,x,y,*_rest=record
+                        head.append("\t".join([
+                            b64e(cid),b64e(pid),b64e(mid),x,y,
+                            format(response["sigma_x"][i],".17g"),
+                            format(response["sigma_y"][i],".17g"),
+                            format(response["covariance_xy"][i],".17g")
+                        ]))
+                    uncertainty_payload="\n".join(head)
+                    core_inline=self._core_inline_uncertainty(
+                        linearization,active_spec,measurement_id,
+                        axis_ids=input_axes)
+                axis = AxisConfig.from_dict(selected_axis)
+                if job["axis_mode"] == "mixed":
+                    label = "Y1 / Y2"
+                    role = "measured"
+                else:
+                    label = axis.name
+                    role = self.y_role.get().strip() if job["axis_mode"] == "y1" else self.y2_role.get().strip()
+                display = self.output_display_name.get().strip() or config.get("name", base_id)
+                if self.publish_layout.get() == "separate":
+                    display += " — " + selected_item["label"]
+                else:
+                    display += " — combined calibrations"
+                if job["split_by_unit"]:
+                    display += " — " + job["axis_mode"].upper()
+                args = [
+                    self.session_token, self.current_doc_id,
+                    job["dataset_id"], display, mode,
+                    dataset_project.x_axis.name, dataset_project.x_axis.unit,
+                    self.x_role.get().strip() or "independent",
+                    label, job["y_unit"], role or "measured",
+                    self.family_label.get().strip() or "Family parameter",
+                    self.family_unit.get().strip(),
+                    self.family_role.get().strip() or "family",
+                    source.get("dataset_id", ""), source.get("sha256", ""),
+                    manifest["calibration_type"],
+                    dataset_project.x_axis.scale, axis.scale,
+                    config.get("name", "Curve Digitalizer configuration"),
+                    "\n".join(rows), encode_metadata_records(meta),
+                    self.publish_layout.get(), config.get("notes", ""),
+                    uncertainty_payload, core_inline, "2"
+                ]
+                if len(args) != 27:
+                    raise AssertionError("Invalid F3 backend protocol length.")
+                staged.append((job, args, len(rows)))
+        except (ValueError, KeyError, TypeError, CalibrationError, OverflowError) as exc:
+            messagebox.showerror(APP_NAME, f"Y2 scientific publication preflight failed:\n{exc}",
+                                 parent=self.root)
+            return
+        outcomes = []
+        self.last_publications = []
+        for job, args, row_count in staged:
+            try:
+                receipt = self.rpc.call("PUBLISH", *args)
+                parts = receipt.split("\t", 4)
+                if len(parts) not in (4, 5):
+                    raise ValueError("Unexpected Curve Digitalizer publication receipt.")
+                dataset, path, digest, contract = parts[:4]
+                if dataset != job["dataset_id"] or contract not in (
+                        "table.generic", "curve_family.table"):
+                    raise ValueError("Backend publication receipt identity or contract differs.")
+                self.last_publications.append({
+                    "dataset_id": dataset, "path": path, "sha256": digest,
+                    "contract": contract, "axis_mode": job["axis_mode"],
+                    "row_count": row_count,
+                })
+                outcomes.append(dataset)
+                if len(parts) == 5 and parts[4].startswith("failed:"):
+                    messagebox.showwarning(APP_NAME,
+                        f"Dataset '{dataset}' was published, but Markdown notes could not be saved:\n"
+                        f"{parts[4][7:]}", parent=self.root)
+            except (RpcError, ValueError, CalibrationError) as exc:
+                self.publish_result.set(
+                    f"Published: {', '.join(outcomes) or 'none'}\nFailed: {job['dataset_id']}")
+                messagebox.showerror(APP_NAME,
+                    f"Publication failed for '{job['dataset_id']}':\n{exc}\n\n"
+                    f"Completed outputs: {', '.join(outcomes) or 'none'}. "
+                    "No later outputs were attempted.", parent=self.root)
+                return
+        summary = f"Published {len(outcomes)} Dataset(s):\n" + "\n".join(outcomes)
+        if self.publish_group_datasets.get() and len(outcomes)>=2:
+            try:
+                gid = self._create_publication_group(outcomes)
+                summary += f"\nDataset Group: {gid}"
+            except (RpcError, ValueError) as exc:
+                summary += "\nDataset Group: FAILED (Datasets remain published)"
+                messagebox.showwarning(APP_NAME,
+                    f"Canonical Datasets were published, but grouping failed:\n{exc}",
+                    parent=self.root)
+        self.publish_result.set(summary)
+        self.persist()
+
     def publish_dataset(self):
         if not self.require_working_source(): return
+        if self.project.y2_axis is not None:
+            return self.publish_y2_dataset()
         if not self.commit_axes(False): return
         if not self.project.series:
             messagebox.showerror(APP_NAME, "Create at least one curve before publication.", parent=self.root)
@@ -5128,6 +6191,12 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
         except ValueError as exc:
             messagebox.showerror(APP_NAME, str(exc), parent=self.root); return
         mode = "family" if self.family_enabled.get() else "generic"
+        if self.publish_group_datasets.get() and len(plan)>1:
+            if len(plan)>64 or not self._group_available():
+                messagebox.showerror(APP_NAME,
+                    "Dataset Group capability unavailable or too many outputs. "
+                    "Disable grouping or use an authorized Viewer.", parent=self.root)
+                return
         for series in self.project.series:
             if mode == "family":
                 try: float(series.parameter_value.strip())
@@ -5325,15 +6394,22 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                     self.family_label.get().strip() or "Family parameter", self.family_unit.get().strip(),
                     self.family_role.get().strip() or "family", source.get("dataset_id", ""),
                     source.get("sha256", ""),
-                    "full_image_scale_bar" if selected_item.get("scale_reference") else
-                    "full_image_pixels" if trial_project.is_full_image_calibration(*self.image.size) else
-                    "four_point_homography", trial_project.x_axis.scale, trial_project.y_axis.scale,
+                    # Use the classification established by the authoritative
+                    # manifest. Full-frame corner geometry does NOT imply
+                    # pixel-valued axes: calibrated seconds/volts are affine.
+                    # This is the same validated value passed in metadata.
+                    manifest["calibration_type"], trial_project.x_axis.scale, trial_project.y_axis.scale,
                     config.get("name", "Curve Digitalizer configuration"), "\n".join(rows), metadata_payload,
                     self.publish_layout.get(), config.get("notes", ""),uncertainty_payload,core_inline)
                 parts = result.split("\t", 4)
                 if len(parts) not in (4, 5):
                     raise ValueError("Invalid publication receipt from GX-TXT.")
                 dataset, path, sha, contract = parts[:4]
+                expected_contract = "curve_family.table" if mode == "family" else "table.generic"
+                if dataset != job["dataset_id"] or contract != expected_contract:
+                    raise ValueError(
+                        "CORE publication receipt differs from the requested Dataset "
+                        "identity or canonical contract; grouping was not attempted.")
                 outcomes.append(dataset)
                 if len(parts) == 5 and parts[4].startswith("failed:"):
                     messagebox.showwarning(APP_NAME,
@@ -5344,13 +6420,91 @@ class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
                 self.publish_result.set("Published: " + (", ".join(outcomes) if outcomes else "none") + "\nFailed: " + job["dataset_id"])
                 messagebox.showerror(APP_NAME, f"Publication failed for {job['dataset_id']}:\n{exc}\n\nCompleted: {', '.join(outcomes) or 'none'}. Subsequent outputs were not attempted.", parent=self.root)
                 return
-        self.publish_result.set(f"Published {len(outcomes)} Dataset(s):\n" + "\n".join(outcomes))
+        summary=f"Published {len(outcomes)} Dataset(s):\n" + "\n".join(outcomes)
+        if self.publish_group_datasets.get() and len(outcomes)>=2:
+            try:
+                gid = self._create_publication_group(outcomes)
+                summary += f"\nDataset Group: {gid}"
+            except (RpcError, ValueError) as exc:
+                summary += "\nDataset Group: FAILED (Datasets remain published)"
+                messagebox.showwarning(APP_NAME,
+                    f"Canonical Datasets were published, but grouping failed:\n{exc}",
+                    parent=self.root)
+        self.publish_result.set(summary)
         self.persist()
 
-    def close(self):
+    def workspace_focus_commit(self, callback):
+        """Restore FocusOut autosave even when the pointer leaves the app.
+
+        Do not fire for a separate in-application modal dialog: an uncommitted
+        editor may still be cancelled there. Host Workspace REVIEW explicitly
+        controls save/discard and must never be preempted by a pending callback.
+        """
+        document_id = self.current_doc_id
+        review_serial = self._workspace_review_serial
+        def apply():
+            # An explicit Save/Discard review or configuration switch always
+            # takes precedence over a previously queued focus event.
+            if (document_id != self.current_doc_id or
+                    review_serial != self._workspace_review_serial or
+                    self._workspace_reviewing or self._workspace_write_active):
+                return
+            modal = self.root.grab_current()
+            if modal is not None and modal.winfo_toplevel() is not self.root:
+                return
+            focused = self.root.focus_get()
+            if focused is None or focused.winfo_toplevel() is self.root:
+                callback()
+        self.root.after_idle(apply)
+
+    def workspace_payload(self):
+        """Meaningful persisted configuration for dirty/review comparison.
+
+        Raster pan/zoom belongs to presentation. Its value may still be
+        persisted with a normal explicit save, but cannot force Save/Discard
+        prompts merely because the user zoomed the original image.
+        """
+        cfg = self.serialize_configuration()
+        cfg.pop("view", None)
+        return json.dumps(cfg, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+
+    def _workspace_review_choice(self, reason):
+        self._workspace_review_serial += 1
+        if self._workspace_write_active or self.processing_active:
+            raise RpcError("Finish the current digitizer operation before changing Workspace or Session")
+        if not self.current_doc_id or self._workspace_baseline == self.workspace_payload():
+            return "clean"
+        self._workspace_reviewing = True
         try:
-            self.persist()
+            answer = messagebox.askyesnocancel(APP_NAME, f"Save changes before {reason}?", parent=self.root)
         finally:
+            self._workspace_reviewing = False
+        if answer is None:
+            return "cancelled"
+        if answer is False:
+            return "discarded"
+        return "saved" if self.persist() else "cancelled"
+
+    def workspace_review(self, reason):
+        return self._workspace_review_choice(reason) != "cancelled"
+
+    def workspace_control(self, action, *args):
+        if action == "REVIEW":
+            return "accepted" if self.workspace_review(args[0]) else "cancelled"
+        if action == "CLOSE":
+            self.root.destroy()
+            return "closed"
+        if action == "OPEN":
+            return "opened" if self.open_document(args[0]) else "cancelled"
+        if action == "META":
+            doc_id, generation, before, after, name = args
+            if self.document_receipts.get(doc_id) == (generation, before):
+                self.document_receipts[doc_id] = (generation, after)
+            return "updated"
+        raise RpcError("Unsupported Workspace lifecycle action")
+
+    def close(self):
+        if self.workspace_review("Close"):
             self.root.destroy()
 
     # Deterministic GUI exercise used only by the packaged integration test.

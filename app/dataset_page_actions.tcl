@@ -37,7 +37,7 @@ proc ::GX::refreshNativeVariablesGui {} {
 proc ::GX::datasetPageBuildViews {} {
     set f .top.nb.channels
     if {[winfo exists $f.views]} return
-    ttk::notebook $f.views
+    uiFieldComponentCreate $f.views tabs {} {} {}
     grid $f.views -row 0 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady 4
     foreach {key title} {variables Variables metadata Metadata technical {Technical Details / Provenance} notes Notes temporal {Temporal Sets} preview Preview help {Variables Help}} {
         ttk::frame $f.views.$key
@@ -49,7 +49,7 @@ proc ::GX::datasetPageBuildViews {} {
     .top.nb forget .top.nb.preview
     pack .top.nb.preview -in $f.views.preview -fill both -expand 1
     raise .top.nb.preview
-    bind $f.views <<NotebookTabChanged>> ::GX::datasetPageTabChanged
+    bind $f.views <<NotebookTabChanged>> +::GX::datasetPageTabChanged
     grid rowconfigure $f 0 -weight 1
     grid rowconfigure $f 2 -weight 0
     grid $f.c -in $v -row 1 -column 0 -sticky nsew
@@ -107,7 +107,25 @@ proc ::GX::datasetPageBuildViews {} {
     pack $f.temporalSets.table -fill both -expand 1
     pack $f.temporalSets -in $f.views.temporal -fill both -expand 1
 
-    menu $f.bar.actionsMenu -tearoff 0
+    menu $f.bar.actionsMenu -tearoff 0 -postcommand ::GX::datasetPageActionsMenuRefresh
+    datasetPageActionsMenuRefresh
+}
+
+proc ::GX::datasetPageActionsMenuRefresh {} {
+    variable currentSession
+    set f .top.nb.channels
+    set menu $f.bar.actionsMenu
+    if {![winfo exists $menu]} return
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode datasetId
+    set imported [expr {$mode eq {imported} && $datasetId ne {}}]
+    set previewAvailable [expr {$imported || $mode eq {pending} || ($mode eq {single} && [info exists ::GX::cfg(input_csv)] && [file isfile $::GX::cfg(input_csv)])}]
+    set section {}
+    if {[winfo exists $f.views]} {set section [lindex [split [$f.views select] .] end]}
+    set editOperations [dict create metadata datasetMetadataOpenSelectedFromGui notes datasetNotesOpenSelected temporal temporalSetGuiOpen]
+    # Refresh this one menu from operation identities, not shifting indices.
+    # Edit duplicates only its currently enabled section. Open, inspection
+    # Preview, table paging and portable ZIP export have distinct semantics.
+    $menu delete 0 end
     foreach {title command} {
         {Preview / inspect active Dataset} datasetInspectionPreviewFromVariables
         {Table pages...} {datasetPreviewOpenSelectedTable variables}
@@ -119,12 +137,16 @@ proc ::GX::datasetPageBuildViews {} {
         {Delete active Dataset...} datasetDeleteSelectedFromGui
         {Export active Dataset ZIP...} portableResourceGuiExportDataset
         {Coordinate units / magnification / calibration...} datasetCoordinatesOpenSelected
-    } {$f.bar.actionsMenu add command -label $title -command [list ::GX::datasetPageAction {*}$command]}
-    $f.bar.actionsMenu add separator
-    $f.bar.actionsMenu add command -label "Import Dataset ZIP..." -command [list ::GX::portableResourceGuiImport dataset]
-    $f.bar.actionsMenu add command -label "Manage namespaces..." -command ::GX::datasetNamespaceManagerOpen
-    ttk::menubutton $f.bar.actions -text "Active Dataset actions" -menu $f.bar.actionsMenu
-    # The Current indicator exposes this same menu above the navigator.
+    } {
+        set operation [lindex $command 0]
+        if {$imported && [dict exists $editOperations $section] && $operation eq [dict get $editOperations $section]} continue
+        set enabled [expr {$operation eq {datasetInspectionPreviewFromVariables} ? $previewAvailable : $imported}]
+        $menu add command -label $title -state [expr {$enabled?{normal}:{disabled}}] -command [list ::GX::datasetPageAction {*}$command]
+    }
+    $menu add separator
+    set sessionState [expr {$currentSession eq {}?{disabled}:{normal}}]
+    $menu add command -label "Import Dataset ZIP..." -state $sessionState -command [list ::GX::portableResourceGuiImport dataset]
+    $menu add command -label {Create Dataset Group…} -state $sessionState -command [list ::GX::datasetPageAction datasetBrowserGroupCreateDialog]
 }
 
 proc ::GX::datasetPageAction {operation args} {
@@ -192,8 +214,7 @@ proc ::GX::datasetPageRenderSections {mode datasetId} {
     foreach widget [list $f.metadata.head.edit $f.notes.edit $f.temporalSets.open] {
         $widget state [expr {$imported?"!disabled":"disabled"}]
     }
-    $f.bar.actionsMenu entryconfigure 0 -state [expr {$mode in {imported pending single}?"normal":"disabled"}]
-    for {set i 1} {$i<10} {incr i} {$f.bar.actionsMenu entryconfigure $i -state [expr {$imported?"normal":"disabled"}]}
+    datasetPageActionsMenuRefresh
     $f.metadata.table delete [$f.metadata.table children {}]
     $f.views.technical.table delete [$f.views.technical.table children {}]
     $f.temporalSets.table delete [$f.temporalSets.table children {}]

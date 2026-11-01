@@ -1,0 +1,335 @@
+{
+  "schema": "gxtxt.modules.criterion_matrix.v3",
+  "status": "FINAL_FOCUSED_NATIVE_RESTORE_PASS_WITH_HARNESS_RECOVERY_QUALIFICATION_MAIN_ACCEPTANCE_OPEN",
+  "candidate": "7df5ceb374e9e29f598be97b2a7e604b434d7bb5",
+  "rows": [
+    {
+      "id": "REG-0343",
+      "exact_text": "## 7. SEVENTH PRIORITY — Modules tab: genuinely graphical, two-column group boxes with per-module toggle, state and CORE manual button",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0345",
+      "exact_text": "**Real dev107 GUI screenshot (2026-10-18):** The existing Modules tab displays a large module table (Group/module, Status, Type, Ver., Stable ID) with a search/filter bar, plus an extensive right-hand prose/documentation pane. The user wants this layout substantially redesigned for usability, clear visual hierarchy, and direct actions rather than raw text.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0347",
+      "exact_text": "**Explicit requested layout and behavior:**",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0348",
+      "exact_text": "- REMOVE the visible `Ver.` and `Stable ID` columns from the main Modules presentation. They are implementation/catalog metadata, not primary information for module browsing.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict",
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_independent09/layout_normal.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0349",
+      "exact_text": "- REMOVE the current right-hand manual/description pane entirely: it consumes half the available area and duplicates the new CORE module-manual display.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.png"
+      ]
+    },
+    {
+      "id": "REG-0350",
+      "exact_text": "- The `Open module manual` capability must use GX-TXT's **existing new CORE documentation/manual window** and open **ONLY the selected module's manual in its own window**. Do not build an alternative manual renderer or embed a second documentation panel inside Modules.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/module_manual.tcldict",
+        "gui_final07/module_manual.png"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/manual_1.tcldict",
+        "gui_independent09/manual_2.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0351",
+      "exact_text": "- REMOVE the modules search/filter bar from this page as requested; browsing is organized by actual module groups rather than by a search field. Do not silently reinsert a new search control.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.png"
+      ]
+    },
+    {
+      "id": "REG-0352",
+      "exact_text": "- Use the reclaimed space for a **graphical two-column arrangement of group boxes/cards**. Each group should be clearly identified, with its modules presented compactly and legibly. Use the width naturally instead of retaining the old left-list/right-description split. Behave sensibly when the window becomes narrow, avoiding clipped names, controls, or inaccessible groups.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/modules_narrow.png",
+        "gui_font_final08/measured_narrow.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/layout_normal.tcldict",
+        "gui_independent09/layout_narrow.tcldict",
+        "gui_font_final08/measured_large.tcldict",
+        "gui_font_final08/measured_maximized.png"
+      ]
+    },
+    {
+      "id": "REG-0353",
+      "exact_text": "- **EACH module entry** must present its readable name, a clearly visible real enable/disable **toggle**, a dedicated **Help/manual** button, and an unambiguous activation-state indication. Distinguish activated/deactivated and any non-toggleable CORE or restricted module states truthfully. The user would also like visual differentiation of states by color, but **never rely on color alone**: retain state text/shape/icon for accessibility and avoid contradictory colors or stale state.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict",
+        "gui_final07/enable_accept.tcldict",
+        "gui_final07/session_boundary.tcldict",
+        "controller_contract_final_source.log"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_independent09/switch_restored.tcldict",
+        "gui_independent09/locked_rejection.tcldict",
+        "gui_mainfixed11/transitive_result.tcldict",
+        "gui_mainfixed12/reopened_projection02.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0354",
+      "exact_text": "- Reuse existing public GX-TXT Plugin/Module Registry, activation/configuration and CORE manual APIs. Changing toggle state must invoke the normal authoritative mechanism and accurately handle real dependencies, required restarts, errors, cancellation and unavailable operations; no faux/local-only state toggles or direct private file edits.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/dependency_restoration.tcldict",
+        "gui_fixed04/transitive_result.tcldict",
+        "GAP_REPORTS.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "BOUNDED_NATIVE_CASCADE_AND_SAVED_RESTORE_PASS_QUALIFIED_MAIN_ACCEPTANCE_OPEN",
+      "MAIN_backend_disposition": "MAIN fixed cascadeec1 and confirmed provider-closure root7df. Original backend failures retained; exact saved118 flags now match after genuine native coldOpen.",
+      "limitations": [
+        "Actual package-update/backend-error branches component/contract evidence only",
+        "UI3 has no genuine mapped global Open while Modules remains selected; source/authorfixture evidence retained",
+        "One pre-Open observation helper hung on empty Menu; guarded own-interpreter cancellation resumed spool, pending native Open only; explicit harness qualification",
+        "No Save/chain/toggle/private state/manifest writes; MAIN alone accepts full#7",
+        "Post-seal finding: three own mutable-profile preimages not retained; prior178/181 pins match, original savedSession/oracle/source/fail receipts unchanged. See profile-pin qualification."
+      ],
+      "evidence": [
+        "gui_independent09/independent_cancel.tcldict",
+        "gui_final07/dependency_restoration.tcldict",
+        "controller_contract_final_source.log",
+        "gui_mainfixed11/transitive_result.tcldict",
+        "gui_mainfixed11/saved_manifest.tcldict",
+        "gui_mainfixed12/persistence_result02.tcldict",
+        "gui_mainfixed12/spool_error_1792553688853359.tcldict",
+        "gui_mainfixed12/persistence_failure_targets.tcldict",
+        "gui_restore87_13/persistence_result87.tcldict",
+        "gui_restore87_13/reopened_canonical87.tcldict",
+        "gui_restore87_13/reopened_projection87.tcldict",
+        "gui_restore87_13/open_completed_source.tcldict",
+        "batch04/reviewer03/FIRST_HELPER_FAILURE.json"
+      ]
+    },
+    {
+      "id": "REG-0355",
+      "exact_text": "- Preserve the underlying module identities, statuses and information even though `Ver.`, `Stable ID` and the raw descriptive pane disappear from the default screen. Where needed, the existing official module detail/manual facilities may still expose those values; do not erase them from the module metadata.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_catalog.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "gui_independent09/inventory.tcldict",
+        "gui_final07/modules_catalog.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0357",
+      "exact_text": "**Mandatory real GUI quality review and rationale:**",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "CONTEXT_RETAINED_NO_STANDALONE_PASS",
+      "evidence": [
+        "REQUIREMENTS_SCOPE.json"
+      ]
+    },
+    {
+      "id": "REG-0358",
+      "exact_text": "- Design and document **WHY** the selected grouping, module card hierarchy, toggle position, manual affordance, state indicator/color, spacing, scrolling and narrow-window response improve the experience. Capture alternatives considered or any real framework constraints. Provide a design rationale in the delivery report, not merely screenshots or code diffs.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "docs/modules_dev109/DESIGN_AND_INTEGRATION.md"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "VERIFIED_IN_STATED_REUSED_SCOPE_MAIN_ACCEPTANCE_OPEN",
+      "evidence": [
+        "docs/modules_dev109/DESIGN_AND_INTEGRATION.md",
+        "batch02/PARENT_MANUAL_REVIEW.json"
+      ]
+    },
+    {
+      "id": "REG-0359",
+      "exact_text": "- Visually inspect and interact with the **actual Debian GUI after each significant UI change**, including many modules/groups, long names, OFF/ON/CORE restricted states, enable/disable flows, reopening and manual windows. Verify at typical, narrow and maximized sizes; exercise scrolling and make sure no overlap, truncation, excess whitespace or dead click areas remain.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/modules_narrow.png",
+        "gui_font_final08/measured_large.png",
+        "gui_final07/session_boundary.tcldict"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "PRIOR_VISUAL_CASES_REUSED_NATIVE_ORIGINAL_SESSION_REOPEN_PASS_QUALIFIED",
+      "evidence": [
+        "gui_independent09/layout_normal.png",
+        "gui_independent09/layout_narrow.png",
+        "gui_font_final08/measured_maximized.png",
+        "gui_independent09/after_session_ui.tcldict",
+        "gui_mainfixed11/transitive_all_off.png",
+        "gui_mainfixed12/persistence_failure_plot_on.png",
+        "gui_mainfixed12/persistence_failure_octave_on.png",
+        "gui_restore87_13/reopened_session_modules87.png",
+        "gui_restore87_13/reopened_octave_on87.png",
+        "gui_restore87_13/open_route_inspection.tcldict"
+      ]
+    },
+    {
+      "id": "REG-0360",
+      "exact_text": "- A test reporting PASS without a visibly well-organized, functional graphical Modules page and working CORE-only manual windows is NOT acceptance.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "gui_final07/modules_normal.png",
+        "gui_final07/module_manual.png"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "GRAPHICAL_AND_CORE_MANUAL_EVIDENCE_REUSED_NO_ACCEPTANCE",
+      "evidence": [
+        "gui_independent09/layout_normal.png",
+        "gui_independent09/manual_2.png"
+      ]
+    },
+    {
+      "id": "REG-0362",
+      "exact_text": "**Acceptance:** The main Modules page uses two columns of actual group boxes (responsive where necessary), no search bar, no `Ver.` or `Stable ID` main columns, no right-hand documentation pane; each module has comprehensible status and correct toggle/Help affordances, with proven functional CORE integration and an explicit documented UX/design rationale.",
+      "source_sha256": "70958f29a3fa51ead218c0e3ef5b5373adde2db3fc267fd1530236cc9da302da",
+      "implementation": "MAIN integrated frontend b99fc5f (author16e06192); backend cascadeec1 and saved-selection7df",
+      "MAIN_acceptance": "OPEN_MAIN_ONLY",
+      "scope_evidence": [
+        "RESULTS.md",
+        "GAP_REPORTS.json"
+      ],
+      "independent_evidence": "batch02/reviewer01 reused unchanged frontend; batch03/reviewer02 original native cascadePASS retained; batch04/reviewer03 one original-saved Session nativeOpenPASS with explicit helper recovery qualification",
+      "latest_case_status": "BOUNDED_EVIDENCE_COMPLETE_QUALIFIED_MAIN_ACCEPTANCE_OPEN_NO_FULL7PASS",
+      "evidence": [
+        "batch02/reviewer01/QA_RESULTS.json",
+        "batch03/reviewer02/QA_RESULTS.json",
+        "batch03/PARENT_REVIEW.json",
+        "batch04/reviewer03/QA_RESULTS.json",
+        "batch04/PARENT_REVIEW.json"
+      ]
+    }
+  ],
+  "authority": "MAIN alone accepts; all15 remain active",
+  "evidence_base": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02",
+  "repository_evidence_base": "/srv/gxtxt/agents/worktrees/dev109/core_modules",
+  "new_implementation_changes": [],
+  "four_frontend_roots": "MAIN_INTEGRATED_b99fc5f_PENDING_MAIN_ACCEPTANCE",
+  "backend_activation_disposition": "MAINec1 cascade fixed/nativePASS reused; MAIN7df saved-selection provider closure confirmed fixed and original exact saved Session nativeOpen PASS, with preserved helper recovery qualification",
+  "persistence_observation": "Original batch03 exact persistenceFAIL retained. MAIN confirmed/fixed backend root7df. One actual native Open of same original manifest3ea64 matches all118 enabled/run/UI projections, original manifest unchanged; no Save/chain/toggle replay. Read-only helper infinite loop before Open canceled through guarded own Tcl_CancelEval; failed helper not relabeledPASS.",
+  "MAIN_integrated_verification_batches": {
+    "doc82": "1b729311e12bae1629ffe4d6ab5524e9720422c6",
+    "batch5d9": "95927159828a10575f370603aa48c12e9ef872ee"
+  },
+  "UI3": {
+    "status": "NATIVE_ROUTE_UNAVAILABLE_SOURCE_AUTHOR_FIXTURE_ONLY",
+    "evidence": [
+      "gui_restore87_13/open_route_inspection.tcldict",
+      "gui_restore87_13/open_route_choice.tcldict",
+      "gui_restore87_13/modules_before_open.png",
+      "gui_final07/session_boundary.tcldict"
+    ],
+    "details": "Actual legacy top Open button unmapped; root menu empty and bindtags have no chooseSession global binding. Real Open requires Sessions tab, so Modules-already-selected transition is not newly exercised. No callback injection or invented global entry."
+  },
+  "remaining_gates": [
+    "MAIN integration/review/acceptance of this new docs/tests batch; full#7 remains OPEN_MAIN_ONLY",
+    "UI3 exact already-visible Session change retains source/authorfixture scope because no mapped genuine global route exists",
+    "Actual package-update/backend-error branches retain original public-contract/component evidence; not rerun as native cases",
+    "Helper-only GDB/Tcl_CancelEval recovery and after-recovery catalog narrative retained as explicit qualifications; original failed helper not a clean PASS",
+    "MAIN must assess disclosed historical mutable-profile preimage loss; three old byte images were not preserved. Native118state result remains valid."
+  ],
+  "historical_profile_preservation_qualification": "Three mutable own-profile files changed during normal reuse without retained preimages: registry.sqlite3, configuration.ini, projects.ini. Prior181 pins now178match/3exceptions; original savedSession/oracle/manifests/source/failedreceipts unchanged. Current91reviewer/372source pins match; no reconstruction/replay. See RESTORE87_PROFILE_PIN_QUALIFICATION.json."
+}

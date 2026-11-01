@@ -77,6 +77,9 @@ def admit(c,root,r):
     r.pop('parent_job_id',None)
     if parent:r['parent_job_id']=parent['id']
     identity={k:r[k] for k in ('session','reference','source_sha256','parameters','execution_inputs')}
+    if r.get('parameter_dataset'):
+        identity['parameter_dataset'] = r['parameter_dataset']
+    if r.get('parameter_schema'):identity['parameter_schema']=r['parameter_schema']
     if parent:identity['parent_job_id']=parent['id']
     identity['inputs']={k:{f:v for f,v in b.items() if f not in ('label','namespace')} for k,b in r['inputs'].items()}
     signature=hashlib.sha256(json.dumps(identity,sort_keys=True,separators=(',',':')).encode()).hexdigest()
@@ -453,8 +456,16 @@ def launch_job(c,root,row):
     c.execute('UPDATE jobs SET state="PREPARING",started=?,record=? WHERE id=?',(time.time(),json.dumps(r),jid))
     proc=stream=None
     try:
-        if hashlib.sha256(Path(r['snapshot']).read_bytes()).hexdigest()!=r['source_sha256']:raise ValueError('Source snapshot hash mismatch')
-        env=dict(os.environ);env.update(r.get('environment',{}));env.update(GXTXT_JOB_ID=jid,GXTXT_JOB_ROOT=str(root),GXTXT_PARALLEL_DEPTH='1',GXTXT_JOB_THREADS=str(r['policy']['threads']),GXTXT_JOB_INTERNAL_THREADS=str(r['policy']['threads']),GXTXT_SUPERVISOR_PID=str(os.getpid()),GXTXT_SUPERVISOR_START=process_identity(os.getpid()),PYTHONUNBUFFERED='1',PYTHONDONTWRITEBYTECODE='1')
+        if r.get('project_manifest'):
+            from script_project import verify
+            project,_,_=verify(Path(r['project_manifest']).parent)
+            if project['sha256']!=r['source_sha256']:raise ValueError('Whole-project snapshot hash mismatch')
+        elif hashlib.sha256(Path(r['snapshot']).read_bytes()).hexdigest()!=r['source_sha256']:raise ValueError('Source snapshot hash mismatch')
+        env=dict(os.environ)
+        # Optional diagnostics belongs to this submitted launch, not to the
+        # possibly much older durable supervisor's inherited GUI environment.
+        for key in ('GXTXT_STDERR_DIAGNOSTICS_DESCRIPTOR','GXTXT_STDERR_DIAGNOSTICS_LIBRARY'):env.pop(key,None)
+        env.update(r.get('environment',{}));env.update(GXTXT_JOB_ID=jid,GXTXT_JOB_ROOT=str(root),GXTXT_PARALLEL_DEPTH='1',GXTXT_JOB_THREADS=str(r['policy']['threads']),GXTXT_JOB_INTERNAL_THREADS=str(r['policy']['threads']),GXTXT_SUPERVISOR_PID=str(os.getpid()),GXTXT_SUPERVISOR_START=process_identity(os.getpid()),PYTHONUNBUFFERED='1',PYTHONDONTWRITEBYTECODE='1')
         for key in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS','VECLIB_MAXIMUM_THREADS','BLIS_NUM_THREADS'):env[key]=str(r['policy']['threads'])
         if str(r.get('debug','0')) == '1':
             from gxtxt_debug_control import prepare
@@ -622,18 +633,26 @@ def auxiliary_request_run(command, *, timeout_seconds=3, max_bytes=1048576, envi
 
 def tcl_result(value):
     import tkinter
-    if isinstance(value,dict):return tkinter._join(tuple(x for k,v in value.items() for x in (k,tcl_result(v))))
-    if isinstance(value,list):return tkinter._join(tuple(tcl_result(v) for v in value))
-    if value is None:return ''
-    if isinstance(value,bool):return str(int(value))
-    return str(value)
+    # Native Tcl chooses canonical braces/backslashes at each nesting level.
+    # tkinter._join recursively backslash-quotes already quoted deep strings,
+    # exponentially inflating authentic structured source responses.
+    interpreter=tkinter.Tcl()
+    interpreter.tk.wantobjects(False)
+    def encode(item):
+        if isinstance(item,dict):return interpreter.call('list',*(part for key,child in item.items() for part in (str(key),encode(child))))
+        if isinstance(item,list):return interpreter.call('list',*(encode(child) for child in item))
+        if item is None:return ''
+        if isinstance(item,bool):return str(int(item))
+        return str(item)
+    return encode(value)
 def read_request():
     import tkinter
     t=tkinter.Tcl()
     def d(v):
         a=t.splitlist(v);return dict(zip(a[::2],a[1::2]))
     r=d(sys.stdin.read())
-    for key in ('parameters','output','execution_inputs','environment'):r[key]=d(r.get(key,''))
+    for key in ('parameters','output','execution_inputs','environment','parameter_dataset'):r[key]=d(r.get(key,''))
+    r['parameter_schema']={k:d(v) for k,v in d(r.get('parameter_schema','')).items()}
     r['inputs']={k:d(v) for k,v in d(r.get('inputs','')).items()};r['command']=list(t.splitlist(r['command']));return r
 
 def presentation_request():

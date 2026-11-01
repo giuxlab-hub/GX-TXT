@@ -193,7 +193,15 @@ proc ::AcqAiaAndi::import {request} {
             provenance "Exact original CDF bytes copied from framework-owned RAW; no numerical interpretation in this binary Dataset." \
             structured_metadata $md]
     }
-    return [dict create datasets $datasets]
+    set members {}
+    foreach dataset $datasets {
+        set memberId [dict get $dataset dataset_id]
+        set role [expr {$memberId eq $traceId?{chromatography.trace}:($memberId eq $peakId?{chromatography.peaks}:{chromatography.source_container})}]
+        lappend members [dict create dataset_id $memberId role $role required [expr {$memberId eq $traceId}]]
+    }
+    return [dict create datasets $datasets dataset_group [dict create \
+        group_id "${id}.group" display_name "AIA/ANDI measurement — $id" \
+        group_contract chromatography.measurement primary_dataset_id $traceId members $members]]
 }
 
 proc ::AcqAiaAndi::datasetPreview {request} {

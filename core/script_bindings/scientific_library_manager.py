@@ -199,7 +199,7 @@ def _integer(value, minimum, maximum):
 def _options(value, paging=False):
     if not isinstance(value, dict):
         _invalid('Library options require a scalar struct/map.')
-    allowed = {'limit', 'continuation'} if paging else {'mode', 'query', 'offset', 'limit'}
+    allowed = {'limit', 'continuation'} if paging else {'mode', 'query', 'offset', 'limit', 'library_type'}
     if set(value) - allowed:
         _invalid('Library options do not admit provider options, destinations or configuration.')
     out = {}
@@ -216,6 +216,10 @@ def _options(value, paging=False):
             out[key] = _text(item)
             if len(item) > 1024:
                 _invalid('Library catalog query exceeds1024 characters.')
+        elif key == 'library_type':
+            out[key] = _text(item)
+            if len(item) > 128:
+                _invalid('Library type exceeds128 characters.')
         else:
             out[key] = _text(item)
             if not item or '\0' in item or len(item) > 4096:
@@ -327,6 +331,7 @@ def _catalog(host, raw):
         _failure('invalid_provider_response', 'Library catalog bounds are invalid.')
     result['mode'] = _enum(source['mode'], _MODES | {'all'})
     result['query'] = _text(source['query'], provider=True)
+    result['library_type'] = _text(source.get('library_type', ''), provider=True)
     result['registry_sha256'] = _text(source['registry_sha256'], provider=True)
     if not re.fullmatch('[0-9a-f]{64}', result['registry_sha256']):
         _failure('invalid_provider_response', 'Library catalog revision is invalid.')

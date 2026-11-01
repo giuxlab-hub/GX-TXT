@@ -269,9 +269,10 @@ and leave the edit open for correction/Cancel. Reopened stale drafts cannot Acce
 Cancel remains available even if the source has been deleted. Distinct edit intakes
 receive distinct saved workspace names. The GUI uses the same public owner boundary.
 
-See [Native3D Engine API](NATIVE_3D_ENGINE_API_v1.md) for calibration,
-scientific policies, actual desktop steps and limits. Public Script Bridge calls use `gxtxt_api_call` and typed values. The corresponding
-Tcl numerical/resource API follows the same documented CORE contracts. Python XYZ uses lists of triples;
+See [integrated guide](../guides/INTEGRATED_FOUNDATIONS_dev088.md) for calibration,
+scientific policies, actual desktop steps and limits. `validation/astra_dev088/bridge.tcl`
+contains executable Python/Octave examples using `gxtxt_api_call` and typed values;
+`core.tcl` contains Tcl numerical/resource examples. Python XYZ uses lists of triples;
 Octave uses cell arrays of 3×1 vectors and cell arrays of cell/array structs.
 
 Native C additive exports are declared in `native_3d_engine_api_v1.h`:

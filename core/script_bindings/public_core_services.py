@@ -5,6 +5,7 @@ Research scripts never provide a procedure name or filesystem implementation pat
 """
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gxtxt_script_bridge_server import BridgeError
+import uuid
 
 
 def _api(api_id, version, provider, documentation, operations):
@@ -23,6 +24,19 @@ def _arg(name, kind, required=True):
 
 # Operation tuples: summary, argument schema, result, public command, conversion.
 SERVICES = {
+    "SOURCE_NOTE_API_v1": (1, "source_note", "docs/api/SOURCE_NOTE_API_v1.md", {
+        "association": ("Inspect a canonical document's validated source association", [_arg("dataset_id", "string")], "source association and availability; never creates an attachment", "::GX::sourceNoteAssociation", "source_note"),
+        "source": ("Consult an associated source only when its exact identity and revision remain valid", [_arg("dataset_id", "string")], "bounded source text or explicit unavailable/revised diagnostic", "::GX::sourceNoteSource", "source_note"),
+    }),
+    "DOCUMENT_SOURCE_API_v1": (1, "document_source", "docs/api/DOCUMENT_SOURCE_API_v1.md", {
+        name: (summary, [_arg("request", "struct")], "guarded Markdown document receipt with opaque revision and exact UTF-8 source",
+               "::GX::documentSourceRequest", "document_request")
+        for name, summary in {
+            "describe": "Read canonical Markdown identity/permissions or current empty publication context",
+            "read": "Read exact canonical Markdown UTF-8 bytes and optimistic revision",
+            "write": "Create or explicitly replace an authorized Markdown Dataset with Session/revision/SHA guards",
+        }.items()
+    }),
     "OBJECT_ORIGIN_API_v1": (1, "object_origin", "docs/api/OBJECT_ORIGIN_API_v1.md", {
         "document": ("Read scientific document creator", [_arg("document_id", "string")], "origin dictionary", "::GX::documentOriginRead", "origin"),
         "dataset": ("Read Dataset publication creator", [_arg("dataset_id", "string")], "origin dictionary", "::GX::datasetOriginRead", "origin"),
@@ -153,12 +167,20 @@ SERVICES = {
         "set": ("Set level scale presentation", [_arg("graph_id", "string"), _arg("axis", "string"), _arg("fields", "struct")], "level scale struct", "::GX::levelScaleSet", "dict"),
     }),
     "CONTRACT_REGISTRY_API_v1": (1, "contract_registry", "docs/api/CONTRACT_REGISTRY_API_v1.md", {
+        "describe": ("Inspect authoritative contract owners and declared visualizer recommendations", [_arg("contract_id", "string")], "contract definition status and recommendations", "::GX::contractRegistryDescribe", "dict"),
         "list": ("List contract IDs", [], "cell of IDs", "::GX::contractRegistryIds", "list"),
         "known": ("Check a contract ID", [_arg("contract_id", "string")], "boolean", "::GX::contractRegistryKnown", "integer"),
         "field": ("Read a contract field", [_arg("contract_id", "string"), _arg("field", "string"), _arg("default", "string", False)], "field value", "::GX::contractRegistryField", "string"),
         "choices": ("List contract choices", [], "cell of choices", "::GX::contractRegistryChoices", "list"),
         "satisfies": ("Check contract specialization", [_arg("actual", "string"), _arg("expected", "string")], "boolean", "::GX::contractSatisfies", "integer"),
         "satisfies_any": ("Check any expected contract", [_arg("actual", "string"), _arg("expected", "list")], "boolean", "::GX::contractSatisfiesAny", "integer"),
+    }),
+    "CONTRACT_VISUALIZER_API_v1": (1, "contract_visualizer", "docs/api/CONTRACT_VISUALIZER_API_v1.md", {
+        "providers": ("Inspect installed declared visualizer capabilities", [], "provider records", "::GX::contractVisualizerProviders", "list"),
+        "candidates": ("Inspect compatible Open or Preview providers", [_arg("contract_id", "string"), _arg("target", "string"), _arg("dataset_id", "string", False)], "compatible provider records", "::GX::contractVisualizerCandidates", "list"),
+        "resolve": ("Resolve separate Open or embedded Preview preference", [_arg("contract_id", "string"), _arg("target", "string"), _arg("dataset_id", "string", False)], "resolution and diagnostics", "::GX::contractVisualizerResolve", "dict"),
+        "preference_get": ("Read retained qualified provider preference", [_arg("contract_id", "string"), _arg("target", "string")], "qualified provider or auto", "::GX::contractVisualizerPreferenceGet", "string"),
+        "preference_set": ("Commit compatible provider preference or Restore Auto", [_arg("contract_id", "string"), _arg("target", "string"), _arg("provider", "string")], "committed preference", "::GX::contractVisualizerPreferenceSet", "dict"),
     }),
     "PLOT_MODULE_API_v1": (1, "plot_module", "docs/api/PLOT_MODULE_API_v1.md", {
         "supports": ("Check variant support", [_arg("module_id", "string"), _arg("graph_id", "string")], "boolean", "::GX::plotVariantSupports", "integer"),
@@ -184,6 +206,52 @@ def _origin_record(host, value, depth=0):
     return row
 
 
+def _document_request(host, command, operation, request):
+    """Opaque per-Host revision receipts hide internal Session/registry tokens.
+
+    This is transient transport admission, never another document store. Every
+    actual mutation still uses the existing Dataset transaction and capability.
+    """
+    context = host.dataset_private_context()
+    session = str(host.call("::GX::interactiveDocumentSessionToken"))
+    if getattr(host, "_document_revision_session", None) != session:
+        host._document_revision_session = session
+        host._document_revision_receipts = {}
+    request = dict(request)
+    for key in ("expected_revision", "source_revision"):
+        if key in request:
+            if not isinstance(request[key], str) or request[key] not in host._document_revision_receipts:
+                raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Use an opaque document revision returned by describe/read in this Session")
+            request[key] = host._document_revision_receipts[request[key]]
+    raw = host.call(command, context["capability"], operation, request)
+    result = host.as_dict(raw)
+    revision = result.get("revision", "")
+    if revision:
+        token = next((key for key, value in host._document_revision_receipts.items() if value == revision), None)
+        if token is None:
+            if len(host._document_revision_receipts) >= 128:
+                host._document_revision_receipts.pop(next(iter(host._document_revision_receipts)))
+            token = "document-revision#" + uuid.uuid4().hex
+            host._document_revision_receipts[token] = revision
+        result["revision"] = token
+    result["metadata"] = host.as_dict(result.get("metadata", ""))
+    result["association"] = host.as_dict(result.get("association", ""))
+    assets = {}
+    for name, value in host.as_dict(result.get("assets", "")).items():
+        resource = host.as_dict(value)
+        resource["size_bytes"] = int(resource["size_bytes"])
+        resource["metadata"] = host.as_dict(resource["metadata"])
+        if "origin" in resource["metadata"]:
+            resource["metadata"]["origin"] = _origin_record(host, resource["metadata"]["origin"])
+        assets[name] = resource
+    result["assets"] = assets
+    for key in ("can_create", "can_replace", "immutable", "complete"):
+        if key in result: result[key] = bool(int(result[key]))
+    if "bytes" in result: result["bytes"] = int(result["bytes"])
+    if operation == "write": return host.record_publications(result)
+    return result
+
+
 def invoke_api(host, api_id, operation, args):
     definition = SERVICES.get(api_id)
     if definition is None or operation not in definition[3]:
@@ -198,7 +266,16 @@ def invoke_api(host, api_id, operation, args):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", f"{api_id}/{operation}: {arg['name']} must be {kind}")
         if kind == "integer" and (not isinstance(value, (int, float)) or int(value) != value):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", f"{api_id}/{operation}: {arg['name']} must be integer")
+    if conversion == "document_request":
+        return _document_request(host, command, operation, args[0])
     result = host.call(command, *args)
+    if conversion == "source_note":
+        result = host.as_dict(result)
+        if "source_ref" in result:
+            reference = host.as_dict(result["source_ref"])
+            reference["reference"] = host.as_dict(reference["reference"])
+            result["source_ref"] = reference
+        return result
     if conversion == "origin":
         return _origin_record(host, result)
     if conversion == "identity_history":

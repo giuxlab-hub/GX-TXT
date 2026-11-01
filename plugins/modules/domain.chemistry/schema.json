@@ -1,0 +1,163 @@
+{
+  "record_types": {
+    "chemistry.compound": {
+      "library_type": "chemistry.records",
+      "label": "Chemical identity",
+      "fields": {
+        "identifiers": {
+          "type": "object",
+          "required": true
+        },
+        "properties": {
+          "type": "object",
+          "required": true
+        },
+        "source_record": {
+          "type": "object"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      }
+    },
+    "chemistry.structure": {
+      "library_type": "molecular.structures",
+      "label": "Molecular structure",
+      "fields": {
+        "identifiers": {
+          "type": "object",
+          "required": true
+        },
+        "geometry_origin": {
+          "type": "string",
+          "required": true
+        },
+        "coordinate_unit": {
+          "type": "string",
+          "required": true
+        },
+        "conformer_id": {
+          "type": "string"
+        },
+        "dimensionality": {
+          "type": "string",
+          "required": true
+        },
+        "validated_atoms": {
+          "type": "integer"
+        },
+        "validated_bonds": {
+          "type": "integer"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      },
+      "library_types": [
+        "molecular.structures",
+        "chemistry.records"
+      ],
+      "validator": "api/structure_validation.py"
+    },
+    "chemistry.safety_claim": {
+      "library_type": "chemistry.records",
+      "label": "Source-specific safety annotation",
+      "fields": {
+        "contributor": {
+          "type": "string",
+          "required": true
+        },
+        "claims": {
+          "type": "array",
+          "required": true
+        },
+        "source_record": {
+          "type": "object",
+          "required": true
+        },
+        "jurisdiction": {
+          "type": "string"
+        },
+        "source_revision": {
+          "type": "string"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      }
+    },
+    "chemistry.spectrum_reference": {
+      "library_type": "chemistry.records",
+      "label": "External spectral information (no numeric trace)",
+      "fields": {
+        "heading": {
+          "type": "string",
+          "required": true
+        },
+        "source_record": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      }
+    }
+  },
+  "relations": {
+    "chemistry.has_structure": {
+      "label": "Available structure",
+      "from_types": [
+        "chemistry.compound"
+      ],
+      "to_types": [
+        "chemistry.structure"
+      ]
+    },
+    "chemistry.has_safety_claim": {
+      "label": "Source-specific safety claim",
+      "from_types": [
+        "chemistry.compound"
+      ],
+      "to_types": [
+        "chemistry.safety_claim"
+      ]
+    },
+    "chemistry.has_spectrum_reference": {
+      "label": "External spectral information",
+      "from_types": [
+        "chemistry.compound"
+      ],
+      "to_types": [
+        "chemistry.spectrum_reference"
+      ]
+    },
+    "chemistry.has_publication": {
+      "label": "Publication reference",
+      "from_types": [
+        "chemistry.compound"
+      ],
+      "to_types": [
+        "scientific.publication"
+      ]
+    }
+  },
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "domain.chemistry"
+}

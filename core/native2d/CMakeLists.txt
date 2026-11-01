@@ -6,7 +6,7 @@ set(GXTXT_NUMERIC_REDUCTION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/mo
 if(NOT EXISTS "${GXTXT_NUMERIC_REDUCTION_HEADER}")
   message(FATAL_ERROR "Native2D requires the public NUMERIC_API_v1 C binding from the matching framework")
 endif()
-add_library(gx2d gx2d.c "${GXTXT_NUMERIC_REDUCTION_HEADER}")
+add_library(gx2d gx2d_presentation_visit_v1.h gx2d_presentation_visit_v1.inc gx2d.c "${GXTXT_NUMERIC_REDUCTION_HEADER}")
 target_compile_features(gx2d PUBLIC c_std_99)
 target_include_directories(gx2d PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(WIN32 AND BUILD_SHARED_LIBS)
@@ -18,14 +18,28 @@ endif()
 
 # Tcl adapter for viewers. The geometry engine remains a standalone C library.
 find_package(TCL QUIET)
+option(GXTXT_PREVIEW_PROVIDER_ONLY "Build the optional Preview adapter without rebuilding the GUI viewer" OFF)
 if(TCL_FOUND)
+  # Existing separate worker adapter; it only needs Tcl and the platform loader.
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64)$")
+    add_library(gxpreviewprovider MODULE gx2d_preview_provider_v1.cpp gx2d_preview_provider_loader.cpp)
+    target_compile_features(gxpreviewprovider PRIVATE cxx_std_17)
+    target_include_directories(gxpreviewprovider PRIVATE ${TCL_INCLUDE_PATH})
+    target_compile_definitions(gxpreviewprovider PRIVATE GXTXT_PREVIEW_BRIDGE_BUILD_ID="gxtxt.preview.bridge.dev111.p002.v1")
+    target_link_libraries(gxpreviewprovider PRIVATE ${TCL_LIBRARY} ${CMAKE_DL_LIBS})
+    set_target_properties(gxpreviewprovider PROPERTIES PREFIX "")
+    install(TARGETS gxpreviewprovider LIBRARY DESTINATION core/native2d/bin)
+  endif()
+  if(GXTXT_PREVIEW_PROVIDER_ONLY)
+    return()
+  endif()
   # Device presentation is owned by Native2D and shares one painter between
   # virtual grids and native Plot projections. Cairo supplies real clipping,
   # alpha composition, dashed strokes and rotated text on the Tk drawable.
   find_path(GXTXT_CAIRO_INCLUDE cairo.h PATH_SUFFIXES cairo REQUIRED)
   find_library(GXTXT_CAIRO_LIBRARY NAMES cairo libcairo.so.2 REQUIRED)
   find_package(X11 REQUIRED)
-  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp)
+  add_library(gx2dtcl MODULE gx2d_presentation_visit_v1.h gx2d_presentation_visit_v1.inc gx2d_tcl.c gx2d.c gx2d_surface.cpp gx2d_presentation_batch.cpp gx2d_grid_presenter_v1.cpp gx2d_sprite_scene_v1.cpp gx2d_cad_controller_v1.cpp gx2d_cad_controller_v1.h)
   target_sources(gx2dtcl PRIVATE
     gx2d_csv_provider_v1.cpp
     gx2d_preview_categories_v1.cpp
@@ -45,7 +59,7 @@ if(TCL_FOUND)
     target_compile_definitions(gx2dtcl PRIVATE GXTXT_NATIVE_PLOT_V4=1)
   endif()
   target_include_directories(gx2dtcl PRIVATE ${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH} ${GXTXT_CAIRO_INCLUDE})
-  target_link_libraries(gx2dtcl PRIVATE ${TCL_LIBRARY} ${TK_LIBRARY} ${GXTXT_CAIRO_LIBRARY} X11::X11)
+  target_link_libraries(gx2dtcl PRIVATE ${TCL_LIBRARY} ${TK_LIBRARY} ${GXTXT_CAIRO_LIBRARY} X11::X11 ${CMAKE_DL_LIBS})
   target_compile_features(gx2dtcl PRIVATE cxx_std_17)
   target_compile_features(gx2dtcl PRIVATE c_std_99)
   if(NOT MSVC)

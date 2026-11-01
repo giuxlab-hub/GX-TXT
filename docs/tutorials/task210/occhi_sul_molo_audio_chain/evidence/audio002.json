@@ -1,0 +1,260 @@
+{
+  "record_type": "audio002_partial_actual_gui_additive_record",
+  "content_id": "tutorial.occhi_sul_molo_audio_chain",
+  "status": "DECODE_PASS_PUBLICATION_OBSERVED_WAVEFORM_INTERRUPTED_TERMINAL_UNESTABLISHED",
+  "historical_audio001_record": "observations.json",
+  "audio001_preserved_without_relabeling": true,
+  "allocation_id": "cbeaee69-b84f-4397-b97a-2f903528b84f",
+  "candidate": "afcf94214a11b7d4eab62eb6d65997a8077605b0",
+  "candidate_classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+  "version": "0.9.8.10-dev-111",
+  "normal_open": {
+    "method": "Normal GUI Open of MAIN-prepared fresh whole copy of Audio001",
+    "new_generate_count": 0,
+    "source_recreated": false,
+    "copy_identity": "audio002_gui_fixture01/Session",
+    "original_binary_dataset_id": "occhi_sul_molo_lavoro",
+    "original_binary_variable_schema_API": 3,
+    "audio001_historical_binary_API": 2,
+    "binary_source_sha256": "09d2235cb618fd65d834124f7c0af1fa023d6ef3b579de60b45e0d538b26cdcc",
+    "library_version_actual_readback": null
+  },
+  "decode": {
+    "normal_Run_count": 1,
+    "settled_plan_status": "PASS",
+    "status_basis": "Parent ordinary completion dialog015 and plan016; private Run-log frames are not packaged",
+    "module_id": "analysis.audio_decode",
+    "module_version_observed": "2.0.1",
+    "scale": 1,
+    "amplitude_unit": "FS",
+    "dataset_id": "occhi_sul_molo_lavoro.decoded",
+    "contract": "timeseries.table",
+    "format": "hdf5",
+    "media_type": "application/x-hdf5",
+    "storage_provider": "hdf5",
+    "storage_provider_version": 1,
+    "rows_actual_GUI": 13651200,
+    "sample_count_actual_GUI": 13651200,
+    "canonical_access_API": 2,
+    "publication_API": 2,
+    "Variables": [
+      {
+        "id": "time",
+        "display_name": "time_s",
+        "unit": "s",
+        "enabled": true,
+        "role": "independent"
+      },
+      {
+        "id": "channel_1",
+        "display_name": "ch1",
+        "unit": "FS",
+        "enabled": true,
+        "role": "measured"
+      },
+      {
+        "id": "channel_2",
+        "display_name": "ch2",
+        "unit": "FS",
+        "enabled": true,
+        "role": "measured"
+      }
+    ],
+    "canonical_sha256_displayed": "f2543f9d8639d038e1195769264e6aa51fd18fd4fb7357a1170a852bff016015",
+    "retained_payload_bytes_owner_receipt": 219181592,
+    "bytehash_scope": "Owner post-interruption byte identity only; no sample/schema/numerical validation by this author",
+    "sampling_log_readback": {
+      "sample_rate_Hz": 48000,
+      "channels": 2,
+      "basis": "Parent terminal producer-log observation; safe packaged frames do not independently expose fs metadata"
+    },
+    "detailed_axis_origin_step": null,
+    "dtype_dimensions": null,
+    "first_last_values": null,
+    "physical_channel_identity": null,
+    "numerical_fidelity": null,
+    "publication_producer_version_visible": null,
+    "publication_provenance_visible": null,
+    "publication_source_dataset_ids_visible": null,
+    "publication_source_variable_ids_visible": null,
+    "blank_field_qualification": "These displayed rows were blank; do not fill from source/module expectations",
+    "Job_ID": null
+  },
+  "waveform": {
+    "normal_Run_count": 1,
+    "module_id": "plot.dataset",
+    "module_version_observed": "4.2.4",
+    "only_XY_selected": true,
+    "region_3D_off": true,
+    "Decode_selected_for_this_Run": false,
+    "Series": {
+      "id": "audio_ch1",
+      "enabled": true,
+      "dataset_id": "occhi_sul_molo_lavoro.decoded",
+      "x_id": "time",
+      "y_id": "channel_1",
+      "axis": "left",
+      "panel": "main",
+      "filters_count": 0
+    },
+    "reduction": "minmax",
+    "target_display_points_approximate": 2000,
+    "threshold": 12000,
+    "chunk_rows": 5000,
+    "settings_verified_capture": "045",
+    "last_status": "RUNNING_LOADING",
+    "terminal_outcome": "NOT_ESTABLISHED",
+    "actual_rendered_count": null,
+    "actual_graph_id": null,
+    "actual_variant": null,
+    "actual_artifact": null,
+    "actual_waveform_source_range": null,
+    "Preview_current_geometry": null,
+    "redraw_latency": null,
+    "no_inferred_terminal_PASS_or_FAIL": true
+  },
+  "interruption": {
+    "reported_signal": 15,
+    "signal_origin": "NOT_ESTABLISHED",
+    "operator_Close_cancel_kill_requested": false,
+    "normal_Save_Close_occurred": false,
+    "retry_relaunch_occurred": false,
+    "deadline_expiry_established": false,
+    "manual_cap_utc": "2026-10-23T00:11:03Z",
+    "materialized_deadline_utc": "2026-10-23T00:15:59Z",
+    "later_materialization_did_not_extend_manual_cap": true,
+    "cleanup": "Owner receipt records owned-group cleanup, no recorded survivors and unchanged parent WM/resolution; not normal product close or universal descendant proof"
+  },
+  "FFT": {
+    "status": "NOT_TESTED_NOT_STARTED",
+    "configured": false,
+    "Run_count": 0,
+    "output": null
+  },
+  "later_scientific_branches": "NOT_TESTED; not scientifically inapplicable",
+  "normal_save_reopen_persistence": "NOT_TESTED_NOT_PERFORMED_AUDIO002",
+  "timing": {
+    "Decode_dispatch_utc": "2026-10-22T23:55:32Z",
+    "Plot_dispatch_utc": "2026-10-22T23:59:33Z",
+    "first_unavailable_display": "Around2026-10-23T00:00Z; subsequent clock00:00:14UTC",
+    "scope": "Operator/tool/capture chronology; no precise first-frame latency/median/p95/comparison",
+    "measured_latency": null
+  },
+  "captures": [
+    {
+      "package_path": "assets/audio002_018_decoded_technical_details.png",
+      "original_capture": "018_decoded_technical_details.png",
+      "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/018_decoded_technical_details.png",
+      "sha256": "6daa91e3436bedae22da21bd5d673049b1c75d91f0b815da1a6d15166b466510",
+      "bytes": 95992,
+      "unchanged_byte_copy": true,
+      "caption": "Audio002 actual decoded numerical Dataset occhi_sul_molo_lavoro.decoded: timeseries.table, HDF5, 13,651,200 displayed rows/samples. Canonical digest is displayed; producer-version, provenance and source-ID rows are blank in this view. This is metadata readback, not independent sample validation.",
+      "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+      "capture_timestamp_utc": null,
+      "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+    },
+    {
+      "package_path": "assets/audio002_019_decoded_variables.png",
+      "original_capture": "019_decoded_variables.png",
+      "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/019_decoded_variables.png",
+      "sha256": "7356a66bb456a383336a84431989e5f9ffcacb529d9acacf3658e8fc9e98b849",
+      "bytes": 41972,
+      "unchanged_byte_copy": true,
+      "caption": "Audio002 Variables page: time_s [s], ch1 [FS] and ch2 [FS], all enabled. Stable IDs time/channel_1/channel_2 were read through the selectors and accepted Series separately. Detailed axis origin/step, dtype, dimensions and numerical fidelity are not established by this frame.",
+      "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+      "capture_timestamp_utc": null,
+      "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+    },
+    {
+      "package_path": "assets/audio002_040_waveform_series_id_corrected.png",
+      "original_capture": "040_waveform_series_id_corrected.png",
+      "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/040_waveform_series_id_corrected.png",
+      "sha256": "df366e0e817e5340436ecebdf0a41fe5bd0eabe55d69acf96289ebb2c453336a",
+      "bytes": 76500,
+      "unchanged_byte_copy": true,
+      "caption": "Audio002 accepted audio_ch1 Series uses the actual decoded Dataset, X=time and Y=channel_1, enabled, left axis, main panel and no filters. This is source-bound configuration, not a completed waveform or verified plot range.",
+      "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+      "capture_timestamp_utc": null,
+      "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+    },
+    {
+      "package_path": "assets/audio002_045_waveform_target_2000_verified.png",
+      "original_capture": "045_waveform_target_2000_verified.png",
+      "source_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/audio002_manual01/manual_evidence/045_waveform_target_2000_verified.png",
+      "sha256": "9aea977f1545ba93d52b65d22cd05b70f2d9f2ee7c78cef50796039ee0867c0c",
+      "bytes": 79128,
+      "unchanged_byte_copy": true,
+      "caption": "Audio002 minmax reduction and approximate display target 2,000 were verified before the single Plot attempt; XY was selected, rectangle/3D off. This is not an actual rendered count, hard upper bound or performance result. The later Plot remained RUNNING before interruption.",
+      "visual_review_basis": "SUB1 six-safe-frame review; this authoring task did not render or re-view images",
+      "capture_timestamp_utc": null,
+      "timestamp_qualification": "No timestamp inferred from filename or filesystem mtime; operator dispatch chronology is separate."
+    }
+  ],
+  "private_Runlog_frames_not_packaged": [
+    "013",
+    "014",
+    "015",
+    "016",
+    "042",
+    "046",
+    "047",
+    "048"
+  ],
+  "capture_subset_review": {
+    "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB1/audit/AUDIO002_SIXFRAME_SCIENCE_REVIEW.md",
+    "sha256": "14cbaf81d5a5992abd028f7fa2acf6e6d0e890107f397090c9fc97695d93f7a2",
+    "scope": "SUB1 viewed six safe018/019/036/037/040/045; package adds only018/019/040/045 unchanged; this authoring does not expand visual review"
+  },
+  "full_matrix_complete": false,
+  "full_inventory_denominator": null,
+  "full_quality_accepted": false,
+  "host_rendering_accepted": false,
+  "original_candidate_parity_performance_accepted": false,
+  "source_receipts": [
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO002_LIVE_OBSERVATIONS_062.json",
+      "sha256": "9763c6c6c96ae866bea602fdd87e250a511b093d0df77c78e9eba4662d3e6242"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO002_CAPTURE_INVENTORY_062.json",
+      "sha256": "feba1fbeb08049bf9f89bc22713b4132eb11f5fc6e3dc3247cf253c892889648"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO002_POST_SOURCE_PINS_062.json",
+      "sha256": "04ef73bb60ef103c34357c58802c003ad1c2840008f6adb9b724fdb32d4d43b0"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/coordination/AUDIO002_POST_PAYLOAD_HASHES_062.json",
+      "sha256": "b265f1a0bf96033359ffcda48a3e85c6df8da782c6bf2d6dffdc2248c2f659a1"
+    }
+  ],
+  "scientific_claim_limits": [
+    "Published metadata/counts and normal Decode PASS are not independent sample accuracy",
+    "FS is not calibrated V/Pa/SPL",
+    "Source implicit origin/step/dtype declarations remain expectations until actual detailed readback",
+    "Binary PNG and HDF5 metadata are not completed waveform/FFT geometry",
+    "No silent repeat of completed Decode or retry of interrupted Plot; MAIN allocates continuation"
+  ],
+  "operator_setup_corrections": [
+    {
+      "issue": "Blank required Graph Series ID refused",
+      "original_frames": [
+        "038",
+        "039"
+      ],
+      "normal_correction": "Entered audio_ch1; accepted040 before the one Plot calculation",
+      "calculation_retry": false
+    },
+    {
+      "issue": "xdotool type consumed following command tokens; Tk Ctrl+A moved cursor instead of selecting whole field",
+      "original_frames": [
+        "033",
+        "041",
+        "043",
+        "044"
+      ],
+      "normal_correction": "Home/Shift+End, standalone2000 typing and Tab;045 verified exactly2000 before dispatch",
+      "calculation_with_malformed_target": false
+    }
+  ]
+}

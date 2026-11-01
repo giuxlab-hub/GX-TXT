@@ -1,5 +1,54 @@
 # Curve Workbench
 
+## Advanced editing
+
+Use the existing Create, Modify, Constraints, Representation and dimension
+controls. Escape cancels the current proposal without accepting a scientific
+edit; Finish completes a variable-length construction. Invalid driving values
+remain available for correction. Where offered, a reference measurement records
+the actual measured value without driving the geometry. Reference measurements
+remain read-only until explicitly changed to driving.
+
+Join point establishes a native coincidence relationship; Join Path connects
+retained constituents; Compound retains distinct components. These are different
+operations. Use Split or Separate before independently editing a constituent
+where direct manipulation inside a composite is unsupported. Existing physical
+coordinate and read-only source restrictions still apply.
+
+## Shared History
+
+History is managed by CORE in native RAM. Accepted scientific edits are available
+immediately to Undo/Redo; disk persistence proceeds in order on a background
+worker. Save waits for durable persistence and projects the complete Workspace.
+A write failure remains visible and retains the accepted RAM state for retry or
+export. Do not close a failed save until its state has been preserved.
+
+Use the existing Description / History strip, Details and right-click menu for
+navigation, grouped operations, browsing, explicit restart and Clear. Browsing is
+read-only and preserves future steps; restart requires confirmation. Settings can
+hide or restore the shared strip. Constraint entries retain their direct inspect,
+restart/edit and restart/remove actions. View and tool changes remain separate
+from scientific Undo steps. Explicit Save and large Recipe exports can still take
+longer because they validate and serialize the complete scientific Workspace.
+
+### Workspace actions and named History
+
+The **Workspace** menu offers one shared set of New/Open/Save/Duplicate/Rename/
+Session Workspaces/Close/Delete/Notes/Preview/Import/Export/Refresh actions.
+New includes the physical Configuration form and starts an unsaved draft. Save
+or Ctrl+s allocates its native identity once; later saves preserve that identity.
+Closing or switching dirty work offers Save, Discard or Cancel. Notes opens the
+shared notes viewer/editor; provider-specific Configuration, image and scientific
+export actions remain in the same menu.
+
+Right-click the History strip and choose **Save History As…** to retain a named
+complete workflow for the saved Workspace. **Named History…** inspects, restores,
+renames or deletes those archives through the native owner. Ordinary Save and
+reopen retain current scientific state and active History without replaying an
+archive. Only explicit Restore changes to a named workflow. Clearing active
+History preserves those stored archives.
+
+
 <a id="workbench-2112-gx-txt-dev-067"></a>
 ## Continuous placement and protected restore
 
@@ -22,7 +71,7 @@ formula `session.base * 3`, then enter `span` in a dimensional constraint. Formu
 changes recalculate geometry and save in the canonical Workspace. Session Parameters
 is managed in the Session page dropdown. Workspace Actions invokes this same editor.
 Core documentation: `docs/api/CORE_PARAMETER_SERVICE_v1.md` and
-`docs/api/NATIVE_2D_GEOMETRY_API_v1.md` in the installed framework.
+`docs/api/NATIVE2D_NETWORK_dev065.md` in the installed framework.
 
 <a id="curve-workbench--dev-063-square-grid-and-path-spline-arms"></a>
 ## Square grid and Path Spline arms
@@ -37,7 +86,7 @@ In Select, click an interior Spline knot to display its incoming and outgoing
 arms. Drag either arm to edit the exact retained shape. This works identically
 for a standalone Spline and a Spline inside a composed Path. The Path stays one
 object; Separate is unnecessary. Endpoint knots expose only their existing side.
-See the [Dataset navigation guide](../../../docs/help/datasets.md).
+See the [Session/Dataset navigation guide](../../../docs/guides/SESSION_DATASET_GRID_dev063.md).
 
 <a id="curve-workbench--dev-062-pivot-and-editable-path"></a>
 ## Pivot and editable Path
@@ -71,7 +120,7 @@ exact Polyline, Spline, Bézier, Arc or other supported constituent definitions.
 Internal coincident junctions become part of the Path topology; constraints to
 outside geometry prevent Join. Undo restores the source objects and internal
 relations. Separate exact constituents creates editable copies while preserving
-the Path.
+the Path. See [Path and selection guide](../../../docs/guides/WORKBENCH_DATASET_UI_dev060.md).
 
 <a id="curve-workbench--dev-059-consolidated-interaction"></a>
 ## Creation and interaction
@@ -84,8 +133,8 @@ Use **Modify → Split selected Path / entity…** or **Join Path…** (`j`).
 Heterogeneous endpoint-connected primitives retain exact definitions; disconnected
 or closed primitives use **Combine / Compound…** (`Shift+j`). Sources remain
 available. **Separate exact constituents** creates editable copies. See
-the current creation and Workspace controls for sampling, Dataset promotion,
-command configuration and the namespace browser.
+[Construction workflows](../../../docs/guides/WORKBENCH_dev059.md) for sampling,
+Dataset promotion, command configuration and the namespace browser.
 
 **Select** addresses every visible included curve, regardless of origin. The active
 row is the property focus. Fit Selected includes all semantically selected logical
@@ -113,10 +162,11 @@ leave blank to omit it. Closed endpoint repetition is explicit. Publication keep
 retained topology, direction and source/conversion provenance. Dataset source points
 are never resampled merely because the display is a spline.
 
-Residuals remain blank until you choose a reference and explicitly click **Compare**.
-The comparison records its reference and target; changing property focus does not
-retarget it. Editing the active comparison geometry updates it. Disable comparison
-to stop calculation. This explicit state survives save/reopen.
+Residuals remain blank until you explicitly choose both comparison paths and
+click **Compare**. The completed comparison records Reference, Target and Method
+in the existing Workspace/Undo payload; changing property focus does not retarget
+it. Editing either path or its coordinate presentation marks results stale and
+clears the current residual presentation. Select Compare again to refresh.
 
 Wheel zoom updates immediately, with one checkpoint after a burst. Pan draws at a
 coalesced frame cadence and checkpoints when released. Chrome only relayouts when
@@ -142,7 +192,7 @@ Badges use original GX-TXT symbols, enlarged hit regions, hover/name feedback, s
 
 Tangency supports finite line/circle/arc, circle/arc pairs (including internal branch), and supported Bézier/Spline endpoint joins with lines/curves/rounds. G2 uses actual endpoint curvature for quadratic/cubic Bézier and the existing Catmull-Rom Spline; it includes positional/tangent continuity. Equal supports straight segments and round radii; concentric includes ellipse centers. Symmetry supports points and compatible line/circle/Bézier/Spline/polyline objects about a selected straight axis. Unsupported arc/ellipse/rectangle object symmetry is rejected. Point-on-curve uses native retained evaluation. Legacy scientific Native point-curve relationships retain their validation behavior; reference measurements remain distinct from retained driving.
 
-The solver is local and bounded:64 objects,256 parameters,1024 residual slots and100 iterations. Singular, unsupported or nonconvergent cases reject atomically. Local rank is not a global uniqueness proof, and legacy/generic components are explicitly marked partial analysis. All Dataset rows, source bytes, retained definitions, conversion paths, publication, units, Undo/Redo and recovery continue to use their existing authorities. See the public [Native2D Geometry API](../../../docs/api/NATIVE_2D_GEOMETRY_API_v1.md) and [CORE implementation notes](../../../core/native2d/README.md).
+The solver is local and bounded:64 objects,256 parameters,1024 residual slots and100 iterations. Singular, unsupported or nonconvergent cases reject atomically. Local rank is not a global uniqueness proof, and legacy/generic components are explicitly marked partial analysis. All Dataset rows, source bytes, retained definitions, conversion paths, publication, units, Undo/Redo and recovery continue to use their existing authorities. See [architecture](../../../docs/architecture/SKETCH_dev054.md) and [acceptance](../../../docs/reports/SKETCH_dev054.md).
 
 The sections below also describe the advanced forms; the inline Dimension tool and retained component constraints above are the ordinary workflow.
 
@@ -218,7 +268,7 @@ source is retained and unchanged.
 
 Curve Workbench is a planar scientific X/Y workspace. Open it from **Viewers → Curve Workbench** or from a Dataset viewer action. **Add curve…** accepts an ordinary Dataset with X and Y alone. Filter, Family, and Order are optional. With no Order, points follow source-row order. If a Family is chosen, select one or several members, or leave the member list unselected to add all. Reopen **Add curve…** to bring curves from other Datasets into the same workspace.
 
-The left list shows every curve's visibility, name, source Dataset, point count, and source or edited state. Click a row to make its curve active; the point table and blue curve follow that choice. **Show/Hide** and **Lock/Unlock** affect the active curve. The original stays available when a derived curve is created. The workspace, curve geometry, visibility, source bindings, provenance, reference, target, external feedback, and view are saved in the Session. **Save workspace** forces a save; normal edits save automatically.
+The left list shows every curve's visibility, name, source Dataset, point count, and source or edited state. Click a row to make its curve active; the point table and blue curve follow that choice. **Show/Hide** and **Lock/Unlock** affect the active curve. The original stays available when a derived curve is created. **Workspace → Save** or Ctrl+s waits for accepted History to become durable and projects geometry, visibility, source bindings, provenance, reference, target, feedback and view into the native Session Workspace. Normal edits update the native History journal; a new draft remains unsaved until an explicit Save or protected-backup request.
 
 Click points to select them; Ctrl adds and Shift subtracts. Drag an already selected point to move the selected group. Drag empty canvas to select a rectangle. **Select X interval** selects points between entered bounds. The point table also selects exact points. **Apply X/Y** edits one selected point numerically. **Insert point** then click a segment; **Delete points**, **Point earlier/later**, **Reverse**, **Keep range**, **Remove range**, **Trim before/after**, **Split**, **Duplicate**, **Undo**, and **Redo** operate on the active curve. The first and last selected points define a range. A removed interior range leaves a disconnected gap; it does not create a false joining segment. Wheel zooms around the pointer, Pan drags, and **Fit all/active** reset framing.
 
@@ -227,8 +277,8 @@ Add fragments from other curves, then reorder, reverse or remove them. Spline
 fragments are evaluated by Native2D from their exact selected range. The green
 dashed preview shows the geometry that will be accepted. **Gap bridge: none**
 retains disconnected gaps; choose **straight**, **quadratic**, **cubic**, or
-**smooth** to construct an explicit bridge. The straight shortcut retains the
-previous one-click workflow. Geometric bridges require identical X/Y working
+**smooth** to construct an explicit bridge. The straight shortcut provides a
+one-click workflow. Geometric bridges require identical X/Y working
 units across fragments: convert deliberately through Dataset Transform / Unit
 Registry before joining different units.
 
@@ -253,14 +303,14 @@ acceptance. Bridge settings and accepted descriptors survive Save/reopen.
 
 **Linear from selection** and **Spline from selection** create separate simplified curves from at least two selected points. Spline uses Native2D Catmull–Rom geometric sampling, with editable controls and a continuously redrawn preview. Use Insert point, Delete points, mouse drag, numeric editing, or **Snap to reference** to adjust the controls. The reference curve remains separate. Dataset Curve Fit remains the tool for statistical/scientific fitting methods.
 
-Choose a reference curve and **x** or **path** in the validation row, then **Compare / residuals**. X comparison samples the derived curve at valid reference X positions and requires single-valued monotonic X for both curves. Path comparison aligns curves by normalized cumulative path position and handles folded profiles. The main view overlays both curves and marks the largest deviation; the lower panel plots signed residual against reference X or path distance. The status reports sample count, maximum absolute residual, mean absolute residual, and RMSE. Edits recalculate an available comparison after commit. Disconnected compositions must be compared by their separate fragments.
+Open the in-canvas **Compare / residuals** panel. Choose explicit **Reference path**, **Target path** and **x** or **path**, then **Compare**. X comparison samples the derived curve at valid reference X positions and requires single-valued monotonic X for both curves. Path comparison aligns curves by normalized cumulative path position and handles folded profiles. The main view overlays both curves and marks the largest deviation; the lower panel plots signed residual against reference X or path distance. The panel reports current status, sample count, maximum absolute residual, mean absolute residual and root mean squared residual (RMSE), with the existing physical units. Edits mark the receipt stale; only an explicit Compare calculates new results. Disconnected compositions must be compared by their separate fragments.
 
 Comparison summaries use every exact native reference point. CORE reduces only
 the residual presentation to a bounded ordered set, retaining the maximum and
 its exact original residual ordinal. View changes do not change scientific
 comparison results.
 
-The 2-D metric selector reports path length, X/Y span, length-to-X-span ratio, or signed enclosed area for a connected closed curve. Enter a target for a live signed error after edits. The **External downstream feedback** field records measurements from a separate geometry/CFD workflow; Curve Workbench does not calculate extrusion or 3-D surface metrics.
+The 2-D metric selector reports path length, X/Y span, length-to-X-span ratio, or signed enclosed area for a connected closed curve. In the panel's **Geometric Measurements** section, enter a numeric **Expected value** and select **Evaluate** to report the measured value and its signed difference. This numeric value is separate from **Target path** and uses the existing metric units/validation. The **External downstream feedback** field records measurements from a separate geometry/CFD workflow; Curve Workbench does not calculate extrusion or 3-D surface metrics.
 
 Enter a fresh Dataset ID and choose **Publish selected curve(s)**. A single curve publishes X/Y without an artificial Family column. A multiple-curve or disconnected result additionally includes `segment_id`; all outputs include source-row ordinal, point identity, and source-order fields. Dataset Publication v2 writes the canonical Dataset; metadata records source Datasets and variables, source names, filters, family/order information, parent/operation history, spline controls, residual summary, metric target, and external feedback. Existing Datasets cannot be overwritten. Published spline curves contain evaluated samples; controls remain in provenance and the saved workspace.
 
@@ -517,9 +567,9 @@ Export sketch… discovers the normal PNG/SVG providers and exports the live sce
 
 ### Geometric comparison and deviation reports
 
-Choose a different reference and the `geometry` method, then Compare. Native2D evaluates 257 scientific query positions independently of display caches. The view shows unsigned curve distance by sampled reference path, plus RMS, sampled bidirectional Hausdorff and closest distance. Retained mathematical definitions remain authoritative; the captured report records which target projections/closest pairs are exact and which use bounded scientific samples. These sampled metrics do not assert continuous Hausdorff extrema.
+Choose distinct **Reference path** and **Target path** and the `geometry` method, then Compare. Native2D uses the existing scientific sampling policy and 257-sample budget independently of display caches; the actual query count comes from its receipt. The view shows unsigned curve distance by sampled reference path, plus RMS, sampled bidirectional Hausdorff and closest distance. Retained mathematical definitions remain authoritative; the captured report records which target projections/closest pairs are exact and which use bounded scientific samples. These sampled metrics do not assert continuous Hausdorff extrema.
 
-Publish deviations… creates an explicitly named Dataset containing query/projected XY pairs, unsigned distances, sampled path and indices, with source/fingerprint/units/policy metadata. Geometry edits make the receipt stale and clear its presentation; Compare again before publishing. Measurements… also offers geometric RMS, sampled Hausdorff, length/closed-area difference and closest-curve distance with configurable 6–4096 scientific samples. Use its shared explicit Refresh, one Undo, stale/missing inspection and normal report publication.
+**Publish deviations…** is enabled only for a current, explicitly completed Geometry comparison of the selected pair. The adjacent explanation states why it is unavailable. Opening the panel never calculates or publishes. The original reviewed dialog creates an explicitly named Dataset containing query/projected XY pairs, unsigned distances, sampled path and indices, with source/fingerprint/units/policy metadata. Geometry edits make the receipt stale and clear its presentation; Compare again before publishing. Measurements… also offers geometric RMS, sampled Hausdorff, length/closed-area difference and closest-curve distance with configurable 6–4096 scientific samples. Use its shared explicit Refresh, one Undo, stale/missing inspection and normal report publication.
 
 
 <a id="task-9-dev-052-final-behavior"></a>
@@ -578,6 +628,8 @@ Use the unit chooser/Working units dialog and existing Unit Registry. Euclidean 
 
 Save workspace and close normally. Existing Interactive Documents/owned resources/recovery persist mixed types, definitions/transforms, constraints/dimensions, Dataset bindings, roles, names and conversion provenance. Transient tool/hover/incomplete previews are excluded. Reopen in a fresh process and continue exact parameter editing. Keyboard focus, numeric forms, Enter/Space/Esc, scroll-to-focused controls and wrapping toolbars provide alternatives to mouse input.
 
+Illustrations: [mixed CAD workspace](../../../docs/evidence/dev053/mixed-cad.png), [fresh reopen](../../../docs/evidence/dev053/fresh-mixed-cad.png).
+
 <a id="dev-055-drawing-and-compact-controls"></a>
 ### Drawing and compact controls
 
@@ -607,16 +659,15 @@ operation instructions. History shows the retained Scientific Recipe as a horizo
 timeline. The Settings menu can hide or show this strip. Use the mouse wheel over
 the timeline to reach earlier or later operations. Consecutive creations, constraint
 additions and matching transforms are grouped; right-click a group and choose
-**Expand individual operations** to see its steps. Clicking a step reconstructs its
+**Expand / collapse individual operations** to see its steps. Clicking a step reconstructs its
 geometry, constraints and parameter read view through CORE. It does not publish a
 Dataset or change the saved Workspace, and future steps remain retained.
 
 While browsing a past state, construction, constraint edits and publication are
 read-only. Undo/Redo moves through retained History in this mode. Choose **Return
-to latest state** to resume the current editable state. **Restart editing here;
-discard future…** explicitly confirms how many future steps will be discarded,
-restores the chosen state, and saves the restarted Workspace. Cancel leaves the
-future intact. Restart resets the previous editing Undo/Redo stacks. Subsequent
+to latest** to resume the current editable state. **Restart here / discard later local history…** explicitly confirms discarding
+later local steps and restores the chosen editable checkpoint. Cancel leaves the
+future intact. CORE preserves the retained prefix as the new Undo/Redo timeline. Subsequent
 edits have normal Undo/Redo and are recorded in the new retained History. Shared
 Session parameters must match the historical state; CORE rejects an unsafe restart
 instead of changing other Workspaces implicitly.
@@ -636,7 +687,7 @@ Saving a Workspace retains its Scientific Recipe, logical geometry/constraint ID
 parameters and working units. Reopening reconstructs the same current state and
 History. Older Workspaces without a complete recipe expose only the retained base
 and available operations. Discarded History cannot be recovered.
-The strip is a projection of the saved CORE recipe, not a second history
+The strip projects the native CORE timeline. It does not own another History
 database or a global Session Undo stack.
 
 
@@ -672,20 +723,33 @@ follow the active controller, including keyboard actions and History browsing.
 <a id="clear-history-and-shared-configuration-2151"></a>
 ## Clear History and shared configuration
 
-**Workspace → Clear History…** validates a checkpoint of the complete current
-scientific state before confirmation. Yes permanently discards old Timeline and
-Undo/Redo entries; No opens the official Workspace manager to export a protected
-copy first; Cancel changes nothing. Curves, retained definitions/parts/directions,
+**Workspace → Clear History…** guards the current scientific owner and asks for
+confirmation, then validates the complete current baseline before resetting
+History. Yes exports a protected Workspace backup
+first and then clears; No clears without backup; Cancel changes nothing. Curves, retained definitions/parts/directions,
 constraints, parameters, images/calibration, styles/groups/layers/selections,
 view, Dataset bindings and notes remain unchanged. New edits start fresh history
-at this base. The complete-retention limit remains8MiB/4096steps; no automatic
+at this base. The complete-retention limit remains 8 MiB / 4096 steps; no automatic
 clearing/pruning occurs. An oversized single base cannot be cleared safely.
+
+Clear also works immediately in a newly named, unsaved Workspace. **No** retains
+that draft and its existing native journal without assigning a saved Workspace
+ID. **Cancel**, including cancelling the backup chooser, leaves the draft and
+History unchanged. **Yes** asks for the backup destination first, then saves and
+binds the draft through the ordinary Workspace owner before exporting its
+protected backup. If backup creation fails, the History remains intact. A later
+ordinary Save and close/reopen retain the same saved native identity. Clearing
+active History does not delete stored named History archives.
 
 Finish active gestures/publication/restore and return to Latest first. A stale
 owner/revision/Session or precommit save failure rejects the operation and keeps
-old history recoverable. CORE Scientific Recipe creates the pure rebase candidate;
-existing Interactive Document/Workspace and Recovery authorities commit it.
-Recovery journals remain separate from the scientific Timeline.
+old History recoverable. CORE atomically resets its native timeline at the
+current state and projects a saved Workspace through its scientific owner. An
+unsaved draft cleared without backup remains a draft. Dialogs recheck the actual
+Session, window, accepted History revision and saved-owner generation/revision
+before mutation; a changed owner requires a fresh request.
+Native journals protect accepted History; explicit Save also retains the existing
+protected saved-Workspace recovery choice.
 
 Command shortcuts are editable in **Configuration → Modules → Curve Workbench**
 before this Viewer opens, and in **Settings → Keyboard shortcuts…**. Both use the
@@ -708,8 +772,8 @@ nearest-curve distances. Those Euclidean modes require a common physical X/Y
 unit, including mm/m axes converted before distance evaluation. Reports distinguish directional and pooled results and preserve scientific
 sampling policy. They make no R-squared, DOF or parameter-uncertainty claim.
 Comparison publication includes the reusable CORE statistical records. Changing
-coordinate units invalidates cached comparisons. An older saved receipt gains
-current semantics on comparison refresh without changing its source geometry.
+coordinate units invalidates cached comparisons. An older or stale saved receipt requires an explicit Compare to obtain current
+semantics without changing its source geometry.
 <a id="dev097-scientific-coordinate-integration--development-checkpoint"></a>
 ## Scientific coordinate integration
 
@@ -753,7 +817,7 @@ ownership and coordinate policies described below.
 
 Comparisons use the target's selected axis display units for X matching; geometric
 comparisons use its X display unit on both compatible axes. Changing that display
-choice refreshes the comparison through CORE. Receipts/publication preserve both
+choice marks the comparison stale; select Compare explicitly to refresh it through CORE. Receipts/publication preserve both
 source units and actual evaluation matrices. Residual plots show those units;
 highlight points map back to each original Native frame. Selecting **Geometric
 length** on mm/m data normalizes both axes before the Native metric calculation.
@@ -871,7 +935,7 @@ History, Undo/Redo and explicit publication retain the conversion provenance.
 
 ### Workspace physical Configuration and Dataset intake
 
-**Workspace → New named workspace…** asks for the name, X and Y stored coordinate
+**Workspace → New workspace…** asks for the name, X and Y stored coordinate
 units, and **Allow dimensionally heterogeneous axes**, initially off. Unit Registry
 dimensions determine homogeneity; similar numerical ranges do not. Use `1` for an
 explicit dimensionless axis or an empty unit for plain numeric coordinates.
@@ -956,3 +1020,50 @@ the accepted planar stage committed, it remains retained and the draft offers
 it cannot silently accept a changed original. Save/reopen retains that pending
 context through the existing Workspace, without serializing worker tokens.
 See [the public planar-return contract](../../../docs/api/NATIVE_3D_PLANAR_RETURN_v1.md).
+
+## Embedded comparison controls
+
+The existing canvas **Compare / residuals** header opens a scrollable ViewportHost
+panel with two compact sections. There is no permanent comparison row above the
+canvas and no independent comparison window. Selectors show names plus stable
+logical curve IDs; active drawing/selection changes do not substitute another
+Target. Invalid, identical, missing and incompatible pairs receive an inline
+explanation through the existing validation services. Missing IDs remain visibly
+unavailable rather than silently selecting another object.
+
+**Curve Comparison** contains both path selectors, Method, Compare, current
+status, existing Statistics receipt values and Publish deviations with its
+prerequisite explanation. **Geometric Measurements** retains the existing active
+path metric, numeric Expected value, Evaluate and measured/difference output.
+Use the scrollbar or normal focus navigation to reach controls in a small panel.
+
+Click the header to collapse/reopen controls. The existing close button hides the
+panel; **View → Compare / residuals** reopens that same panel. A current residual
+graph stays with its original Plot v4 owner when controls are collapsed or hidden.
+Neither opening nor resizing/collapsing the panel evaluates a comparison.
+Publication rechecks the current pair/receipt and Session, including changes made
+while its reviewed dialog is open, then uses the original Dataset writer/schema/
+sampling/projection/provenance workflow.
+
+Completed definitions/receipts retain their existing Workspace and Undo/Redo
+format. Uncompared edits to the Target selector are local to the open GUI;
+Compare commits the explicit pair through that existing owner. No persistent
+format, scientific engine, renderer, cache, module category or GUI system is added.
+
+## Common CAD interaction host
+
+The existing Select, window/polygon selection, defining-handle editing, Translate,
+Rotate, pivot, Pan and wheel commands share the public CORE CAD Canvas Host.
+The Workbench layout and commands are preserved. Escape cancels an active native
+edit; accepted edits use shared native History Undo/Redo and Workspace persistence.
+Curve identity, source row indices and physical X/Y declarations remain scientific
+state. Independent screen scales do not imply incompatible physical quantities:
+rotation is available in a valid common Euclidean frame; unlike time/voltage axes
+require explicit physical normalization before metric operations, while component
+edits and per-axis presentation retain their declared native units.
+
+Separate Dataset publication prepares exact source plans before entering the
+existing atomic batch; canonical payloads remain unchanged and output lineage
+retains original source rows. Native driving-constraint compatibility is unchanged;
+where the existing solver offers a reference fallback, it remains a reference
+measurement rather than an approximation of a driving constraint.

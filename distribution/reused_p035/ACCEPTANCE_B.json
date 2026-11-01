@@ -1,0 +1,167 @@
+{
+  "schema": "gxtxt.p035.acceptance.v1",
+  "lane": "B",
+  "status": "PASS",
+  "independent": true,
+  "source_commit": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+  "archive_sha256": "8848e8e3f7ada48d7d2b8b34780a398dc83a8829424f64e2dc63c60487b2447d",
+  "module_archives": {
+    "plot.dataset": "ef4434b3d4b367b74f50549691c366ecce117197ff05a9031459afc71050c529",
+    "viewer.interface_builder": "ccbf65948ccc543c10a6ea57662525a5dc1e9963ee979cb7d3308624aacab181",
+    "analysis.spectroscopy.ir": "03350045212f36de075d0141084728ee679e1770920d03e68771bfa31b316a80",
+    "library.spectroscopy.ir.reference": "3e1701cf9cfd10bfd512ffbe0288cde591281219127633c38084f6d5913ad904",
+    "viewer.ir_spectroscopy": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+    "preview.curve_digitizer": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2"
+  },
+  "generator_archives": {
+    "ir_library_explorer_lab": "67db684511b8064789bf334748134bc3b0a1e7959f3de77910b36ecb1b4ee778",
+    "ir_spectral_contracts_lab": "2d7e57fb2b21a353554e774e33a2aba7ab20b8dfce49d4aacf2767a27f9499f5",
+    "ir_viewer_integrated_study_lab": "b88eefffdd7dc4a345747cd9f4beb254b690018005a240541f9aabe001e5c9a3",
+    "refimp_full_training_ir": "7e5ff019daa71919a034bb49bb75881401f927ea5bbbe1c58a046c61a7c977a0",
+    "nist_pnnl_ir_faculty": "ef1b72fd89e3224c4a0f802a48f46346cb11bd909aef5a344005f65f48287146",
+    "org.giuxlab.gxtxt.ir_teaching_labs": "71338764583a5b644ce19101d7a923f9042bf0eeefb7e2c9adc8e4aceb08ed41"
+  },
+  "original_input_archives": {},
+  "owner_supplied_qualifications": {
+    "preview.curve_digitizer": "OWNER_SUPPLIED_UNMODIFIED; NOT_TESTED_BY_OWNER_REQUEST"
+  },
+  "sealed_at_utc": "2026-11-01T01:10:30.773106+00:00",
+  "acceptance_scope": [
+    "Independent real GUI acceptance of the genuine original IR Viewer, with 32 unique physical/font/theme conditions, 160 mode frames, 64 final-field endpoint receipts and eight normally closed actors. Actual native interactions and offline visual review are separately recorded.",
+    "Four-reference compact Overlay/Stacked readability; native measured-source small-TUM Run, terminal Status and ten ranked results; explicit relative-transmission semantics and preserved input bytes.",
+    "Normal native Plot variant save followed by explicit Session save, native Workspace save, cold public Workspace open and actual hidden-first-draw variant Apply; full Description inspector, clipboard, Escape and corrected physical bounds.",
+    "Five final teaching deliveries independently imported and cold-opened through their named current genuine Workspaces, with native controls, source identities, meaningful plots, original scientific transport bytes and normal closure. Existing independent A science/oracles are reused, not rerun.",
+    "Final RC08 archive, 74 postimage bytes/modes, all six module and six Generator archive identities/member modes, actual applied CORE readback and exact source/procedure applicability. This lane did not apply or publish the release."
+  ],
+  "source_applicability": {
+    "matrix_source": "bd5103391d677f4bdba5afceb8a39d8136edf02d",
+    "teaching_and_popup_source": "2944e834bb4708cb95b2383a20488dbb9cf0c5d6",
+    "final_source": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+    "matrix_to_final": "The only runtime file delta is scientific_recipe_history.tcl: 38 signatures match, 37 procedure bodies match, and only scientificHistoryViewerDetails changed. Its actual corrected popup was retaken separately. Metadata/docs/release-helper changes are mechanically pinned.",
+    "retained_IR_controls": "The B06 native command, cursor, Properties/Legend/Style and Apply procedure bodies are byte-equivalent at the procedure level. Changed NoSession Save sensitivity, labels/axis planning/UI_FIELD placement and cold retainView callback have their own actual retakes.",
+    "focused_CORE022": "Cache, worker, current GUI and Live owner whole-file hashes exactly match the retained B04/B05 proofs. The actual original Preview012 package is unchanged.",
+    "physical_modes": "All 25 original A6 bytes and physical0644 modes match in each of the three lead source-stage runtimes. The teaching helper export initially had physical0664 before its normal original installation restored0644; Git stored mode100644 is distinct. No active runtime was changed to manufacture parity. Matrix evidence is presentation evidence, not a fresh installation/mode-policy test."
+  },
+  "owner_integration_exception": {
+    "preview.curve_digitizer": "The supplied package remains unmodified and its owner-level acceptance remains with the owner. Only the explicitly authorized focused new CORE022 integration used actual012: normal Manager lifecycle, nine-series/900-value conformance, pages, Primary/Standard/fallback, pending/cold behavior and generic status fixes. No repeat of eleven module suites, recompilation, repackaging or upstream live acceptance is claimed.",
+    "inherited_viewer26": "Viewer2.0.26 remains inherited from accepted P034, outside new P035 feature/rebuild/regression tests. The readonly schema dependency used by the focused012 fixture is disclosed; no Viewer publication/calibration/image/feature acceptance is inferred."
+  },
+  "limits": [
+    "Fonts10/18 started in classic; clam/alt/default are actual controlled theme transitions. Physical1024 cases use their actual default maximized window; other roots use ordinary initial clients. No universal startup, all-normal-client or resize claim.",
+    "Scientific plots, titles, units, numeric ticks and legends are readable in the recorded frames. Some outer forms require the demonstrated native scroll/focus path. Long table cells truncate at default widths; native horizontal pan and exact row copy expose full values. Whole-table simultaneous visibility is not claimed.",
+    "The generic footer is a compact preview and can wrap long internal action IDs. Its real full Description inspector is proven; the corrected dialog, Text and entire scrollbar fit the tested1024/font18 condition.",
+    "NIST cold readiness first exceeded a30-second harness expectation and completed at44.5999seconds. This is retained latency, not responsive startup, a product hang or a passed30-second bound. The RefIMP first Fit frame was captured before menu repaint settled; it is not a settled Fit pixel proof.",
+    "The 32 matrix did not run Analysis or generation. One separate small-TUM15 native positive Analysis was performed; no9537 numerical campaign was repeated. RefIMP is a measured-source relative-transmission excerpt, not absolute transmittance, physical calibration or material identification. NIST optical absorption-index and synthetic Contracts semantics remain explicit.",
+    "The old NoSession native Run negative reached disabled-module admission, not the Session guard. Independent A API negatives provide the complementary Session/source safety scope.",
+    "All earlier real failures and harness stops remain immutable. The522 two-root fixture/failed Analysis and watchdog exit are not positive evidence. Later normal closed actors and corrected-root positive Analysis replace that missing scope.",
+    "Native GUI actors and known private infrastructure were drained. Two cleanup watcher tool sessions reported143 at collection; no normal watcher-exit claim is made, and all GUI normal exits preceded those stops. Only proven own private infrastructure was signalled after GUI exit; no unknown endpoint cleanup or owner/live/source/data mutation occurred."
+  ],
+  "references": [
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_ACTUAL012_NATIVE_FIRST_BATCH_B02.json",
+      "sha256": "b82275f31e3c6e6bb3b4757adf266db1b43174c7e09ed650c1f9784b104c40cf"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_CORRECTIVE93_PRODUCT_BGERROR_B03.json",
+      "sha256": "6425a71dfde544b37e939e0ed8f8466f335b2c90d9d5ca75be4f02b733ddd7f8"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_ACTUAL012_CORRECTIVE_COLD_NATIVE_B04.json",
+      "sha256": "8b7951610a42aa206dc644912ef0e760c4da0204cdd1a4373d24757900163173"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_STATUS39A_HARNESS_ERRATUM_B01.json",
+      "sha256": "71f21252057f06cfd3ebb69dd49bddbfa76531d73c1656db673cd40136ce5788"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_ACTUAL012_STATUS_CORRECTIVE_NATIVE_B05.json",
+      "sha256": "e297d5b58eabc2dd0d12d17d4cd4114a1b04d14b94b0911de9af900263d4f093"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/CORE022_STATUS39A_PRIVATE_DRAIN_B01.json",
+      "sha256": "baa3e23b52ee2796882aae207fd75dc347ad78fc5202bdd8ebdd3038d8bc2708"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_GENUINE_NATIVE_PILOT_B06.json",
+      "sha256": "700e453d64876e1f50155e2d54a91b6b0b4974d1116be4f27ce2305218637125"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_THREE_GUI_CORRECTIVES_NATIVE_B07.json",
+      "sha256": "41c81031f348e25eda989fff47929eafc17296fb26876034dfb159f6d46a21ef"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/IR32_LAYOUT_STOP_B02.json",
+      "sha256": "957a3f3dca500c1cee42620dbf68171b4ed4476c826632b223a8b772fc3b80e4"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR522_FIXTURE_ROOT_AND_EXIT_ERRATUM_B01.json",
+      "sha256": "b127466cf682afdb23ce0d2c635c5a16aa86b85b0c6b5f54000a831e4413bb06"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_RC06_FOUR_THEME_YTICKS_CORRECTIVE_B08.json",
+      "sha256": "bf708f739dc6bf74129a7da0c33b7519134508db2c0acd7d622a7e4c16848750"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_RC06_FOUR_REFERENCE_AND_SMALL_ANALYSIS_B09.json",
+      "sha256": "3a503db2d810e2594846a6648710fe2a3940410e926982686424c073c3fd397e"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_RC06_COLD_VARIANT_DESCRIPTION_LIFETIME_B10.json",
+      "sha256": "1696b999ac3b2662ae6dda84bcbb50173ff6e37e05dda486ac93e5eb9e7b97ba"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_DETAILS_2944_CORRECTIVE_NATIVE_B11.json",
+      "sha256": "f3df034567033f2174638db95494a863eff19efda947eac243f576705ae1a89a"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR32_FINAL_NATIVE_SOURCE_UNION_B12.json",
+      "sha256": "89e5d21f4c34f0b70829c761bfeb0739ca80c0bff977b884a7a94c5c5fd98568"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/rc06_review01/FONT18_OFFLINE_VISUAL_REVIEW_B01.json",
+      "sha256": "40ccbabdbd90c6b55eec9444cba2c6a90278017beb9353568d12ecf3cc4029f0"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/rc06_union_review01/FONT10_AND_UNION32_OFFLINE_REVIEW_B01.json",
+      "sha256": "a7aa5a5b6dfbe49e7d2a840acd07e41d00e5eae41818e6fe2c2bff1b96c218e8"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/teaching01/FIVE_FINAL_TEACHING_COLD_GUI_B01.json",
+      "sha256": "1486851c4d2e975456892111cb53cb58eaa71d266db63dd7c1247ccda19e9f3b"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/gui_audit_ir32/teaching01/SOURCE_DATA_DRAIN_POSTCHECK01.json",
+      "sha256": "1da513f9ca353ee1575959ca7ea0549a265b0da32f4709e8cdc16781778add25"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/FIVE_TEACHING_LEAD_PIXEL_REVIEW_B01.json",
+      "sha256": "f940054c591dd6e4435859a6260654d06e02c46c2d35d3bf780f75bbf8e41b79"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/IR_GIT_SOURCE_STAGE_MODE_QUALIFICATION_B02.json",
+      "sha256": "71d759bb6f92409639700f2e6349bdc9503e9f8bacef335c2fd94905bd62c5dc"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/RC08_EXACT_ARTIFACT_AND_PROCEDURE_APPLICABILITY_B01.json",
+      "sha256": "140c99551fb7f75abdba88217f04796a63a728ab9199c9b3d8cec5009deab81e"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/RC08_ACTUAL_APPLIED_CORE_READBACK_B01.json",
+      "sha256": "e4e743cc10c3b39be105c0539e5b68a606c20b05f09d3a20b921ed028e06915b"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/low_b/P035/FINAL_CORE022_AND_IR_FUNCTION_APPLICABILITY_B01.json",
+      "sha256": "f8a152070f71b68efe0631cfc58fe45a843c5ee5d7feeabbbb049ba9b87ff35d"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/DEV111-P035-LOW-B/gui_audit_teaching01/MODULE_INPUT_ERRATUM02.json",
+      "sha256": "391b1ebb18d5222c254b4b428685f455d0b6329a5e539f05c2e886e50570fdc5"
+    },
+    {
+      "path": "/srv/gxtxt/main/work-agent/TK_GIUXLAB/validation/cascade_p029_p035/main/P035/RC08_EXPECTED_ACCEPTANCE_PINS.json",
+      "sha256": "60dd3232d2593292bddb692e87d1c09db5e3f325ae3b8759e6a874b843d3a950"
+    }
+  ],
+  "open_mandatory_B_gates": [],
+  "publication": "Not deposited or activated by lane B; MAIN owns release acceptance/deposition and subsequent independent canonical readback."
+}

@@ -51,6 +51,44 @@ complete dictionary as a second argument to restore it after rendering is ready.
 
 ## RAM scenes and scientific binding
 
+P028 also admits a read-only process-owned temporary artifact, independently of
+an open Session. This uses the SAME isolated renderer, Viewer Provider layer/view
+validator and existing `temporary_root` containment/SHA path:
+
+```tcl
+::GX::native3DViewportBind $handle [dict create kind managed_artifact \
+    module viewer.native_3d provider native_3d allocation_id $allocationId \
+    path $vtp sha256 $meshSha format vtp \
+    source_identity [dict create api_id SCIENTIFIC_LIBRARY_MANAGER_API_v1 \
+        reference $qualifiedEntry sha256 $originalSourceSha revision $revision] \
+    layer {scalar_array element scalar_coloring 1}]
+```
+
+The allocation must be a live directory owned by the current host PID, admitted
+by Resource Management. CORE rechecks allocation inode/device, contained canonical
+path, absence of symlinks/hardlinks, regular-file size1..16 MiB and exact artifact
+SHA before binding and during lifetime guards/interaction. Releasing or replacing
+the allocation or changing bytes makes the viewport stale and stops its own
+worker. Invalid rebind leaves the previous valid binding intact. The caller owns
+the allocation and releases it after disposing its viewport; CORE never deletes
+the caller's source. No Dataset, Session, Workspace, History or persisted Viewer
+scene is created. Existing canonical scientific and CAD bindings remain unchanged.
+
+`source_identity` is caller-attributed, nonsecret source provenance: required
+`api_id`, `reference`, `sha256`, optional `revision`, at most4 keys/512 characters
+per scalar. It identifies the original source separately from generated mesh SHA;
+it does not claim that a presentation artifact is a canonical scientific Dataset.
+Formats are existing `vtp`, `vtu`, `vti`, `stl`, `obj`; only a surface is mounted.
+Optional `layer` presentation keys are `scalar_array`, `scalar_coloring`,
+`colormap`, `scalar_range`, `color_array`, `representation`, `base_color`,
+`line_width`, `point_size`, `opacity`, `visible`. Dataset/texture/source fields are
+forbidden. Optional `view` accepts finite camera/projection, axes/orientation,
+background and lighting fields validated by the existing Viewer owner; no marker,
+timeline, external field or other scientific-source bindings are admitted.
+This is trusted user/admin host admission and grants no restricted C++ SDK method
+or untrusted Script directory access. Normal worker timeout/RSS/instance limits
+and camera/navigation/picking controls remain in force.
+
 `{kind demo}` creates a bounded eight-vertex/twelve-triangle cube in RAM through
 `gx3de_object_create_mesh`, with the native orientation cube and configured world
 axes. It has no Dataset ID, canonical files or Session. Its visible footer states
@@ -155,3 +193,30 @@ caption must not repeatedly change the canvas height as activity changes: such
 layout feedback would otherwise enqueue resize renders during genuine idle.
 Source/Session validation, source captions, camera and process ownership retain
 their existing authorities. Error text remains visible with the previous frame.
+
+## Explicit Software execution with GLVND
+
+On Unix, an isolated Software renderer selects `__GLX_VENDOR_LIBRARY_NAME=mesa`
+in addition to the existing llvmpipe/Mesa driver hints. Mesa driver hints alone
+do not select the Mesa library when NVIDIA owns the X screen. The v1 host saves
+and restores the parent environment; v2 supplies variables only in the child
+launch command. Auto/Hardware selection and native rendering algorithms are
+unchanged. This is an execution-policy adapter, not a remote-X11 support claim.
+
+Auto initialization recovery is bounded to one retry of the **first read-only
+render** when its process dies or returns a recognized graphics initialization
+error. The retry selects Mesa explicitly; native quality settings and scientific
+scene data remain identical. Pending relative input retains its order, capability
+checks and an active projection subscription are restored. No accepted frame,
+camera operation, scientific edit or validation error is replayed. Explicit
+Software/Hardware choices, source/Session guards, process/RSS/output limits and
+normal cancellation remain authoritative. Explicit rebinding begins a new attempt.
+`inspect` adds `software_retry` and `hardware_error`; the status identifies a
+software fallback, and separate `worker.log` / `worker.software.log` retain both
+attempts for the viewport lifetime. Failure of both reports both causes. This
+cannot guarantee support for a missing driver, unsupported quality or a broken
+X server; it avoids an endless retry or silent quality reduction.
+
+The existing Dataset/compact Preview software workers and their export renderer
+use the same explicit Mesa-vendor selection. No global shell/profile or installed
+configuration setting is changed.

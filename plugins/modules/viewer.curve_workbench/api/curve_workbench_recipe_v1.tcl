@@ -18,11 +18,9 @@ proc ::GX::CurveWorkbench::_recipeUnit {state} {
 }
 proc ::GX::CurveWorkbench::_recipeCapture {context} {
     variable st;set w [_recipeWindow $context]
-    if {[info exists st($w,historyBrowsing)]&&$st($w,historyBrowsing)} {error {Return to Latest before recording a recipe.}}
-    set after [_recipeState $w];set record $st($w,scientificRecipe)
-    if {$record eq {}} {set record [dict create base $after steps {} retention complete]}
-    set current [dict get $record base];foreach step [dict get $record steps] {set current [::GX::scientificRecipeApplyPatch $current [dict get $step patch]]}
-    set record [::GX::scientificRecipeAppend $record $current $after [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operation checkpoint_current parameters {} targets [dict keys [dict remove $after @cad]] result_ids [dict keys [dict remove $after @cad]] working_unit [_recipeUnit $after]]]
+    if {[_historyBrowsing $w]} {error {Return to Latest before recording a recipe.}}
+    set record [::GX::scientificHistoryViewerRecord $w]
+    set record [::GX::scientificHistoryBranch viewer.curve_workbench $record [dict get $record cursor]]
     set sources {};foreach state [concat [list [dict get $record base]] [lmap step [dict get $record steps] {dict get $step patch}]] {
         dict for {id value} [dict remove $state @cad] {if {$value ne "@gxtxt.recipe.delete"&&[dict exists $value source_descriptor source_id]} {set source [dict create request [dict get $value source_request] fingerprint [dict get $value source_descriptor source_id]];if {$source ni $sources} {lappend sources $source}}}
     }
@@ -79,25 +77,9 @@ proc ::GX::CurveWorkbench::_load {w} {
         # Version-2 Workspaces predate CAD/recipes. The base loader deliberately
         # accepts an absent CAD block; optional recipe restore must do so too.
         set cad [::GX::datasetPublicationV2DictDefault $payload cad_workspace {}]
-        set st($w,scientificRecipe) [::GX::datasetPublicationV2DictDefault $cad scientific_recipe {}]
+        set st($w,historySeed) [::GX::datasetPublicationV2DictDefault $cad scientific_recipe {}]
+        set st($w,historyAuxSeed) [::GX::datasetPublicationV2DictDefault $cad history_auxiliary {}]
     }
-}
-rename ::GX::CurveWorkbench::_history ::GX::CurveWorkbench::_history_recipe_base
-proc ::GX::CurveWorkbench::_history {w before ids} {
-    variable st
-    if {[info exists st($w,historyBrowsing)]&&$st($w,historyBrowsing)} {
-        _restoreSnapshot $w $before;_draw $w
-        error {History is read-only. Return to Latest or explicitly Restart from this step.}
-    }
-    set previous $st($w,scientificRecipe);set after [_recipeState $w];set fullBefore $after
-    dict for {id record} $before {if {$record eq {}} {if {[dict exists $fullBefore $id]} {dict unset fullBefore $id}} else {dict set fullBefore $id $record}}
-    set operations {};foreach id $ids {if {[dict exists $after $id operations]} {dict set operations $id [dict get $after $id operations]}}
-    set notice {}
-    if {$previous eq {}} {set previous [dict create base $fullBefore steps {} retention complete]} else {dict set previous retention complete}
-    if {[catch {set next [::GX::scientificRecipeAppend $previous $fullBefore $after [dict create api_id SCIENTIFIC_RECIPE_API_v1 geometry_api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operation geometry_state semantic_operation update_logical_geometry parameters $operations targets $ids result_ids [dict keys [dict remove $after @cad]] working_unit [_recipeUnit $after]]]} reason]} {_restoreSnapshot $w $before;error "Edit rejected to preserve complete History: $reason"} else {set st($w,scientificRecipe) $next}
-    try {_history_recipe_base $w $before $ids} on error {message options} {set st($w,scientificRecipe) $previous;return -options $options $message}
-    if {[info commands ::GX::CurveWorkbench::_timelineRender] ne {}} {_timelineRender $w}
-    if {$notice ne {}} {set st($w,status) $notice;set st($w,scientificRecipeNotice) $notice}
 }
 proc ::GX::CurveWorkbench::_buildRecipe {w} {
     variable st

@@ -121,7 +121,7 @@ presentation state: `background_rgb`, `background_bottom_rgb`,
 `axes_world`, `axes_local_layer`, `axes_reference_marker`, `axes_size_pixels`, and
 `working_plane_origin/normal/u_axis/visible`. Camera presets commit their
 result to the existing camera fields. The first light fields remain useful to
-existing single-light consumers. New layer fields are `base_color`,
+existing single-light consumers. Layer fields include `base_color`,
 `line_width`, `point_size`, `backface_culling`, `scalar_coloring`, and
 `representation=surface_edges` alongside existing style, visibility, opacity,
 scientific roles and source fields. All of these are descriptors; authoritative
@@ -211,7 +211,7 @@ the provider". It must not silently destroy authoritative user work.
 
 ## Scientific scenes
 
-The existing v1 API now accepts `scene_mode=automatic|scientific` in
+The API accepts `scene_mode=automatic|scientific` in
 `viewerSceneSet`. Scientific mode opens a renderer without a base file. The
 normal path is Acquisition → canonical Dataset → Viewer layer → shared native
 renderer. The viewer can select compatible Session Datasets through Session
@@ -257,7 +257,7 @@ cache files and VTK/OCCT objects are private implementation details.
 
 ### Independent Plot Dataset interactive representations
 
-Plot Dataset API v3 enumerates persistent graph/Variant sources and asks its
+Plot Dataset API v4 enumerates persistent graph/Variant sources and asks its
 own scientific exporter to build a Viewer scene. The source graph/Variant and
 Viewer representation have separate persistent identities. Native 3D's
 Source type selector offers Imported 3D Dataset and Plot Dataset 3D graph.
@@ -271,7 +271,7 @@ deleted exact graph/Variant reports `SOURCE MISSING` without deleting the
 Viewer representation. The status is recomputed on Session reopen. Derived
 Plot Dataset VTP artifacts live under independent Session Viewer resources.
 
-`viewerLayerSet` now accepts `source_update_policy=strict|snapshot`.
+`viewerLayerSet` accepts `source_update_policy=strict|snapshot`.
 `strict` is the existing default: a source Dataset digest must still match
 when the scene is resolved. `snapshot` is valid only for a hash-checked
 Session artifact layer whose source Dataset identity is retained as
@@ -328,9 +328,9 @@ Activation metadata is optional:
 
 ## Physical camera fields
 
-Scene descriptors add `orthographic_height` (positive physical world height;0 preserves
+Scene descriptors include `orthographic_height` (positive physical world height;0 preserves
 legacy camera-distance behavior), `near_clip`, `far_clip`, and `navigation_cube_visible`.
-Clip distances default to0/0 (legacy automatic policy); explicit distances must be finite, positive, with far>near. Layer descriptors add
+Clip distances default to0/0 (legacy automatic policy); explicit distances must be finite, positive, with far>near. Layer descriptors include
 `color_array` for existing native point/cell direct RGB/RGBA mappings. Scene persistence
 retains these fields. Reference rendering uses an explicit plane-aligned camera and
 calibration; ordinary Viewer camera semantics remain. The complete workflow uses the
@@ -374,3 +374,17 @@ through `viewerOpen` and passes only `em_document_id`; otherwise it uses the nor
 legacy Viewer dispatcher. Model identity/schema and publication remain with the
 original mathematical service. Installed binary validation and strict SDK/runtime
 compatibility still occur through the common compiled Viewer lifecycle.
+
+
+### Compatibility-only catalog presentation
+
+Optional `[viewer.ID] catalog_visibility=compatibility` requires an explicit
+`deprecated=1` declaration. The default is `normal`. A compatibility-only
+provider is omitted from ordinary `viewerProviderCatalog` and launcher tiles,
+including when a successor is absent or presentation-disabled. This is
+presentation policy only: its installed backend, deliberate saved/direct
+`viewerOpen` routes and `viewerProviderDefinition` remain available.
+`viewerProviderCatalog 1` includes these entries for explicit legacy inventory.
+The existing `catalog_replacement` fallback policy is unchanged for normal
+providers. Scientific Libraries uses compatibility-only metadata on its two
+redundant legacy management entries; specialized IR/NMR providers stay distinct.

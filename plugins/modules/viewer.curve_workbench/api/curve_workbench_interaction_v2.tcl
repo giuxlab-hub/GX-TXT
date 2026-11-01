@@ -130,26 +130,14 @@ proc ::GX::CurveWorkbench::_sketchTool {w family} {
     if {$family eq "line"} {set st($w,toolLabel) {Line — click start, then successive endpoints. Each segment is independent and connected. Esc / Finish stops.}}
 }
 proc ::GX::CurveWorkbench::_constructionPlacement {w x y} {
-    variable st;set excluded {};if {$st($w,toolPreview) ne {}} {lappend excluded $st($w,toolPreview)}
-    set placement [::GX::Native2D::core construction_pick $st($w,scene) [list $x $y] 9 $st($w,constructionPlaces) $excluded 1]
-    set kind [expr {[dict exists $placement reference]?"attach geometry":[dict exists $placement earlier]?"close / share placed point":"none"}]
+    variable st
+    set placement [[_advancedCore $w] construction pick [list $x $y]]
+    set kind [expr {[dict exists $placement reference]?{attach geometry}:[dict exists $placement earlier]?{close / share placed point}:{none}}]
     set st($w,snapCandidate) [dict create point [dict get $placement point] kind $kind]
     return $placement
 }
-# A cursor endpoint at the last placed point may create a degenerate segment.
-# Keep the valid placed prefix visible; both paths use Native construction.
 proc ::GX::CurveWorkbench::_constructionPreview {w {candidate {}}} {
-    variable st
-    set places $st($w,constructionPlaces)
-    if {$places eq {}} return
-    if {$candidate ne {}&&!([dict exists $candidate earlier]&&[dict get $candidate earlier]==[llength $places]-1)} {
-        if {![catch {set definition [::GX::Native2D::core construction_preview $st($w,scene) $st($w,canvasTool) [concat $places [list $candidate]]]}]} {
-            _toolPreview $w $definition;return
-        }
-    }
-    if {[catch {set definition [::GX::Native2D::core construction_preview $st($w,scene) $st($w,canvasTool) $places]}]} {
-        _toolPreviewClear $w
-    } else {_toolPreview $w $definition}
+    return [[_advancedCore $w] construction preview $candidate]
 }
 rename ::GX::CurveWorkbench::_coordinates ::GX::CurveWorkbench::_coordinates_interaction055_base
 proc ::GX::CurveWorkbench::_coordinates {w x y} {
@@ -163,33 +151,28 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 }
 proc ::GX::CurveWorkbench::_pointerDownConstruction {w x y state} {
     variable st
-    if {$st($w,canvasTool) eq "select"} {return 0}
+    if {$st($w,canvasTool) eq {select}} {return 0}
     if {$st($w,publishBusy)} {return 1}
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — reopen Workbench.};return 1}
-    lassign [::GX::Native2D::core view $st($w,scene)] width height left top right bottom
-    if {$x<$left||$y<$top||$x>$width-$right||$y>$height-$bottom} {return 1}
-    set placement [_constructionPlacement $w $x $y]
-    if {$st($w,canvasTool) eq "line"&&[llength $st($w,constructionPlaces)]==1&&[dict exists $placement earlier]&&[dict get $placement earlier]==0} {_constructionFinish $w;return 1}
-    lappend st($w,constructionPlaces) $placement
-    set st($w,placements) [::GX::Native2D::core construction_points $st($w,scene) $st($w,constructionPlaces)]
-    set required [_createCount $st($w,canvasTool)]
-    # Every variable-length retained construction uses the same native attachment
-    # receipt, including Spline endpoints/interiors. Finish the transaction, not
-    # the creation tool; the next click starts another independent primitive.
-    set attachedEnd [expr {$st($w,canvasTool) in {path polyline spline}&&[dict exists $placement reference]&&[llength $st($w,constructionPlaces)]>=2}]
-    if {$attachedEnd||($required&&[llength $st($w,constructionPlaces)]==$required)||(!$required&&[dict exists $placement earlier]&&[dict get $placement earlier]==0&&[llength $st($w,constructionPlaces)]>=3)} {_createCommit $w} else {_constructionPreview $w;_draw $w}
-
+    set event [[_advancedCore $w] construction click [list $x $y]]
+    if {[dict exists $event outside]} {return 1}
+    if {[dict exists $event finished]} {_constructionFinish $w;return 1}
+    # These are domain/UI readouts; the shared controller owns placements/ready.
+    set st($w,constructionPlaces) [dict get $event places];set st($w,placements) [dict get $event points]
+    if {[dict get $event ready]} {_createCommit $w} else {_draw $w}
     return 1
 }
 proc ::GX::CurveWorkbench::_createCommit {w} {
     variable st
-    if {$st($w,canvasTool) eq "select"||$st($w,constructionPlaces) eq {}} return
-    set family $st($w,canvasTool);set needed [_createCount $family]
+    set shared [[_advancedCore $w] construction state]
+    if {$st($w,canvasTool) eq {select} || $shared eq {} || [dict get $shared places] eq {}} return
+    set st($w,constructionPlaces) [dict get $shared places]
+    set family [dict get $shared family];set needed [_createCount $family]
     if {($needed&&[llength $st($w,constructionPlaces)]!=$needed)||(!$needed&&[llength $st($w,constructionPlaces)]<2)} {_notice $w {Place the remaining defining controls, or Esc to cancel.};return}
     set unit $st($w,sketchUnit)
     set placements $st($w,constructionPlaces);set chain $st($w,chainReferences)
     set parents {};dict for {id r} $st($w,curves) {foreach p $placements {if {[dict exists $p reference]&&[dict get $p reference object]==[dict get $r native]} {lappend parents $id}}}
-    set before [_snapshotIds $w [lsort -unique $parents]];set oldUndo $st($w,undo);set oldRedo $st($w,redo);set native {};set joined 0
+    set before [_snapshotIds $w [lsort -unique $parents]];set native {};set joined 0
     _toolPreviewClear $w
     try {
         set context [_sketchCoordinateContext $w {}]
@@ -218,7 +201,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
                 }
             }
         }
-        set receipt [::GX::Native2D::core construction_create $st($w,scene) $family $placements 257 $chain {*}$symmetry]
+        set receipt [[_advancedCore $w] construction commit [dict create chain $chain symmetry $symmetry]]
         set native [dict get $receipt id]
         set operation [dict create operation attached_canvas_construction family $family authority Native2D closed [dict get $receipt closed] periodic 0]
         set record [_newRecord $w "[string totitle [string map {_ { }} $family]] [expr {[dict size $st($w,curves)]+1}]" [_sketchSamples $w $native] {} x y {} {} {} {} [lsort -unique $parents] [list $operation]]
@@ -246,12 +229,8 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
         if {$parents ne {}&&![dict exists $receipt mirror_id]} {
             set nativeSeeds [lmap candidate [concat $parents [list $id]] {dict get [_record $w $candidate] native}]
             set reverse [_logicalNativeMap $w];set candidates {}
-            foreach connected [::GX::native2DConnectedObjects $st($w,scene) $nativeSeeds] {lappend candidates [dict get $reverse $connected]}
-            set eligible 1
-            foreach candidate $candidates {
-                set source [_record $w $candidate]
-                if {![dict exists $source sketch_definition]||[dict get $source sketch_definition family] ni {line path polyline spline quadratic_bezier cubic_bezier arc circle ellipse rectangle composite_path}||[dict get $source locked]} {set eligible 0;break}
-            }
+            foreach connected [[_advancedCore $w] topology connected $nativeSeeds] {lappend candidates [dict get $reverse $connected]}
+            set eligible [expr {$candidates ne {}}]
             if {$eligible&&![catch {set path [_compositionApply $w $st($w,token) $candidates auto_path [dict create name Path tolerance 1e-9] 0]}]} {
                 dict set before $path {};set id $path;set resultIds [concat $candidates [list $id]];set joined 1
             }
@@ -265,7 +244,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
         _restoreSnapshot $w $before
         if {[info exists receipt]&&[dict exists $receipt mirror_id]&&[dict get $receipt mirror_id] in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) [dict get $receipt mirror_id]}
         if {$native ne {}&&$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo
+
         _sketchIdle $w
         if {$message eq "invalid input"} {set message "[string totitle [string map {_ { }} $family]] needs distinct defining points and a compatible attachment."}
         _notice $w "Construction rejected: $message"
@@ -285,17 +264,8 @@ proc ::GX::CurveWorkbench::_constructionFinish {w} {
 }
 proc ::GX::CurveWorkbench::_drawConstructionPlaces {w} {
     variable st
-        if {![winfo exists $w.right.viewport.canvas]||$st($w,canvasTool) eq "select"||$st($w,constructionPlaces) eq {}} return
-    foreach point [::GX::Native2D::core construction_points $st($w,scene) $st($w,constructionPlaces)] {
-        lassign [::GX::Native2D::core device $st($w,scene) $point] x y
-        $w.right.viewport.canvas create oval [expr {$x-3}] [expr {$y-3}] [expr {$x+3}] [expr {$y+3}] -fill #237a6a -outline white -tags construction_placement
-    }
-    ::GX::native2DCanvasViewportClip $w.right.viewport.canvas $st($w,scene)
+    if {$st($w,canvasTool) ne {select} && [winfo exists $w.right.viewport.canvas]} {[_advancedCore $w] construction overlay}
 }
-rename ::GX::CurveWorkbench::undo ::GX::CurveWorkbench::undo_interaction055_base
-proc ::GX::CurveWorkbench::undo {w} {_sketchIdle $w;undo_interaction055_base $w}
-rename ::GX::CurveWorkbench::redo ::GX::CurveWorkbench::redo_interaction055_base
-proc ::GX::CurveWorkbench::redo {w} {_sketchIdle $w;redo_interaction055_base $w}
 proc ::GX::CurveWorkbench::_selectionTargets {w} {variable st;set ids [_cadSelected $w];if {$ids eq {}} {set ids [list [_active $w]]};return $ids}
 
 # Explicit multi-selection publication delegates to existing scientific/primitive
@@ -347,6 +317,10 @@ proc ::GX::CurveWorkbench::_publishBatchMember {w token ids session module reque
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]||$session ne [file normalize [_session]]} {error {Session changed during reviewed batch publication}}
     set id [dict get $request workspace_object];set record [_record $w $id]
+    if {[dict exists $request prepared_plan]} {
+        _sourceSnapshotRequire $w $record
+        return [_publicationRunTransform $w [dict get $request prepared_plan]]
+    }
     if {[dict exists $record sketch_definition]} {
         set definition [::GX::Native2D::core sketch_definition $st($w,scene) [dict get $record native]]
         set sampling [dict create first 0 last 1 total [dict get $request samples] curved_samples [dict get $request samples] forward [dict get [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]] forward]]
@@ -383,7 +357,34 @@ proc ::GX::CurveWorkbench::_publishBatchApply {w token ids values} {
         if {[dict exists $output part_index]} {dict set request part_index [dict get $output part_index]}
         lappend requests $request
     }
-    set result [::GX::datasetPublicationV2PublishBatch [_session] viewer.curve_workbench $requests [list ::GX::CurveWorkbench::_publishBatchMember $w $token $ids]]
-    set st($w,status) "Published [dict get $result output_count] separate Datasets: [join [dict get $result dataset_ids] {, }]. Source objects preserved."
-    return $result
+    # Worker planning must finish before the parent enters the canonical batch
+    # transaction: the worker reads that same authority. Retain its standard
+    # validated plans; materialization and all outputs still commit atomically.
+    set frozen [_cooperativeBegin $w {Dataset publication}]
+    set st($w,publicationBatchActive) 1;set plans {};set prepared {}
+    try {
+        set st($w,publicationPrepareOnly) 1
+        set mode [expr {[info exists st($w,publicationRepresentation)] ? $st($w,publicationRepresentation) : {cartesian}}]
+        set arrangement [expr {[info exists st($w,publicationArrangement)] ? $st($w,publicationArrangement) : {table}}]
+        foreach request $requests {
+            set record [_record $w [dict get $request workspace_object]]
+            set direct [expr {![_bulkRecord $record] && ([dict get $record edited] || ![dict exists $record source_request]) && [dict get $record source] eq {} && $mode eq {cartesian} && $arrangement eq {table}}]
+            if {![dict exists $record sketch_definition] && !$direct} {
+                set plan [_publishBatchMember $w $token $ids [_session] viewer.curve_workbench $request]
+                lappend plans [dict get $plan plan_id]
+                dict set request prepared_plan $plan
+                # Transform owns canonical materialization and its provenance;
+                # the batch API explicitly admits a reviewed per-output owner.
+                dict set request publication_module core.dataset_transform
+            }
+            lappend prepared $request
+        }
+        set st($w,publicationPrepareOnly) 0
+        set result [::GX::datasetPublicationV2PublishBatch [_session] viewer.curve_workbench $prepared [list ::GX::CurveWorkbench::_publishBatchMember $w $token $ids]]
+        set st($w,status) "Published [dict get $result output_count] separate Datasets: [join [dict get $result dataset_ids] {, }]. Source objects preserved."
+        return $result
+    } finally {
+        unset -nocomplain st($w,publicationPrepareOnly) st($w,publicationBatchActive)
+        try {foreach plan $plans {::GX::datasetTransformReleasePlan $plan}} finally {_cooperativeEnd $w $frozen}
+    }
 }

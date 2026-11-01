@@ -9,23 +9,92 @@ proc ::GX::moduleEffectiveConfigSnapshot {module} {
     return $result
 }
 proc ::GX::workbenchExtensionCoreApis {} {
-    set result [dict create CONFIGURATION_API_v1 ::GX::configurationApiInfo DOCUMENTATION_BROWSER_API_v1 ::GX::documentationBrowserApiInfo SCIENTIFIC_RECIPE_API_v1 ::GX::scientificRecipeApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo XML_DOCUMENT_API_v1 ::GX::xmlDocumentApiInfo PYTHON_ENVIRONMENT_API_v1 ::GX::pythonEnvironmentApiInfo PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
+    set result [dict create CONFIGURATION_API_v1 ::GX::configurationApiInfo DOCUMENTATION_BROWSER_API_v1 ::GX::documentationBrowserApiInfo SCIENTIFIC_RECIPE_API_v1 ::GX::scientificRecipeApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo XML_DOCUMENT_API_v1 ::GX::xmlDocumentApiInfo PYTHON_ENVIRONMENT_API_v1 ::GX::pythonEnvironmentApiInfo PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NATIVE_WORKSPACE_API_v1 ::GX::nativeWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
     # Existing public owners also participate in the same discovery authority.
     # Presence here does not grant a restricted SDK capability.
     return [dict merge $result {
+        CONTRACT_VISUALIZER_API_v1 ::GX::contractVisualizerApiInfo
+        DOCUMENT_SOURCE_API_v1 ::GX::documentSourceApiInfo
+        UML_DOCUMENT_API_v1 ::GX::umlDocumentApiInfo
+        SOURCE_NOTE_API_v1 ::GX::sourceNoteApiInfo
+        API_CATALOG_SERVICE_API_v1 ::GX::apiCatalogApiInfo
+        FRAMEWORK_MAINTENANCE_API_v1 ::GX::frameworkMaintenanceApiInfo
+        SCRIPT_PARAMETER_DATASET_API_v1 ::GX::scriptParameterDatasetApiInfo
+        PREVIEW_COMPONENT_GUI_API_v1 ::GX::datasetPreviewGuiApiInfo
         FILE_PUBLICATION_API_v1 ::GX::filePublicationApiInfo
         DATASET_VIEWER_API_v1 ::GX::datasetViewerApiInfo
         INTERACTIVE_DOCUMENT_API_v1 ::GX::interactiveDocumentApiInfo
         OCR_LAYOUT_API_v1 ::GX::OCRLayoutAPIv1::apiInfo
         RESOURCE_MANAGEMENT_API_v1 ::GX::resourceManagementApiInfo
+        SCIENTIFIC_REFERENCE_LIBRARY_API_v1 ::GX::ReferenceLibraryAPIv1::apiInfo
         SCIENTIFIC_LIBRARY_MANAGER_API_v1 ::GX::ScientificLibraryManagerAPIv1::apiInfo
+        SCIENTIFIC_LIBRARY_DOMAINS_API_v1 ::GX::ScientificLibraryManagerAPIv1::domainApiInfo
+        SCIENTIFIC_LIBRARY_SOURCE_CONNECTOR_API_v1 ::GX::ScientificLibraryManagerAPIv1::sourceApiInfo
+        LIBRARY_ENTRY_ACQUISITION_DISPATCH_API_v1 ::GX::LibraryEntryAcquisitionDispatchAPIv1::apiInfo
+        DATASET_GROUP_API_v1 ::GX::datasetGroupApiInfo
+        DATASET_GROUP_PRODUCER_API_v1 ::GX::datasetGroupProducerApiInfoV1
+        ACQUISITION_HANDLER_PLUGIN_API_v1 ::GX::acquisitionHandlerDispatchApiInfo
+        PORTABLE_RESOURCE_API_v2 ::GX::portableResourceGroupApiInfo
+        SCRIPT_EXECUTION_API_v1 ::GX::scriptExecutionApiInfo
+        SCRIPT_LIBRARY_API_v1 ::GX::scriptLibraryApiInfo
+        MODULE_TARGETED_ANALYSIS_API_v1 ::GX::moduleTargetedAnalysisApiInfo
+        COMPARISON_PLOT_API_v1 ::GX::comparisonPlotApiInfo
         SCIENTIFIC_SPECTRUM_API_v1 ::GX::SpectrumAPIv1::apiInfo
         SCIENTIFIC_SPECTRUM_IMPORT_API_v1 ::GX::SpectrumImportAPIv1::apiInfo
         SCIENTIFIC_SPECTRUM_SESSION_API_v1 ::GX::SpectrumSessionAPIv1::apiInfo
         SPECTRAL_FAMILY_API_v1 ::GX::SpectralFamilyAPIv1::apiInfo
         TABLE_EXTRACTOR_API_v1 ::GX::TableExtractorAPIv1::apiInfo
         WORKBENCH_RECOVERY_API_v1 ::GX::workbenchRecoveryApiInfo
+        GUI_UPDATE_SCHEDULER_API_v1 ::GX::guiUpdateSchedulerApiInfo
+        NATIVE2D_SPRITE_SCENE_API_v1 ::GX::native2DSpriteSceneApiInfo
+        NATIVE2D_API_v1 ::GX::native2DCadApiInfo
+        NATIVE2D_GRID_PRESENTER_API_v1 ::GX::native2DGridPresenterApiInfo
+        STDERR_DIAGNOSTICS_API_v1 ::GX::stderrDiagnosticsApiInfo
     }]
+}
+# Documentation of trusted host operations, derived from the real Tcl signatures.
+# This metadata never grants a Script Bridge or restricted SDK capability.
+proc ::GX::workbenchExtensionCoreOperationContracts {api} {
+    set declared [dict create \
+        COMPARISON_PLOT_API_v1 {comparisonPlotSourceDataset comparisonPlotSourceLibrary comparisonPlotValidate comparisonPlotPrepare comparisonPlotSpec} \
+        UML_DOCUMENT_API_v1 {umlDocumentDetect umlDocumentParse umlDocumentLayout umlDocumentInspectElement umlDocumentEdit umlDocumentDescribe umlDocumentRead umlDocumentWrite umlDocumentExport umlDocumentExportRelease umlDiagramMount umlDiagramCommand umlEditorMount umlEditorCommand} \
+        DOCUMENT_SOURCE_API_v1 {documentEditorMount documentEditorCommand markupRenderStringToWidget markdownNavigationContext markupNavigationInspect markupNavigationFollow} \
+        PREVIEW_COMPONENT_GUI_API_v1 {datasetPreviewGuiContext datasetPreviewGuiSelectDataset datasetPreviewGuiSourceRequest datasetPreviewGuiView} \
+        DATASET_PUBLICATION_API_v2 {datasetPublicationV2Prepare datasetPublicationV2OpenWriter datasetPublicationV2WriterCapabilities datasetPublicationV2WriteVariable datasetPublicationV2WriteVariableSubmit datasetPublicationV2WriteVariableCollect datasetPublicationV2Finalize datasetPublicationV2Abort datasetProducerPublishBatchV1} \
+        DATASET_GROUP_API_v1 {datasetGroupList datasetGroupGet datasetGroupForDataset datasetGroupCreate datasetGroupMove datasetGroupDetach datasetGroupUngroup datasetGroupProducerReviewV1 datasetGroupProducerCreateV1 datasetGroupHostReviewV1 datasetGroupHostCreateV1} \
+        DATASET_GROUP_PRODUCER_API_v1 {datasetGroupProducerReviewV1 datasetGroupProducerCreateV1 datasetProducerPublishBatchV1} \
+        ACQUISITION_HANDLER_PLUGIN_API_v1 {acquisitionHandlerImportSourceToSession acquisitionHandlerImportSourcesToSession acquisitionHandlerImportSourcesAsync acquisitionHandlerCancelAsync acquisitionHandlerAuthorityBusy acquisitionPublishPrepared} \
+        PORTABLE_RESOURCE_API_v2 {portableResourceExportGroup portableResourceInspect portableResourceImport} \
+        PYTHON_ENVIRONMENT_API_v1 {pythonEnvironmentAuditImports pythonEnvironmentAuditCancel pythonEnvironmentPreflight} \
+        SCRIPT_EXECUTION_API_v1 {scriptRegistryProjectSave scriptRegistryProjectUpdate scriptRegistryProjectFiles scriptRegistryProjectExport scriptRegistryProjectImport scriptRegistryProvidedApiInventory} \
+        SCRIPT_LIBRARY_API_v1 {viewerGuiScriptLibraryCommand viewerGuiScriptLibrarySnapshot} \
+        SCIENTIFIC_REFERENCE_LIBRARY_API_v1 {ReferenceLibraryAPIv1::managedLibraryInfo ReferenceLibraryAPIv1::managedValidateLibrary ReferenceLibraryAPIv1::managedListSpectra ReferenceLibraryAPIv1::managedReadSpectrum ReferenceLibraryAPIv1::managedEntityInfo ReferenceLibraryAPIv1::managedBulkRank} \
+        SCIENTIFIC_LIBRARY_DOMAINS_API_v1 {ScientificLibraryManagerAPIv1::getDomainSchemas ScientificLibraryManagerAPIv1::searchAcrossLibraries ScientificLibraryManagerAPIv1::relatedEntries ScientificLibraryManagerAPIv1::resolveExternalId ScientificLibraryManagerAPIv1::importLibraryRecords ScientificLibraryManagerAPIv1::domainRequest} \
+        SCIENTIFIC_LIBRARY_SOURCE_CONNECTOR_API_v1 {ScientificLibraryManagerAPIv1::listSourceConnectors ScientificLibraryManagerAPIv1::registerLibrary ScientificLibraryManagerAPIv1::searchLibraryEntries ScientificLibraryManagerAPIv1::readLibraryEntry ScientificLibraryManagerAPIv1::importSourceSelection} \
+        LIBRARY_ENTRY_ACQUISITION_DISPATCH_API_v1 {LibraryEntryAcquisitionDispatchAPIv1::compatibleHandlers LibraryEntryAcquisitionDispatchAPIv1::inspectSelection LibraryEntryAcquisitionDispatchAPIv1::importSelected}]
+    if {![dict exists $declared $api]} {return {}}
+    set contracts {}
+    foreach relative [dict get $declared $api] {
+        set command ::GX::$relative
+        if {![llength [info procs $command]]} continue
+        set declaration $command
+        # The existing Catalog decorator preserves the underlying public
+        # operation, but its transport signature is variadic. Inspect only this
+        # known CORE decorator; never infer arity from the wrapper itself.
+        if {[info args $declaration] eq {args} && [llength [info procs ${command}_before_catalog]]} {set declaration ${command}_before_catalog}
+        set signature {};set parameters {}
+        foreach argument [info args $declaration] {
+            set optional [info default $declaration $argument default]
+            lappend signature [expr {$optional?[list $argument $default]:$argument}]
+            set parameter [dict create required [expr {!$optional && $argument ne {args}}] type {Tcl value} description {Owner-validated value; see the API manual}]
+            if {$optional} {dict set parameter default $default}
+            dict set parameters $argument $parameter
+        }
+        dict set contracts [namespace tail $command] [dict create signature $signature parameters $parameters \
+            context {Trusted user/admin host only; metadata grants no execution authority} \
+            result [dict create description "Validated $api owner result; see docs/api/$api.md"]]
+    }
+    return $contracts
 }
 proc ::GX::workbenchExtensionRequireApi {api} {
     if {$api eq "SCIENTIFIC_RECIPE_API_v1"&&[llength [info commands ::GX::scientificRecipeApiInfo]]} {return}

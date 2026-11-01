@@ -165,9 +165,9 @@ proc ::GX::_viewerDevelopmentWorkspacePayloadUpgrade {payload report design} {
 }
 proc ::GX::viewerDevelopmentWorkspaceReview {project id callback} {
     if {![interactiveDocumentIdValid $id]} {error {Use a canonical current-Session Workspace identity}}
+    if {![_nativeWorkspaceExists $id]} {error {Obsolete Workspace restore and conversion are unsupported; design review requires a native Workspace}}
     set project [file normalize $project];set snapshot [_viewerDevelopmentSnapshot $project]
     set workspace [sessionWorkspaceGet $id];set payload [dict get $workspace payload]
-    if {![dict exists [interactiveDocumentRead $id] payload workspace_metadata]} {error {Promote this legacy document explicitly to a named canonical Workspace before reviewing an upgrade}}
     set design [viewerGuiDesignRead [file join $project design.gxtxt-viewer]]
     if {[dict get $workspace schema] ne {gxtxt.viewer_interface_state.v1} || [dict get $workspace module_id] ne [dict get $design module_id] || [dict get $payload design provider_id] ne [dict get $design provider_id]} {error {Workspace belongs to another module, provider or schema}}
     set cpp [dict get $payload domain_state restricted_cpp]
@@ -221,13 +221,13 @@ proc ::GX::viewerDevelopmentWorkspaceUpgrade {project reviewId} {
         set duplicate [sessionWorkspaceImport $resource $name];set created [dict get $duplicate id]
         # Transform the imported payload so copied resources retain new ownership.
         set payload [_viewerDevelopmentWorkspacePayloadUpgrade [dict get $duplicate payload] [dict get $review report] [dict get $review design]]
-        sessionWorkspaceUpdate $created $payload
+        sessionWorkspaceUpdate $created $payload $duplicate
         sessionWorkspaceValidate $created
         _viewerDevelopmentWorkspaceReviewGuard $review
         dict unset ::GX::ViewerDevelopment::workspaceReviews $reviewId
         return [dict create status UPGRADED_COPY workspace_id $created original_workspace_id [dict get $workspace id] original_stamp [dict get $review stamp] source_snapshot [dict get $review snapshot] source_documents [dict get $review sources] resource_policy canonical_Workspace_export_import]
     } on error {message options} {
-        if {$created ne {} && [interactiveDocumentExists $created]} {catch {sessionWorkspaceDelete $created}}
+        if {$created ne {} && [interactiveDocumentExists $created]} {catch {sessionWorkspaceDelete $created 1}}
         return -options $options $message
     }
 }

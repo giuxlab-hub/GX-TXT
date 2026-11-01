@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+catalog_version: 1
+scope: Registered local scientific execution and location-opaque source I/O.
+authorities:
+  scientific_execution_facade:
+    owner: core/tcl/scientific_execution_api_v1.tcl
+    extensions: [core/python/gxtxt_scientific_execution.py, core/python/gxtxt_scientific_builtin_providers.py, core/script_bindings/scientific_execution.py]
+    public_apis: [SCIENTIFIC_EXECUTION_API_v1, SCRIPT_JOB_API_v1, MANAGED_RESOURCE_API_v1, DATASET_PUBLICATION_API_v2]
+    dependencies: [existing Script Registry snapshots, durable Job Supervisor and guardian, configured Runtime tools, existing Document resources, Session origin]
+    consumers: [registered ngspice RC provider, Electromagnetic Simulation provider, independent process verification client]
+    state: {model: typed provider descriptor and exact scientific source snapshot, transient: Session-bound preparation tokens, persistent: existing Job journal and protected Session output resources}
+    persistence: {authority: existing Script Job and Interactive Document owners, location: original Session, new_store: false}
+    invariants: [one queue and process owner, original Session origin, exact source SHA and revision, result import scoped to registered provider module with caller context restored, reviewed Publication v2 producer identity and atomic batch rollback retained, no client commands or raw output paths, provisional live data distinct from immutable results, no hostile-code sandbox claim]
+    bridge: {available: true, languages: [Python, Octave], registration_host_only: trusted worker code and paths cannot be supplied by a Script client}
+    docs: [docs/api/SCIENTIFIC_EXECUTION_API_v1.md, docs/api/SCRIPT_JOB_API_v1.md]
+  scientific_source_transport:
+    owner: core/tcl/scientific_io_api_v1.tcl
+    extensions: [core/python/gxtxt_scientific_io.py, core/script_bindings/scientific_io.py, core/tcl/dataset_file_publication_api_v1.tcl, core/python/portable_resource_v1.py]
+    public_apis: [SCIENTIFIC_IO_API_v1, DATASET_FILE_PUBLICATION_API_v1, FILE_PUBLICATION_API_v1, PORTABLE_RESOURCE_API_v1]
+    dependencies: [Dataset Catalog and transaction authority, descriptor-relative local OS access, Resource Management, existing canonical Dataset registry]
+    consumers: [authorized scientific source clients, registered solver inputs, canonical file consumers]
+    state: {model: canonical Dataset ID and format independent of physical transport, transient: authorized scope and entry tokens, persistent: existing Dataset registry and managed canonical bytes or verified external reference}
+    persistence: {authority: existing Dataset Publication and Registry owners, new_store: false}
+    invariants: [metadata browsing is not import permission, no-follow scoped source descriptors, static source SHA validation, copy or immutable read-only reference, offline identity preserved, explicit CREATE-only export]
+    bridge: {available: true, languages: [Python, Octave], authorization_host_only: only user or administrator grants physical source and destination scopes}
+    docs: [docs/api/SCIENTIFIC_IO_API_v1.md]
+  shared_scientific_input_namespace:
+    owner: core/tcl/dataset_namespace_api_v1.tcl
+    extensions: [core/tcl/graph_resource_api_v1.tcl, core/tcl/ui_surface_api_v1.tcl]
+    public_apis: [DATASET_NAMESPACE_API_v1, DATASET_PUBLICATION_API_v2, DATASET_FILE_PUBLICATION_API_v1]
+    dependencies: [existing Session Manifest namespace definitions, Dataset Metadata and Publication transaction authority]
+    consumers: [explicitly authorized scientific producers]
+    state: {model: namespace and actual producer grants, transient: existing current Session configuration, persistent: existing Session Manifest namespace section}
+    persistence: {authority: Session Manifest, new_store: false}
+    invariants: [user or administrator grants only, CREATE-only shared publication, no foreign mutation or deletion, private module namespaces retained]
+    bridge: {available: existing read and publication bindings, grant_host_only: explicit user or administrator authorization cannot be minted by scripts}
+    docs: [docs/api/DATASET_NAMESPACE_API_v1.md, docs/api/SCIENTIFIC_IO_API_v1.md]

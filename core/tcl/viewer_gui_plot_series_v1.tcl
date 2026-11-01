@@ -85,7 +85,7 @@ proc ::GX::viewerGuiDesignPlotSeries {window form operation} {
     if {$count>32 || [llength $panels]>8} {error {Declared series editor supports at most32 series and8 panels}}
     if {$operation eq {refresh}} {
         set result [_viewerGuiPlotSeriesSummary $window $form $spec]
-        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {Refresh canonical series controls}}
+        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window {Refresh canonical series controls}}
         return $result
     }
     if {$operation eq {load}} {
@@ -102,7 +102,7 @@ proc ::GX::viewerGuiDesignPlotSeries {window form operation} {
         viewerGuiDesignValueSet $window [dict get $p plot_series_enabled] [datasetPublicationV2DictDefault $found enabled 1]
         viewerGuiDesignValueSet $window [dict get $p plot_panel] [dict get [lindex $panels $sourcePanel] id]
         viewerGuiDesignValueSet $window [dict get $p plot_panel_title] [datasetPublicationV2DictDefault [lindex $panels $sourcePanel] title {}]
-        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Load series controls $selected"}
+        if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Load series controls $selected"}
         return [dict create status loaded series_id $selected]
     }
     if {$operation in {add update}} {
@@ -172,6 +172,6 @@ proc ::GX::viewerGuiDesignPlotSeries {window form operation} {
         set receipt [_viewerGuiPlotSeriesSummary $window $form $spec $selected]
         if {$operation eq {panel_add}} {viewerGuiDesignValueSet $window [dict get $p plot_panel] $target}
     } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
-    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Plot series $operation"}
+    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Plot series $operation"}
     return [dict merge [dict create status completed operation $operation owner PLOT_DATASET_API_v4] $receipt]
 }

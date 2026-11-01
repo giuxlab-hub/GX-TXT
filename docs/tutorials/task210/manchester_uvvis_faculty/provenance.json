@@ -1,0 +1,227 @@
+{
+  "record_type": "source_only_manchester_tutorial_draft",
+  "content_id": "tutorial.manchester_uvvis_faculty",
+  "content_version": "0.1.0",
+  "status": "DRAFT_NOT_TESTED",
+  "draft": true,
+  "content_quality_owner": "GX210-TUTORIAL1",
+  "html_authoring_child": "GX210-TUTORIAL1-SUB2",
+  "child_thread_id": "01a163fa-14d9-7fb3-bbc3-4a73e36804e3",
+  "scientific_prose_basis": {
+    "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/MANCHESTER_WORKFLOW_DRAFT.md",
+    "sha256": "57ba1086ae65627087bf4f238dddeace7d2d48cd4d4dbaded38e28a397b311d7",
+    "parent_reported_commit": "f2f5680b",
+    "treatment": "Committed English parent workflow preserved as semantic HTML; local reading aids, source/evidence boundary, provenance and independent unexecuted coverage plan added"
+  },
+  "family_route_handoff": {
+    "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/MANCHESTER_FAMILY_GUI_HANDOFF.md",
+    "sha256": "5e2fc63d80d18bace9004a599235bbd7bbfe13cc52e87ef61c79d3e92b406de1",
+    "finding_id": "TUT-MANCHESTER-FAMILY-GUI-001",
+    "status": "SOURCE_CALLSITE_GAP_OWNER_ROUTE_REQUESTED_GUI_NOT_TESTED"
+  },
+  "source_intake": {
+    "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB2/audit/DEV110_MANCHESTER_WORKFLOW_INTAKE.json",
+    "sha256": "0fd4a25c3280c32fc8d33e049acdfb792d18b0e66a4abb8be3da6dca5614f89e",
+    "original_pdf_receipt": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB2/audit/MANCHESTER_CONCENTRATION_SOURCE_REVIEW.md",
+      "previous_sha256": "b7c6545d69b0c74c1b19ee56add1d359aa48b8b0f8dfeb09223089024cc5e1af",
+      "source_pdf_sha256": "7da1131489fc8460c5ecb7e19912ae51368c0ca825662e9b8a46b4bfbef74928",
+      "mapping_method": "reuse prior explicit PDF rows without recomputation/re-hashing source assets",
+      "rights": "James Bird2022 University of Manchester Figshare DOI10.48420/21354474.v1 CC BY4.0"
+    }
+  },
+  "phase_authority": {
+    "main_notice": "1b1ddae6-8c3d-4504-a9fe-c17c702dc88f",
+    "interpretation": "Actualdev110deposit authorized formaldev111sourceauthoring; no installed/active/STABLE/fullfoundation implication"
+  },
+  "declared_source_baseline": {
+    "framework_version": "0.9.8.10-dev-110",
+    "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "library_id": "org.giuxlab.gxtxt.accepted_generators",
+    "library_source_version": "1.0.0",
+    "generator_id": "manchester_uvvis_faculty",
+    "generator_source_version": "1.0.1",
+    "module_id": "analysis.spectroscopy.uvvis",
+    "module_source_version": "1.2.0",
+    "independent_exploration_module_id": "analysis.spectroscopy.uvvis_exploration",
+    "independent_exploration_source_version": "1.0.3",
+    "plot_module_source_version": "4.2.4"
+  },
+  "module_association_choice": {
+    "module_id": "analysis.spectroscopy.uvvis",
+    "reason": "Quantitative concentration-family and teaching holdout science is the lesson central workflow; independent exploration is a prerequisite branch, no family publication/enablement implied"
+  },
+  "discovery": {
+    "staged": false,
+    "reserved_future_framework_relative_root": "docs/tutorials/task210/manchester_uvvis_faculty/",
+    "host_manifest_contract": "DOCUMENTATION_BROWSER_API_v1 documentation_package v1",
+    "public_content_id": "content:tutorial.manchester_uvvis_faculty",
+    "native_generator_action": "Open Generate Session…",
+    "page_callback": false,
+    "page_auto_generation": false,
+    "common_host_admitted": false,
+    "authored_at_owned_product_source_root": true
+  },
+  "measured_source": {
+    "creator": "James Bird",
+    "year": 2022,
+    "repository": "University of Manchester Figshare",
+    "doi": "10.48420/21354474.v1",
+    "rights": "CC BY4.0",
+    "data_class": "real measured Ti3C2MXene UV_VIS absorbance",
+    "source_assets_included": false,
+    "rounded_concentrations_reused_without_recomputation": true,
+    "concentration_unit": "wt% numerical percentages",
+    "concentration_mapping": [
+      {
+        "sample_label": "3.1",
+        "source_dataset_id": "uvvis.sample.3_1",
+        "source_concentration_wt_percent": "1.276e-3",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "4.1",
+        "source_dataset_id": "uvvis.sample.4_1",
+        "source_concentration_wt_percent": "4.802e-4",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "5.1",
+        "source_dataset_id": "uvvis.sample.5_1",
+        "source_concentration_wt_percent": "2.402e-4",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "6.1",
+        "source_dataset_id": "uvvis.sample.6_1",
+        "source_concentration_wt_percent": "1.401e-4",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "7.1",
+        "source_dataset_id": "uvvis.sample.7_1",
+        "source_concentration_wt_percent": "6.080e-5",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "8",
+        "source_dataset_id": "uvvis.sample.8",
+        "source_concentration_wt_percent": "6.079e-4",
+        "pdf_page": 1,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "9",
+        "source_dataset_id": "uvvis.sample.9",
+        "source_concentration_wt_percent": "7.387e-4",
+        "pdf_page": 1,
+        "proposed_role": "held_out_validation",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "10",
+        "source_dataset_id": "uvvis.sample.10",
+        "source_concentration_wt_percent": "8.576e-4",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "11",
+        "source_dataset_id": "uvvis.sample.11",
+        "source_concentration_wt_percent": "1.009e-3",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      },
+      {
+        "sample_label": "12",
+        "source_dataset_id": "uvvis.sample.12",
+        "source_concentration_wt_percent": "1.047e-3",
+        "pdf_page": 2,
+        "proposed_role": "calibration_standard",
+        "actual_family_member_id": null
+      }
+    ],
+    "shared_preparation": "Dilution from common intermediate; holdout does not test shared systematic effects",
+    "holdout_design": "Faculty guide pedagogic sample9; not original blind independent unknown",
+    "blank": "separate; no documented concentration or justified default subtraction",
+    "instrument_model_pathlength_uncertainty": "not established"
+  },
+  "license": {
+    "spdx": "GPL-3.0-or-later",
+    "scope": "Project-authored prose/layout/local reading aid; measured source retains CC BY4.0",
+    "license_text_source": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/tutorials/task210/surface3d_thermal_field/LICENSE",
+    "license_text_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  "actuals": {
+    "build": null,
+    "catalog": null,
+    "session_id": null,
+    "session_path": null,
+    "dataset_ids": null,
+    "variable_ids": null,
+    "family_id": null,
+    "member_ids": null,
+    "job_ids": null,
+    "responses": null,
+    "fits": null,
+    "predictions": null,
+    "peaks": null,
+    "graph_ids": null,
+    "variant_ids": null,
+    "screenshots": null,
+    "timings": null,
+    "host_admission": null,
+    "host_rendering": null,
+    "generator_action": null,
+    "persistence": null,
+    "scientific_acceptance": null,
+    "visual_acceptance": null
+  },
+  "review": {
+    "source_authoring_only": true,
+    "render_browser_js_execution": false,
+    "scientific_execution": false,
+    "final_quality_acceptance": null,
+    "principal_source_review": {
+      "timestamp_utc": "2026-10-22T21:00:01.513395+00:00",
+      "scope": "Read full HTML, provenance, observations, coverage,README,manifest and local reading JS; no browser/host/science execution",
+      "status": "SOURCE_REVIEWED_PARTIAL_DRAFT; ACTUAL_GUI_NOT_TESTED"
+    },
+    "source_transfer": {
+      "from": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB2/drafts/manchester_product01",
+      "child_original_index_sha256": "d104a813ddf4562505c7712d469bbb843cb22c4cb3698562622456bd0e0f8856",
+      "parent_edits": "Number/unit spacing and reader wording; audio actual menu count remains unobserved"
+    }
+  },
+  "limitations": [
+    "No Manchester GUI result/capture/timing",
+    "No direct API/headless/private bridge or manually created scientific Session",
+    "No generator change or Workbench port",
+    "Family-dependent branch conditional on legitimate ordinary GUI owner",
+    "No inherited thermal controls/status/denominator",
+    "No uncertainty/weights/replicate/kinetics/molarabsorptivity claim",
+    "Exactly ten-file source package; no ZIP, release, installation or host-admission receipt"
+  ],
+  "host_link_source_review": {
+    "finding_id": "HOST-LINK-01",
+    "status": "SOURCE_CORRECTED_ACTUAL_HOST_NOT_TESTED",
+    "source_review": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/FOUR_PACKAGE_HOST_EVIDENCE_REQUEST.md",
+    "source_review_sha256": "ecc55783753071f3f37ca517db49bfa61ef678629a21dfbf1d938ed44ea56c4e",
+    "change": "Non-web LICENSE/README/checksum links replaced by plain package-file references; original files retained unchanged",
+    "host_policy": "Actual110 webAsset allowlist excludes md, extensionless and sha256 assets; no runtime policy change",
+    "actual_host_validation": false
+  }
+}

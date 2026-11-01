@@ -170,7 +170,7 @@ proc ::GX::datasetPreviewMediaClass {mediaType format contract path} {
     return binary
 }
 
-proc ::GX::datasetPreviewResolveViewer {mediaType format contract path} {
+proc ::GX::datasetPreviewResolveViewer {mediaType format contract path {datasetId {}}} {
     set class [datasetPreviewMediaClass $mediaType $format $contract $path]
     set preference auto
     if {[llength [info commands ::GX::configurationGet]]} {
@@ -186,8 +186,11 @@ proc ::GX::datasetPreviewResolveViewer {mediaType format contract path} {
         if {[catch {llength $preference}]} { set preference [list $preference] }
         return [dict create class $class mode external command $preference]
     }
-    if {$class eq "spectrum" && [moduleField viewer.spectral_library descriptor ""] ne "" && [moduleIsEnabled viewer.spectral_library]} {
-        return [dict create class $class mode viewer module_id viewer.spectral_library viewer_id spectral_library]
+    if {$class eq {spectrum} && $datasetId ne {}} {
+        set canonical [contractVisualizerResolve $contract open $datasetId]
+        if {[dict get $canonical status] eq {selected}} {
+            return [dict create class $class mode viewer module_id [dict get $canonical module_id] viewer_id [dict get $canonical viewer_id] canonical_resolution $canonical]
+        }
     }
     if {$class eq "mesh" && [moduleField viewer.engine_3d descriptor ""] ne "" && [moduleIsEnabled viewer.engine_3d]} {
         if {[file isfile [file join $::GX::scriptDir core native3d bin libgx3de_viewer_tcl.so]]} {
@@ -267,23 +270,38 @@ proc ::GX::datasetPreviewOpenCurrent {} {
         if {[llength [info commands tk_messageBox]]} { tk_messageBox -icon error -title "GX-TXT" -message "No preview file is available to open." }
         return
     }
-    set identity [file tail $path]
-    foreach id [sessionInspectionDatasetIds $::GX::currentSession] {if {[file normalize [file join $::GX::currentSession [datasetField $id path {}]]] eq [file normalize $path]} {set identity $id;break}}
+    set identity [file tail $path];set datasetId {}
+    foreach id [sessionInspectionDatasetIds $::GX::currentSession] {if {[file normalize [file join $::GX::currentSession [datasetField $id path {}]]] eq [file normalize $path]} {set identity $id;set datasetId $id;break}}
     if {$previewCurrentContract eq "document.pdf" || $previewCurrentMediaType eq "application/pdf"} {return [pdfDatasetOpen $path $identity]}
     if {$previewCurrentContract eq "geometry.sketch"} {
         viewerOpen viewer.curve_workbench curve_workbench [dict create sketch_dataset_id $identity]
         return
     }
-    set resolution [datasetPreviewResolveViewer $previewCurrentMediaType $previewCurrentFormat $previewCurrentContract $path]
+    set resolution [datasetPreviewResolveViewer $previewCurrentMediaType $previewCurrentFormat $previewCurrentContract $path $datasetId]
     set mode [dict get $resolution mode]
     if {$mode eq "preview"} {
         catch {.top.nb select .top.nb.channels;.top.nb.channels.views select .top.nb.channels.views.preview}
         return $resolution
     }
     if {$mode eq "viewer"} {
-        viewerOpen [dict get $resolution module_id] [dict get $resolution viewer_id] \
-            [dict create source_path $path media_type $previewCurrentMediaType \
-                contract $previewCurrentContract format $previewCurrentFormat]
+        if {[dict exists $resolution canonical_resolution]} {
+            contractVisualizerOpen $datasetId [dict get $resolution canonical_resolution]
+        } elseif {$datasetId ne {} && {RESTRICTED_VIEWER_CLIENT_API_v1} in [modulePublicApiIds [dict get $resolution module_id]]} {
+            set module [dict get $resolution module_id];set viewer [dict get $resolution viewer_id]
+            set declaration [moduleField $module dict {}]
+            if {[descriptorValue $declaration contract_visualizers api_version {}] eq {1}} {
+                set compatible 0
+                foreach row [contractVisualizerCandidates $previewCurrentContract open $datasetId] {
+                    if {[dict get $row module_id] eq $module && [dict get $row viewer_id] eq $viewer && {open} in [dict get $row available_targets]} {set compatible 1}
+                }
+                if {!$compatible} {error {The explicitly configured Viewer is incompatible with this canonical Dataset; the preference is retained}}
+            }
+            viewerOpen $module $viewer [dict create dataset_id $datasetId dataset_reference [datasetViewerReference $datasetId]]
+        } else {
+            viewerOpen [dict get $resolution module_id] [dict get $resolution viewer_id] \
+                [dict create source_path $path media_type $previewCurrentMediaType \
+                    contract $previewCurrentContract format $previewCurrentFormat]
+        }
         return $resolution
     }
     if {![previewSetting external_open]} { error "External Dataset opening is disabled in Dataset Preview settings." }
@@ -307,6 +325,19 @@ proc ::GX::datasetPreviewTool {name} {
     }
     if {$p eq "" && $name eq "magick" && [file executable /opt/imagemagick/bin/magick]} { set p /opt/imagemagick/bin/magick }
     return $p
+}
+
+# RAM-only read-through companion. Callback receives the ordinary managed-request
+# {ok result/error} envelope. No API response or derivative is written to disk.
+proc ::GX::datasetPreviewImageMemory {bytes callback} {
+    if {![previewSetting image_inline] || [previewSetting image_thumbnailer] eq {none}} {error {Inline image preview is disabled}}
+    set maximum [previewSetting image_max_source_bytes]
+    if {[string length $bytes]>$maximum} {error {Image exceeds configured preview byte limit}}
+    set tool [datasetPreviewTool magick]
+    if {$tool eq {}} {error {Configured ImageMagick runtime is unavailable}}
+    set helper [file join $::GX::scriptDir core python dataset_preview_image_memory.py]
+    set request [dict create tool $tool width [previewSetting image_width_px] height [previewSetting image_height_px] max_bytes $maximum data_base64 [binary encode base64 -maxlen 0 $bytes]]
+    return [scriptJobAsync [list [runtimeToolRequired python] -B $helper] $request $callback [dict create timeout_ms 18000 max_bytes 90000000 process_group 1 ui_lifetime 1 label {Memory image preview}]]
 }
 
 proc ::GX::datasetPreviewImageArtifact {path previewDir {preserveGeometry 0}} {
@@ -525,7 +556,13 @@ proc ::GX::datasetPreviewImageProperties {datasetId} {
     }
     return $rows
 }
-proc ::GX::datasetPreviewImagePresent {w datasetId {artifact {}} {directory {}} {notice {}}} {
+proc ::GX::datasetPreviewImageRepresentationPresent {w {artifact {}} {directory {}} {viewOptions {}}} {
+    foreach key [dict keys $viewOptions] {if {$key ni {fit_upscale fit_margin_lines fit_visible_viewport compact_scale_label}} {error {Unknown image Preview view option}}}
+    set upscale [datasetPublicationV2DictDefault $viewOptions fit_upscale 0]
+    set margin [datasetPublicationV2DictDefault $viewOptions fit_margin_lines 0]
+    set visible [datasetPublicationV2DictDefault $viewOptions fit_visible_viewport 0]
+    set compact [datasetPublicationV2DictDefault $viewOptions compact_scale_label 0]
+    if {![string is boolean -strict $upscale] || ![string is boolean -strict $visible] || ![string is boolean -strict $compact] || ![string is integer -strict $margin] || $margin<0 || $margin>20} {error {Invalid image Preview fit policy}}
     datasetPreviewImageRelease $w
     previewDescriptorClearWidgetArtifact $w
     if {[winfo exists $w.imageProperties]} {destroy $w.imageProperties}
@@ -541,11 +578,15 @@ proc ::GX::datasetPreviewImagePresent {w datasetId {artifact {}} {directory {}} 
             $w delete 1.0 [lindex $embedded 2]
             set name [lindex $embedded 1];set base [$w image cget $name -image]
             variable datasetPreviewImageViews
-            set datasetPreviewImageViews($w) [dict create base $base name $name owned {} numerator 1 denominator 1 token [interactiveDocumentSessionToken]]
+            set datasetPreviewImageViews($w) [dict create base $base name $name owned {} numerator 1 denominator 1 token [interactiveDocumentSessionToken] fit_upscale $upscale fit_margin_lines $margin fit_visible_viewport $visible compact_scale_label $compact]
             set tools [winfo parent $w].imageTools
-            if {[winfo exists $tools]} {grid $tools -row 0 -column 0 -sticky ew; $tools.scale configure -text {Preview 100%}}
+            if {[winfo exists $tools]} {grid $tools -row 0 -column 0 -sticky ew; $tools.scale configure -text [expr {$compact?{100%}:{Preview 100%}}]}
         }
     } else {$w insert end "Image Preview\n"}
+    return $w
+}
+proc ::GX::datasetPreviewImagePresent {w datasetId {artifact {}} {directory {}} {notice {}} {viewOptions {}}} {
+    datasetPreviewImageRepresentationPresent $w $artifact $directory $viewOptions
     $w insert end "\nImage properties — recorded source metadata\n"
     uiFieldComponentCreate $w.imageProperties table {columns {Property Value} scrollbars both} {} {}
     set table $w.imageProperties.table
@@ -602,7 +643,19 @@ proc ::GX::datasetPreviewImageView {w operation} {
         actual {set numerator 1;set denominator 1}
         fit {
             set numerator 1
-            set denominator [expr {max(1,int(ceil(max(double([image width $base])/max(1,[winfo width $w]-16),double([image height $base])/max(1,[winfo height $w]-24)))))}]
+            set availableWidth [expr {max(1,[winfo width $w]-16)}]
+            set extraLines [datasetPublicationV2DictDefault $state fit_margin_lines 0]
+            set availableHeight [expr {max(1,[winfo height $w]-24-$extraLines*[font metrics [$w cget -font] -linespace])}]
+            if {[datasetPublicationV2DictDefault $state fit_visible_viewport 0]} {
+                set bounds [uiFieldVisibleBounds $w]
+                if {[dict get $bounds width]<1 || [dict get $bounds height]<1} {return 0}
+                set availableWidth [expr {max(1,[dict get $bounds width]-16)}]
+                set availableHeight [expr {max(1,[dict get $bounds height]-24-$extraLines*[font metrics [$w cget -font] -linespace])}]
+            }
+            set ratio [expr {min(double($availableWidth)/[image width $base],double($availableHeight)/[image height $base])}]
+            if {$ratio>=1 && [datasetPublicationV2DictDefault $state fit_upscale 0]} {
+                set numerator [expr {max(1,int(floor($ratio)))}];set denominator 1
+            } else {set denominator [expr {max(1,int(ceil(1.0/$ratio)))}]}
         }
         default {error {Unknown image Preview view operation}}
     }
@@ -628,7 +681,10 @@ proc ::GX::datasetPreviewImageView {w operation} {
     set datasetPreviewImageViews($w) $state
     $w configure -wrap [expr {$width>max(1,[winfo width $w]-16)?{none}:{word}}]
     set tools [winfo parent $w].imageTools
-    if {[winfo exists $tools]} {$tools.scale configure -text [format {Preview %.3g%%} [expr {100.0*$numerator/$denominator}]]}
+    if {[winfo exists $tools]} {
+        set percentage [format {%.3g%%} [expr {100.0*$numerator/$denominator}]]
+        $tools.scale configure -text [expr {[datasetPublicationV2DictDefault $state compact_scale_label 0]?$percentage:"Preview $percentage"}]
+    }
     if {$operation eq {fit}} {$w xview moveto 0;$w yview moveto 0}
     return 1
 }

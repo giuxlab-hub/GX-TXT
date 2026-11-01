@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Trusted native facade; author source is a separate independently validated unit.
 #include "gxtxt_viewer_sdk_v1.hpp"
+#include <string>
+#include <vector>
 namespace gx {
+namespace {thread_local std::vector<std::string> input_values;thread_local std::string event_data;}
+const char* Host::input(unsigned component) const {return component>0&&component<=input_values.size()?input_values[component-1].c_str():"";}
+const char* Host::data() const {return event_data.c_str();}
+void Host::cad_command(unsigned component,const char* action) const {dispatch_(context_,36,component,0,0,action);}
+void Host::diagnostics_command(unsigned form,const char* operation,const char* request) const {
+    std::string value=operation?operation:"";value+='\n';value+=request?request:"{}";
+    dispatch_(context_,37,form,0,0,value.c_str());
+}
+void Host::text_runs(unsigned component,const char* value) const {dispatch_(context_,38,component,0,0,value);}
+void Host::table(unsigned component,const char* value) const {dispatch_(context_,39,component,0,0,value);}
 void Host::text(unsigned component,const char* value) const {dispatch_(context_,1,component,0,0,value);}
 void Host::number(unsigned component,double value) const {dispatch_(context_,2,component,value,0,nullptr);}
 void Host::flag(unsigned component,bool value) const {dispatch_(context_,3,component,value?1:0,0,nullptr);}
@@ -49,4 +61,13 @@ extern "C" __attribute__((visibility("default"))) int gxtxt_viewer_event_v1(
     if(!state||!event||!dispatch)return 1;
     gx::HostAccess::run(context,dispatch,*state,*event);
     return 0;
+}
+// Optional additive input ABI. The original Event/State/Host and entry remain
+// byte/layout compatible with previously distributed SDK-v1 Viewers.
+extern "C" __attribute__((visibility("default"))) int gxtxt_viewer_context_v1(
+    unsigned count,const char* const* values,const char* data,unsigned bytes) {
+    if(count>512||bytes>1048576||(count&&!values)||(bytes&&!data))return 1;
+    std::vector<std::string> next;next.reserve(count);unsigned total=0;
+    for(unsigned i=0;i<count;++i){std::string value=values[i]?values[i]:"";if(value.size()>4096)return 1;total+=value.size();if(total>1048576)return 1;next.push_back(std::move(value));}
+    gx::input_values=std::move(next);gx::event_data.assign(data?data:"",bytes);return 0;
 }

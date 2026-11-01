@@ -7,7 +7,7 @@
   uncentered spectral moments from sample variance in labels and reports.
 - Publish required variable, decomposition and compact component metadata.
 
-## 1.0.1
+## 1.0.1 — 2026-09-28
 
 - Classified the independently packaged module as a managed external plugin.
 

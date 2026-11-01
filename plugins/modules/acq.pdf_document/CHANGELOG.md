@@ -1,12 +1,12 @@
 # Changelog
 
-## 1.0.1
+## 1.0.1 — 2026-09-24
 
 - Make this external acquisition module ALWAYS available in the Module Manager (`selectable=0`, `core=0`); imports still occur only on user action.
 - Route nonfatal pypdf structural warnings through the inspection protocol so older, readable PDFs are accepted without corrupting the protocol stream.
 - Require GX-TXT 0.9.7.81 for generic transactional batch import and retry.
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Added native `document.pdf` acquisition.
 - Added content/signature and structured PDF validation using `pypdf`.

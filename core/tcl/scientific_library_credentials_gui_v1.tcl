@@ -4,6 +4,7 @@
 namespace eval ::GX::LibraryCredentialsGUI {
     variable serial 0
     variable dialogs {}
+    variable cleanupEventsInstalled 0
     # One non-secret caller receipt for explicit unknown-outcome reconciliation.
     # Ephemeral UI state only; never a credential, file, Session or Job registry.
     variable lastMutation {}
@@ -51,7 +52,8 @@ proc ::GX::LibraryCredentialsGUI::_buttons {w epoch} {
     variable dialogs;variable lastMutation
     if {![_own $w $epoch]} return
     set r [dict get $dialogs $w]
-    set enabled [expr {[_alive $w $epoch] && ![dict get $r busy]}]
+    set enabled [expr {[_alive $w $epoch] && ![dict get $r busy] &&
+        ![::GX::ScientificLibraryManagerAPIv1::_credentialCleanupPending]}]
     foreach button [dict get $r buttons] {$button state [expr {$enabled ? {!disabled} : {disabled}}]}
     set heldUnknown [expr {$lastMutation ne {} && [dict get $lastMutation outcome] eq {unknown}}]
     set unknown [expr {$heldUnknown && [dict get $lastMutation context] eq [dict get $r context]}]
@@ -88,6 +90,11 @@ proc ::GX::LibraryCredentialsGUI::_sessionChanged {args} {
     }
 }
 proc ::GX::LibraryCredentialsGUI::_sessionTrace {} {
+    variable cleanupEventsInstalled
+    if {!$cleanupEventsInstalled} {
+        bind . <<ScientificLibraryCredentialCleanupChanged>> +::GX::LibraryCredentialsGUI::_refreshButtons
+        set cleanupEventsInstalled 1
+    }
     set callback [list ::GX::LibraryCredentialsGUI::_sessionChanged]
     foreach trace [trace info variable ::GX::currentSession] {
         if {[lsort [lindex $trace 0]] eq {unset write} && [lindex $trace 1] eq $callback} return
@@ -340,6 +347,12 @@ proc ::GX::LibraryCredentialsGUI::_action {w epoch action} {
     variable dialogs;variable lastMutation;variable serial
     if {![_alive $w $epoch]} {_invalidate $w $epoch;return}
     if {[dict get $dialogs $w busy]} return
+    if {[::GX::ScientificLibraryManagerAPIv1::_credentialCleanupPending]} {
+        _clear $w $epoch
+        _message $w $epoch {The previous credential operation is complete; its owned worker is still closing. Wait for the controls to become available.}
+        _buttons $w $epoch
+        return
+    }
     if {$action eq {ack}} {
         if {$lastMutation ne {} && [dict get $lastMutation context] eq [dict get $dialogs $w context] && [dict get $lastMutation outcome] eq {unknown} && [dict get $dialogs $w reconciled] eq [dict get $lastMutation operation_id]} {
             dict set lastMutation outcome unknown_reviewed

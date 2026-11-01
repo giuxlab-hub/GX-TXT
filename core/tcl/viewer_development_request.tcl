@@ -60,10 +60,21 @@ proc ::GX::_viewerDevelopmentRequestApiCatalog {} {
         if {[string match -nocase *apiinfo* $command] && [llength [info commands $command]]} {
             if {![catch {$command} metadata]} {set row [dict merge $row $metadata]} else {dict set row metadata_error $metadata}
         }
+        set contracts [::GX::workbenchExtensionCoreOperationContracts $api]
+        if {$contracts ne {}} {
+            dict set row host_operation_contracts $contracts
+            dict set row operations [lsort -unique [concat [dict get $row operations] [dict keys $contracts]]]
+        }
         ::GX::_viewerDevelopmentCatalogAdd result $api $row
     }
-    foreach {api command} {STATISTICAL_RESULT_SEMANTICS_API_v1 ::GX::StatisticsV1::apiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo} {
+    foreach {api command} {DATASET_GROUP_API_v1 ::GX::datasetGroupApiInfo DATASET_GROUP_PRODUCER_API_v1 ::GX::datasetGroupProducerApiInfoV1 STATISTICAL_RESULT_SEMANTICS_API_v1 ::GX::StatisticsV1::apiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo} {
         set meta [$command];::GX::_viewerDevelopmentCatalogAdd result $api [dict merge $meta [dict create api_id $api version [dict get $meta api_version] provider CORE enabled 1 documentation docs/api/$api.md]]
+    }
+    # The new producer batch is an additive operation of the existing writer.
+    if {[dict exists $result DATASET_PUBLICATION_API_v2]} {
+        set row [dict get $result DATASET_PUBLICATION_API_v2]
+        dict set row operations [lsort -unique [concat [dict get $row operations] datasetProducerPublishBatchV1]]
+        dict set result DATASET_PUBLICATION_API_v2 $row
     }
     # Restricted declared forms project only existing host Transform operations.
     # Keep the general public registry/Script entrypoint unchanged.
@@ -138,7 +149,7 @@ try {
                 } else {set asset [::GX::viewerGuiIconImport $image $title $category $license]}
                 set model [::GX::viewerGuiDesignModelEdit $model icon put $id $asset]
             } elseif {$op ne {inspect}} {
-                if {$op ni {add property properties layout constraints bind remove duplicate reparent reorder metadata icon}} {error {Unsupported public Builder edit}}
+                if {$op ni {add property properties analysis_profile comparison_browser_only layout constraints bind remove duplicate reparent reorder metadata icon}} {error {Unsupported public Builder edit}}
                 set model [::GX::viewerGuiDesignModelEdit $model $op {*}$args]
             }
             set design [::GX::viewerGuiDesignValidate [dict get $model design]]
@@ -172,6 +183,34 @@ try {
                 }
             }
             }
+        }
+        acquisition_test_spectrum_validation {
+            if {[llength $arguments]!=1} {error {Test requires one CORE-owned scientific source validation}}
+            set request [lindex $arguments 0]
+            if {[lsort [dict keys $request]] ne {expected_count expected_sha256 format options path}} {error {Invalid Test scientific source validation}}
+            set result [::GX::SpectrumImportAPIv1::validateSource [dict get $request format] [dict get $request path] [dict get $request options] [dict get $request expected_sha256] [dict get $request expected_count]]
+        }
+        acquisition_test_definition {
+            if {[llength $arguments]!=1} {error {Test requires one provisional output definition}}
+            set definition [lindex $arguments 0]
+            ::GX::datasetPublicationV2ValidateId dataset [dict get $definition dataset_id]
+            if {![regexp {^[A-Za-z0-9_][A-Za-z0-9_.:+/-]*$} [dict get $definition contract]]} {error {Malformed declared Test contract}}
+            set result [dict create status VALIDATED scope provisional_test_only publication 0]
+        }
+        builder_design_save {
+            if {[llength $arguments]!=3} {error {Builder save requires exact project design, staged design and expected revision}}
+            lassign $arguments destination staged revision
+            if {[file tail $destination] ne {design.gxtxt-viewer} || [file type $destination] ne {file} || [::GX::sha256File $destination] ne $revision} {error {Builder design revision changed}}
+            set design [::GX::viewerGuiDesignRead $staged]
+            if {[dict get $design target] ne {preview} || [dict get $design preview runtime] ne {managed_cpp}} {error {Managed Preview layout required}}
+            ::GX::viewerGuiDesignSave $destination $design
+            set result [dict create status SAVED sha256 [::GX::sha256File $destination]]
+        }
+        new_preview_design {
+            if {[llength $arguments]!=1} {error {New Preview requires one module ID}}
+            set design [::GX::viewerGuiDesignNumericPreviewNew]
+            dict set design module_id [lindex $arguments 0]
+            set result [::GX::viewerGuiDesignValidate $design]
         }
         new_design {
             if {[llength $arguments]!=1} {error {new_design requires one module ID}}

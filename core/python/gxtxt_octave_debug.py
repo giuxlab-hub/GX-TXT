@@ -28,7 +28,13 @@ def main():
         # the observer function (which otherwise reports its own caller frame).
         send("[__gx_dbg_native_stack,__gx_dbg_native_frame]=dbstack('-completenames');gxtxt_debug_capture("+literal(native)+','+literal(token)+','+literal(sha)+",__gx_dbg_native_stack,__gx_dbg_native_frame);clear __gx_dbg_native_stack __gx_dbg_native_frame;");pending_capture=True
     normal_prompt=('GXTXT_'+token+'> ').encode('ascii')
-    snapshot=Path(config['runtime']['output_dir'])/'executed_script.m'
+    project_root=Path(config['script_project']['project_root']) if config.has_section('script_project') else None
+    snapshot=Path(config['config']['script_file']) if project_root else Path(config['runtime']['output_dir'])/'executed_script.m'
+    user_sources={str(snapshot)}
+    if project_root:
+        from script_project import verify
+        project,_,_=verify(project_root.parent)
+        user_sources={str(project_root/x['path']) for x in project['files']}
     def exception_attribution(observed=None):
         path=directory/'exception.json'
         if not path.is_file():return None
@@ -38,7 +44,7 @@ def main():
             raise ValueError('Native exception source identity mismatch')
         frames=exception.get('stack',[])
         if isinstance(frames,dict):frames=[frames]
-        if not frames or not any(frame.get('file')==str(snapshot) for frame in frames):return None
+        if not frames or not any(frame.get('file') in user_sources for frame in frames):return None
         # These are the actual err.stack frames, not inferred source parsing.
         result=dict(observed or {},exception=exception,stack=frames,selected_frame=0,
                     line=frames[0].get('line',0),function=frames[0].get('name',''),
@@ -93,7 +99,7 @@ def main():
                 attributed=exception_attribution(observed)
                 if attributed:
                     observed=attributed;exception_observation=attributed
-                elif observed['stack'][observed.get('selected_frame',0)].get('file')==str(snapshot):
+                elif observed['stack'][observed.get('selected_frame',0)].get('file') in user_sources:
                     last_user_observation=dict(observed,observation_sequence=sequence+1)
                 publish('PAUSED',**observed);paused=True;pending_capture=False
             control=directory/'command.json'

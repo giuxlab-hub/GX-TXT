@@ -1,201 +1,124 @@
 # SESSION_WORKSPACE_API_v1
 
-A workspace is a provider-registered Interactive Document. CORE owns its ID,
-generation/revision, unique user-visible name, transactions and managed paths.
-The existing Document registry supplies listing; `workspace_metadata` in its
-payload carries name, preview and note associations. No private viewer registry
-or second identity/path authority exists. Legacy Curve Workbench documents are
-listed and promoted in place without changing ID or geometry.
+SPDX-License-Identifier: GPL-3.0-or-later
 
-`gxtxt_api_call("SESSION_WORKSPACE_API_v1", operation, arguments)` works in Python
-and Octave through the common registration/transport. Arguments are positional:
+Session Workspace is the provider and GUI facade over
+[NATIVE_WORKSPACE_API_v1](NATIVE_WORKSPACE_API_v1.md). C++ owns the typed model,
+identity, indexed query, revision checks, transactions and persistence. A Tcl
+`payload` returned to an existing host is a temporary provider projection. It
+is never a second saved model or an opaque SQLite payload.
 
-| Operation | Arguments | Result |
-|---|---|---|
-| list | none | workspace metadata records |
-| get / validate | workspace_id | metadata plus `payload_utf8` / validation receipt |
-| create | provider_id, name, payload_utf8 | new workspace receipt |
-| update | workspace_id, payload_utf8 | updated workspace; associations retained |
-| rename | workspace_id, name | same stable identity and new unique name |
-| delete | workspace_id | existing Document lifecycle deletion, note cleanup |
-| note_read / note_write | workspace_id / workspace_id, text | UTF-8 note receipt |
-| preview_set | workspace_id, resource | same-owner verified image receipt association |
-| export | workspace_id | managed `gxtxt.workspace.zip` resource |
-| import | managed_package_resource, new_name | newly committed workspace receipt |
-| resource_copy_tree | workspace_id, payload_utf8 | serialized payload with all nested resources copied to this owner |
+## Providers and state
 
-The provider payload is serialized UTF-8 Tcl dictionary data, never executable
-code. Curve Workbench schema is `gxtxt.curve_workbench.workspace` version `2.0`;
-its version-2 logical payload retains the published schema. Payloads are bounded
-to 16 MiB; large scientific values use managed resources. Providers register
-schema, version, ordinary validation, optional deep validation and GUI opening
-callbacks. These host callbacks and GUI opening are intentionally not bridged.
+Installed `[workspaces]` declarations must specify
+`native_contract=NATIVE_WORKSPACE_API_v1`, an in-module declaration entrypoint, owner,
+schema/version, explicit native encoder/decoder, required field kinds and the
+existing semantic validator. Admission checks the contract before loading the
+provider. Missing, disabled, incompatible and obsolete providers cannot read or
+write scientific bodies. Metadata recognition and confirmed safe deletion remain
+available. Old Workspace conversion, promotion and fallback writers are denied.
+Scientific Documents which are separate geometry, result or immutable source
+owners retain their own APIs; declaring their formats does not make them
+Workspaces. Provider declarations identify each supported owner and schema.
 
-Portable packaging uses the existing Portable Resource format/integrity helper.
-It includes provider identity, payload, recursively owned raster/geometry
-resources, preview and UTF-8 note. Import checks provider/schema, names and every
-resource/note hash before committing. Resources are remapped to a new Document
-owner/generation; nested resource metadata is remapped too. Private staging
-Documents are not exposed as workspaces and are removed if import fails. ID/name
-collisions never replace existing data; choose an explicit new name.
+A state uses explicit object/array/scalar/resource kinds. Labels, formulas, JSON
+text fields and source signatures remain text. Numeric annotations, ordered
+fields, signed zero and frozen scientific receipts retain their declared
+contracts. Large arrays and geometry remain in managed resources. State,
+properties and provenance together are bounded by the native 16 MiB contract.
 
-Session → Workspaces lists every registered provider, showing name/type/provider
-and preview. Open dispatches to the provider. Export/import file dialogs are
-trusted host UI; scripts use the same package service with managed receipts.
-When no Session is open, the Session tab shows an empty Workspace area. Its
-asynchronous view refresh does not call the Session-required Interactive
-Document API until a Session exists.
+## Host operations
 
-See [MANAGED_RESOURCE_API_v1](MANAGED_RESOURCE_API_v1.md) and
-[NOTE_DOCUMENT_API_v1](NOTE_DOCUMENT_API_v1.md). The same operations are available through both Script Bridge languages.
+| Tcl operation | Contract |
+|---|---|
+| `sessionWorkspaceCreate provider name payload ?async? ?typedProperties?` | Validate the provider projection and create a new native identity. |
+| `sessionWorkspaceGet id` | Explicit Open/read, returning the existing provider projection and typed properties. |
+| `sessionWorkspaceMetadata id` | Metadata only, including compatibility/native flags. |
+| `sessionWorkspaceList` | Session metadata inventory; no scientific-body reads. |
+| `sessionWorkspaceUpdate id payload expected ?async? ?typedProperties?` | Held `id`, `generation`, `revision` required; stale updates fail. |
+| `sessionWorkspaceRename id name` | Metadata transaction, stable identity and unique name. |
+| `sessionWorkspaceDelete id confirmed expected` | Explicit confirmation and held identity, managed-resource-safe lifecycle. |
+| `nativeWorkspaceSaveAs id name` | New identity, same exact state/properties/provenance, notes and all named archives. |
+| `sessionWorkspacePreviewSet id reference` | Verified typed resource property; returns metadata. |
+| `noteDocumentRead/Write` | Native notes transaction; existing editor receipt checks remain. |
+| `sessionWorkspaceExport id` | New managed native Workspace ZIP resource. |
+| `sessionWorkspaceImport resource ?name?` | Validated native package, new identity; never overwrites an existing Workspace. |
+| `managedResourceCopyTree id typedGraph` | Explicit resource-node adoption; other text and structure remain unchanged. |
 
-<a id="integrated-dev-065-extension"></a>
-## Parameters and retained networks
+Create/Save may accept asynchronously. An accepted revision is not durable until
+its flush receipt says so. Close, Session leave and application exit review dirty
+hosts, preserve everything on Cancel, and drain Workspace and native History writers before
+closing. Save/Discard/Cancel callbacks execute in the original GUI thread.
+Notes/name/archive notifications rebase only matching held identity stamps.
 
-See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and [Native2D Geometry API](NATIVE_2D_GEOMETRY_API_v1.md) for exact topology/reference/constraint semantics.
+## Script Bridge
 
-<a id="lightweight-provider-discovery-and-viewer-menus-dev094"></a>
-## Lightweight provider discovery and viewer menus
+Python and Octave can use the registered `NATIVE_WORKSPACE_API_v1` typed-node
+contract. Objects carry field maps, arrays carry ordered node lists, scalars
+carry explicit kinds and original spellings. Save takes the held identity;
+Delete takes confirmation and the held identity. Semantic provider validation
+precedes Create/Save acceptance. The existing Session bridge retains provider
+UTF-8 projections for existing callers, but its Update and Delete also require
+held receipts and use the same native authority. Its serialized Tcl resource
+copy operation is retired; use the typed native operation.
 
-Installed modules may declare `[workspaces] ids=provider_id` and
-`[workspace.provider_id] entrypoint=api/workspace_provider.tcl`, `type`, `schema`,
-`version`, `validate` and `open`. `sessionWorkspaceProviderDiscover module_id`
-loads that module-owned schema contribution and calls the existing provider
-registry; it does not load a numerical engine or open a Viewer. The entrypoint
-must remain inside the installed module root. Disabled/missing providers are
-not listed and cannot open; their documents remain untouched and available
-again after enabling/installing the provider.
+## Save As, resources and portability
 
-Curve Viewer and Dataset Curve Fit register their existing schema/version1.0
-and2.0 documents, respectively. Legacy compatible documents are listed and
-promotable with the same ID. Both accept `workspace_id=new` plus `workspace_name`,
-or an exact existing Workspace ID. Explicit opening never chooses by Dataset.
-A top-level switches through the shared Save/Discard/Cancel review and the
-provider close/open callbacks; sources and accepted fits cannot merge across Workspaces. Generation/revision/lifetime
-checks reject stale saves. Metadata-only note/name updates are reconciled.
+Save As copies native graph nodes transactionally without serializing scientific
+state through Tcl. Managed blob identities remain immutable: their original
+owner/generation/hash/size are retained. The new Workspace records its exact
+source receipt and ancestor lineage. Archives retain their original graphs and
+hashes; lineage permits their explicit Open in the new Workspace. Source Delete
+and GC preserve every resource still referenced by the copy or its archives.
 
-`sessionWorkspaceViewerMenu menu provider callbacks parent` connects a Viewer to the shared host. Required callback prefixes remain `current`, `save`, `close` and `open`. Optional `dirty` returns whether editor changes remain uncommitted, `prepare action` refuses an unsafe transition with a clear error, `discard` releases the window without another save, and optional `review boolean` suspends field FocusOut commits while the Save/Discard/Cancel question owns focus. Optional `rename workspace_id name` lets the originating adapter update its own source receipt after a successful canonical Rename of its current Workspace. It must preserve the draft and scientific associations, revalidate source/Session/window after any yielding confirmation, and never refresh another window's receipt. A noncurrent row or adapter without this callback retains the ordinary canonical Rename path. These callbacks are host-only and are never transported through Script Bridge. Existing four-callback adapters retain their provider-owned lifecycle behavior.
+Single-Workspace packages contain `workspace.native`, an explicit native binary
+typed capsule, a file SHA-256 manifest and immutable managed blobs. C++ verifies
+native grammar, node/depth/byte bounds, graphs, content hashes, archives and
+lineage. Capsules permit up to 256 archives within a 256 MiB aggregate native
+file; packages permit up to 10,000 files and 2 GiB of uncompressed bytes.
+Python verifies ZIP paths, duplicates, member types, size limits and
+byte hashes; it never parses scientific state. Import verifies the installed
+provider and its semantic projection, resource generations and existing byte
+collisions before native publication. Missing immutable resource owners become
+native tombstones in the same transaction as the new Workspace, archives,
+lineage and retention pins. Failed import exposes no partial Workspace; newly
+copied unreferenced immutable blobs may remain for explicit collection. Old Tcl
+payload ZIPs are unsupported. Packages are integrity receipts, not authentication.
 
-The same `sessionWorkspaceHostState` and `sessionWorkspaceHostDispatch` serve the embedded manager, top-level manager and Viewer menu. `sessionWorkspaceBuild frame ?provider? ?callbacks? ?parent?` embeds the surface. `sessionWorkspaceDialog ?parent? ?provider? ?callbacks?` opens it as a top-level. Optional provider scope restricts the visible saved Workspaces and imported package provider. Without scope, the filter discovers actual installed/enabled providers; text search matches name/type/provider. New and Save require a live compatible Viewer adapter; unsupported actions remain disabled instead of inventing a blank generic Document.
+Whole-Session portable export drains/checkpoints the native database and History
+owners and holds owner locks while copying. WAL/SHM/lock files are transient;
+a direct helper cannot export an undrained WAL. Foreign active writers cause a
+clear refusal. Import preserves the database/resources and uses the existing
+History transport to rebind physical Session ownership without altering scientific
+steps or auxiliary state. Experiment Duplicate retains its distinct preparation
+policy and intentionally omits scientific Workspaces/results.
 
-The host exposes New, Open, Save, Duplicate, Rename, Close, Delete, Notes, Preview, Import, Export, Refresh and existing descriptor-owned Actions. New creates an unsaved draft through the provider's `open` callback with `workspace_id=new` and `workspace_name`; registration occurs through Save or the provider's established scientific edit/autosave path. Rename edits only the name. Duplicate uses the official export/import service, including nested managed-resource ownership remapping. Delete confirms removal of the Document, notes, scientific History and owned resources while preserving source and published Datasets.
+## GUI adapter and named History
 
-In a Viewer menu, **Open workspace…** opens the existing scoped Manager for
-browsing, including when the Viewer has no current Workspace. Its enabled state
-therefore follows the Manager's valid Session/host context. The Manager's actual
-row **Open** still requires a selected compatible Workspace and preserves all
-provider, pending-operation, source-revision and Save/Discard/Cancel guards.
-Browsing alone does not select, load or modify a scientific document. A stale
-Session or replaced/closed Viewer cannot browse through its old context.
+`sessionWorkspaceViewerMenu menu provider callbacks parent` attaches the shared
+New/Open/Save/Save As/Rename/Close/Delete/Notes/Preview/Import/Export manager.
+Required prefixes are `current`, `save`, `close`, `open`; optional prefixes are
+`dirty`, `prepare`, `discard`, `review`, `rename`, `metadata_advanced`, `new`.
+The host stores weak widgets and Session/window incarnation tokens only.
+Naming forms and selected rows retain generation/revision guards. New opens an
+unsaved provider draft; only its established Save path allocates a Workspace.
+The optional `new` prefix presents provider-specific creation fields after common
+Host admission, replacing the generic naming form. Its existing owner must retain
+dirty-state review and Cancel behavior before closing or replacing a live view.
+It owns presentation only; native identity and persistence stay with Save.
 
-Commands and naming forms capture the Session token, host window incarnation and selected Document generation/revision. Stale, deleted or replaced identities fail before mutation. Selection refresh uses existing coalesced idle notifications and weak widget references; destroying a host unsubscribes it. No polling, saved UI registry or replacement History exists. Save/Discard/Cancel reviews occur at the transition, not when a naming form opens, so cancelling the form never saves a draft. A successful notes Save advances only that editor's exact receipt; another stale editor cannot overwrite it. Preview reads verified managed PNG resources through bounded CORE image preview and reports unavailable/corrupt resources truthfully.
+`sessionWorkspaceBuild`, `sessionWorkspaceDialog` and
+`sessionWorkspaceViewerAction` share that guarded host. `errorMode=propagate`
+returns the original Tcl error for structured clients. A Viewer-scoped manager
+restricts provider selection/import. `sessionWorkspaceViewerTitle` projects the
+native name and unsaved status without owning state.
 
-Curve Viewer and Dataset Curve Fit adopt the optional lifecycle callbacks. Their scientific Native2D editors and current History/autosave owners remain unchanged. Other Viewer adapters continue using the backward-compatible four-callback surface; no mass migration is claimed. Curve Workbench keeps its specialized geometry/Undo controls.
-
-`sessionWorkspaceViewerAction provider callbacks parent action ?errorMode?`
-uses those same guarded host actions. The default `dialog` retains native error
-dialogs. Structured host clients may pass `propagate` to receive the original
-Tcl error instead; no modal dialog consumes it. Session lifetime, provider,
-generation/revision and callback checks are identical. This optional argument
-is host-only and does not expose callbacks or GUI opening to Script Bridge.
-The restricted Development `gui_test workspace_save` projection uses this mode
-so a stale or rejected Save returns a failure receipt rather than an old stamp.
-
-Example (host-side Tcl):
-
-```tcl
-::GX::sessionWorkspaceViewerMenu $menu my_registered_provider \
-    [dict create current [list MyViewer::current $window] \
-                 save [list MyViewer::save $window] \
-                 close [list MyViewer::close $window] \
-                 open MyViewer::open \
-                 dirty [list MyViewer::dirty $window] \
-                 prepare [list MyViewer::prepare $window] \
-                 discard [list MyViewer::discard $window]] $window
-```
-
-These prefixes belong to the integrating Viewer and do not define scientific persistence. Existing `SESSION_WORKSPACE_API_v1`, `INTERACTIVE_DOCUMENT_API_v1`, managed-resource and descriptor action operations remain the authorities.
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-
-<a id="compatible-provider-schema-versions-dev094"></a>
-## Compatible provider schema versions
-
-A lightweight descriptor provider may declare `accepted_versions=1.0;2.0`.
-Without it, only the existing `version` is accepted. CORE checks format/owner and
-the accepted version before invoking the module-owned inert payload validator.
-New documents use the provider's current version. Curve Fit advertises existing
-v1/v2 compatibility; its authoritative restore suppresses autosave until complete,
-and a subsequent save promotes a v1 document to v2 on the same ID.
-
-<a id="shared-os-title-projection-dev096"></a>
-## Shared OS title projection
-
-`sessionWorkspaceViewerTitle window base_title current_callback ?draft_callback?`
-subscribes a Viewer window to the existing Workspace GUI lifecycle. The current
-callback returns its actual Workspace ID. The title retains Viewer type/mode and
-shows `Workspace: <authoritative name>` immediately and after Workspace changes,
-including Manager rename. A truly unsaved draft is explicitly marked unsaved;
-stale Session ownership shows None. Destroy releases the projection. This holds
-callbacks and widget paths only; it does not change Document identity, revision,
-generation or scientific contents. `sessionWorkspaceViewerTitlesRefresh` supports
-immediate host updates during a local transition; normal owner mutations use the
-existing idle notification. No provider-specific CORE branches are added.
-
-The Managed Resource API supports typed numeric writes. Scientific
-providers can retain large result arrays in their own Workspace payload through
-`MANAGED_RESOURCE_API_v1/write_numeric`, then read bounded typed pages after the
-producing Job exits. Document identity/generation and portable-package resource
-collection are unchanged; the provider retains the returned reference explicitly.
-
-
-Resource rebinding on package import preserves every untouched subtree
-exactly. Parsing a scientific label, formula or statistical receipt as Tcl data
-does not authorize reserialization. Only resource references and their containing
-structures change when ownership is assigned to the imported Document. This
-preserves CORE interpretation validation and frozen model-state hashes.
-
-`::GX::managedResourceCopyTree document payload` uses the same recursive collector
-and remapper as portable Workspaces. It copies each content hash once through
-managed bounded readers/writers, verifies unchanged bytes and preserves untouched
-text exactly. The caller commits the returned payload; uncommitted copies remain
-collectible managed resources. The existing owner and its payload are unchanged.
-
-The Script binding uses `sessionWorkspaceResourceCopyTreeUtf8` to encode the
-result before it crosses Tcl/Python. This preserves original text even when Tcl
-also caches a list representation; Python tuple conversion must not normalize
-scientific text. The public Script result is an ordinary Unicode string.
-
-`sessionWorkspaceAvailableName preferred` suggests the first unused display name from the same Workspace inventory, appending a numeric suffix when necessary. Python/Octave expose `available_name(preferred)`. This does not reserve an identity: `Create` still validates uniqueness atomically. Viewers use it for unnamed draft Save and honor an explicit `workspace_name` supplied by the shared New workflow.
-
-Dev104 designed Viewer providers may declare `viewer_provider` in their existing
-Workspace descriptor. For modules of kind `viewer`, Workspace availability then
-uses that registered Viewer's presentation policy, independently of Analysis/Run
-selection. Other providers retain module enablement. Disabling the declared
-Viewer policy prevents Workspace access; it does not change scientific modules.
-
-### Source-grounded import lineage (dev109)
-
-New managed Workspace packages retain the actual exported public Document
-receipt and source Session origin alongside their existing identity metadata.
-The exporter checks the source generation/revision/content again after package
-creation. Import verifies the retained receipt against the packaged owner,
-schema, Workspace ID and exact payload SHA before allocating a new Document.
-The receiving Document receives its own actual creator, generation and
-creation event, with the verified source Document/Session snapshots and archive
-SHA in its existing origin parent. Foreign IDs remain inert source identities;
-they are not looked up in the receiving Session. Re-export preserves the nested
-origin history. These integrity/provenance receipts are not authentication.
-
-Legacy packages without either new source field remain supported and record
-`source_document_lineage unavailable`; no original creator or missing source
-generation is invented. A partial or mismatched source receipt is rejected.
-Source Documents and their original payload/revision/origin are unchanged;
-export adds only its ordinary managed archive resource. Final import uses the
-registered schema's derived duplication policy, rather than its staging policy.
-The public Interactive Document creation signature is unchanged. No second
-registry, new storage subsystem or retrospective metadata rewrite is introduced.
-
-The isolated public contract exercises managed import and nested re-export,
-final policy/new-generation checks and ten malformed-receipt negatives. Actual
-installed Duplicate/import, portable cross-Session use and GUI provenance
-inspection remain additional acceptance gates.
+History menus offer Save History As and Named History. The latter
+browses/inspects complete workflows and exposes Restore, Rename and confirmed
+Delete. Active Clear leaves archives intact. Restore reviews dirty work, checks
+provider/schema/lineage/channel and scientific source/resource identities, then
+uses the existing native History replace/flush operation. A native typed coordination
+intent is durable before History replacement; its committed phase is atomic with
+the target Workspace transaction. Recovery restores old History for a prepared
+intent or target History for a committed intent before normal native writes.
+This adds no History engine or ordinary-Save archive replay.

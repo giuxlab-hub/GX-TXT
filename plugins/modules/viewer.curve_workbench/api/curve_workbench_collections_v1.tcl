@@ -123,7 +123,7 @@ proc ::GX::CurveWorkbench::_collectionApply {w token kind id values} {
     _cancelGesture $w;_pointSyncApply $w;set name [string trim [dict get $values name]];if {$name eq {}} {error "Enter a collection name"}
     set members [dict get $values members];if {$members eq {}} {error "Choose at least one member"}
     if {$kind eq "set"} {set members [_collectionStampRefs $w $members];set nativeRefs [_collectionNativeRefs $w $members]} else {foreach curve $members {_record $w $curve}}
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     try {
         if {$kind eq "set"} {
             if {$id eq {}||![dict exists $st($w,selectionSets) $id native]} {set receipt [::GX::Native2D::core selection_set_create $st($w,scene) $nativeRefs];if {$id eq {}} {set id "selectionSet[incr st($w,nextSelectionSet)]"}} else {set receipt [::GX::Native2D::core selection_set_update $st($w,scene) [dict get $st($w,selectionSets) $id native] $nativeRefs]}
@@ -138,7 +138,7 @@ proc ::GX::CurveWorkbench::_collectionApply {w token kind id values} {
             dict set st($w,layers) $id [dict create id $id name $name properties $properties members [lsort -unique $members]];_collectionSyncLayers $w
         }
         _history $w $before {}
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _collectionRefresh $w;return $id
 }
 proc ::GX::CurveWorkbench::_collectionActivate {w} {
@@ -162,16 +162,16 @@ proc ::GX::CurveWorkbench::_collectionActivate {w} {
 proc ::GX::CurveWorkbench::_collectionToggle {w} {
     variable st
     _cancelGesture $w;set id [_collectionSelected $w];if {![dict exists $st($w,layers) $id]} {error "Choose a Layer"}
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     dict set st($w,layers) $id properties visible [expr {![dict get $st($w,layers) $id properties visible]}]
-    try {_collectionSyncLayers $w;_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_collectionSyncLayers $w;_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _collectionRefresh $w
 }
 proc ::GX::CurveWorkbench::_collectionRemove {w} {
     variable st
-    _cancelGesture $w;set id [_collectionSelected $w];set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    _cancelGesture $w;set id [_collectionSelected $w];set before [_snapshotIds $w {}];
     if {[dict exists $st($w,layers) $id]} {::GX::Native2D::core layer_delete $st($w,scene) [dict get $st($w,layerNative) $id];dict unset st($w,layerNative) $id;dict unset st($w,layers) $id} else {if {[dict exists $st($w,selectionSets) $id native]} {::GX::Native2D::core selection_set_delete $st($w,scene) [dict get $st($w,selectionSets) $id native]};dict unset st($w,selectionSets) $id}
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _collectionRefresh $w
 }
 rename ::GX::CurveWorkbench::_restoreSnapshot ::GX::CurveWorkbench::_restoreSnapshot_collections_base
@@ -227,7 +227,7 @@ proc ::GX::CurveWorkbench::_collectionMemberApply {w token id action values} {
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen member parameters"}
     _cancelGesture $w;set record [dict get [_collectionCaptureSets $w] $id]
     if {[dict exists $st($w,selectionSets) $id native]} {dict set record native [dict get $st($w,selectionSets) $id native]}
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     try {
         if {$action eq "rename"} {
             set name [string trim [dict get $values name]];if {$name eq {}} {error "Enter a Set name"};dict set record name $name
@@ -255,7 +255,7 @@ proc ::GX::CurveWorkbench::_collectionMemberApply {w token id action values} {
             dict set record native [dict get $receipt id];::GX::Native2D::core identity_name $st($w,scene) [dict get $receipt id] [dict get $record name]
         }
         dict set st($w,selectionSets) $id $record;_history $w $before {}
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _collectionRefresh $w;return $id
 }
 

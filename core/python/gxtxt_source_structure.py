@@ -12,7 +12,7 @@ for node in ast.walk(tree):
         if last>first:folds.add((first,last))
 lines=set()
 def instructions(code):
-    lines.update(n for _,n in dis.findlinestarts(code) if n>0)
+    lines.update(n for _,n in dis.findlinestarts(code) if isinstance(n,int) and n>0)
     for value in code.co_consts:
         if isinstance(value,types.CodeType):instructions(value)
 try:instructions(compile(tree,'<source presentation>','exec',dont_inherit=True))

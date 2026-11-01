@@ -1,5 +1,32 @@
 # Restricted Viewer Development API v1
 
+## Local project drafts without a Session (P031)
+
+A normally admitted Development project opened without a Session retains its
+local document draft through **Workspace → Save project draft**. Reopening the
+same project in the same user profile restores the exact draft and declared
+Viewer state, including invalid UML source and its last valid presentation.
+This uses the existing native Workspace store and typed Viewer/Document codecs
+in profile-local project storage. It creates no Session, canonical Dataset,
+Session Workspace registry entry or new native filesystem capability. Ordinary
+Project Source Save continues to save project source files; it is distinct from
+saving the running interface's local draft.
+
+Only the live validated Development project receives this context. Its complete
+source/design snapshot, callback contract, project identity and window lifetime
+are checked before read/save/restore. Changed projects refuse adoption and retain
+the previous saved draft. Concurrent windows use native generation/revision CAS;
+a stale save refuses without losing the current unsaved draft. Close provides
+Save/Discard/Cancel review. Explicit local saves are synchronous; malformed or
+asynchronous save requests refuse. A Session Workspace ID requires a real Session
+and is not accepted as a local project identity.
+
+The real Session Workspace/History route and installed Module route remain
+separate. Local project drafts require the matching source project/profile;
+this interface does not imply automatic migration to changed C++ callbacks or
+a new portable project-draft archive format. Normal portable Session Workspace
+and editable project-source packages retain their existing owners.
+
 Installed and development Viewer opens accept `workspace_name` only together
 with `workspace_id new`, as emitted by the normal **New Workspace** form. The
 existing Workspace owner validates the name before the Viewer opens. The
@@ -7,7 +34,7 @@ shared GUI retains it until the first normal Save; opening a saved Workspace
 does not rename it. Unknown context keys remain rejected. This context change
 uses the packaged binary for installed Viewers and adds no compiler fallback.
 
-Dev109 adds reviewed typed SDK methods `Host.catalog_refresh(unsigned form)`,
+The reviewed typed SDK methods are `Host.catalog_refresh(unsigned form)`,
 `Host.catalog_inspect(unsigned form)` and
 `Host.catalog_action(unsigned form, const char* action)`. They require a declared
 GUI Host section with `catalog_owner scientific_libraries` and exact manager API
@@ -16,7 +43,7 @@ each finite action maps to its separately requested manager operation. Invalid
 form/action/grant rejects at the existing broker. The Host applies successful
 source-guarded event plans through the existing manager and GUI owners. No
 arbitrary invoke, provider import or registry path is exposed to the author.
-See the [complete Step2 public contract](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md#step2-catalog-capability-declarations-and-provider-delegation-dev109)
+See the [Scientific Library manager public contract](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md)
 for declarations, shapes, action vocabulary, bounds and lifecycle.
 
 The existing source-identical private-fixture `gui_test` additionally admits
@@ -68,7 +95,7 @@ result scalar strings are bounded4096characters for this GUI-test projection
 and marked `result_presentation_bounded=1`. The actual Activity/public owner
 retains the manager response independently of automatic capability refresh.
 
-## Compiled artifacts and responsive events (dev109)
+## Compiled artifacts and responsive events
 
 Development Build reuses its existing successful artifact while its source,
 Builder interface, build-relevant project metadata, SDK, trusted adapter, policy, compiler,
@@ -108,6 +135,12 @@ libraries and the actual exported entry after admission. Missing/incompatible
 artifacts produce explicit errors and require a matching precompiled package;
 installed startup/events do not invoke source AST validation or Build.
 
+Historical admitted SDK-v1 packages may lack the later Workspace callback-contract
+field. Installed admission derives that absent field only after exact packaged
+source/interface, ABI and current capability checks. It uses the authored design
+and leaves distributed build receipts and any existing contract unchanged;
+Workspace restoration guards and runtime compilation policy remain unchanged.
+
 The existing Script Job auxiliary owner retains one duplex compiled worker per
 Viewer lifetime. Short native events return typed plans through
 `scriptJobRequestExchange`; the exchange does not pump Tk input. The host applies
@@ -140,7 +173,7 @@ can finish during an admitted C++ action. A cancel request or `cancel=1` flag
 does not establish terminal CANCELLED. Inspect the actual existing Script Job
 state and owned cleanup, preserve completed results, and report the race as such.
 
-Dev108 reparent retains declaration positions used by all one-based restricted
+Builder reparent retains declaration positions used by all one-based restricted
 SDK component arguments. Later-declared container parents are validated and
 constructed in derived dependency order; no C++ dispatch renumbering is needed
 for this presentation edit. `reorder ID STEP` remains a signed sibling layout
@@ -159,7 +192,7 @@ must be granted before execution. Publication separately requires existing
 method, raw numeric library, filesystem or scientific execution grant is added.
 The existing canonical result/Workspace and source-revision guards apply.
 
-Dev108 additive authoring facilities (same API family and kernel project grant):
+Additional authoring facilities (same API family and kernel project grant):
 
 - `facility_request PROJECT` reads a UTF-8 JSON request on stdin (at most 64 KiB).
   Required fields are `schema=gxtxt.core_api_gap.v1`, `request_id` matching
@@ -167,7 +200,7 @@ Dev108 additive authoring facilities (same API family and kernel project grant):
   `public_api_inspected` (nonempty list of API IDs), `missing_operation_or_contract`,
   `reproduction`, `why_existing_api_fails`, `desired_input_output`,
   `minimal_acceptance_test`, and `status=REQUESTED`. Non-list fields are nonempty
-  strings. The backend stores `requests/ID.json` with exact three-file source
+  strings. The backend stores `requests/ID.json` with the exact source manifest and project/design
   hashes. Same-ID identical requests are idempotent; modified requests fail
   `GAP_IMMUTABLE`. This is project evidence, not a separate global registry.
 - `builder PROJECT` reads `{ "operation": "...", "arguments": [...] }` on stdin.
@@ -198,7 +231,7 @@ Discover shared icon sources with `{"operation":"icon","arguments":["catalog"]}`
 import takes source path, logical ID, title, category and license. Source paths
 must belong to the author project or the shared CORE icon catalog.
 
-### Bound read-only document GUI tests (dev109)
+### Bound read-only document GUI tests
 
 These are author-test operations on an explicitly attached, source-identical
 private Viewer, not additional authored C++ runtime capabilities. `status` and
@@ -271,7 +304,7 @@ descriptor. Manual/source/design/project/binary and admitted SDK/policy hashes
 remain in the existing candidate provenance. These are bounded inert generated
 texts for author review, not archive parsing or arbitrary filesystem reads.
 
-### Native screenshots as installed manual resources (dev108 additive)
+### Native screenshots as installed manual resources
 
 `manual_asset PROJECT` accepts bounded JSON on stdin through the same project
 write grant. GUI clients use `viewerDevelopmentRequest manual_asset PROJECT
@@ -294,7 +327,7 @@ the assigned Viewer. Capture verification does not execute an authored handler.
 
 The returned `installed_path` is `images/remote-waveform.png`. Reference it on
 its own Markdown image line, for example
-`a Markdown image link to the installed-module path `images/remote-waveform.png``. The existing Documentation
+`![Actual remote waveform](images/remote-waveform.png)`. The existing Documentation
 Browser renders it and opens the full-size image. Images must be ordinary,
 unlinked, noninterlaced8-bit PNGs at most8MiB and4096×4096 pixels. At most32 images
 and16MiB total are admitted. Original capture bytes are preserved, including inert
@@ -317,7 +350,7 @@ The normal Plugin Manager remains the sole installer. Project receipts are
 cooperative provenance under the documented tool grant, not a signed archive or
 a claim of account-wide hostile filesystem isolation.
 
-Dev108 scientific form admission adds `scientific_view_v1`, extending the explicit
+Scientific form admission uses `scientific_view_v1`, extending the explicit
 document profile with individually requested SCIENTIFIC_EXECUTION_API_v1@1
 operations: `node_list,circuit_prepare,submit,status,cancel,reconnect,log,import_table`.
 Legacy profiles retain denial. Fixed C++ methods return no arbitrary strings,
@@ -371,7 +404,7 @@ debug_status, gui_test and workspace_upgrade_review operations. Each retains
 its documented typed shape and admission guards. Callback receives
 the same inert `{ok result}` or `{ok 0 error code detail}` fields as CLI JSON.
 Options admit only module_id, typed event/state and bounded source/file payload.
-`save` writes original handlers.cpp, project.json or inert MANUAL.md through the
+`save` writes a declared C++ source/header, project.json or inert MANUAL.md through the
 same Linux project-write backend. MANUAL.md is optional, bounded to 256 KiB of
 UTF-8 without NULs and cannot be a symlink, hardlink or directory. It adds no
 runtime capability or source execution. Export preserves its exact bytes as both
@@ -384,7 +417,7 @@ future Validate/Build/Run admission. A source payload is at most64KiB valid UTF-
 
 `viewerDevelopmentPreview project ?module? ?provider?` prepares/reuses the current
 development artifact before composing the design; the loading window is trusted
-CORE UI. After admission and exact three-file SHA comparison, the original public
+CORE UI. After admission and exact source-tree/design/project SHA comparison, the original public
 Builder constructors mount the interface and a compiled Open event runs in the
 managed separate worker lifetime.
 `viewerDevelopmentInvoke window action` maps an admitted declared control to a
@@ -443,12 +476,11 @@ for project schema, CLI examples, exact restrictions, author source preservation
 capability requests and package review workflow.
 
 
-Dev108 scientific admission remains explicit: `Host.numeric_exp(value)` is the
+Scientific admission remains explicit: `Host.numeric_exp(value)` is the
 bounded scalar `NUMERIC_API_v1` `array_unary.exp` operation in `numeric_view_v1`.
 The project must request it. It calls the existing Numeric owner unchanged and
-rejects nonfinite input/output. No alternate mathematical implementation or
-library was added. Scientific Execution, Script Job and Parallel Execution are
-now discoverable in the approved catalog but remain unavailable in authored C++
+rejects nonfinite input/output. The Numeric owner remains the mathematical implementation. Scientific Execution,
+Script Job and Parallel Execution are discoverable in the approved catalog but remain unavailable in authored C++
 until their actual typed SDK contracts are approved.
 
 `builder` `icon_import` takes five arguments: absolute project-owned/shared CORE
@@ -486,7 +518,7 @@ The current trusted C++ debugger adds `debug PROJECT --breakpoints '[8,9]'`,
 `operation`, exact `source_sha256` and optional bounded `frame` index. Controls
 are `continue`, `into`, `over`, `out`, `pause`, `stop`, `frame`; no expression or
 GDB command input exists. The same fixed compiler/AST and broker are used.
-Debug builds have real `-O0 -g3` symbols mapped to original handlers.cpp, and a
+Debug builds have real `-O0 -g3` symbols mapped to original project-relative files, and a
 fixed GDB/MI2 backend runs the same native ABI worker in the existing managed
 auxiliary process tree. Active execution retains its bounded CPU/wall budget;
 paused time is limited to 15 minutes. Source/design/facility revision change
@@ -510,7 +542,7 @@ returns the original operation for retry. Ordinary author troubleshooting needs
 no graphical-debugger demonstration or screenshot; independent GUI QA is separate.
 
 
-### Dev108 Native2D diagram SDK extension (validation in progress)
+### Native2D diagram SDK
 
 The existing `native2d` Builder component accepts optional `diagram_catalog`
 (`electrical.basic` or `flow.basic`) and stable `document_slot`. The Design →
@@ -557,7 +589,7 @@ The original synthetic/numeric profiles still reject canonical lifecycle control
 A declared valid Native2D diagram profile is mandatory for this admission.
 
 
-## Restricted canonical Plot binding (dev108)
+## Restricted canonical Plot binding
 
 Explicit PLOT_DATASET_API_v4@4 capability `widgetCreate` is admitted in document
 and scientific profiles. `host.plot_discover(form_index)` populates the declared
@@ -571,7 +603,7 @@ units, source identity, Dataset access and Workspace restoration retain existing
 public owners. Headless Run verifies plans only; real GUI/Dataset evidence is
 separate. Source metadata and pointer probing do not grant C++ raw array access.
 
-## Optional installed native GUI tests (dev108; GAP014)
+## Optional installed native GUI tests
 
 For a complete declared TeX article form, `source_text` takes `component` and
 `value` (at most 4096 UTF-8 bytes). It types through native OS input at the current
@@ -603,7 +635,7 @@ The existing declared Scientific section also supports the optional
 `scientific_probe_diagram`, `scientific_probe_plot`, `scientific_probe_mode`
 references documented in `VIEWER_GUI_HOST_API_v1`. Configure these with the
 ordinary Builder `properties` operation; the mode is a declared voltage/current
-choice. Existing `diagram_tool(...,"probe")` now uses the shared declared bridge
+choice. Existing `diagram_tool(...,"probe")` uses the shared declared bridge
 when present. It maps genuine stable terminals via public Scientific inspection
 and exact completed-publication provenance, then uses canonical Plot binding.
 Validation requires existing `circuit_prepare`, `diagram_command`, `widgetCreate`
@@ -716,9 +748,7 @@ completed: poll status and inspect its canonical Job reference/state. CLI timeou
 does not imply action cancellation; inspect the pending action before retrying.
 These project evidence files are not security tokens or substitutes for source
 validation, canonical Job/Dataset provenance or independent primary GUI review.
-Real GUI, stale-source, denial and author workflow acceptance are tracked in the
-GAP ledger; initial implementation alone is not a PASS.
-## Declared Numeric SDK operations (dev108; GAP004 partial extension)
+## Declared Numeric SDK operations
 
 ### Workspace compatibility for presentation changes
 
@@ -758,20 +788,17 @@ requested `DATASET_PUBLICATION_API_v2@2` `datasetPublicationV2Finalize` capabili
 scoped exclusively to the declared Numeric result and selector transaction.
 It does not expose arbitrary writer lifecycle calls to C++. The original scalar
 template retains only its original scalar grants. Legacy project permissions
-are not broadened implicitly. Generated packages using these methods require
-dev108. A `document_view_v1`/`scientific_view_v1` project may declare ordinary
+are not broadened implicitly. Generated packages using these methods use their declared package compatibility requirements. A `document_view_v1`/`scientific_view_v1` project may declare ordinary
 Workspace/History with an explicitly granted Numeric form and their existing
 scoped lifecycle capabilities without declaring an artificial schematic.
 
-Primary contract evidence: `numeric-sdk-contract01` contains actual compiled
-five-operation plans and wrong-form/wrong-target/incomplete-grant denials.
-Actual real Debian CORE form validation and separate restricted author adoption
-remain distinct evidence. This is not completion of vector interpolation,
-complex AC display, statistical persistence or sweep GUI requirements.
-## Fixed source and public manual inspection (dev108; GAP015)
+Numeric plans require the declared form, target and complete grants. Vector
+interpolation, complex AC display, statistical persistence and sweep GUI
+operations are outside this contract.
+## Fixed source and public manual inspection
 
 `inspect PROJECT --target TARGET` returns inert UTF-8 `content`, exact `sha256`,
-`bytes` and `read_only:true`. Targets are only `handlers.cpp`, `project.json`,
+`bytes` and `read_only:true`. Targets are declared source/header files plus `project.json`,
 `MANUAL.md`, `design.gxtxt-viewer`, `sdk_v1`. Source/metadata/SDK limit64KiB;
 the inert manual alone has a256KiB limit matching save/inspect/export.
 the existing bounded Builder design limit is4MiB. Invalid JSON/source stays
@@ -823,7 +850,7 @@ PNG receipt. Those bounded developer facilities therefore remain in the current
 Development owner while calling the same GUI Host, laboratory fixture validator,
 Native2D, Plot and resource owners. No arbitrary Tcl or test script is accepted.
 
-## Explicit reviewed Workspace copies (dev108, GAP031)
+## Explicit reviewed Workspace copies
 
 Ordinary `workspace_open` retains its exact installed source/design/project snapshot guard. An older Workspace can be reviewed explicitly through the current Session and saved project, using `gui_test` with `{"operation":"workspace_review","workspace_id":"idoc_0002"}`. The assigned Viewer must be closed. Review returns a live `review_id`, the original161 (or actual prior count) preserved ordinals, appended presentation controls, unchanged source digest and the admitted target snapshot. It changes no canonical Workspace, source or scientific result.
 
@@ -851,15 +878,12 @@ reparenting into newly appended containers and trusted presentation-menu suffixe
 under the same full original callback/source/grant and retained-History checks.
 Their complete model validation still applies; this does not authorize arbitrary
 source evolution or migration code. A review receipt is not an applied canonical
-copy. The CLI success-status set now includes `REVIEWED_INERT_ADDITIVE_UPGRADE`,
+copy. The CLI success-status set includes `REVIEWED_INERT_ADDITIVE_UPGRADE`,
 so a successful review returns exit0 consistently with its success payload.
-The positive fourteen-binding review and five rejection cases still require
-their current-source verification. Actual GUI review/apply and Workspace
-preservation evidence remain separately qualified.
 
-GAP032 extends the existing `key` GUI-test action to `Escape` on an already bound, mapped, unobscured declared Plot. This sends the actual native keyboard event to that Plot, clearing its source cursor through the normal host binding. Other Plot keys, hidden/unbound/foreign targets and input during an owned pan remain denied. Existing Diagram keys retain their enum and now also require an unobscured declared viewport. No global desktop key delivery or new restricted SDK operation is exposed.
+The existing `key` GUI-test action accepts `Escape` on an already bound, mapped, unobscured declared Plot. This sends the actual native keyboard event to that Plot, clearing its source cursor through the normal host binding. Other Plot keys, hidden/unbound/foreign targets and input during an owned pan remain denied. Existing Diagram keys retain their enum and require an unobscured declared viewport. No global desktop key delivery or new restricted SDK operation is exposed.
 
-## Canonical read-only consultation binding (next candidate)
+## Canonical read-only consultation binding
 
 The reviewed `VIEWER_GUI_HOST_API_v1` operation `document_bind` maps to exactly
 `host.document_bind(unsigned document, unsigned dataset_selector)`. Both arguments
@@ -961,7 +985,7 @@ that same owner. The PDF decoder/rendering remains the existing Poppler reader;
 no OCR or scientific Dataset mutation is implied. Native installed acceptance
 must be recorded separately from successful transport or package builds.
 
-## Shared electrical diagram interaction (dev109)
+## Shared electrical diagram interaction
 
 Existing typed SDK diagram selection executes its compiled local event before
 the next queued Canvas input. Builder action property `diagram_tool` binds
@@ -979,14 +1003,14 @@ operation) const` uses operation 30 and the `VIEWER_GUI_HOST_API_v1.tex_command`
 grant. Existing Event/State/Host storage, entry point and operations 1–29 retain
 their ABI. The full declared form, finite operations and canonical article versus
 interface Workspace distinction are documented in
-[GUI Host](VIEWER_GUI_HOST_API_v1.md#declared-tex-article-form-dev109).
+[GUI Host](VIEWER_GUI_HOST_API_v1.md).
 Builder export contributes each canonical article provider through the existing
 module Workspace descriptors, so articles remain discoverable after restart
 before opening their Viewer. Ordinary installed runtime executes the distributed
 binary; a TeX document Build invokes the native TeX typesetter and never rebuilds
 the C++ Viewer.
 
-### Explicit EM presentation copies and inert review request (dev109)
+### Explicit EM presentation copies and inert review request
 
 The fixed `workspace_upgrade_review PROJECT` CLI reads a JSON object from
 standard input with exactly three inert string fields:
@@ -1004,8 +1028,7 @@ its exact snapshot guard.
 Explicit presentation review additionally admits a validated change of
 `shell.inspector_width` and a Plot component's display `title`. Other shell
 properties, handlers, scalar defaults, scientific model/variable references and
-original declaration order remain significant. This allows the same-source
-EM031→032 width/caption correction to be reviewed as a separate copy.
+original declaration order remain significant. The same-source width/caption correction is reviewed as a separate copy.
 
 The original shared EM owner performs read-only admission of saved model
 associations. Current state requires the actual canonical model and generation;
@@ -1020,13 +1043,12 @@ recheck source stamps, original Workspace, Session lifetime and current project.
 Every retained History state, including redo, is transformed in RAM before a
 normal managed export/import can create the reviewed copy.
 
-The actual retained E/M typed contract covers both original interfaces and all
-nine History states each, with generation, missing-Job and table-hash negatives.
-Canonical copy creation and actual installed Save/Open remain separate GUI
-acceptance gates. No source hash override, author migration code, new solver
-Job, renderer or scientific Dataset is part of this operation.
+The same compatibility checks apply to retained E/M interfaces and History states.
+A changed generation, unavailable Job or inconsistent table hash rejects the copy.
+No source hash override, author migration code, solver Job, renderer or scientific
+Dataset is part of this operation.
 
-## Canonical raster SDK methods (dev109)
+## Canonical raster SDK methods
 
 The additive SDK v1 methods below require the identically named explicit
 `VIEWER_GUI_HOST_API_v1@1` grants:
@@ -1060,13 +1082,11 @@ binary with zero compiler/linker invocations. SDK v1 additions preserve the
 existing Event/State/Host data ABI and exact existing method bodies. They do not
 authorize silent runtime recompilation or bypassing compatibility checks.
 
-Independent installed generic-Viewer acceptance covers canonical binding, real
-rectangle and irregular-polygon gestures, semantic menus, anchored editors,
-History, Save/Reopen, Session switching and native action/menu icons. See the
-[generic Builder example](../examples/GENERIC_RASTER_BUILDER.md) and
-acceptance scope. This evidence
-uses an uncalibrated pixel source; physical calibration remains an explicit
-existing Native2D operation, never an inferred measurement.
+Canonical binding, rectangle/polygon gestures, semantic menus, anchored editors,
+History, Save/Reopen and Session switching use the shared raster owner. See the
+[Viewer GUI Host contract](VIEWER_GUI_HOST_API_v1.md) for declarations and
+interaction semantics. Pixel coordinates remain uncalibrated until an explicit
+existing Native2D physical-calibration operation supplies the measurement scale.
 
 A canonical raster declaration plus the explicit `raster_bind` grant admits
 Workspace/History for the existing `document_view_v1` or `scientific_view_v1`
@@ -1075,7 +1095,7 @@ profile. Their original `SESSION_WORKSPACE_API_v1` create/get/update/list and
 slot without its binding grant, a legacy profile or an unbound display-only demo
 does not gain a canonical lifecycle through this declaration.
 
-### Explicit CAD multiple-selection presentation copies (dev109)
+### Explicit CAD multiple-selection presentation copies
 
 The same reviewed-copy owner admits an optional complete pair on an existing
 canonical geometry form: `workbench_selection` names a newly appended empty
@@ -1097,50 +1117,38 @@ revision/SHA. Only the existing explicit managed Workspace duplication may
 apply this declaration change. Ordinary installed Open keeps its exact source
 snapshot check; this review is an explicit development operation.
 
-The actual source review of the preserved 014 Workspace against official015
-passed. Focused tests cover three derived control states, original-value
-preservation, callback/ordinal refusal and real private canonical association
-checks. They do not constitute installed GUI or full retained-History copy
-acceptance, which remains a separate gate.
+### API reference allocation with enlarged fonts
 
-### API reference allocation with enlarged fonts (dev109)
+The shared Browser computes its required height from actual control chrome,
+three API tree rows and four reference text lines, including its native
+scrollbars. Development Workspace uses the same existing Browser factory's
+compact presentation: the notebook supplies the title, search and surface
+controls use two rows, and Manual/Previous/Next share a responsive footer.
+Refresh remains visible with its full tooltip. Successful nonempty searches
+release the status row; pending catalog requests, errors and empty results keep
+visible feedback. Full Session/project/admission context remains in the
+scrollable reference.
 
-The shared Browser computes its required height from actual font metrics,
-control chrome, three API tree rows and four reference text lines. The C++
-Workspace uses that same budget when distributing space between the source
-and its scrollable diagnostics. Diagnostics retain their heading, at least two
-rows and scrollbars; the explorer stays accessible. No API, source document or
-metadata generation is changed by reflow.
+The Workspace budgets both notebooks' tab chrome and retains Diagnostics'
+heading, one complete row and scrollbars. The minimum client remains 980×650
+at ordinary fonts. With a larger persisted Appearance font, the window manager
+minimum grows to the measured height needed for the same readable source,
+reference and controls. A requested smaller height is clamped honestly; no
+font is reduced or control clipped to simulate a fit. Larger windows restore
+more diagnostic space. Window-manager decorations and menus are outside this
+client budget.
 
-Refresh uses a compact circular-arrow control with the existing shared tooltip
-“Refresh API declarations”; the normal `API manual` button still opens the
-selected public API manual. A redundant successful family-count status row
-releases its space to the reference. Pending metadata, errors and empty search
-results retain visible status feedback. Full Session/project/admission context
-remains in the scrollable reference.
-
-A focused actual-widget contract at Tk scaling1.998 verified 1000×700 and
-1260×820, readable complete captions, three real tree rows, four actual24-pixel
-text lines, source/diagnostic space, unchanged source text and one unchanged
-metadata generation. Those 21 assertions do not substitute for the separate
-installed Debian pointer/keyboard high-DPI regression.
-
-### API Browser at the minimum client height
-
-Browser layout budgets use the actual client area, font metrics and native
-scrollbars. At the C++ Workspace minimum height, Diagnostics may show one row
-plus its heading and scrollbars to keep three API rows and four detail lines
-readable; larger windows retain two or more diagnostic rows. Window-manager
-menu/decorations are outside this client budget. The shared Browser repairs a
-selected row clipped by resize through the native Treeview scrolling methods,
-while preserving deliberate scrolling away from a selection. Its deferred resize
-callback is retired with the Browser. Metadata and source text are unchanged.
+A settled resize clamps the compact Browser sash to its actual row/line minima
+and preserves a usable user sash within those bounds. Deferred callbacks are
+cancelled with their window. The regular Browser presentation used by the
+script editors remains unchanged. Search, selection, refresh and layout do not
+change source, grants or the scientific model.
 
 
 ## Generated installed-provider reference
 
 Export emits an inert `public_contract` in the generated Restricted Viewer client descriptor. It documents the exact generated `handlers`, `dispatch`, `workspaceOpen` and `texOpen` host signatures and their existing Session/Workspace contexts. API Browser can inspect these declarations without loading the provider. They do not grant Script Bridge or C++ SDK operations. Re-exporting unchanged compiled source retains its native artifact; changing this documentation formatter alone does not invalidate the native build dependencies.
-# Trusted existing Tcl Viewer maintenance (TASK210 additive operations)
+# Trusted existing Tcl Viewer maintenance
 
 The existing Development owner also provides a finite **trusted maintainer**
 workflow for the registered bundled Curve Workbench and Replicate providers.
@@ -1168,7 +1176,7 @@ The additive request operations take `options {request_json JSON}` only:
 | `maintenance_export` | empty object | Preserved-payload plugin candidate, full ZIP readback and explicit untested functional status |
 
 CORE owns the editable-file policy; project metadata cannot add paths. Initial
-scope is eight TASK210-approved Workbench source units bounded to 64 KiB each,
+scope is eight policy-approved Workbench source units bounded to 64 KiB each,
 and Replicate's original `api/replicate_viewer.tcl` bounded to 128 KiB. The latter
 accommodates the reviewed producer adapter without removing existing controls
 or splitting it into unapproved files. The exact opaque Replicate
@@ -1224,10 +1232,9 @@ operations. A final changed public contract requires its own exact owner review.
 
 Maintenance export does not install, activate or hot-reload a Viewer. Normal
 Plugin Manager/protected-core integration and real installed GUI/science checks
-remain with their established owners. Builder import/compare coverage does not
-claim that a layout edit has been applied to the original widget construction.
-Actual Builder fragment adoption for a changed layout remains an explicit
-original-Viewer-owner integration obligation.
+remain with their established owners. Importing or comparing a layout fragment
+in Builder does not alter the original widget construction. Adopting a changed
+fragment requires explicit integration by the original Viewer owner.
 
 Legacy packages carrying both root SHA256SUMS and SHA256SUMS.txt retain both.
 The standard package writer regenerates identical complete inventories covering
@@ -1241,3 +1248,330 @@ ZIP remains and the competing checksum is untouched; export reports a partial
 publication for explicit inspection. This is not a crash-atomic two-file pair,
 automatic rollback, repair or permission to rerun blindly. Default Builder
 signature, default member0644 and caller/umask sidecar permissions are retained.
+
+
+## Typed Sketch and diagnostics components
+
+See [typed Sketch and diagnostics integration](VIEWER_GUI_P020_ADDITIONS.md) for
+actual component properties, admitted C++ operations, grants, lifecycle and bounded
+event payloads. Existing v1 identities and non-opt-in consumers remain compatible.
+
+## Multifile C++ projects and source identity
+
+The existing `gxtxt.viewer_development_project.v1` metadata accepts optional
+`source_files`, an ordered list of normalized project-relative names. Omission
+means `["handlers.cpp"]`. The first and unique entrypoint is `handlers.cpp`;
+additional translation units live under `src/` with `.cpp` extension and local
+headers under `include/` with `.hpp` extension. Nested directories are supported.
+At most32 files,64KiB per file and1MiB combined are admitted. Names cannot contain
+traversal, empty components, absolute paths or linked ancestors. Source remains
+UTF-8 text without NUL. Project metadata cannot select compiler flags or hooks.
+
+Every declared file participates in `source_manifest` (path, role, bytes, SHA256),
+whose canonical JSON identity is `source_tree_sha256`. The additive
+`project_digest_sha256` binds that identity to exact project/design hashes.
+Legacy `source_sha256` continues to identify handlers.cpp and `project_sha256`
+continues to identify project.json. Existing one-file metadata remains valid.
+A missing/changed header or auxiliary unit invalidates Build, Preview, runtime
+admission, Workspace callback compatibility, GUI-test attachment and Export.
+Successful native event receipts carry that same frozen source manifest/tree
+identity; the GUI compares every file before applying a returned operation.
+Legacy one-file event/snapshot shapes remain compatible. The API Browser saved
+project context and project-associated facility requests also retain the complete
+source identity; discovery still grants no execution.
+
+Before compiler admission, every source/header include is reviewed. Only
+literal reviewed system headers or declared quoted local headers are admitted.
+Macro includes, include_next/import, traversal and source-location remapping
+are refused. Directive digraphs use the same admission; line splices follow C++
+preprocessing order. Directives inside ordinary/raw string content are inert.
+Trigraph directives, embed and header-existence queries require review and are
+refused before AST access. The original Clang lexer/AST policy runs against each translation
+unit and its local headers. Exactly one correctly typed on_event definition
+belongs to handlers.cpp. SDK call grants are the union of actual authored calls
+across all units/headers. Compilation and linking use the original fixed SDK,
+adapter and recipe on an immutable source snapshot. No authored Make/CMake,
+external include root or alternate compiler is accepted. Diagnostics retain
+actual project-relative file, physical line and column.
+
+`project_files PROJECT` accepts a JSON request on stdin. `{"operation":"list"}`
+returns the current source manifest and project metadata SHA. Mutations require
+`expected_project_sha256` from that inspection. `add` takes `name` and `source`;
+`remove` takes auxiliary `name`; `rename` takes auxiliary `name` and absent
+`target`. Rename/move does not rewrite authored includes. `save_all` takes a
+`files` object mapping declared files, project.json or MANUAL.md to
+`{"source":"...","expected_sha256":"..."}`. An absent optional manual uses
+JSON null. All names/bytes/preimages are checked before writing; the metadata is
+published last. Ordinary I/O failure restores touched original bytes/modes.
+This cooperative transaction is not a crash-atomic filesystem guarantee.
+The host request equivalent uses `project_files` with `request_json`. These are
+author-tool/host operations under the existing project write grant, not native
+Viewer SDK or scientific Script Job capabilities.
+
+Export includes every exact declared source/header plus SOURCE_MANIFEST.json
+under source/, the full build receipt and actual compiled binary. Installed
+admission compares all packaged source hashes before loading the distributed
+binary and never invokes source compilation.
+
+`import_project NEW_PROJECT --package EXPORTED_ZIP` restores an editable project
+through this same owner. NEW_PROJECT must be absent. The trusted initialization
+phase validates normalized ordinary archive members, total bounds, complete ZIP
+checksum inventory, exact source/build receipt and source manifest. It publishes
+one complete new folder, preserves authored source/design/metadata/manual assets,
+then installs the existing project write grant. It never loads the packaged native
+binary. A later explicit Build uses current admission and compiler inputs.
+The host request uses `import_project` and option `source_package ZIP_PATH`.
+
+The original `debug --breakpoints` additionally accepts file-aware records,
+for example `[{"file":"src/physics.cpp","line":3}]`; integer lines remain
+compatible and refer to handlers.cpp. A paused frame reports `project_file` only
+when it maps to a declared source/header, retaining authentic GDB file/fullname.
+External SDK/system frames remain external. Breakpoint records explicitly report
+`resolved`; pending/nonexecutable locations are never presented as verified stops.
+The frozen source tree is included in Debug state, and controls may supply its
+`source_tree_sha256` in addition to the legacy source SHA. Any current source-tree
+change refuses controls and cancels the previous execution.
+
+Scientific Library catalog actions `entry_search`, `entry_next`, `entry_previous`
+and `entry_info` require respectively searchLibraryEntries, libraryEntriesPage,
+libraryEntriesPage and getLibraryEntryInfo. A declared catalog_entry_filter
+requires all three operations. Query, selected entry and continuation belong
+to the existing Scientific Library Manager/GUI Host; C++ receives no private
+provider, filesystem or arbitrary dispatch capability.
+
+## Scalar Numeric transport and native budgets
+
+A persistent compiled Viewer with an explicit scalar Numeric grant uses a finite
+trusted transport child for the existing add/sqrt/exp SDK calls. That child starts
+before applying native author CPU/address-space/file-size limits and calls the
+exact existing broker_message/core Numeric owner. It performs no numerical
+implementation, source execution, publication or Job registration of its own.
+This keeps trusted numerical service processes outside the native author budget,
+matching the original nonpersistent broker boundary. The native loaded library,
+state, CPU3s/address-space256MiB/file-size1MiB and event wall12s remain unchanged.
+A Viewer without those scalar grants starts no transport child.
+
+The transport accepts only bounded typed scalar messages, frozen source hashes
+and explicit scalar grants; it accepts no arbitrary operation, path, Tcl or
+command. Domain rejection discards the event's UI/state changes and the same
+loaded Viewer can process a later valid event. Broker/core descendants use the
+existing supervisor's subreaper, start identities, bounded drainage and reaping.
+A parent-death signal covers hard loss of the native worker. Private diagnostic
+receipts record the broker PID, frozen identity, bounded CORE-request history
+and actual cleanup. Desktop D-Bus activations are outside this worker-tree
+cleanup statement; the actual headless CORE environment omits DISPLAY.
+
+Python cancellation never unwinds through the C++ callback ABI as a false scalar
+result. It is recorded as an event failure, and the managed compiled lifetime
+then exits with its actual cancellation status instead of serving more events.
+
+API Browser family and method rows use the existing shared UI Field inspection
+font and row padding. The native row height follows the saved Appearance font,
+and the three-row minimum uses those actual rows. This does not autosize the
+Browser's declared columns on queries or replace a deliberate horizontal pan.
+
+## Installed C++ Runtime Test in Builder
+
+`::GX::viewerDevelopmentInstalledTestOpen window module provider moduleRoot fixtureRoot retained onReady ?geometry?` is a trusted host-only connection used by the existing Builder Runtime Test control. `window` must be the live `.gxInterfacePreview`; module/provider/root must be the exact normal registered, enabled installed restricted C++ package, whether bundled or managed by Plugin Manager. Bundled modules need no removable-plugin registry record. `fixtureRoot` must be a marked private test fixture containing the current Session. `retained` is the existing inert GUI capture; `onReady` is a trusted live host command prefix, never an authored or portable callback. Optional geometry uses ordinary bounded Tk geometry. The installed design must exactly match the Builder model except inert origin. Package admission rechecks source, lifetime and Session after event pumping before replacing the same window.
+
+The existing compiled admission, worker and Host command owners run the real client; retained GUI and image references restore before its open event. The callback receives the window and a receipt with `status ready|rejected`, `message`, and resource/state handoff information. Ready means genuine native open completed. A failed replacement retains the previous draft/resources for the Builder's normal fallback. Compiled state restores only for the matching source snapshot and callback contract. Native Workspace close/dirty and History recovery choices remain authoritative. This API does not install, compile, publish a Dataset or create a third Preview window.
+
+## Producer-scoped Dataset Groups and publication
+
+The additive native methods use the existing Group v1 and Publication v2 owners:
+
+```cpp
+void Host::dataset_group_review(const WorkspaceValue& dataset_ids) const;
+void Host::dataset_group_create(const WorkspaceValue& definition,
+                                const WorkspaceValue& review) const;
+void Host::dataset_publish_batch(const WorkspaceValue& request) const;
+WorkspaceValue Host::dataset_producer_result() const;
+```
+
+These methods need no Numeric form or prebound component. They enqueue finite
+typed requests for the owning CORE thread after the compiled event returns.
+`dataset_producer_result()` reads the latest producer receipt from an earlier event;
+it does not publish authored Workspace state or advance scientific History.
+The receipt has `operation` (`review`, `create`, `publish_batch`), `status`
+(`completed` or `failed`), `result`, increasing `sequence`, and `event_generation`.
+A failed request, including broker-time capability denial, replaces the prior
+success with a fresh failed receipt, a null result and a bounded `error` string.
+The current C++ event can still inspect its input receipt before its own request
+completes. Closed/replaced windows and changed Sessions cannot receive a result.
+
+Declare exact capabilities in project metadata. The minimum grouped-batch set is
+`DATASET_GROUP_API_v1@1` operations `datasetGroupProducerReviewV1` and
+`datasetGroupProducerCreateV1`, plus `DATASET_PUBLICATION_API_v2@2` operation
+`datasetProducerPublishBatchV1`. The result accessor also requires Review.
+An admitted producer with Review and Publication but no Create can publish an
+ungrouped batch; adding `dataset_group` explicitly refuses. Listing operation
+names, changing a module ID or receiving a receipt does not grant authority.
+The host binds the actual registered installed producer, capability, current
+Session incarnation and namespace. Original ABI 1 packages keep their existing
+methods/layout and distributed binaries; this additive surface requires a newly
+authored client, not a rebuild of unrelated installed packages.
+
+Public flow: issue Review with an empty typed array; in the next event obtain
+`receipt.result.session_token`; pass `{session_token, outputs}` to Publish Batch.
+Each output is an existing Publication v2 series request. Add an explicit
+`dataset_group` declaration only when desired, containing exactly those new IDs.
+For owned existing outputs, Review their IDs and pass the returned full review
+unchanged with the Group definition to Create. This groups canonical outputs
+without copying or rewriting their scientific payloads. Mixed-producer grouping
+remains an explicitly reviewed user/admin operation. See
+[DATASET_GROUP_PRODUCER_API_v1](DATASET_GROUP_PRODUCER_API_v1.md) for definitions,
+roles, ownership, namespace, revision and atomic rollback rules. Source-file Notes
+remain a separate SOURCE_NOTE_API_v1 association.
+
+Native request transport is UTF-8 typed `WorkspaceValue`, at most 48 KiB,
+64 nesting levels and 8192 nodes. Review accepts 0..64 IDs; publication accepts
+1..64 outputs. Native numeric values use the existing finite double/int64 typed
+value boundary. Full opaque revision tokens remain strings; over-budget requests
+are rejected, never truncated. Results are bounded to 1 MiB. Normal native event
+CPU/memory/wall budgets still apply; this is bounded small-output publication,
+not a replacement for scientific streaming Jobs.
+
+The actual Python and Octave Script Bridge exposes Group v1 `review`, `create`,
+`get`, `list`, and Publication v2 `publish_batch`. For example, in Python:
+
+```python
+review = gxtxt_api_call('DATASET_GROUP_API_v1', 'review', [])
+result = gxtxt_api_call('DATASET_PUBLICATION_API_v2', 'publish_batch', {
+    'session_token': review['session_token'], 'outputs': outputs,
+    # Optional: 'dataset_group': definition
+})
+review = gxtxt_api_call('DATASET_GROUP_API_v1', 'review', result['dataset_ids'])
+group = gxtxt_api_call('DATASET_GROUP_API_v1', 'create', definition, review)
+```
+
+Octave uses the same operations through its supported `gxtxt_api_call`, struct
+requests, ordinary numeric vectors and output/member cell lists. Review and the
+following mutation belong to the same actual supervised Job/Session binding.
+Script numeric arrays retain the existing Publication writer's dtype and missing
+value/NaN/Inf policy, unlike native finite `WorkspaceValue` transport; the adapter
+does not replace samples. Numeric-array data are bounded to 64 MiB and control
+descriptors to 1 MiB. Existing single publication and ungrouped batch methods are
+unchanged. API discovery/coverage describes availability; invocation acceptance
+is recorded separately in the release validation receipts.
+
+### UML shared Document admission (P031 additive)
+
+`document_view_v1` clients can declare a `document kind=uml` and request the exact
+`UML_DOCUMENT_API_v1` operations described in
+[UML Document API](UML_DOCUMENT_API_v1.md). Existing `Host.document_bind`/command
+remain ABI26/41. Actual design admission requires Read/Parse/Layout and, for
+editable components, Edit independently of the source call list. Write/Export are
+separate grants and every finite runtime intent rechecks its required operation.
+The trusted host receives only the recomputed admitted set. Default Markdown
+admission and distributed source/binary receipts are not rewritten.
+
+Managed UML Preview declares three real readonly direct-canvas document panes:
+`diagram`, `source`, `metadata`, with one `document.uml` Contract Visualizer role.
+A shared kind is required across panes; an associated-source pane is not invented.
+Editor capture uses a finite typed `uml_drafts` domain, keeping exact source and
+portable revision strings rather than a worker/model blob. Source editing and
+canonical saving retain their public owners. This declaration describes available
+host facilities; module authors must still genuinely author/build/export/install
+and test their native project. Author API/fixture success is not that proof.
+
+## Additive Acquisition project source authoring
+
+The Development request owner also supports `project_init` for a genuine
+`gxtxt.acquisition_development_project.v1` target. It creates no Viewer design.
+The versioned `project_files` description/edit interface supplies a typed roster
+of registered C++/header/Tcl/Python helper source, module-local format profiles,
+exact byte/SHA identities and an opaque full-closure CAS revision. Source edits
+reuse the existing managed Jobs, project-write grant and atomic ProjectFiles
+publisher. Source and helper files retain exact UTF-8 bytes including BOM/CRLF.
+Helper registration grants no execution; profiles are unvalidated until actual
+native admission. Descriptions state current build/runtime availability explicitly.
+
+The exact implemented batch-A schema and request/response shapes are documented
+in `validation/dev111_p032_toolchain/PROJECT_TRANSPORT_BATCH_A_01.md`. Existing
+Viewer source operations, policy, SDK/adapter ABI and compile recipe are unchanged.
+This source-authoring surface alone does not establish native Acquisition,
+selected-source access, publication or independently accepted Builder workflows.
+
+The Acquisition publisher carries the reviewed prestate through staging and
+checks it again immediately before replacement. Compensation restores only its
+own unchanged postimages; unexpected external edits remain intact and produce
+`SOURCE_RECOVERY_CONFLICT` for review. This is ordinary concurrent-edit detection,
+not an operating-system atomic compare-and-swap against hostile processes.
+Acquisition C++/Python source notes reuse the existing SourceAuthoring owner.
+Descriptions expose per-file `source_notes_available`, `source_notes_language`
+and `source_notes_reason`; Tcl helper notes are explicitly unavailable while
+their source remains editable. Raw metadata cannot create or replace a Source
+Note owner pointer. Typed source saves/renames/removals preserve or detach notes
+through the same owner. Local note operations retain exact project/source/
+authoring CAS; actual canonical attachment still requires SOURCE_NOTE_API_v1 and
+the real Development workspace capability/context.
+
+The additive native Acquisition target now has actual Validate/Build/Export and
+inert distributed `runtime_inspect` branches using the same Development compiler,
+managed requests and standard package writer. Its separate SDK/worker/factory and
+exact guard/output protocol are documented in
+[Native Acquisition SDK](NATIVE_ACQUISITION_SDK_v1.md). CORE normal registered
+package/profile admission remains mandatory. Old Viewer run/prepare/test paths
+explicitly refuse Acquisition: actual Test/Import uses the CORE source/output
+broker. Current descriptions retain runtime_available=false until that owner is
+integrated; registered helpers are not execution claims. Normal Acquisition
+source-project ZIP import verifies inventory/checksums and source/build closure,
+restores exact sources/helpers/notes/assets with fresh note identities and origin
+lineage, and neither imports nor executes a compiled binary. See the C2 handoff
+`validation/dev111_p032_toolchain/SOURCE_NOTES_PROJECT_IMPORT_C2_01.md` for exact
+local note forms and scoped author evidence.
+
+Optional Acquisition `config_fields` declarations preserve producer scalar
+defaults/types/constraints through existing source CAS and normal Module config
+sections. Absent declarations in earlier projectv1 mean []. Current descriptions
+and inert installed admission expose exact config_fields/config_schema_sha256;
+no runtime settings store or permission is added. See
+`validation/dev111_p032_toolchain/CONFIGURATION_FIELDS_C3_01.md`; actual CORE owns
+runtime normalization, ModuleCfg persistence, live scope and provenance.
+
+### Acquisition project Test (P032)
+
+The primary **Run → Test** command in Acquisition Plugin Builder and **Develop → Test**
+in its C++ source Workspace share one CORE selection/configuration dialog. Choose
+1–64 ordinary files, an actual saved format profile and typed configuration.
+Configuration values here are transient Test overrides of the declared defaults;
+they do not change ModuleCfg, Configuration or a Session Manifest. Cancel keeps
+source and drafts. Changed source revisions refuse and require a fresh review.
+
+`VIEWER_DEVELOPMENT_API_v1` retains its `test` operation. For an Acquisition target
+its `request_json` uses `gxtxt.acquisition_project_test.v1` with `expected_revision`
+(from public ProjectFiles `describe`), `profile_id`, absolute chosen `sources`,
+and optional typed `config`. The complete request is bounded to64KiB; files are
+bounded to2GiB aggregate and the actual native Test to60seconds after admission.
+No private Tcl command is required. `project_test_available` is distinct from the
+Viewer-style `runtime_available` flag; Acquisition has no synthetic Viewer Demo.
+
+Test uses the existing normal candidate exporter and distributed native admission
+without installing/registering the module. The same Source Grant checks full SHA,
+the existing guarded broker executes the actual compiled callbacks, and the same
+typed buffer owner verifies/seals then discards provisional outputs after reap.
+No Session, Registry entry, Dataset, Dataset Group or scientific publication is
+created. The current producer/profile/config/source closure remains pinned;
+foreign profiles, stale revisions, unknown config, FIFO/linked sources, protected
+producer replacement and malformed output identity refuse. The private
+`derived/acquisition-test.json` reports actual guard, configuration and source
+identities, discarded output schema/SHA and reap; it explicitly does not certify
+scientific correctness or final installed-module behavior. Normal Plugin Manager
+admission and real canonical import/rollback/GUI acceptance remain separate.
+
+Project Test first invokes the saved **recognize** and **inspect** callbacks in
+separate admitted, bounded read-only phases. It reports their actual metadata
+and reaped actors before the full import-callback Test; an unrecognized source
+refuses without creating numeric outputs. All three phases share the reviewed
+source/configuration closure and overall60second native deadline. This exercises
+the declared callbacks without assigning scientific validity to their claims.
+The Acquisition API and Development metadata report helper availability through
+the same actual CORE helper admission owner, independently of reference catalog
+presence.
+
+Compiled Viewer and Preview admission allows 20 seconds for the fixed headless
+runtime-design/catalog request, within the existing 30 second outer admission.
+The separate native-library probe remains bounded to 5 seconds. Ordinary CORE
+requests retain their 12 second default; scalar execution retains its existing
+remaining-deadline budget. A timeout refuses admission and kills/reaps the
+owned request group. There is no automatic retry or partial capability grant.

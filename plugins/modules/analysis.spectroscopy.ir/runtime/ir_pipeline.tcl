@@ -8,7 +8,7 @@ set runtimeIni [file normalize [lindex $argv 1]]
 
 namespace eval ::IR {
     variable moduleId analysis.spectroscopy.ir
-    variable moduleVersion 1.1.2
+    variable moduleVersion 1.2.0
     variable numeric ::GX::NumericAPIv1
     variable references ::GX::ReferenceLibraryAPIv1
 }
@@ -31,19 +31,16 @@ proc ::IR::choice {cfg key options default} {
     return $value
 }
 proc ::IR::bindingName {binding} {
-    set parts [split [string trim $binding] .]
-    return [lindex $parts end]
+    set binding [string trim $binding]
+    if {[string match {primary.*} $binding]} {return [string range $binding 8 end]}
+    return $binding
 }
 proc ::IR::variableForBinding {variables binding} {
     set wanted [bindingName $binding]
     foreach variable $variables {
-        set name [expr {[dict exists $variable name] ? [dict get $variable name] : ""}]
-        set canonical [expr {[dict exists $variable canonical] ? [dict get $variable canonical] : ""}]
-        if {[dict get $variable variable_id] eq $wanted || $name eq $wanted || $canonical eq $wanted} {
-            return $variable
-        }
+        if {[dict get $variable variable_id] eq $wanted} {return $variable}
     }
-    error "IR binding '$binding' did not resolve to a stable variable_id"
+    error "IR binding '$binding' did not resolve to an exact stable variable_id"
 }
 proc ::IR::readExperimental {session datasetId xBinding yBinding} {
     set handle [::GX::datasetAccessOpen $session $datasetId]
@@ -213,7 +210,7 @@ proc ::IR::report {path details peaks candidates} {
     set f [open $path w]
     fconfigure $f -encoding utf-8 -translation lf
     try {
-        puts $f "GX-TXT IR Spectroscopy and Reference Matching 1.1.2"
+        puts $f "GX-TXT IR Spectroscopy and Reference Matching 1.2.0"
         puts $f "This report ranks spectral similarities; it does not prove chemical identity."
         puts $f "Version 1.0 assumes one dominant component; mixture deconvolution is unsupported."
         puts $f ""
@@ -246,6 +243,9 @@ proc ::IR::run {configPath} {
     set xBinding [ini $cfg bindings spectral_x ""]
     set yBinding [ini $cfg bindings spectral_y ""]
     if {$xBinding eq "" || $yBinding eq ""} { error "IR X/Y bindings are required" }
+    set sourceIdentity [::GX::curveSourceDatasetIdentity $session $datasetId]
+    set sourceRevision [::GX::datasetStorageSha256Text $session [::GX::datasetRevisionPortableToken $datasetId]]
+    set sourceSchema [::GX::datasetStorageSha256Text $session [::GX::datasetVariableSchemaV3 $datasetId]]
     set experimental [readExperimental $session $datasetId $xBinding $yBinding]
     set xId [dict get $experimental x_id]
     set yId [dict get $experimental y_id]
@@ -274,9 +274,9 @@ proc ::IR::run {configPath} {
     set libraryIds [lsort -unique $libraryIds]
     set libraryFingerprints [dict create]
     foreach libraryId $libraryIds {
-        ${references}::validateLibrary $libraryId
-        set info [${references}::libraryInfo $libraryId]
-        dict set libraryFingerprints $libraryId [dict create version [dict get $info version] content_hash [dict get $info content_hash]]
+        ${references}::managedValidateLibrary $libraryId
+        set info [${references}::managedLibraryInfo $libraryId]
+        dict set libraryFingerprints $libraryId [dict create version [dict get $info version] scientific_version [dict get $info scientific_version] content_hash [dict get $info content_hash] payload_sha256 [dict get $info managed_payload_sha256]]
     }
     set peakResult [${numeric}::findPeaks $px $py \
         [dict create min_prominence $minProm min_distance $peakTolerance distance_mode x]]
@@ -289,16 +289,18 @@ proc ::IR::run {configPath} {
     set candidates {}
     set skipped 0
     set usedBulk 0
+    set referenceScanCounts {}
     set expMetadata [dict get $experimental metadata]
     foreach libraryId $libraryIds {
         set libInfo [dict get $libraryFingerprints $libraryId]
-        set spectrumIds [${references}::listSpectra $libraryId]
+        set spectrumIds [${references}::managedListSpectra $libraryId]
+        set declaredPopulation [llength $spectrumIds];set bulkScanned 0;set exactExamined 0
         if {[llength $spectrumIds] > 100 &&
             [ini $cfg config baseline_method none] eq "none" &&
             [ini $cfg config smoothing_method none] eq "none" &&
             [ini $cfg config derivative_order 0] == 0} {
             set limit [expr {min([llength $spectrumIds],max(30,int($topN)*3))}]
-            set fast [${references}::bulkRank $libraryId [dict create x $px y $py] [dict create \
+            set fast [${references}::managedBulkRank $libraryId [dict create x $px y $py] [dict create \
                 experimental_representation $intensity range_min $lo range_max $hi \
                 normalization [ini $cfg config normalization mean_center_unit_vector] \
                 step $step method $method fingerprint_min $fpMin fingerprint_max $fpMax \
@@ -306,12 +308,14 @@ proc ::IR::run {configPath} {
             if {[dict get $fast scanned] != [llength $spectrumIds]} {
                 error "IR CORE bulk rank scanned a different reference count"
             }
+            set bulkScanned [dict get $fast scanned]
             incr skipped [dict get $fast skipped]
             set spectrumIds [lmap item [dict get $fast candidates] {dict get $item spectrum_id}]
             set usedBulk 1
         }
         foreach spectrumId $spectrumIds {
-            set reference [${references}::readSpectrum $libraryId $spectrumId]
+            set reference [${references}::managedReadSpectrum $libraryId $spectrumId]
+            incr exactExamined
             if {[dict get $reference spectrum_kind] ne "IR" || [dict get $reference x_unit] ne "cm^-1"} {
                 incr skipped; continue
             }
@@ -353,7 +357,7 @@ proc ::IR::run {configPath} {
             set entityName [dict get $reference entity_id]
             set entity [dict create]
             if {$entityName ne ""} {
-                if {![catch {set entity [${references}::entityInfo $libraryId $entityName]}]} {
+                if {![catch {set entity [${references}::managedEntityInfo $libraryId $entityName]}]} {
                     foreach key {compound_name display_name name} {
                         if {[dict exists $entity $key] && [dict get $entity $key] ne ""} {
                             set entityName [dict get $entity $key]; break
@@ -382,6 +386,7 @@ proc ::IR::run {configPath} {
                 peak_overlap_score $overlap range_used "$commonMin..$commonMax cm^-1" \
                 warning [string trim $warning] plot_x $target plot_experimental $exGrid plot_reference $refGrid]
         }
+        dict set referenceScanCounts $libraryId [dict create declared_population $declaredPopulation bulk_scanned $bulkScanned exact_examined $exactExamined]
     }
     set candidates [lsort -command ::IR::candidateCompare $candidates]
     set candidates [lrange $candidates 0 [expr {int($topN)-1}]]
@@ -393,14 +398,21 @@ proc ::IR::run {configPath} {
     }
     set candidates $ranked
     set status [expr {![llength $candidates] || [dict get [lindex $candidates 0] match_score] < $threshold ? "no convincing library match" : "candidate matches available"}]
-    set provenance [dict create source_dataset_id $datasetId x_variable_id $xId y_variable_id $yId \
+    if {[::GX::curveSourceDatasetIdentity $session $datasetId] ne $sourceIdentity || [::GX::datasetStorageSha256Text $session [::GX::datasetRevisionPortableToken $datasetId]] ne $sourceRevision} {error {IR source changed during Analysis; no new results published}}
+    foreach libraryId $libraryIds {
+        set current [${references}::managedLibraryInfo $libraryId]
+        set fingerprint [dict create version [dict get $current version] scientific_version [dict get $current scientific_version] content_hash [dict get $current content_hash] payload_sha256 [dict get $current managed_payload_sha256]]
+        if {$fingerprint ne [dict get $libraryFingerprints $libraryId]} {error {Reference Library changed during Analysis; no new results published}}
+    }
+    set provenance [dict create source_dataset_id $datasetId x_variable_id $xId y_variable_id $yId spectrum_kind IR x_quantity wavenumber \
+        source_sha256 [dict get $sourceIdentity sha256] source_revision_sha256 $sourceRevision source_schema_sha256 $sourceSchema \
         intensity_representation $intensity baseline_method [ini $cfg config baseline_method none] \
         smoothing_method [ini $cfg config smoothing_method none] \
         normalization [ini $cfg config normalization mean_center_unit_vector] \
         derivative_order [ini $cfg config derivative_order 0] \
         matching_method $method fingerprint_region "$fpMin..$fpMax cm^-1" \
         fingerprint_weight $fpWeight peak_tolerance_cm1 $peakTolerance \
-        reference_libraries $libraryIds reference_library_fingerprints $libraryFingerprints \
+        reference_libraries $libraryIds reference_library_fingerprints $libraryFingerprints reference_scan_counts $referenceScanCounts \
         matching_engine [expr {$usedBulk ? "CORE bulk prescreen plus exact public-API top candidates" : "exact public-API per reference"}] \
         identification_status $status]
     set base [regsub -all {[^A-Za-z0-9._-]} $datasetId _]
@@ -436,11 +448,11 @@ proc ::IR::run {configPath} {
         foreach key $candidateKeys { dict lappend candidateColumns $key [dict get $item $key] }
     }
     publishTable $session $candidatesId table.generic $candidateColumns $candidateSchemas \
-        $datasetId [list $xId $yId] $provenance
+        $datasetId [list $xId $yId] [dict merge $provenance {analysis_result_role ranked_references_v1}]
     set details [dict create experimental_dataset $datasetId x_variable_id $xId y_variable_id $yId \
         source_metadata $expMetadata intensity_representation $intensity \
         processing_configuration $provenance \
-        matching_method $method reference_libraries $libraryIds \
+        matching_method $method reference_libraries $libraryIds reference_scan_counts $referenceScanCounts \
         processed_dataset $processedId peaks_dataset $peaksId candidates_dataset $candidatesId \
         fingerprint_region "$fpMin..$fpMax cm^-1" grid_step_cm1 $step \
         candidate_count [llength $candidates] skipped_references $skipped identification_status $status]

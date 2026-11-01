@@ -15,6 +15,19 @@ proc ::GX::_viewerGuiPlotVariables {dataset} {
     if {$choices eq {} || [llength $choices]>4096} {error {Dataset has no bounded numeric variable choices}}
     return [dict create variables $variables choices $choices]
 }
+proc ::GX::_viewerGuiCanonicalPlotSpec {dataset x y} {
+    set allowed [dict get [_viewerGuiPlotVariables $dataset] choices]
+    if {$x ni $allowed || $y ni $allowed} {error {Choose actual canonical numeric Variables for X and Y}}
+    datasetVariableV3ById $dataset $x;set yVariable [datasetVariableV3ById $dataset $y]
+    modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    set spec [::GX::PlotDatasetAPIv4::newSpec -title {Canonical Dataset waveform}]
+    set panel [lindex [dict get $spec panels] 0]
+    set series [dict create id selected_source dataset_id $dataset x_variable_id $x y_variable_id $y axis left kind line label $y]
+    if {[dict exists $yVariable shape] && [llength [dict get $yVariable shape]]==1 && [lindex [dict get $yVariable shape] 0]==1} {dict set series kind line_marker;dict set series style marker circle}
+    dict set panel series [list $series]
+    dict set spec panels [list $panel]
+    return $spec
+}
 proc ::GX::viewerGuiDesignPlotDiscover {window form} {
     set p [_viewerGuiPlotForm $window $form]
     set values [viewerGuiDesignValues $window];set dataset [dict get $values [dict get $p plot_dataset]]
@@ -44,15 +57,10 @@ proc ::GX::viewerGuiDesignPlotBind {window component form {selection {}}} {
         }
     }
     set x [dict get $values [dict get $p plot_x]];set y [dict get $values [dict get $p plot_y]]
-    datasetVariableV3ById $dataset $x;set yVariable [datasetVariableV3ById $dataset $y]
-    modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
-    set spec [::GX::PlotDatasetAPIv4::newSpec -title {Canonical Dataset waveform}]
+    set spec [_viewerGuiCanonicalPlotSpec $dataset $x $y]
     set panel [lindex [dict get $spec panels] 0]
-    set series [dict create id selected_source dataset_id $dataset x_variable_id $x y_variable_id $y axis left kind line label $y]
     # A one-row operating-point/measurement source has no line segment. Keep
     # its actual canonical observation visible using the existing Plot kind.
-    if {[dict exists $yVariable shape] && [llength [dict get $yVariable shape]]==1 && [lindex [dict get $yVariable shape] 0]==1} {dict set series kind line_marker;dict set series style marker circle}
-    dict set panel series [list $series]
     foreach {key axis} {plot_x_scale x plot_y_scale y_left} {
         if {[dict exists $p $key]} {
             set scale [dict get $values [dict get $p $key]]
@@ -75,7 +83,7 @@ proc ::GX::viewerGuiDesignPlotBind {window component form {selection {}}} {
                 viewerGuiDesignValueSet $window [dict get $p $field] $value
             }
         } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
-        if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Select canonical waveform $y"}
+        if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Select canonical waveform $y"}
     } else {set result [viewerGuiDesignPlotSet $window $component $spec]}
     if {[dict exists $p plot_probe]} {viewerGuiDesignTextSet $window [dict get $p plot_probe] "Dataset: $dataset\nX: $x; Y: $y\nRelease the pointer on an actual source point to inspect its canonical row and units."}
     return $result
@@ -152,7 +160,7 @@ proc ::GX::_viewerGuiPlotCursorAnnotations {window component receipt} {
         viewerGuiDesignPlotSet $window $component $spec [datasetPublicationV2DictDefault $binding context {}]
         ::GX::PlotDatasetAPIv4::widgetView $plot restore $axes
     } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
-    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window [expr {$receipt eq {}?{Clear source cursor}:{Select source cursor}}]}
+    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window [expr {$receipt eq {}?{Clear source cursor}:{Select source cursor}}]}
 }
 proc ::GX::viewerGuiDesignPlotCursor {window component x y} {
     # Display coordinates are supplied by the existing native Plot hit owner;

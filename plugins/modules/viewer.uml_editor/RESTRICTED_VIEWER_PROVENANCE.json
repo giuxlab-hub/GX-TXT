@@ -1,0 +1,25 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "5b7319741b70619cc0fc789e0d0e97016647b447fbb57cfc786ef1ea64d27841",
+  "design_sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+  "manual_assets": {},
+  "manual_sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+  "module_id": "viewer.uml_editor",
+  "policy_sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+  "project_digest_sha256": "98f53708e5b4cfd9ec3fda617c3558cdd62b08f7fd6aef19d89b073508f046e4",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+  "source_manifest": [
+    {
+      "bytes": 2253,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "7140255a9bbf101c8dda818154e422eea2c2748d37536afcf5349a5b58540004"
+    }
+  ],
+  "source_sha256": "7140255a9bbf101c8dda818154e422eea2c2748d37536afcf5349a5b58540004",
+  "source_tree_sha256": "701395652cd84ec452b3b1518a80e87258f4ac745c1c514d47b390e9013bf720",
+  "version": "1.0.0"
+}

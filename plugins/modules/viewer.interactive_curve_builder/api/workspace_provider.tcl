@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Discovery-only, inert working context. No Recipe or numerical runtime.
 namespace eval ::GX::InteractiveCurveBuilder {}
+::GX::nativeWorkspaceShapeRegister interactive_curve_builder {record {
+    version int next int selected {array text}
+    settings {record {dataset text x text y text z text t text family text family_value text family_enabled bool member text member_value text member_enabled bool selection text mode text parameter_mode text method text degree text samples text range_min text range_max text result_id text result_name text open_plot bool auto_order bool display_scope text}}
+    lineage {array {record {id text dataset_id text row int x_id text y_id text z_id text t_id text family_id text member_id text source_sha256 text source_schema_identity text filter_binding {record {family_id text family_enabled bool family_value text member_id text member_enabled bool member_value text selection_id text combination text}}}}}
+}}
+proc ::GX::InteractiveCurveBuilder::workspaceEncode {payload} {tailcall ::GX::nativeWorkspaceShapePayloadEncode [dict get $::GX::WorkspaceScientificCodec::shapes interactive_curve_builder] $payload}
 proc ::GX::InteractiveCurveBuilder::workspaceValidate {payload} {
     foreach key [dict keys $payload] {if {$key ni {version settings lineage selected next workspace_metadata}} {error {Unknown Builder context field}}}
     foreach key {version settings lineage selected next} {if {![dict exists $payload $key]} {error "Builder Workspace needs $key"}}

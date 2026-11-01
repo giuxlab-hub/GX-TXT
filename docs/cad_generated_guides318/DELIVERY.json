@@ -1,0 +1,97 @@
+{
+  "status": "VERIFIED_EXTERNAL_CANDIDATE_NOT_FULL13_ACCEPTANCE",
+  "archive": "/srv/gxtxt/agents/tests/cad_generated_guides318/GXTXT_3D_WORKBENCH_HTML_GUIDES_CANDIDATE318.zip",
+  "sha256": "6695d5a0969e6e83dd32515bce96a0c9f8faed36f53246143cb93892bb6a3543",
+  "bytes": 8305644,
+  "zip_members": 342,
+  "html_pages": 30,
+  "local_references": 568,
+  "png_files": 72,
+  "native_new_png_bytes_exact": 16,
+  "changed_html_pages": [
+    "21-generated-start318.html",
+    "22-measurements318.html",
+    "23-roles-recipe318.html",
+    "24-evidence318.html",
+    "index.html"
+  ],
+  "verified_current_browser_visits": [
+    {
+      "epoch": "browser01",
+      "page": "21-generated-start318.html",
+      "width": 1250,
+      "screenshot": "21-generated-start318_1250.png"
+    },
+    {
+      "epoch": "browser01",
+      "page": "21-generated-start318.html",
+      "width": 430,
+      "screenshot": "21-generated-start318_430.png"
+    },
+    {
+      "epoch": "browser02",
+      "page": "22-measurements318.html",
+      "width": 1250,
+      "screenshot": "22-measurements318_1250.png"
+    },
+    {
+      "epoch": "browser02",
+      "page": "22-measurements318.html",
+      "width": 430,
+      "screenshot": "22-measurements318_430.png"
+    },
+    {
+      "epoch": "browser02",
+      "page": "23-roles-recipe318.html",
+      "width": 1250,
+      "screenshot": "23-roles-recipe318_1250.png"
+    },
+    {
+      "epoch": "browser02",
+      "page": "23-roles-recipe318.html",
+      "width": 430,
+      "screenshot": "23-roles-recipe318_430.png"
+    },
+    {
+      "epoch": "browser01",
+      "page": "24-evidence318.html",
+      "width": 1250,
+      "screenshot": "24-evidence318_1250.png"
+    },
+    {
+      "epoch": "browser01",
+      "page": "24-evidence318.html",
+      "width": 430,
+      "screenshot": "24-evidence318_430.png"
+    },
+    {
+      "epoch": "browser01",
+      "page": "index.html",
+      "width": 1250,
+      "screenshot": "index_1250.png"
+    },
+    {
+      "epoch": "browser01",
+      "page": "index.html",
+      "width": 430,
+      "screenshot": "index_430.png"
+    }
+  ],
+  "browser_qualification": "Real native headless Chromium; normal0 close; unchanged prior pages reuse byte-proven236 receipts. No GX-TXT GUI campaign.",
+  "original236_members": 301,
+  "old_files_exact_except_index": true,
+  "original_source_zip_unchanged": true,
+  "exact45_remaining_baseline_preserved": true,
+  "formal_MAIN303_scopes_only": [
+    "13-22",
+    "13-29",
+    "13-30",
+    "13-31"
+  ],
+  "remaining_shared_forms": "Translate/EditConstraint OPEN at pinned18fd; MAIN integration/QA316 cold evidence separate",
+  "full13_accepted": false,
+  "official_release_deposited": false,
+  "module_embedded_images": false,
+  "no_scientific_campaign_replayed": true,
+  "MAIN1_final_acceptance_required": true
+}

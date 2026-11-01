@@ -95,10 +95,10 @@ proc ::GX::CurveWorkbench::_measurementApply {w token values} {
     _cancelGesture $w;_pointSyncApply $w
     if {[dict size $st($w,measurements)]>=4096} {error "Measurement limit is 4096; remove unused receipts first"}
     set record [_measurementEvaluate $w [dict remove $values name]]
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     set id "measurement[incr st($w,nextMeasurement)]";dict set record id $id;dict set record name $name
     dict set st($w,measurements) $id $record
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _measurementRefresh $w;return $id
 }
 proc ::GX::CurveWorkbench::_measurementAction {w action} {
@@ -111,8 +111,8 @@ proc ::GX::CurveWorkbench::_measurementAction {w action} {
             dict set after $id [dict merge $record [_measurementEvaluate $w [dict get $record definition]]]
         }
     }
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo);set st($w,measurements) $after
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    set before [_snapshotIds $w {}];set st($w,measurements) $after
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _measurementRefresh $w
 }
 proc ::GX::CurveWorkbench::_measurementPublishForm {w} {

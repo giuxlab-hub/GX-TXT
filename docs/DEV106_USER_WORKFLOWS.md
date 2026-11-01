@@ -36,7 +36,8 @@ control the actual managed Python bdb or GNU Octave debugger. Stack/locals/globa
 are bounded observations; opaque objects never invoke a Python user repr. Edits,
 source revision or Session changes prevent stale stepping. Closing the panel
 cancels an active owned Debug Job; normal noninteractive Run keeps its prior owner.
-A paused debugger has a 600-second lease. Advanced breakpoint relocation and some Pause/fault combinations are not yet fully verified; refer to local acceptance records for validation details.
+A paused debugger has a 600-second lease. See the acceptance report for tested
+stepping paths and remaining advanced-debug limitations.
 
 Execution Details offers actual Program output, Program stderr, Diagnostic log and
 truthfully labeled Legacy combined stream. Selection copy follows focus. Copy

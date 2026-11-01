@@ -1,0 +1,38 @@
+{
+  "schema": "gxtxt.dev112.module_packaging.v1",
+  "framework_policy": "All non-demo modules are already expanded in the distribution. CORE and ALWAYS never enter installer operations.",
+  "owner_required_core": [
+    "gxtxt.ir_identify",
+    "gxtxt.ir_waveform",
+    "model.spice_build_validate"
+  ],
+  "owner_confirmed_always": [
+    "acq.generic_csv",
+    "acq.xas"
+  ],
+  "demo_ids": [
+    "analysis.definition_demo",
+    "demo.environmental.levoglucosan_campaign",
+    "demo.geospatial.ticino_valley_3d",
+    "demo.numeric.calculus",
+    "demo.numeric.interpolation",
+    "demo.numeric.minimization",
+    "demo.numeric.nonlinear_fit",
+    "demo.numeric.peaks",
+    "demo.numeric.regression",
+    "demo.numeric.root_finding",
+    "demo.numeric.smoothing",
+    "demo.numeric.statistics",
+    "demo.numeric.uncertainty",
+    "demo.visualization.surface3d",
+    "viewer.dev107_native3d_embedded"
+  ],
+  "demo_purpose_basis": "Explicit demo names and descriptor groups; Scientific Analysis API reference demo; installed synthetic Native3D example walkthrough. Functional P034 comparison product remains in framework.",
+  "geospatial_documentation_resource": {
+    "module_id": "demo.geospatial.ticino_valley_3d",
+    "member": "gxtxt_geospatial_examples_1.0.0.zip",
+    "original": "/srv/gxtxt/releases/GXTXT/session_generators/archives/gxtxt_geospatial_examples_1.0.0.zip",
+    "sha256": "f8758fec19f43a2ce11605edd8571c6a0c9dc9c789c58d3e903bef6571d2ca08",
+    "qualification": "Original published resource, unchanged; supplies the example archive already declared by the accepted descriptor. No module runtime or scientific change."
+  }
+}

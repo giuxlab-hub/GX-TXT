@@ -35,21 +35,24 @@ proc ::GX::CurveWorkbench::_compare {w} {
     set active [_active $w];set reference $st($w,reference)
     if {$reference eq {}||$reference eq $active} {error "Choose a different reference curve"}
     set record [_geometricComparisonEvaluate $w $reference $active 257]
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     set st($w,lastGeometricComparison) $record;set st($w,residual) [dict get $record receipt]
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set result [dict get $record receipt]
     set st($w,status) "[::GX::StatisticsV1::report [dict get $result statistics reference] {n rmse}]; [::GX::StatisticsV1::report [dict get $result statistics bidirectional] {sampled_hausdorff_distance}]"
     return $result
 }
 proc ::GX::CurveWorkbench::_comparisonPublishOpen {w} {
     variable st
-    if {$st($w,lastGeometricComparison) eq {}} {error "Run a geometry comparison first"}
-    ::GX::uiFieldFormCreate $w.comparisonReport "Publish geometric deviation samples" {dataset_id {type string required 1 label {New public Dataset ID}}} {dataset_id curve_deviation_report} [list ::GX::CurveWorkbench::_comparisonPublishApply $w $st($w,token)] $w
+    set reason [_comparisonPublicationReason $w]
+    if {$reason ne {}} {set st($w,comparisonPublicationText) $reason;return {}}
+    ::GX::uiFieldFormCreate $w.comparisonReport "Publish geometric deviation samples" {dataset_id {type string required 1 label {New public Dataset ID}}} {dataset_id curve_deviation_report} [list ::GX::CurveWorkbench::_comparisonPublishCurrentApply $w $st($w,token) $st($w,lastGeometricComparison)] $w
 }
 proc ::GX::CurveWorkbench::_comparisonPublishApply {w token values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen comparison publication"}
+    set reason [_comparisonPublicationReason $w]
+    if {$reason ne {}} {error $reason}
     set record $st($w,lastGeometricComparison)
     if {$record eq {}||[_measurementState $w $record] ne "current"||![dict exists $record receipt statistics]} {error "Comparison geometry or its statistical receipt is stale or missing; explicitly Compare again before publishing"}
     set receipt [dict get $record receipt];set unit [dict get $receipt unit];set rows [dict get $receipt rows]
@@ -100,7 +103,7 @@ proc ::GX::CurveWorkbench::_buildComparison {w} {
 proc ::GX::CurveWorkbench::_residualLayout {w} {
     variable st
     if {![winfo exists $w.right.residual]||![info exists st($w,residual)]} return
-    set show [expr {(![info exists st($w,compareVisible)]||$st($w,compareVisible))&&$st($w,residual) ne {}&&[llength [dict get $st($w,residual) rows]]>=2}]
+    set show [expr {$st($w,residual) ne {}&&[llength [dict get $st($w,residual) rows]]>=2}]
     if {[info exists st($w,residualPanelShown)]&&$st($w,residualPanelShown)==$show} return
     set st($w,residualPanelShown) $show
     # The scientific canvas stays in its dedicated viewport for its whole

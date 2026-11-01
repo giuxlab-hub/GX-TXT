@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DRAFT — Explore a synthetic thermal surface</title>
+  <link rel="stylesheet" href="assets/tutorial.css">
+  <script src="assets/tutorial.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to tutorial</a>
+<header class="masthead" id="top">
+  <p class="eyebrow">GX-TXT · Thermal tutorial · Content draft 0.1.0</p>
+  <h1>Explore a synthetic thermal surface</h1>
+  <p class="lead">One sampled field, three graphical views. Learn which changes affect presentation and which belong to the source.</p>
+  <div class="draft-banner" role="note"><strong>DRAFT · PARTIAL REAL GUI EVIDENCE · NOT A COMPLETE TUTORIAL</strong><p>Two finite staged dev110 packets provide real GUI observations and unchanged captures. Cold opening of the original source copy and the supported saved-Variant native route were observed. A graph-list alias defect and native label limitations remain unresolved. Full Plots coverage, documentation-host rendering, comparative performance and cold restart of the newly created Variant remain unfinished. Source expectations and actual observations are identified separately.</p></div>
+</header>
+<div class="layout">
+<aside class="sidebar">
+  <nav aria-label="Tutorial contents">
+    <h2>In this lesson</h2>
+    <ol>
+      <li><a href="#question">Scientific question</a></li>
+      <li><a href="#baseline">Baseline and prerequisites</a></li>
+      <li><a href="#generate">1. Generate a Session</a></li>
+      <li><a href="#source">2. Inspect the source</a></li>
+      <li><a href="#preview">3. Dataset Preview</a></li>
+      <li><a href="#run">4. Run the module</a></li>
+      <li><a href="#compare">5. Compare real outputs</a></li>
+      <li><a href="#plots">6. Explore Plots</a></li>
+      <li><a href="#save">7. Save and reopen</a></li>
+      <li><a href="#evidence">Evidence still needed</a></li>
+    </ol>
+  </nav>
+  <fieldset class="reading-list">
+    <legend>Personal reading checklist</legend>
+    <p>These marks record reading only. They are not test results, GUI evidence or tutorial acceptance.</p>
+    <label><input type="checkbox" data-reading-step> Read step 1</label>
+    <label><input type="checkbox" data-reading-step> Read step 2</label>
+    <label><input type="checkbox" data-reading-step> Read step 3</label>
+    <label><input type="checkbox" data-reading-step> Read step 4</label>
+    <label><input type="checkbox" data-reading-step> Read step 5</label>
+    <label><input type="checkbox" data-reading-step> Read step 6</label>
+    <label><input type="checkbox" data-reading-step> Read step 7</label>
+    <p id="reading-progress" role="status" aria-live="polite">Reading marks: not counted until optional local JavaScript initializes.</p>
+  </fieldset>
+</aside>
+<main id="main" tabindex="-1">
+  <section id="question" aria-labelledby="question-heading">
+    <p class="section-number">Start here</p>
+    <h2 id="question-heading">Scientific question</h2>
+    <p>How do a surface, mesh and contour view describe the same sampled temperature field, and which changes affect presentation rather than the underlying data? Generate a new Session through GX-TXT's registered <strong>3D Thermal Surface</strong> generator, inspect its canonical table and provenance, run the visualization module, compare its real outputs and explore the same source in Preview and Plots. Save and reopen the Session to check identity and retained presentation.</p>
+    <p>The field is deliberately synthetic. It combines two prescribed Gaussian hotspots and a linear background. It is not measured thermography, a heat-transfer simulation or evidence of a steady-state heat-equation solution. No time series, conductivity, heat flux, boundary conditions or uncertainty model is established.</p>
+    <p id="js-status" class="quiet">Optional local interactions have not initialized. The full text, native disclosures and reading checkboxes remain available.</p>
+    <noscript><p class="quiet">JavaScript is inactive. Read the complete instructions and open the source notes using their disclosure headings. No scientific or framework action depends on this page script.</p></noscript>
+    <div id="disclosure-controls" class="button-row" hidden><button type="button" id="expand-notes">Expand source notes</button><button type="button" id="collapse-notes">Collapse source notes</button></div>
+  </section>
+
+  <section id="baseline" aria-labelledby="baseline-heading">
+    <h2 id="baseline-heading">Source baseline and prerequisites</h2>
+    <p>The official deposited baseline is GX-TXT <code>0.9.8.10-dev-110</code>, source commit <code>e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68</code>. The recorded workflow used a private staged dev110 installation. It does not certify every foundation feature or a final dev111 release. Check your displayed application and module versions before following the lesson; later versions require reconciliation of changed controls.</p>
+    <details open>
+      <summary>Component identities — library version remains a source declaration</summary>
+      <div class="table-wrap" role="region" aria-label="Declared component identities" tabindex="0"><table><thead><tr><th scope="col">Component</th><th scope="col">Declared identity</th></tr></thead><tbody>
+        <tr><th scope="row">Library</th><td><code>org.giuxlab.gxtxt.accepted_generators</code>, version <code>1.0.0</code></td></tr>
+        <tr><th scope="row">Generator</th><td><code>surface3d_thermal_field</code>, version <code>1.0.1</code>, <strong>3D Thermal Surface</strong></td></tr>
+        <tr><th scope="row">Analysis module</th><td><code>demo.visualization.surface3d</code>, version <code>1.0.3</code>, <strong>3D Surface Visualization Demo</strong></td></tr>
+        <tr><th scope="row">Plot module</th><td><code>plot.dataset</code>, version <code>4.2.4</code>, <strong>Scientific Dataset Plot</strong></td></tr>
+      </tbody></table></div>
+    </details>
+    <p>Resolve the actual registered generator in the normal catalog. Do not import a second copy merely because an older README/manual describes a Numerical Examples library or bundled version <code>1.0.0</code>. The current recipe already creates a canonical Dataset and bindings; importing its raw CSV again is not the starting workflow. Do not edit the generator, Analysis module or vendor payload for this tutorial.</p>
+  </section>
+
+  <section id="generate" aria-labelledby="generate-heading">
+    <p class="section-number">Step 1</p><h2 id="generate-heading">Generate through the normal interface</h2>
+    <p>When the independently packaged lesson is admitted in the common Guides Interactive Tutorial tab, its native <strong>Open Generate Session…</strong> action is the source-supported route to the paired catalog selection. It does not generate a Session or grant a page-script callback. Actual host discovery/action behavior still needs its own GUI evidence; the first intake may use the ordinary menu directly before that package is staged.</p>
+    <p>Open <strong>Generate Session…</strong> through the actual normal GX-TXT menu. Before resizing anything, confirm that the dialog's generator selection and controls respond. Record open-to-first-usable timing separately from generation completion.</p>
+    <p>Select the actual matching library/generator identity. Use a fresh Session name such as <code>task210-thermal-001</code> through the normal field where supported. The source generator declares no scientific parameter controls: do not invent hotspot or grid-size settings. Start generation deliberately and open the resulting Session through the supported GUI flow. Record its actual identity, path and generator provenance. A descriptor or successful selection is not generation evidence.</p>
+    <aside class="pending"><strong>OBSERVED IN STAGED110</strong> — The ordinary Sessions → New Session → Generate Session route selected this generator 1.0.1 and created task210-thermal-001. The accepted-library ID was shown; its version was not read back. The packaged host action and precise first-usable latency remain NOT_TESTED. This page never generates a Session automatically.</aside>
+  </section>
+
+  <section id="source" aria-labelledby="source-heading">
+    <p class="section-number">Step 2</p><h2 id="source-heading">Inspect the generated canonical source</h2>
+    <p>Select the generated Dataset in Dataset tools. The source recipe expects <code>thermal.surface.source</code>, contract <code>table.generic</code>, with 1,681 rows and columns <code>x_mm</code>, <code>y_mm</code>, <code>temperature_K</code>. Record actual Dataset/Variable IDs, names, enabled state, types, units, dimensions and provenance. Do not substitute CSV headers for the actual stable Variable IDs. In particular, record the normalized GUI schema rather than assume the raw recipe's header-based lists and per-variable IDs have the same representation.</p>
+    <p>The source grid has 41 X positions and 41 Y positions, each from −50 to +50 mm in 2.5 mm increments. Y is the outer loop and X the inner loop. Variables are stored as rank-one row arrays of length 1,681; the physical Cartesian grid does not turn the canonical Dataset into a native rank-two array. Inspect representative actual rows, ranges and counts through ordinary Dataset controls. The semantic role <code>measured</code> on temperature does not change its synthetic provenance.</p>
+    <p>Inspect Dataset metadata. The generator supplies <code>metadata/thermal_surface_3d.metadata.txt</code>, but its recipe does not automatically attach those portable model fields. If the actual Dataset lacks them, use normal <strong>Metadata… → Import…</strong>, select that generated file, review its fields and save through the GUI. Record what was present, imported and retained. Do not privately write metadata or import it redundantly. This adds documented provenance; it does not replace or edit the canonical numerical table.</p>
+    <details open><summary>Prescribed source equation — not a GX-TXT Run result</summary>
+      <p>For numeric X and Y expressed in millimetres, the prescribed field in kelvin is:</p>
+      <pre><code>T(x,y) = 293.15
+       + 18 exp(−((x+12)²/(2·9²) + (y−8)²/(2·12²)))
+       + 11 exp(−((x−16)²/(2·14²) + (y+10)²/(2·8²)))
+       + 0.03x − 0.02y</code></pre>
+      <p>This equation explains the source. It is not a measured or computed GX-TXT Run result. The generated reference file also remains producer-owned reference information, separate from the visualization module's actual report.</p>
+    </details>
+    <aside class="pending"><strong>OBSERVED</strong> — Dataset tools reported 1,681 rows, float64 rank-one Variables v0001=x_mm [mm], v0002=y_mm [mm], v0003=temperature_K [K], all enabled. Initially empty metadata was imported and saved through the editor. Canonical first/last rows were inspected in the GUI file browser.</aside><figure><img src="assets/steps/metadata-retained.png" alt="Displayed synthetic/grid/model metadata after the recorded Save configuration and in-process Open Session sequence. The frame alone does not establish persistence; the action receipt records that sequence." loading="lazy"><p><a href="assets/steps/metadata-retained.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Displayed synthetic/grid/model metadata after the recorded Save configuration and in-process Open Session sequence. The frame alone does not establish persistence; the action receipt records that sequence.</figcaption></figure>
+  </section>
+
+  <section id="preview" aria-labelledby="preview-heading">
+    <p class="section-number">Step 3</p><h2 id="preview-heading">Inspect the real Dataset Preview</h2>
+    <p>Use the actual Dataset Preview controls, selecting X, Y and temperature for their scientific roles. The deposited source declares X/Y/Z selectors, <strong>Render</strong>, <strong>Dataset coordinates…</strong> and <strong>⟳ 3D XYZ</strong>; confirm their actual presence and state before teaching literal labels. Observe the compatible real C++ Preview and its axes/units, source identity, bounds and meaningful first render.</p>
+    <p>Exercise the available Fit, zoom, pan, rotation, selection, visibility and resize controls where actually supported. Record absent/ineligible controls with their context; do not invent a universal Show/Hide control. X and Y share millimetres; Z is kelvin. Equal spatial XY scale is not an equal physical metric across millimetres and kelvin. Negative/zero spatial coordinates make an unrestricted ordinary log-X/log-Y view ineligible. Camera changes do not change source values.</p>
+    <aside class="pending"><strong>OBSERVED</strong> — Choose X=v0001, Y=v0002, Z=v0003, then 3D XYZ. The native view reported 1,681 points / 1,681 scanned, stride 1. Rotation, wheel zoom, native Fit and window maximize were exercised. Pan, selection, visibility and comprehensive latency remain untested. The separate 2D Render initially showed generic-table guidance.</aside><figure><img src="assets/steps/preview-xyz.png" alt="Native Dataset Preview XYZ scatter of thermal.surface.source. Selectors map v0001=x_mm and v0002=y_mm in mm, and v0003=temperature_K in K. Uniform blue markers do not encode temperature color. The UI reports 1,681 points; camera state affects presentation." loading="lazy"><p><a href="assets/steps/preview-xyz.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Native Dataset Preview XYZ scatter of thermal.surface.source. Selectors map v0001=x_mm and v0002=y_mm in mm, and v0003=temperature_K in K. Uniform blue markers do not encode temperature color. The UI reports 1,681 points; camera state affects presentation.</figcaption></figure>
+  </section>
+
+  <section id="run" aria-labelledby="run-heading">
+    <p class="section-number">Step 4</p><h2 id="run-heading">Run the visualization module</h2>
+    <p>Inspect the actual Analysis/Modules configuration rather than rerunning an unrelated Session. Verify the source and X/Y/Z bindings for <strong>3D Surface Visualization Demo</strong> using actual stable Variable IDs. The recipe enables this module for Run; it also enables <strong>Scientific Dataset Plot</strong> but leaves that module out of the automatic Run selection. Preserve that distinction.</p>
+    <p>Use the normal Run/Jobs controls. Record the actual Job, completion or diagnostic, module version, settings, elapsed visible behavior and output association. Do not manufacture completion, execute a hidden analysis command or construct a report outside the GUI. A missing dependency or real failure goes through TUTORIAL1 to MAIN with exact evidence; pause only the affected path.</p>
+    <p>The module's source contract validates a finite complete rectangular grid and reports point count, grid size, temperature statistics and the sampled maximum location. Read its actual report and compare it with the known source/model reference. Do not paste expected values into an actual-results field. It does not interpolate missing cells or republish a replacement source Dataset.</p>
+    <aside class="pending"><strong>OBSERVED</strong> — The normal demo 1.0.3 Run completed on thermal.surface.source; its actual report reads 41 × 41 / 1,681 points, bounds −50…50 mm, temperature minimum 290.650005 K, maximum 310.708246 K, mean 295.044889 K and sampled maximum at (−12.5, 7.5) mm. The producer analytical reference agrees at displayed rounding; no independent recalculation was performed. No durable analysis Job ID was observed.</aside><figure><img src="assets/steps/run-report.png" alt="Actual GUI Results report from the normal demo Run, bound to thermal.surface.source and v0001/v0002/v0003. Rounded temperature statistics and sampled maximum location describe the synthetic grid." loading="lazy"><p><a href="assets/steps/run-report.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Actual GUI Results report from the normal demo Run, bound to thermal.surface.source and v0001/v0002/v0003. Rounded temperature statistics and sampled maximum location describe the synthetic grid.</figcaption></figure>
+  </section>
+
+  <section id="compare" aria-labelledby="compare-heading">
+    <p class="section-number">Step 5</p><h2 id="compare-heading">Compare actual surface, mesh and contour outputs</h2>
+    <p>The deposited descriptors declare three outputs:</p>
+    <ul>
+      <li><code>demo.visualization.surface3d.surface</code> — <strong>Thermal field - surface</strong>;</li>
+      <li><code>demo.visualization.surface3d.mesh</code> — <strong>Thermal field - mesh</strong>;</li>
+      <li><code>demo.visualization.surface3d.contour3</code> — <strong>Thermal field - 3D contour</strong>.</li>
+    </ul>
+    <p>All three demo outputs were displayed after the normal Run. Graph Info confirmed the actual surface ID above, variant base, provider demo.visualization.surface3d and associated 01_surface.png. Exact mesh/contour Graph IDs listed above remain descriptor declarations until separately read back; record their actual associations when continuing. Keep static PNG inspection distinct from genuine interactive 3D consultation and Dataset Preview.</p>
+    <p>Select and compare the three actual graphs. A surface emphasizes the continuous appearance of the sampled field, a mesh exposes its sampled grid, and contours show temperature levels. None supplies new measurements between samples. Through actual graph controls, change a meaningful presentation setting, such as contour levels from the declared default 12 to 18, then restore or retain it deliberately. Record real rerender behavior and source identity. Do not claim cache reuse or unchanged computation from a screenshot alone.</p>
+    <aside class="pending"><strong>OBSERVED</strong> — Actual surface and mesh rasters are shown below. The contour 3D action opened native consultation and mouse rotation changed its camera. A verified contour setting of 18 levels was normally rerendered; earlier operator input mistakes are retained in the evidence record. No cache-reuse or numerical recomputation claim follows.</aside><figure><img src="assets/steps/demo-surface.png" alt="Demo surface raster in Plots, associated 01_surface.png. X/Y are mm; height and color represent temperature in K. This is distinct from Dataset Preview and native 3D consultation." loading="lazy"><p><a href="assets/steps/demo-surface.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Demo surface raster in Plots, associated 01_surface.png. X/Y are mm; height and color represent temperature in K. This is distinct from Dataset Preview and native 3D consultation.</figcaption></figure><figure><img src="assets/steps/demo-mesh.png" alt="Demo mesh raster in Plots, associated 02_mesh.png. The wire grid exposes the sampled field; X/Y are mm and temperature is K. It supplies no new measurements between samples." loading="lazy"><p><a href="assets/steps/demo-mesh.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Demo mesh raster in Plots, associated 02_mesh.png. The wire grid exposes the sampled field; X/Y are mm and temperature is K. It supplies no new measurements between samples.</figcaption></figure><figure><img src="assets/steps/demo-contour-native.png" alt="Native 3D consultation of the selected demo contour graph. X/Y are mm and temperature is K. This view differs from its PNG; displayed contour-colorbar ticks are not the source minimum/maximum." loading="lazy"><p><a href="assets/steps/demo-contour-native.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Native 3D consultation of the selected demo contour graph. X/Y are mm and temperature is K. This view differs from its PNG; displayed contour-colorbar ticks are not the source minimum/maximum.</figcaption></figure>
+  </section>
+
+  <section id="plots" aria-labelledby="plots-heading">
+    <p class="section-number">Step 6</p><h2 id="plots-heading">Explore Plots completely, with honest applicability</h2>
+    <p>Build the actual versioned Plots inventory from the current GUI, retaining earlier inventories as history. This tutorial requires its own complete matrix; the first short GUI packet does not finish it. Observe all actual menus, options, panels, series, variants, legends, axes, settings, navigation and supported save/export/Print flows. Record each visible control's actual outcome and reason.</p>
+    <p>Use the genuine <strong>Scientific Dataset Plot</strong> path on the same source where it provides an eligible representation. Its declared XYZ types include surface, mesh, contour3 and other conditional types. Do not connect the flattened grid as a fictitious time trace or transect merely to exercise a line control. A physical profile requires a supported actual constant-X/Y selection, retained identities and an ordered 41-point source subset. If that route is unavailable, record the gap rather than insert artificial data.</p>
+    <p>The manual Plot XYZ graph starts disabled with <code>scatter3</code> as its declared type. Follow the recorded surface workflow:</p>
+
+    <ol>
+      <li>In Modules, select <strong>Scientific Dataset Plot</strong> for this Run and clear the demo from this Run selection. Module enablement and Run selection are separate states.</li>
+      <li>In Analysis, retain <code>thermal.surface.source</code> and the X/Y/Z bindings <code>v0001</code>, <code>v0002</code>, <code>v0003</code>. Disable the XY and region offerings for this run, enable the XYZ graph, and choose <strong>surface</strong> for that graph.</li>
+      <li>Check the Run plan, then start the normal Run. Inspect its completion and select the returned <code>plot.dataset.xyz</code> surface in Plots. Keep diagnostics and graph identity with the result.</li>
+    </ol>
+    <p>For future real spatial profiles, supported exact Y filters at 0 mm and 7.5 mm would select 41 actual source points each, ordered by X. These are prospective same-source slices, not independent acquisitions or already-produced Graphs.</p>
+    <p>The demo's graph descriptors declare no legend support; the actual Plot module may provide a separate compatible legend workflow. Distinguish provider and graph contexts instead of silently dropping visible controls. Each actual row starts NOT_TESTED; only genuine input and evidence establish an executed status. No row inherits another tutorial's outcome.</p>
+    <aside class="pending"><strong>INCOMPLETE</strong> — Six top-level Plots menus were opened, but their functions were not all executed. The partial matrix records only observed contexts and actions; it is not the complete denominator. A separate normal Run of Scientific Dataset Plot 4.2.4 produced an XYZ surface on the same source, with 2D offerings disabled and the demo excluded from that Run. This manual base graph showed no 3D consultation button in packet 001; its raster is not native geometry. Packet 002 separately exercised the supported saved-Variant route below.</aside><figure><img src="assets/steps/manual-xyz-surface.png" alt="Separate Scientific Dataset Plot XYZ surface, graph plot.dataset.xyz, on the same source with mm/mm/K bindings. The raster is not native geometry. Its footer legend settings do not establish an exercised legend." loading="lazy"><p><a href="assets/steps/manual-xyz-surface.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Separate Scientific Dataset Plot XYZ surface, graph plot.dataset.xyz, on the same source with mm/mm/K bindings. The raster is not native geometry. Its footer legend settings do not establish an exercised legend.</figcaption></figure>
+
+    <details open><summary>Recorded saved-Variant native route — scoped real GUI result</summary>
+    <p>The existing manual base requires a persistent Variant for this native route in the tested build. Select the manual surface, then use <strong>Data / Variants → Variants… → New from base</strong>. Inspect the actual source and stable XYZ bindings, enabled state and <strong>surface</strong> type. Do not assume inheritance succeeded. Choose a meaningful title, then <strong>Save and render</strong>. Select the returned saved Variant in Plots and use its normal <strong>3D</strong> action. In the recorded copy the returned ID was <code>p0001</code>; record your actual identity.</p>
+    <p><strong>OBSERVED:</strong> p0001 inherited the expected bindings, rendered normally, exposed 3D and displayed genuine native thermal geometry. Mouse dragging changed the camera; Fit was exercised before and after rotation, then the normal close control returned to the raster. Fit is not a promise to reset camera orientation. This did not add measurements or rerun the demo. A new Variant is separate from its original base.</p>
+    <aside class="pending"><strong>UNRESOLVED DIFFERENCE:</strong> creating the Variant was followed by the original demo contour disappearing from the graph list. The operator paused and preserved the first difference. The existing owner diagnosed a stale automatic-graph alias referring to reused p0001, with the contour artifact retained. MAIN allowed only the separate native/persistence checks within the same allocation. No repair, Refresh or demo rerun occurred, and a correction was not loaded or validated in this slot. This draft is not accepted as a complete independent workflow while the difference remains.</aside>
+    <p>The native title displays literal <code>auto</code>; lower axis text clips and some rotated ticks overlap. The source map is X=<code>v0001</code>/<code>x_mm</code> [mm], Y=<code>v0002</code>/<code>y_mm</code> [mm], Z=<code>v0003</code>/<code>temperature_K</code> [K]. Read the figure captions and retain these visible limitations. Native tick padding is presentation, not a new source range or a result statistic. This saved-Variant view has no separately labelled colorbar; do not infer an exact temperature from its colors.</p>
+    <figure><img src="assets/steps/saved-variant-bindings.png" alt="Intermediate New from base editor for p0001, still titled Plot p0001 before renaming and saving. The source is thermal.surface.source, with X v0001=x_mm, Y v0002=y_mm and Z v0003=temperature_K. Units mm/mm/K were read from the Dataset and native axes, not these selectors. The background raster is the original base." loading="lazy"><p><a href="assets/steps/saved-variant-bindings.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Intermediate New from base editor for p0001, still titled Plot p0001 before renaming and saving. The source is thermal.surface.source, with X v0001=x_mm, Y v0002=y_mm and Z v0003=temperature_K. Units mm/mm/K were read from the Dataset and native axes, not these selectors. The background raster is the original base.</figcaption></figure><figure><img src="assets/steps/saved-variant-native.png" alt="Native consultation of the saved surface Variant p0001, named Thermal source surface in Plots. Height is v0003 temperature in K; X/Y are v0001/v0002 in mm. The native canvas literally displays auto and clips the lower v0002 label. Tick bounds include padding, not new source extrema. No separately labelled colorbar supports an exact temperature reading from color." loading="lazy"><p><a href="assets/steps/saved-variant-native.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Native consultation of the saved surface Variant p0001, named Thermal source surface in Plots. Height is v0003 temperature in K; X/Y are v0001/v0002 in mm. The native canvas literally displays auto and clips the lower v0002 label. Tick bounds include padding, not new source extrema. No separately labelled colorbar supports an exact temperature reading from color.</figcaption></figure><figure><img src="assets/steps/saved-variant-rotation.png" alt="Ordinary mouse dragging changes the saved Variant native camera. Technical-ID mappings remain mm/mm/K. Rotated tick overlap and lower-label clipping are retained; this is no parity or performance acceptance." loading="lazy"><p><a href="assets/steps/saved-variant-rotation.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Ordinary mouse dragging changes the saved Variant native camera. Technical-ID mappings remain mm/mm/K. Rotated tick overlap and lower-label clipping are retained; this is no parity or performance acceptance.</figcaption></figure></details>
+<details open><summary>Partial observed menu matrix — 26 entries, incomplete inventory</summary><p>Context: selected demo surface graph, staged dev110. Opening a menu does not test its operations. Disabled entries apply to this context only. Secondary dialogs and other graph contexts remain unfinished; no coverage percentage is claimed.</p><div class="table-wrap" role="region" aria-label="Partial thermal Plots matrix" tabindex="0"><table><thead><tr><th scope="col">Menu</th><th scope="col">Observed label</th><th scope="col">Operation status</th></tr></thead><tbody><tr><td>Selection</td><td>All</td><td>NOT_TESTED</td></tr>
+<tr><td>Selection</td><td>None</td><td>NOT_TESTED</td></tr>
+<tr><td>Selection</td><td>Toggle</td><td>NOT_TESTED</td></tr>
+<tr><td>Selection</td><td>Up</td><td>NOT_TESTED</td></tr>
+<tr><td>Selection</td><td>Down</td><td>NOT_TESTED</td></tr>
+<tr><td>Render</td><td>Rerender selected</td><td>NOT_TESTED</td></tr>
+<tr><td>Render</td><td>Rerender module</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Legend...</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Place legend</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Axes...</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Title and labels...</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Graphics...</td><td>NOT_TESTED</td></tr>
+<tr><td>Presentation</td><td>Annotate...</td><td>NOT_TESTED</td></tr>
+<tr><td>Data / Variants</td><td>Variants...</td><td>NOT_TESTED</td></tr>
+<tr><td>Data / Variants</td><td>Select data...</td><td>PRESENT_BUT_DISABLED</td></tr>
+<tr><td>Data / Variants</td><td>Select area</td><td>PRESENT_BUT_DISABLED</td></tr>
+<tr><td>Data / Variants</td><td>Clear area</td><td>PRESENT_BUT_DISABLED</td></tr>
+<tr><td>Graph</td><td>Clone...</td><td>NOT_TESTED</td></tr>
+<tr><td>Graph</td><td>Edit clone...</td><td>NOT_TESTED</td></tr>
+<tr><td>Graph</td><td>Delete...</td><td>NOT_TESTED</td></tr>
+<tr><td>Graph</td><td>Graph info...</td><td>EXERCISED_AND_WORKING</td></tr>
+<tr><td>Graph</td><td>Notes...</td><td>NOT_TESTED</td></tr>
+<tr><td>Import / Export</td><td>Export...</td><td>NOT_TESTED</td></tr>
+<tr><td>Import / Export</td><td>Export annotated...</td><td>NOT_TESTED</td></tr>
+<tr><td>Import / Export</td><td>Export Graph ZIP...</td><td>NOT_TESTED</td></tr>
+<tr><td>Import / Export</td><td>Import Graph ZIP...</td><td>NOT_TESTED</td></tr></tbody></table></div></details>
+<details open><summary>Continuation observations — incomplete function/context record</summary><p>These nine records describe the saved-Variant route and its actual defect. They are separate from the 26 initial menu entries, not a complete control denominator or a coverage percentage. Source bindings were inspected, not every selector option exercised.</p><div class="table-wrap" role="region" aria-label="Saved Variant continuation observations" tabindex="0"><table><thead><tr><th scope="col">Function</th><th scope="col">Status</th><th scope="col">Tested scope</th></tr></thead><tbody><tr><td>New from base</td><td>EXERCISED_AND_WORKING</td><td>Created p0001 through the existing manual XYZ Variant manager; this frame precedes its final rename and save.</td></tr><tr><td>Save and render</td><td>EXERCISED_AND_WORKING</td><td>Inspected the stable XYZ bindings and surface type; normal rendering completed. Graph-list preservation failed separately.</td></tr><tr><td>Thermal source surface</td><td>EXERCISED_AND_WORKING</td><td>Selected the saved p0001 and observed its available 3D action.</td></tr><tr><td>3D</td><td>EXERCISED_AND_WORKING</td><td>Observed genuine saved-Variant geometry with mm/mm/K axes; graphic limitations remain.</td></tr><tr><td>Fit</td><td>EXERCISED_AND_WORKING</td><td>Invoked Fit before and after rotation. Camera reset and complete label margins were not established.</td></tr><tr><td>Mouse drag in native canvas</td><td>EXERCISED_AND_WORKING</td><td>Mouse dragging visibly changed the camera. No source change or performance equivalence is claimed.</td></tr><tr><td>×</td><td>EXERCISED_AND_WORKING</td><td>Closed the native view normally and returned to its raster.</td></tr><tr><td>Graph info...</td><td>EXERCISED_AND_WORKING</td><td>Read the actual module, graph, Variant and artifact identity before and after in-process Open.</td></tr><tr><td>Graph list after new Variant</td><td>FAILED_BUG</td><td>The original contour entry became hidden. MAIN diagnosed a false alias; the first difference is preserved and no fix was tested.</td></tr></tbody></table></div></details>
+  </section>
+
+  <section id="save" aria-labelledby="save-heading">
+    <p class="section-number">Step 7</p><h2 id="save-heading">Save, reopen, interpret and package</h2>
+    <p>Save through the normal interface and reopen the Session normally. Distinguish reopening within the current application from closing and launching the application afresh. Confirm actual retained Dataset/Variable/source identities, provenance, graphs/variants and supported presentation state. Observe a representative safe normal correction without fabricating failure or modifying production registries.</p>
+    <p>Measure actual visible Generate, Preview, Run/Jobs, Plots and navigation timings using the existing evidence method. Preserve stalls, failures and retakes. Report before/after improvement only with comparable real measurements. All included captures are unchanged originals from the allocated GUI. Input-to-capture intervals include tool and settling overhead; precise first-frame latency and comparative performance remain unmeasured.</p>
+    <aside class="pending"><strong>OBSERVED WITH LIMITS</strong> — Packet 001 saved and reopened within its running application, retaining metadata, four graphs and contour setting 18. In packet 002 a fresh private application normally opened the exact whole-Session copy: source/schema/hash, metadata, the original four graphs and setting 18 were retained. After the new Variant was created, Save and in-process Open retained p0001, metadata and setting 18, with the contour-list alias defect still unresolved. The application closed normally before its deadline. Cold application restart of the newly created Variant remains NOT_TESTED.</aside><figure><img src="assets/steps/contour-setting-retained.png" alt="The contour-level field reads 18 after the recorded Save configuration and in-process Open Session sequence. The earlier normal rerender completed; this does not establish cache reuse or cold-start persistence." loading="lazy"><p><a href="assets/steps/contour-setting-retained.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>The contour-level field reads 18 after the recorded Save configuration and in-process Open Session sequence. The earlier normal rerender completed; this does not establish cache reuse or cold-start persistence.</figcaption></figure>
+<figure><img src="assets/steps/cold-contour-setting.png" alt="The contour-level field still reads 18 after the original Session copy was opened in a fresh application. This frame belongs to the recorded cold-open sequence; a frame alone does not establish persistence." loading="lazy"><p><a href="assets/steps/cold-contour-setting.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>The contour-level field still reads 18 after the original Session copy was opened in a fresh application. This frame belongs to the recorded cold-open sequence; a frame alone does not establish persistence.</figcaption></figure><figure><img src="assets/steps/saved-variant-retained.png" alt="Graph Info after normal Save and in-process Open identifies plot.dataset.xyz / p0001 and its retained raster artifact. File size does not establish numerical equality. The separate 3D action remains available; this background is a raster. The contour-list alias defect persists. Cold restart of this new Variant remains untested." loading="lazy"><p><a href="assets/steps/saved-variant-retained.png">Open the original full-resolution capture</a> (host link handling pending validation).</p><figcaption>Graph Info after normal Save and in-process Open identifies plot.dataset.xyz / p0001 and its retained raster artifact. File size does not establish numerical equality. The separate 3D action remains available; this background is a raster. The contour-list alias defect persists. Cold restart of this new Variant remains untested.</figcaption></figure>
+    <p>The final independent English HTML ZIP must contain the completed workflow, actual results/captures, full actual Plots matrix, Preview/timing evidence, provenance/limitations/recovery, local assets, manifest and checksum. Common Guides discovery and the corresponding generator action must use their actual accepted public route. No automatic generation on page load and no invented callback/URI is permitted. This draft is not that final deliverable.</p>
+  </section>
+
+  <section id="evidence" aria-labelledby="evidence-heading">
+    <h2 id="evidence-heading">Evidence still needed</h2>
+    <p class="quiet">The evidence record distinguishes actual staged dev110 observations from pending work. Personal reading marks never create evidence or update scientific results.</p>
+    <div class="table-wrap" role="region" aria-label="Actual evidence status" tabindex="0"><table><thead><tr><th scope="col">Actual observation</th><th scope="col">Draft state</th></tr></thead><tbody>
+      <tr><th scope="row">Assigned installed build/profile/display</th><td>Observed private staged dev110; no release activation acceptance</td></tr>
+      <tr><th scope="row">Registered selection and actual Session</th><td>Observed generator 1.0.1 and fresh task210-thermal-001; library version not read back</td></tr>
+      <tr><th scope="row">Canonical Dataset and Variables</th><td>Observed 1,681 × 3, v0001/v0002/v0003, mm/mm/K, synthetic metadata</td></tr>
+      <tr><th scope="row">Preview and module Run/Jobs</th><td>Native XYZ and real demo Run/report observed; durable Job ID not observed</td></tr>
+      <tr><th scope="row">Graphs and complete thermal Plots matrix</th><td>Original four graphs cold-opened; saved Variant/native route observed; contour-list alias defect open; full matrix NOT_COMPLETE</td></tr>
+      <tr><th scope="row">GUI latency and save/reopen</th><td>Limited action intervals; original source copy cold-opened; new Variant retained in-process; its cold restart NOT_TESTED</td></tr>
+      <tr><th scope="row">Common Guides and native generator action</th><td>NOT_TESTED — source-supported route only</td></tr>
+    </tbody></table></div>
+    <details open><summary>Draft provenance and review boundary</summary>
+      <p>This HTML follows GX210-TUTORIAL1's <code>THERMAL_WORKFLOW_DRAFT.md</code>, authored from the deposited dev110 source. Formal dev111 authoring was authorized by MAIN's actual dev110 deposition notice <code>1b1ddae6-8c3d-4504-a9fe-c17c702dc88f</code>. Two real staged dev110 packets supply the explicitly scoped observations and thirteen unchanged captures in this draft. It does not complete the independent Plots matrix, common-host check or final tutorial acceptance.</p>
+      <p>Package source provenance is recorded in <code>provenance.json</code>. Scientific/content/visual quality review remains with GX210-TUTORIAL1; MAIN controls integration, GUI slots and release. The project-authored content license is GPL-3.0-or-later, with the license text supplied in <code>LICENSE</code>.</p>
+    </details>
+    <p><a href="#top">Return to top</a></p>
+  </section>
+</main>
+</div>
+<footer><p>Draft content 0.1.0 · Synthetic source · Partial staged dev110 GUI evidence · Alias/label findings, full matrix and host rendering pending</p></footer>
+</body>
+</html>

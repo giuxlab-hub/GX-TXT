@@ -500,22 +500,30 @@ proc ::GX::openCurrentGraphWindow {} {
     grid columnconfigure $w 0 -weight 1
     grid rowconfigure $w 1 -weight 1
 
+    # General image/document commands live in the ordinary primary menus.
+    # Keep the local viewport controls compact at narrow widths/large fonts.
+    menu $w.menus -tearoff 0
+    $w configure -menu $w.menus
+    foreach group {file edit view} {menu $w.menus.$group -tearoff 0;$w.menus add cascade -label [string totitle $group] -underline 0 -menu $w.menus.$group}
+    foreach {label command} [list Reload ::GX::reloadGraphWindow {Save image…} {::GX::graphFullSave 0} {Save selected area…} {::GX::graphFullSave 1} Print ::GX::graphFullPrint Close [list destroy $w]] {
+        $w.menus.file add command -label $label -command $command
+    }
+    foreach {label command} [list {Copy graph} {::GX::graphFullCopy 0} {Copy area} {::GX::graphFullCopy 1} {Notes…} [list ::GX::graphNotesOpenForPath $p]] {
+        $w.menus.edit add command -label $label -command $command
+    }
+    foreach {label command} [list Fit ::GX::graphFullFit {Zoom in} {::GX::graphFullZoom 1.25} {Zoom out} {::GX::graphFullZoom 0.8} {Reset to 1:1} {::GX::graphFullShow 1.0} {Fit selected area} ::GX::graphFullFitArea] {
+        $w.menus.view add command -label $label -command $command
+    }
+    $w.menus.view add checkbutton -label {Show annotations} -variable ::GX::ui(graphFullAnnotations) -command ::GX::reloadGraphWindow
     ttk::frame $w.top
-    ttk::button $w.top.reload -text Reload -command ::GX::reloadGraphWindow
     ttk::checkbutton $w.top.annotations -text "Show annotations" -variable ::GX::ui(graphFullAnnotations) -command ::GX::reloadGraphWindow
     ttk::button $w.top.fit -text Fit -command ::GX::graphFullFit
     ttk::button $w.top.zi -text "Zoom +" -command {::GX::graphFullZoom 1.25}
     ttk::button $w.top.zo -text "Zoom -" -command {::GX::graphFullZoom 0.8}
     ttk::button $w.top.reset -text Reset -command {::GX::graphFullShow 1.0}
     ttk::button $w.top.fitarea -text "Fit area" -command ::GX::graphFullFitArea
-    ttk::button $w.top.print -text Print -command ::GX::graphFullPrint
-    ttk::button $w.top.copy -text "Copy graph" -command {::GX::graphFullCopy 0}
-    ttk::button $w.top.copyarea -text "Copy area" -command {::GX::graphFullCopy 1}
-    ttk::button $w.top.save -text "Save image..." -command {::GX::graphFullSave 0}
-    ttk::button $w.top.savearea -text "Save selected area..." -command {::GX::graphFullSave 1}
-    ttk::button $w.top.notes -text "Notes..." -command [list ::GX::graphNotesOpenForPath $p]
-    ttk::button $w.top.close -text "Close" -command [list destroy $w]
-    pack $w.top.reload $w.top.annotations $w.top.fit $w.top.zi $w.top.zo $w.top.reset $w.top.fitarea $w.top.print $w.top.copy $w.top.copyarea $w.top.save $w.top.savearea $w.top.notes $w.top.close -side left -padx 3
+    pack $w.top.annotations $w.top.fit $w.top.zi $w.top.zo $w.top.reset $w.top.fitarea -side left -padx 3
+    bind $w.top <Configure> [list ::GX::uiFieldControlsLayout $w.top %w]
     grid $w.top -row 0 -column 0 -columnspan 2 -sticky ew -padx 5 -pady 5
 
     canvas $w.c -background #d9d9d9 -highlightthickness 0 -xscrollcommand [list $w.sx set] -yscrollcommand [list $w.sy set]
@@ -524,8 +532,9 @@ proc ::GX::openCurrentGraphWindow {} {
     grid $w.c -row 1 -column 0 -sticky nsew
     grid $w.sy -row 1 -column 1 -sticky ns
     grid $w.sx -row 2 -column 0 -sticky ew
-    ttk::label $w.info -textvariable ::GX::ui(graphFullInfo) -justify left -wraplength 1500
+    ttk::label $w.info -textvariable ::GX::ui(graphFullInfo) -justify left -width 1 -wraplength 900
     grid $w.info -row 3 -column 0 -columnspan 2 -sticky ew -padx 7 -pady 5
+    bind $w.info <Configure> [list $w.info configure -wraplength %w]
     set ui(graphFullCanvas) $w.c
     bind $w.c <ButtonPress-1> {::GX::graphFullSelectStart %x %y}
     bind $w.c <B1-Motion> {::GX::graphFullSelectDrag %x %y}

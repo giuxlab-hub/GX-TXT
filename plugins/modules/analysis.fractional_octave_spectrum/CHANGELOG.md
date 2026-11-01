@@ -10,7 +10,7 @@
 
 # Changelog
 
-## 1.1.0
+## 1.1.0 — 2026-09-25
 
 - Removed the module-private scientific renderer, render cache and rerender path.
 - Published the three standard band views (level, RMS and power) as persistent `plot.dataset` / `PLOT_DATASET_API_v2` variants.

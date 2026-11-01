@@ -52,6 +52,9 @@ proc ::GX::viewerProviderDefinition {moduleId viewerId {includeDisabled 0}} {
     dict set out enabled [viewerProviderEnabled $moduleId $viewerId]
     dict set out deprecated [uiFieldNormalize {type boolean} [descriptorValue $d "viewer.$viewerId" deprecated [descriptorValue $d meta deprecated 0]]]
     dict set out replacement [descriptorValue $d "viewer.$viewerId" replacement [descriptorValue $d meta replacement {}]]
+    set visibility [uiFieldNormalize {type choice values {normal compatibility}} [descriptorValue $d "viewer.$viewerId" catalog_visibility normal]]
+    if {$visibility eq {compatibility} && ![dict get $out deprecated]} {error {Compatibility-only Viewer catalog entries must be explicitly deprecated}}
+    dict set out catalog_visibility $visibility
     dict set out icon_path [viewerProviderIconPath $moduleId [dict get $out icon]]
     dict set out availability_reason [expr {[dict get $out enabled]?"Available":"Presentation disabled"}]
     if {[dict get $out deprecated]} {dict append out availability_reason { · deprecated; retained for existing Workspaces}}

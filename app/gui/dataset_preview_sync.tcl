@@ -163,6 +163,7 @@ proc ::GX::datasetPreviewActionsState {} {
 }
 rename ::GX::refreshCsvPreview ::GX::refreshCsvPreview_before_sync
 proc ::GX::refreshCsvPreview {} {
+    if {[datasetPresentationDeferWhenBusy ::GX::refreshCsvPreview]} return
     variable ui
     if {![info exists ui(preview)] || ![winfo exists $ui(preview)]} return
     datasetPageEditState

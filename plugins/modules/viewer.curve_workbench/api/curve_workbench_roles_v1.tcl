@@ -11,11 +11,11 @@ proc ::GX::CurveWorkbench::_geometryRoleApply {w token ids values} {
     _cancelGesture $w;_pointSyncApply $w
     if {$ids ne [_cadTargets $w]} {error "Geometry targets changed; reopen role parameters"}
     set role [dict get $values role];if {$role ni {regular construction reference}} {error "Unknown geometry role"}
-    set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         foreach id $ids {set record [_record $w $id];::GX::Native2D::core identity_geometry_role $st($w,scene) [dict get $record native] $role;dict set record sketch_attributes gx.geometry_role $role;dict set st($w,curves) $id $record}
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Geometry role $role committed; construction/reference entities assist editing and are excluded from normal publication/export. Explicit finite samples are regular independent geometry."
 }
 rename ::GX::CurveWorkbench::publish ::GX::CurveWorkbench::publish_roles_base

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Additive UI Field shell primitive. No Viewer/scientific state is stored here.
+namespace eval ::GX::UiField {variable viewerInspectorPolicy {};variable componentTableFonts {}}
 proc ::GX::uiFieldViewerShellCreate {window title {geometry 1100x720} {inspectorWidth 320}} {
     if {[winfo exists $window]} {error {Viewer window already exists}}
     toplevel $window;wm title $window $title;wm geometry $window $geometry;wm minsize $window 640 400
@@ -24,6 +25,9 @@ proc ::GX::uiFieldViewerShellCreate {window title {geometry 1100x720} {inspector
     bind $window <FocusIn> +[list ::GX::_uiFieldViewerInspectorFocus $window %W]
     bind $window.body <Map> +[list ::GX::_uiFieldViewerInitialSplit $window $inspectorWidth %W]
     bind $window.body <Configure> +[list ::GX::_uiFieldViewerInspectorFit $window $inspectorWidth %W %w]
+    dict set ::GX::UiField::viewerInspectorPolicy $window [dict create nominal $inspectorWidth font {} position {} automatic 1]
+    bind $window <Destroy> +[list ::GX::_uiFieldViewerInspectorDispose $window %W]
+    bind $window <Map> +[list ::GX::_uiFieldViewerInitialFit $window %W]
     bind $window <MouseWheel> +[list ::GX::_uiFieldViewerWheel $window %W %D]
     foreach {event delta} {<Button-4> 1 <Button-5> -1} {bind $window $event +[list ::GX::_uiFieldViewerWheel $window %W $delta]}
     pack $window.body.inspector.bar -side right -fill y;pack $window.body.inspector.scroll -fill both -expand 1
@@ -40,6 +44,9 @@ proc ::GX::_uiFieldViewerInspectorSchedule {window actual} {
 proc ::GX::_uiFieldViewerInspectorLayout {window} {
     set canvas $window.body.inspector.scroll;set content $canvas.content
     if {![winfo exists $content] || ![winfo ismapped $canvas]} return
+    if {[dict exists $::GX::UiField::viewerInspectorPolicy $window]} {
+        _uiFieldViewerInspectorFit $window [dict get $::GX::UiField::viewerInspectorPolicy $window nominal] $window.body [winfo width $window.body]
+    }
     set room [winfo width $canvas]
     set width [expr {max($room,[winfo reqwidth $content])}]
     # Nested scrolling pages can have a small request even when their native
@@ -75,6 +82,18 @@ proc ::GX::_uiFieldViewerInspectorLayout {window} {
     }
 }
 
+proc ::GX::_uiFieldViewerInitialFit {window actual} {
+    if {$actual ne $window || ![dict exists $::GX::UiField::viewerInspectorPolicy $window] || [dict exists $::GX::UiField::viewerInspectorPolicy $window initial_fit]} return
+    dict set ::GX::UiField::viewerInspectorPolicy $window initial_fit 1
+    after idle [list ::GX::_uiFieldViewerInitialFitApply $window [winfo id $window]]
+}
+proc ::GX::_uiFieldViewerInitialFitApply {window identity} {
+    if {![winfo exists $window] || [winfo id $window] ne $identity || ![dict exists $::GX::UiField::viewerInspectorPolicy $window]} return
+    # Reuse the shared physical-screen/decoration owner once after mapping.
+    # Later user resizing and restored Workspace geometry retain their owners.
+    uiFieldWindowFit $window
+}
+
 proc ::GX::_uiFieldViewerInitialSplit {window width mapped} {
     if {$mapped ne "$window.body" || ![winfo exists $mapped]} return
     # The public width remains its font10 nominal size. Preserve its character
@@ -83,15 +102,41 @@ proc ::GX::_uiFieldViewerInitialSplit {window width mapped} {
     set scale [expr {max(1.0,double([font measure TkDefaultFont 0])/max(1,[font measure $normal 0]))}]
     set desired [expr {int(ceil($width*$scale))}]
     set limit [expr {max($width,int([winfo width $mapped]*2/3))}]
-    if {[llength [$mapped panes]]>1} {$mapped sashpos 0 [expr {min($desired,$limit)}]}
+    set position {}
+    if {[llength [$mapped panes]]>1} {$mapped sashpos 0 [expr {min($desired,$limit)}];set position [$mapped sashpos 0]}
+    if {[dict exists $::GX::UiField::viewerInspectorPolicy $window]} {
+        dict set ::GX::UiField::viewerInspectorPolicy $window font [font actual TkDefaultFont]
+        dict set ::GX::UiField::viewerInspectorPolicy $window position $position
+    }
     bind $mapped <Map> {}
 }
 proc ::GX::_uiFieldViewerInspectorFit {window nominal actual width} {
     if {$actual ne "$window.body" || ![winfo exists $actual] || $width<2 || [llength [$actual panes]]<2} return
-    # Narrowing may reclaim room for the canvas. Growing or moving the sash
-    # remains the native panedwindow/user's decision; never reset their split.
+    # Follow live Appearance fonts only while the shell still owns its default
+    # split. A native user drag or restored Workspace position owns that split
+    # thereafter; changing a font must not reset that deliberate choice.
     set limit [expr {min($width,max($nominal,int($width*2/3)))}]
-    if {[$actual sashpos 0]>$limit} {$actual sashpos 0 $limit}
+    if {[dict exists $::GX::UiField::viewerInspectorPolicy $window]} {
+        set policy [dict get $::GX::UiField::viewerInspectorPolicy $window]
+        set position [$actual sashpos 0];set prior [dict get $policy position]
+        if {$prior ne {} && abs($position-$prior)>1} {dict set policy automatic 0}
+        set font [font actual TkDefaultFont]
+        if {$prior ne {} && [dict get $policy automatic] && $font ne [dict get $policy font]} {
+            set normal [dict replace $font -size 10]
+            set scale [expr {max(1.0,double([font measure TkDefaultFont 0])/max(1,[font measure $normal 0]))}]
+            $actual sashpos 0 [expr {min($limit,int(ceil($nominal*$scale)))}]
+            dict set policy position [$actual sashpos 0]
+        }
+        dict set policy font $font
+        if {[$actual sashpos 0]>$limit} {
+            $actual sashpos 0 $limit
+            if {[dict get $policy automatic]} {dict set policy position [$actual sashpos 0]}
+        }
+        dict set ::GX::UiField::viewerInspectorPolicy $window $policy
+    } elseif {[$actual sashpos 0]>$limit} {$actual sashpos 0 $limit}
+}
+proc ::GX::_uiFieldViewerInspectorDispose {window actual} {
+    if {$actual eq $window && [dict exists $::GX::UiField::viewerInspectorPolicy $window]} {dict unset ::GX::UiField::viewerInspectorPolicy $window}
 }
 proc ::GX::_uiFieldViewerWheel {window widget delta} {
     if {[string first "$window.body.inspector." $widget]!=0} return
@@ -103,11 +148,15 @@ proc ::GX::_uiFieldViewerWheel {window widget delta} {
 proc ::GX::uiFieldFocusWhenMapped {container target {modal 0}} {
     if {![winfo exists $container] || ![winfo exists $target]} return
     bind $container <Map> +[list ::GX::_uiFieldFocusSchedule $container $target $modal %W]
+    # A toplevel can map before its requested focus child. The child's own Map
+    # must schedule the same owner once it is actually viewable; one early idle
+    # callback must not silently lose default focus and modal admission.
+    if {$target ne $container} {bind $target <Map> +[list ::GX::_uiFieldFocusSchedule $container $target $modal %W]}
     bind $container <Unmap> +[list ::GX::_uiFieldMappedRelease $container %W]
     after idle [list ::GX::_uiFieldMappedFocus $container $target $modal $container]
 }
 proc ::GX::_uiFieldFocusSchedule {container target modal changed} {
-    if {$changed eq $container} {after idle [list ::GX::_uiFieldMappedFocus $container $target $modal $container]}
+    if {$changed eq $container || $changed eq $target} {after idle [list ::GX::_uiFieldMappedFocus $container $target $modal $container]}
 }
 proc ::GX::_uiFieldMappedRelease {container changed} {
     if {$changed eq $container && [grab current] eq $container} {grab release $container}
@@ -163,7 +212,16 @@ proc ::GX::_uiFieldDialogPlace {dialogWindow} {
         set y [expr {[winfo rooty $parent]+max(0,([winfo height $parent]-$height)/2)}]
         set availableX [expr {max(0,[winfo screenwidth $dialogWindow]-$width)}]
         set x [expr {max(0,min($x,$availableX))}]
-        set y [expr {max(25,min($y,[winfo screenheight $dialogWindow]-$height-35))}]
+        # wm geometry addresses the outer frame; winfo height addresses the
+        # client below native decorations and an attached menubar. Large fonts
+        # can make that inset exceed the former fixed 35-pixel reservation.
+        # Measure the mapped inset before moving, keeping the complete client
+        # and footer inside the screen without changing its requested size.
+        set bottomReserve 35
+        if {[regexp {^[0-9]+x[0-9]+[+-][0-9]+\+([0-9]+)$} [wm geometry $dialogWindow] -> frameY]} {
+            set bottomReserve [expr {max($bottomReserve,[winfo rooty $dialogWindow]-$frameY+15)}]
+        }
+        set y [expr {max(25,min($y,[winfo screenheight $dialogWindow]-$height-$bottomReserve))}]
         # WM positions include decorations; width is the mapped client extent.
         # Anchor to the nearer horizontal edge so the WM accounts for its own
         # border at that edge. A positive client-width clamp can clip the right
@@ -232,6 +290,14 @@ proc ::GX::uiFieldComponentCapabilities {} {
     }
     return $result
 }
+proc ::GX::uiFieldComponentDescriptor {type properties} {
+    if {$type ni {field toggle choice}} {error {A typed field, toggle or choice component is required}}
+    set datatype [datasetPublicationV2DictDefault $properties datatype [dict get {field string toggle boolean choice choice} $type]]
+    set descriptor [dict create type $datatype label [datasetPublicationV2DictDefault $properties label {}] default [datasetPublicationV2DictDefault $properties default [expr {$datatype eq {boolean} ? 0 : {}}]] compact 1]
+    foreach name {min max alpha} {if {[dict exists $properties $name]} {dict set descriptor $name [dict get $properties $name]}}
+    if {$datatype eq {choice}} {dict set descriptor values [datasetPublicationV2DictDefault $properties choices {}]}
+    return $descriptor
+}
 proc ::GX::uiFieldComponentCreate {widget type properties variableName callback {context {}}} {
     if {![dict exists [uiFieldComponentCapabilities] $type]} {error {Unsupported public UI Field component.}}
     set label [datasetPublicationV2DictDefault $properties label {}]
@@ -242,7 +308,7 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
         }
         tab {
             ttk::frame $widget -padding 4
-            _uiFieldTabAttach $widget
+            uiFieldTabOverflowAttach $widget
         }
         section {ttk::labelframe $widget -text [datasetPublicationV2DictDefault $properties title Section] -padding [datasetPublicationV2DictDefault $properties padding 6]}
         splitter {ttk::panedwindow $widget -orient [datasetPublicationV2DictDefault $properties orientation horizontal]}
@@ -269,11 +335,8 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
         checkbutton {ttk::checkbutton $widget -text $label -variable $variableName -command $callback}
         list {listbox $widget -height [datasetPublicationV2DictDefault $properties height 6] -exportselection 0 -selectmode [datasetPublicationV2DictDefault $properties selectmode browse];foreach item [datasetPublicationV2DictDefault $properties items {}] {$widget insert end $item};if {$callback ne {}} {bind $widget <<ListboxSelect>> $callback}}
         field - toggle - choice {
-            set datatype [dict get {field string toggle boolean choice choice} $type]
-            set datatype [datasetPublicationV2DictDefault $properties datatype $datatype]
-            set descriptor [dict create type $datatype label $label default [datasetPublicationV2DictDefault $properties default [expr {$datatype eq {boolean} ? 0 : {}}]] compact 1]
-            foreach name {min max alpha} {if {[dict exists $properties $name]} {dict set descriptor $name [dict get $properties $name]}}
-            if {$datatype eq {choice}} {dict set descriptor values [datasetPublicationV2DictDefault $properties choices {}]}
+            set descriptor [uiFieldComponentDescriptor $type $properties]
+            set datatype [dict get $descriptor type]
             uiFieldCreate $widget $descriptor $variableName $callback
             if {$label ne {}} {
                 ttk::label $widget.caption -text $label -anchor w -justify left -wraplength 400
@@ -324,9 +387,23 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
                 if {$bars in {vertical both}} {ttk::scrollbar $widget.vertical -orient vertical -command [list $tree yview];$tree configure -yscrollcommand [list $widget.vertical set];grid $widget.vertical -row 0 -column 1 -sticky ns}
                 if {$bars in {horizontal both}} {ttk::scrollbar $widget.horizontal -orient horizontal -command [list $tree xview];$tree configure -xscrollcommand [list $widget.horizontal set];grid $widget.horizontal -row 1 -column 0 -sticky ew}
             }
+            foreach event {<Map> <Configure> <<ThemeChanged>>} {bind $tree $event +[list ::GX::_uiFieldComponentTableFontLayout $tree]}
+            bind $tree <Destroy> +[list ::GX::_uiFieldComponentTableFontDispose $tree %W]
         }
     }
     return $widget
+}
+proc ::GX::_uiFieldComponentTableFontLayout {tree} {
+    if {![winfo exists $tree]} return
+    set key [list [font actual TkDefaultFont] [font actual TkHeadingFont] [ttk::style theme use]]
+    if {[dict exists $::GX::UiField::componentTableFonts $tree] && [dict get $::GX::UiField::componentTableFonts $tree] eq $key} return
+    # The existing inspection owner measures real headings even for zero rows.
+    # Memoize before scheduling so its shared style change cannot loop here.
+    dict set ::GX::UiField::componentTableFonts $tree $key
+    uiFieldInspectionColumnsSchedule $tree
+}
+proc ::GX::_uiFieldComponentTableFontDispose {tree actual} {
+    if {$tree eq $actual && [dict exists $::GX::UiField::componentTableFonts $tree]} {dict unset ::GX::UiField::componentTableFonts $tree}
 }
 # Keep the declared notebook and its page identities when native tab labels
 # cannot fit. The native readonly selector changes only notebook selection;
@@ -334,7 +411,7 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
 namespace eval ::GX::UiField {variable notebookOverflow {};variable toolbarOverflow {}}
 proc ::GX::_uiFieldNotebookAttach {widget} {
     dict set ::GX::UiField::notebookOverflow $widget [dict create after {} compact 0 style [$widget cget -style] padding [$widget cget -padding]]
-    foreach event {<Configure> <Map> <<NotebookTabChanged>>} {
+    foreach event {<Configure> <Map> <<NotebookTabChanged>> <<ThemeChanged>>} {
         bind $widget $event +[list ::GX::_uiFieldNotebookSchedule $widget %W]
     }
     bind $widget <Destroy> +[list ::GX::_uiFieldNotebookDispose $widget %W]
@@ -386,7 +463,7 @@ proc ::GX::_uiFieldNotebookLayout {widget} {
         set index [lsearch -exact $pages [$widget select]]
         if {$index>=0} {$selector current $index}
         $selector configure -state [expr {[$widget instate disabled] ? {disabled} : {readonly}}]
-        ttk::style layout GXViewerCompact.TNotebook.Tab {null}
+        if {[lindex [ttk::style layout GXViewerCompact.TNotebook.Tab] 0] ne {null}} {ttk::style layout GXViewerCompact.TNotebook.Tab {null}}
         set pad [dict get $saved padding]
         if {$pad eq {}} {set pad {0}}
         lassign $pad left top right bottom
@@ -552,6 +629,14 @@ proc ::GX::uiFieldComponentLayout {widget parent layout} {
         }
     } else {
         grid $widget -in $parent -row [datasetPublicationV2DictDefault $layout row 0] -column [datasetPublicationV2DictDefault $layout column 0] -rowspan [datasetPublicationV2DictDefault $layout rowspan 1] -columnspan [datasetPublicationV2DictDefault $layout columnspan 1] -sticky [datasetPublicationV2DictDefault $layout sticky ew] -padx [datasetPublicationV2DictDefault $layout padding 3] -pady [datasetPublicationV2DictDefault $layout padding 3]
+        # Apply the same declared track policies as ordinary Viewer design
+        # composition. Preview's shared controls must not silently lose their
+        # weight/minimum rules. Shared tracks retain the strongest policy.
+        foreach {axis index minimum fallback} [list column [datasetPublicationV2DictDefault $layout column 0] minimum_width 1 row [datasetPublicationV2DictDefault $layout row 0] minimum_height 0] {
+            set weight [expr {max([grid ${axis}configure $parent $index -weight],[datasetPublicationV2DictDefault $layout weight $fallback])}]
+            set size [expr {max([grid ${axis}configure $parent $index -minsize],[datasetPublicationV2DictDefault $layout $minimum 0])}]
+            grid ${axis}configure $parent $index -weight $weight -minsize $size
+        }
     }
 }
 proc ::GX::uiFieldComponentItemsSet {widget type items} {
@@ -668,13 +753,32 @@ proc ::GX::_uiFieldComponentTextWrap {widget maximum actual width} {
 }
 
 # A fixed explanatory row must not consume the natural height of a weighted
-# content row. Keep ordinary pages unchanged; only overflowing mixed-row pages
+# content row. Keep ordinary pages unchanged; overflowing fixed/mixed-row pages
 # acquire a native scroll viewport. Declared children keep their paths/commands.
 namespace eval ::GX::UiField {variable tabOverflow {}}
+proc ::GX::uiFieldTabOverflowAttach {frame} {
+    if {![winfo exists $frame] || [winfo class $frame] ni {Frame TFrame Labelframe TLabelframe}} {error {Overflow attachment requires an existing native frame}}
+    if {![dict exists $::GX::UiField::tabOverflow $frame]} {
+        # Empty frames are legal: the public tab constructor attaches before
+        # its children exist. Populated frames must retain one grid authority.
+        foreach child [winfo children $frame] {
+            if {[winfo manager $child] ni {{} grid}} {error {Overflow attachment requires grid-managed children}}
+        }
+        _uiFieldTabAttach $frame
+    }
+    # Also admit late attachment to an already mapped frame. The existing owner
+    # coalesces requests and decides whether mixed fixed/weighted rows overflow.
+    _uiFieldTabSchedule $frame $frame
+    return $frame
+}
 proc ::GX::_uiFieldTabAttach {tab} {
     dict set ::GX::UiField::tabOverflow $tab [dict create after {} viewport {} policies {}]
     set root [winfo toplevel $tab]
     bind $root <Configure> +[list ::GX::_uiFieldTabSchedule $tab %W]
+    # Hiding/restoring fixed controls can change only the grid's request, not
+    # its allocated size. Let grid settle its request before the existing
+    # coalesced layout; an immediate first idle can still see the old request.
+    foreach event {<Map> <Unmap>} {bind $root $event +[list after idle [list ::GX::_uiFieldTabSchedule $tab %W]]}
     bind $root <FocusIn> +[list ::GX::_uiFieldTabFocus $tab %W]
     foreach {event delta} {<MouseWheel> %D <Button-4> 1 <Button-5> -1} {
         bind $root $event +[list ::GX::_uiFieldTabWheel $tab %W $delta]
@@ -695,13 +799,39 @@ proc ::GX::_uiFieldTabSchedule {tab actual} {
             }
         }
     }
+    if {[datasetPublicationV2DictDefault [dict get $::GX::UiField::tabOverflow $tab] laying_out 0]} {
+        dict set ::GX::UiField::tabOverflow $tab layout_again 1
+        return
+    }
     if {[dict get $::GX::UiField::tabOverflow $tab after] eq {}} {
         dict set ::GX::UiField::tabOverflow $tab after [after idle [list ::GX::_uiFieldTabLayout $tab]]
     }
 }
 proc ::GX::_uiFieldTabLayout {tab} {
     if {![dict exists $::GX::UiField::tabOverflow $tab]} return
+    if {[datasetPublicationV2DictDefault [dict get $::GX::UiField::tabOverflow $tab] laying_out 0]} {
+        dict set ::GX::UiField::tabOverflow $tab layout_again 1
+        return
+    }
     dict set ::GX::UiField::tabOverflow $tab after {}
+    dict set ::GX::UiField::tabOverflow $tab laying_out 1
+    try {_uiFieldTabLayoutApply $tab} finally {
+        if {[dict exists $::GX::UiField::tabOverflow $tab]} {
+            dict set ::GX::UiField::tabOverflow $tab laying_out 0
+            if {[datasetPublicationV2DictDefault [dict get $::GX::UiField::tabOverflow $tab] layout_again 0]} {
+                dict unset ::GX::UiField::tabOverflow $tab layout_again
+                _uiFieldTabSchedule $tab $tab
+            }
+        }
+    }
+}
+proc ::GX::_uiFieldTabLayoutContext {tab} {
+    set parent [winfo parent $tab];set root [winfo toplevel $tab]
+    # A viewport's own width/height/Map changes are not an external allocation.
+    return [list [winfo width $parent] [winfo height $parent] [winfo width $root] [winfo height $root] \
+        [font actual TkDefaultFont] [font actual TkTextFont] [font actual TkHeadingFont] [ttk::style theme use]]
+}
+proc ::GX::_uiFieldTabLayoutApply {tab} {
     if {![winfo exists $tab] || ![winfo ismapped $tab] || [winfo height $tab]<2} return
     set state [dict get $::GX::UiField::tabOverflow $tab]
     set viewport [dict get $state viewport]
@@ -717,7 +847,9 @@ proc ::GX::_uiFieldTabLayout {tab} {
             set row [dict get [grid info $child] -row]
             if {[grid rowconfigure $tab $row -weight]>0} {set weighted 1} else {set fixed 1}
         }
-        if {!$weighted || !$fixed || $natural<=$room} return
+        # Tall all-fixed field pages need the same maintained viewport as
+        # mixed pages. All-weighted Plot/editor pages still shrink normally.
+        if {!$fixed || $natural<=$room} return
         set policies {}
         lassign [grid size $tab] columns rows
         foreach {axis count} [list column $columns row $rows] {
@@ -728,11 +860,13 @@ proc ::GX::_uiFieldTabLayout {tab} {
         set viewport $tab.__uiFieldViewport
         set background [ttk::style lookup TFrame -background]
         if {$background eq {}} {set background #d9d9d9}
-        canvas $viewport -highlightthickness 0 -borderwidth 0 -width 1 -height 1 -yscrollincrement 24 -background $background
+        # Fine thumb/arrow positioning must reach a nearly viewport-sized Plot.
+        # The existing wheel handler scales its units to retain 72px motion.
+        canvas $viewport -highlightthickness 0 -borderwidth 0 -width 1 -height 1 -yscrollincrement 1 -background $background
         ttk::frame $viewport.content
         ttk::scrollbar $tab.__uiFieldBar -command [list $viewport yview]
-        $viewport configure -yscrollcommand [list $tab.__uiFieldBar set]
-        $viewport create window 0 0 -anchor nw -window $viewport.content -tags content
+        $viewport configure -yscrollcommand [list ::GX::uiFieldViewportNotify $viewport $tab.__uiFieldBar]
+        $viewport create window 0 0 -anchor nw -window $viewport.content -tags content -width [expr {max(1,[winfo width $tab])}] -height [expr {max(1,[winfo height $tab])}]
         foreach child $children {grid configure $child -in $viewport.content}
         dict for {axis entries} $policies {
             dict for {n policy} $entries {
@@ -749,10 +883,37 @@ proc ::GX::_uiFieldTabLayout {tab} {
         foreach child [lreverse $children] {raise $child}
         dict set ::GX::UiField::tabOverflow $tab viewport $viewport
         dict set ::GX::UiField::tabOverflow $tab policies $policies
+        # Keep the actual unwrapped grid request authoritative. Reparented
+        # weighted children can temporarily request less space than that grid.
+        dict set ::GX::UiField::tabOverflow $tab unwrapped_height $natural
+        dict set ::GX::UiField::tabOverflow $tab wrapped_context [_uiFieldTabLayoutContext $tab]
         _uiFieldTabSchedule $tab $tab
         return
     }
-    if {$natural<=$room} {
+    if {![winfo ismapped $viewport] || [winfo width $viewport]<2 || $room<2} return
+    # Keeping a stable wrapper does not require an empty scrollbar. Child
+    # visibility/request changes still control the actual scrollable extent.
+    set bar $tab.__uiFieldBar
+    if {$natural<=$room && [winfo manager $bar] ne {}} {grid remove $bar;return}
+    if {$natural>$room && [winfo manager $bar] eq {}} {grid $bar;return}
+    set width [winfo width $viewport]
+    set height [expr {max($natural,$room)}]
+    set region [list 0 0 $width $height]
+    if {[$viewport cget -scrollregion] ne $region} {$viewport configure -scrollregion $region}
+    if {[$viewport itemcget content -width]!=$width || [$viewport itemcget content -height]!=$height} {
+        $viewport itemconfigure content -width $width -height $height
+        return
+    }
+    if {[winfo width $host]!=$width || [winfo height $host]!=$height} return
+    # Compare equivalent outer extents, including the native frame inset.
+    # A real parent allocation/font/theme change admits one fresh evaluation;
+    # self-generated content/viewport Configure events cannot unwrap/re-wrap.
+    set context [_uiFieldTabLayoutContext $tab]
+    set required [expr {$natural+[winfo height $tab]-$room}]
+    if {$context eq [dict get $state wrapped_context]} {
+        set required [expr {max($required,[dict get $state unwrapped_height])}]
+    }
+    if {$required<=[winfo height $tab]} {
         # Return to the original grid when resizing/font restoration makes room.
         foreach child $children {grid configure $child -in $tab}
         grid forget $viewport $tab.__uiFieldBar
@@ -768,12 +929,6 @@ proc ::GX::_uiFieldTabLayout {tab} {
         destroy $viewport $tab.__uiFieldBar
         return
     }
-    set width [winfo width $viewport]
-    set height [expr {max($natural,$room)}]
-    if {[$viewport itemcget content -width]!=$width || [$viewport itemcget content -height]!=$height} {
-        $viewport itemconfigure content -width $width -height $height
-    }
-    $viewport configure -scrollregion [list 0 0 $width $height]
 }
 proc ::GX::_uiFieldTabFocus {tab widget} {
     if {![dict exists $::GX::UiField::tabOverflow $tab] || ![winfo exists $widget] ||
@@ -788,7 +943,8 @@ proc ::GX::_uiFieldTabWheel {tab widget delta} {
     if {$viewport eq {} || ($widget ne $viewport && [winfo class $widget] in {Treeview Listbox Text Canvas})} return
     # A nested scrolling page/editor keeps its native wheel ownership.
     if {[_uiFieldTabViewportFor $widget] ne $viewport} return
-    $viewport yview scroll [expr {$delta>0?-3:3}] units
+    set units [expr {int(72/max(1,[$viewport cget -yscrollincrement]))}]
+    $viewport yview scroll [expr {$delta>0?-$units:$units}] units
 }
 proc ::GX::_uiFieldTabViewportFor {widget} {
     while {$widget ne {} && [winfo exists $widget]} {
@@ -824,7 +980,7 @@ proc ::GX::_uiFieldTabDispose {tab root actual} {
     if {$pending ne {}} {after cancel $pending}
     dict unset ::GX::UiField::tabOverflow $tab
     if {![winfo exists $root]} return
-    foreach {event callback} [list <Configure> [list ::GX::_uiFieldTabSchedule $tab %W] <FocusIn> [list ::GX::_uiFieldTabFocus $tab %W] <MouseWheel> [list ::GX::_uiFieldTabWheel $tab %W %D] <Button-4> [list ::GX::_uiFieldTabWheel $tab %W 1] <Button-5> [list ::GX::_uiFieldTabWheel $tab %W -1]] {
+    foreach {event callback} [list <Configure> [list ::GX::_uiFieldTabSchedule $tab %W] <Map> [list after idle [list ::GX::_uiFieldTabSchedule $tab %W]] <Unmap> [list after idle [list ::GX::_uiFieldTabSchedule $tab %W]] <FocusIn> [list ::GX::_uiFieldTabFocus $tab %W] <MouseWheel> [list ::GX::_uiFieldTabWheel $tab %W %D] <Button-4> [list ::GX::_uiFieldTabWheel $tab %W 1] <Button-5> [list ::GX::_uiFieldTabWheel $tab %W -1]] {
         set keep {};foreach line [split [bind $root $event] \n] {if {$line ne $callback} {lappend keep $line}}
         bind $root $event [join $keep \n]
     }
@@ -834,7 +990,7 @@ proc ::GX::uiFieldScrollableCreate {frame {width 320}} {
     set background [ttk::style lookup TFrame -background];if {$background eq {}} {set background #d9d9d9}
     canvas $frame.scroll -highlightthickness 0 -width $width -height 300 -yscrollincrement 24 -background $background
     ttk::scrollbar $frame.bar -command [list $frame.scroll yview]
-    $frame.scroll configure -yscrollcommand [list $frame.bar set]
+    $frame.scroll configure -yscrollcommand [list ::GX::uiFieldViewportNotify $frame.scroll $frame.bar]
     ttk::frame $frame.scroll.content
     $frame.scroll create window 0 0 -anchor nw -window $frame.scroll.content -tags content
     bind $frame.scroll <Configure> [list $frame.scroll itemconfigure content -width %w]
@@ -903,7 +1059,7 @@ proc ::GX::_uiFieldDatasetClear {widget} {
     event generate $widget <<ComboboxSelected>>
 }
 proc ::GX::uiFieldDatasetChoices {{contentKind {}} {allowEmpty 0}} {
-    if {$contentKind ni {{} html pdf code table raster}} {error {Unsupported canonical Dataset content_kind}}
+    if {$contentKind ni {{} html pdf code table raster markdown uml}} {error {Unsupported canonical Dataset content_kind}}
     if {![string is boolean -strict $allowEmpty]} {error {Dataset selector allow_empty must be boolean}}
     set ids [dict get [datasetCatalogSnapshot] dataset_ids]
     set result {}

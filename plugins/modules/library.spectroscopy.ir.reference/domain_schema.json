@@ -1,0 +1,153 @@
+{
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "library.spectroscopy.ir.reference",
+  "record_types": {
+    "spectroscopy.ir.spectrum": {
+      "label": "Managed IR reference spectrum (read-only metadata)",
+      "library_type": "spectroscopy.ir.reference",
+      "fields": {
+        "spectrum_id": {
+          "type": "string",
+          "required": true
+        },
+        "display_name": {
+          "type": "string",
+          "required": true
+        },
+        "spectrum_kind": {
+          "type": "string",
+          "required": true
+        },
+        "sample_count": {
+          "type": "string",
+          "required": true
+        },
+        "x_quantity": {
+          "type": "string",
+          "required": true
+        },
+        "x_unit": {
+          "type": "string",
+          "required": true
+        },
+        "y_quantity": {
+          "type": "string",
+          "required": true
+        },
+        "y_representation": {
+          "type": "string",
+          "required": true
+        },
+        "y_unit": {
+          "type": "string",
+          "required": true
+        },
+        "source_identity": {
+          "type": "string",
+          "required": true
+        },
+        "source_hash": {
+          "type": "string",
+          "required": true
+        },
+        "spectrum_hash": {
+          "type": "string",
+          "required": true
+        },
+        "entity_id": {
+          "type": "string",
+          "required": true
+        },
+        "entry_metadata": {
+          "type": "object",
+          "required": true
+        }
+      },
+      "content_contract": "",
+      "normalized_projection": {
+        "api_version": 1,
+        "fields": {
+          "spectrum_id": [
+            "metadata",
+            "spectrum",
+            "spectrum_id"
+          ],
+          "display_name": [
+            "metadata",
+            "spectrum",
+            "display_name"
+          ],
+          "spectrum_kind": [
+            "metadata",
+            "spectrum",
+            "spectrum_kind"
+          ],
+          "sample_count": [
+            "metadata",
+            "spectrum",
+            "sample_count"
+          ],
+          "x_quantity": [
+            "metadata",
+            "spectrum",
+            "x_quantity"
+          ],
+          "x_unit": [
+            "metadata",
+            "spectrum",
+            "x_unit"
+          ],
+          "y_quantity": [
+            "metadata",
+            "spectrum",
+            "y_quantity"
+          ],
+          "y_representation": [
+            "metadata",
+            "spectrum",
+            "y_representation"
+          ],
+          "y_unit": [
+            "metadata",
+            "spectrum",
+            "y_unit"
+          ],
+          "source_identity": [
+            "metadata",
+            "spectrum",
+            "source_identity"
+          ],
+          "source_hash": [
+            "metadata",
+            "spectrum",
+            "source_hash"
+          ],
+          "spectrum_hash": [
+            "metadata",
+            "spectrum",
+            "spectrum_hash"
+          ],
+          "entity_id": [
+            "metadata",
+            "entity_id"
+          ],
+          "entry_metadata": [
+            "metadata",
+            "entry"
+          ]
+        },
+        "label_path": [
+          "metadata",
+          "spectrum",
+          "display_name"
+        ],
+        "source_id_path": [
+          "metadata",
+          "spectrum",
+          "source_identity"
+        ]
+      }
+    }
+  },
+  "relations": {}
+}

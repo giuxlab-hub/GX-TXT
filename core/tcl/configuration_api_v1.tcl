@@ -95,6 +95,13 @@ proc ::GX::_configurationNormalize {id value} {
         }
         default { set value [string trim $value] }
     }
+    if {[string match diagnostics.stderr_* $id]} {
+        if {[dict get $descriptor type] eq {integer} && ($value<[dict get $descriptor min] || $value>[dict get $descriptor max])} {error {Diagnostic limit is outside its supported range}}
+        if {$id eq {diagnostics.stderr_log_directory} && ($value eq {} || [file pathtype $value] ne {absolute} || [string length $value]>4096 || [string first \x00 $value]>=0)} {error {Diagnostic log directory must be a nonempty absolute path}}
+    }
+    if {$id eq "ui.graphics_profile" && $value ni {Low Medium Fast}} {
+        error {Graphics profile must be Low, Medium or Fast.}
+    }
     if {$id eq "ui.x11_popup_repair_delay_ms" && ($value < 25 || $value > 2000)} {
         error "Delay after popup mapping must be an integer from 25 to 2000 ms."
     }
@@ -159,7 +166,9 @@ proc ::GX::configurationSet {id value} {
     if {[dict get $configurationSchema $id scope] in {framework runtime session}} {
         error "Configuration '$id' is read-only."
     }
+    if {$id eq {preview.module_enabled}} {_modulePreviewRequireHost;_modulePreviewSelectionIds}
     dict set configurationValues $id [configurationValidate $id $value]
+    if {$id eq {preview.module_enabled}} {_modulePreviewSyncProjection}
     if {$id eq "viewers.native3d.preset" && $value ne "Custom"} {
         dict for {key setting} [native3dGraphicsPresetFields $value] {
             dict set configurationValues viewers.native3d.$key $setting
@@ -211,6 +220,27 @@ proc ::GX::native3dGraphicsPolicy {} {
     return $policy
 }
 
+# Scope runtime compatibility to isolated renderer children, never the GUI or
+# scientific Jobs. NVIDIA 390's late pthread interposition can call a null
+# pthread_create trampoline when a Tcl worker loads VTK/TBB dynamically on
+# current glibc. Loading the system pthread SONAME at process startup is the
+# vendor-documented initialization-order remedy. Keep existing preload entries.
+proc ::GX::_native3dWorkerLaunch {command} {
+    if {$::tcl_platform(os) ne {Linux}} {return $command}
+    set preload [expr {[info exists ::env(LD_PRELOAD)] ? $::env(LD_PRELOAD) : {}}]
+    set present 0
+    foreach library [split [string map {: { }} $preload]] {
+        if {[file tail $library] eq {libpthread.so.0}} {set present 1;break}
+    }
+    if {!$present} {set preload [string trim "libpthread.so.0 $preload"]}
+    return [concat [list env LD_PRELOAD=$preload] $command]
+}
+proc ::GX::_native3dGuiFrameTransport {} {
+    # Existing PNG protocol and exact RGBA pixels; faster lossless encoding of
+    # intermediate Linux GUI frames. Explicit scientific exports are unchanged.
+    return [expr {$::tcl_platform(os) eq {Linux} ? {fast_png} : {png}}]
+}
+
 proc ::GX::configurationHome {} {
     if {[info exists ::env(USERPROFILE)] && $::env(USERPROFILE) ne ""} { return $::env(USERPROFILE) }
     if {[info exists ::env(HOME)] && $::env(HOME) ne ""} { return $::env(HOME) }
@@ -218,6 +248,22 @@ proc ::GX::configurationHome {} {
 }
 
 proc ::GX::configurationRegisterBuiltins {} {
+    configurationRegister preview.module_enabled [dict create group Viewers label {Framework-wide Preview activation} type string default {} scope user visible 0 application immediate validator ::GX::_modulePreviewChoicesValidate]
+    foreach target {open preview} {
+        configurationRegister contracts.${target}_visualizers [dict create group Contracts label "Contract $target visualizer preferences" type string default {} scope user application immediate validator ::GX::contractVisualizerPreferencesValidate]
+    }
+    if {[info exists ::env(XDG_STATE_HOME)] && $::env(XDG_STATE_HOME) ne {}} {set diagnosticState $::env(XDG_STATE_HOME)} else {set diagnosticState [file join [configurationHome] .local state]}
+    foreach {id label type default} [list \
+        diagnostics.stderr_capture_enabled {Process diagnostics: enable optional STDERR capture} boolean 0 \
+        diagnostics.stderr_log_directory {Process diagnostics: diagnostic log directory} path [file join $diagnosticState gxtxt_pipeline diagnostics stderr] \
+        diagnostics.stderr_max_file_mib {Process diagnostics: maximum file size (MiB)} integer 10 \
+        diagnostics.stderr_max_files {Process diagnostics: retained files (includes active file)} integer 5 \
+        diagnostics.stderr_ram_buffer_mib {Process diagnostics: bounded RAM buffer (MiB)} integer 8] {
+        set field [dict create group Runtime label $label type $type default $default scope user application on_apply]
+        if {$id eq {diagnostics.stderr_log_directory}} {dict set field validator ::GX::stderrDiagnosticsDirectoryValidate}
+        if {$type eq {integer}} {dict set field min 1;dict set field max [expr {$id eq {diagnostics.stderr_max_files}?100:($id eq {diagnostics.stderr_ram_buffer_mib}?64:1024)}]}
+        configurationRegister $id $field
+    }
     foreach kind {markdown html} {configurationRegister runtime.${kind}_viewer [dict create group Runtime label "[string totitle $kind] Dataset viewer (internal or argv prefix)" type string default internal scope user]}
     sourceSurfaceConfigurationRegister
     configurationRegister ui.projects.organization [dict create group General label {Project navigator state} type string default {selected {} opened {} y 0 query {}} scope user scopes {user} application on_reopen validator ::GX::projectOrganizationGuiStateValidate]
@@ -227,9 +273,13 @@ proc ::GX::configurationRegisterBuiltins {} {
     set home [configurationHome]
     set threads [parallelExecutionHardwareThreads]
     foreach {id label type default} {
+        ui.graphics_profile {Intensive graphical update profile} string Low
+        ui.adaptive_grid_density {Adaptive Grid Density} boolean 1
         ui.theme {Theme} string system
         ui.font_family {Proportional GUI font family} string system
         ui.font_size {GUI font size (points)} string system
+        ui.x11_tooltip_opaque {Opaque tooltip painting} boolean 1
+        ui.x11_tooltip_premap {Position tooltip before mapping} boolean 1
         ui.x11_popup_repair_enabled {Enable remote X11 popup recovery} boolean 1
         ui.x11_popup_repair_delay_ms {Delay after popup mapping (ms)} integer 150
     } {
@@ -262,6 +312,8 @@ proc ::GX::configurationRegisterBuiltins {} {
         libraries.scientific_root Libraries {GX-TXT Library Root} path [file join [expr {[info exists ::env(XDG_DATA_HOME)] ? $::env(XDG_DATA_HOME) : [file join $home .local share]}] gxtxt_pipeline scientific_libraries] user \
         scripts.user_root Scripts {User script library} path [file join $home gxtxt scripts] user \
         features.script_workspace Scripts {Show Script Workspace in Analysis} boolean 0 user \
+        preview.cache_enabled Viewers {Prepare Dataset previews after publication} boolean 1 user \
+        preview.cache_mib Viewers {Session Preview cache limit (MiB)} integer 64 user \
         plugins.package_chooser_directory Modules {Default plugin package directory} path {} user \
         viewers.text Viewers {Text / CSV viewer} command auto user \
         viewers.image Viewers {Image viewer} command auto user \
@@ -292,12 +344,15 @@ proc ::GX::configurationRegisterBuiltins {} {
     }
 }
 
-proc ::GX::configurationLoad {} {
+proc ::GX::configurationLoad {{preservePreview 0}} {
     variable configurationLoaded
     variable configurationSaved
     variable configurationValues
     variable configurationSchema
     variable configurationWarnings
+    if {![string is boolean -strict $preservePreview]} {error {Preview preservation flag must be boolean}}
+    if {!$preservePreview} {_modulePreviewRequireHost}
+    set retainedPreview [_modulePreviewChoices]
     set configurationWarnings {}
     set configurationSaved [dict create]
     set path [configurationPath]
@@ -312,9 +367,11 @@ proc ::GX::configurationLoad {} {
     set configurationValues [dict create]
     set configurationSchema [dict create]
     configurationRegisterBuiltins
+    if {$preservePreview} {dict set configurationValues preview.module_enabled [configurationValidate preview.module_enabled $retainedPreview]}
     if {[llength [info commands ::GX::viewerCommandSchemasRestore]]} {viewerCommandSchemasRestore}
     dict set configurationValues viewers.native3d.preset [native3dGraphicsPresetDetect $configurationValues]
     set configurationLoaded 1
+    _modulePreviewSyncProjection
     configurationApply
     return $configurationValues
 }
@@ -336,6 +393,7 @@ proc ::GX::configurationApply {} {
     if {$named && [info exists workspaceDir(export_dir)] && $workspaceDir(export_dir) ne {}} {set cfg(export_dir) $workspaceDir(export_dir)} elseif {$export ne ""} {set cfg(export_dir) $export}
     set ::env(GXTXT_SCIENTIFIC_LIBRARY_ROOT) [configurationGet libraries.scientific_root]
     configurationApplyRuntime
+    if {[llength [info commands ::GX::stderrDiagnosticsConfigurationApply]]} {stderrDiagnosticsConfigurationApply}
     # Theme/font changes are startup-only. Recovery policy is safe for subsequent
     # maps immediately; Session/default reloads must not restyle existing windows.
     if {[llength [info commands winfo]] && [winfo exists .] &&
@@ -373,11 +431,13 @@ proc ::GX::configurationSave {{fields {}} {apply 1}} {
     variable configurationSchema
     variable configurationValues
     variable configurationSaved
+    if {$fields eq {} || {preview.module_enabled} in $fields} {_modulePreviewRequireHost}
     if {![string is boolean -strict $apply]} {error {Configuration apply flag must be boolean}}
     foreach id $fields {
         if {![dict exists $configurationSchema $id] || [dict get $configurationSchema $id scope] ni {user module}} {error "Cannot persist Configuration field: $id"}
     }
     set path [configurationPath]
+    if {[file exists $path] && ![file isfile $path]} {error {Configuration target is not a regular file}}
     file mkdir [file dirname $path]
     set temp "${path}.[pid].tmp"
     set fd [open $temp w]
@@ -465,8 +525,9 @@ proc ::GX::runtimeToolStatus {name} {
 }
 
 proc ::GX::defaults_before_core_ui_surfaces {} {
+    set preservePreview $::GX::configurationLoaded
     ::GX::defaults_before_configuration_v1
-    configurationLoad
+    configurationLoad $preservePreview
 }
 
 proc ::GX::openSessionPath {path} {

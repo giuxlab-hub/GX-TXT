@@ -26,6 +26,12 @@ and adds no Script Bridge or restricted C++ method.
 
 A widget context containing `prepared_model 1` accepts an explicit disposable native presentation model; it does not publish scientific data. Canonical plot publication requires actual Dataset identities. Wheel zoom, middle-button pan and double-click complete fit change presentation only. Grid lines and labels use the same numeric ticks from the existing CORE axis authority.
 
+Automatic native layout keeps the full rotated Y-axis caption inside its panel
+using the same Cairo ink metrics as the painter. It retains the exact text,
+font, axis limits and samples; captions already inside the panel keep their position.
+If the complete caption cannot fit, drawing explicitly refuses with a viewport
+diagnostic. Explicit manual layout retains its declared placement behavior.
+
 ## Canonical Scientific Dataset consultation
 
 `scientificModel datasetId xId series coordinateContext ?options?` admits the
@@ -259,3 +265,33 @@ when the retained line style has no general markers. This keeps isolated finite
 observations visible between missing-data gaps without connecting those gaps,
 changing point/row identity or adding interpolated samples. Ordinary multi-point
 line runs retain their configured style.
+
+## Shared GUI chrome (DEV111-P006)
+
+Host-only `::GX::PlotDatasetAPIv4::widgetChrome path` returns an existing/shared
+Native2D ViewportHost for GUI panels over this Plot surface. It validates the
+ordinary Plot source/Session binding, uses native plot bounds and creates no
+scientific scene or controller. Zoom/pan/Fit remain Plot-owned. See
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md) for scoped use by
+Preview components. This adds no native provider or SDK operation.
+
+## Generic Comparison profile (P034)
+
+Optional PlotSpec.comparison uses GXTXT_COMPARISON_PLOT_v1 through the same
+native renderer and existing Graph/PlotSpec resource. CORE admits actual source
+pins; Numeric prepares five modes without fake canonical Graph Series or payload
+publication. Top/Bottom synchronizes X zoom/pan/retained restoration while keeping
+independent Y scales. Invalid ranges and contradictory X restoration are atomic.
+`widgetComparisonReceipt(path)` returns the source-validated scientific receipt.
+Missing/stale references refuse without deleting the saved comparison or binding
+a neighbor. Ordinary empty PlotSpecs still refuse; comparison cannot mix another
+canonical series owner. The old Workbench comparisonModel remains distinct.
+See [Comparison API](COMPARISON_PLOT_API_v1.md).
+
+
+Comparison PlotSpec presentation uses the same complete `validateSpec` boundary
+before numerical preparation and native frame replacement. CORE projects the
+existing panel annotations and versioned display-series styles onto the derived
+model while retaining its computed physical units. Scalar style fields, primary
+Plot commands and existing Graph/Workspace persistence are documented in
+[COMPARISON_PLOT_API_v1](COMPARISON_PLOT_API_v1.md).

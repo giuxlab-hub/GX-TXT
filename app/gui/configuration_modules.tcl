@@ -9,6 +9,15 @@ namespace eval ::GX::ConfigurationModules {
     variable exportQuery {}
     variable exportRecords {}
     variable exportSelected {}
+    variable libraryImporterQuery {}
+    variable libraryImporterRecords {}
+    variable libraryImporterSelected {}
+    variable visualizerQuery {}
+    variable visualizerRecords {}
+    variable visualizerSelected {}
+    variable acquisitionQuery {}
+    variable acquisitionRecords {}
+    variable acquisitionSelected {}
 }
 proc ::GX::configurationInstalledPlugins {} {
     set result {}
@@ -36,16 +45,29 @@ proc ::GX::configurationInstalledPlugins {} {
 proc ::GX::configurationModulesBuild {parent row} {
     ttk::notebook $parent.kinds
     ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.exports;ttk::frame $parent.kinds.viewers
-    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
+    $parent.kinds add $parent.kinds.services -text {Analysis & Services}
+    ttk::frame $parent.kinds.library_importers
+    $parent.kinds add $parent.kinds.library_importers -text {Library Importers}
     $parent.kinds add $parent.kinds.exports -text Export
     $parent.kinds add $parent.kinds.viewers -text Viewers
+    ttk::frame $parent.kinds.acquisition
+    ttk::frame $parent.kinds.preview
+    $parent.kinds add $parent.kinds.acquisition -text Acquisition
+    $parent.kinds add $parent.kinds.preview -text {Preview Components}
+    ttk::frame $parent.kinds.contract_visualizers
+    $parent.kinds add $parent.kinds.contract_visualizers -text {Contract Visualizers}
     grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
     grid rowconfigure $parent $row -weight 1
+    _uiFieldNotebookAttach $parent.kinds
     configurationModulesBrowserBuild $parent.kinds.services services
     configurationModulesBrowserBuild $parent.kinds.exports exports
+    configurationModulesBrowserBuild $parent.kinds.library_importers library_importers
+    configurationModulesBrowserBuild $parent.kinds.acquisition acquisition
+    configurationModulesBrowserBuild $parent.kinds.contract_visualizers contract_visualizers
     configurationSubscribe ::GX::configurationEditorChanged
     configurationModulesReload
     viewerManagerBuild $parent.kinds.viewers
+    configurationPreviewComponentsBuild $parent.kinds.preview
 }
 # Both category browsers consume the same installed registry and Configuration
 # editor. Their query/selection variables are presentation drafts only.
@@ -57,6 +79,9 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
     ttk::frame $w.search
     ttk::label $w.search.label -text "Installed plugins"
     set queryVariable [expr {$category eq {exports} ? {::GX::ConfigurationModules::exportQuery} : {::GX::ConfigurationModules::query}}]
+    if {$category eq {library_importers}} {set queryVariable ::GX::ConfigurationModules::libraryImporterQuery}
+    if {$category eq {contract_visualizers}} {set queryVariable ::GX::ConfigurationModules::visualizerQuery}
+    if {$category eq {acquisition}} {set queryVariable ::GX::ConfigurationModules::acquisitionQuery}
     ttk::entry $w.search.query -textvariable $queryVariable -width 32
     ttk::button $w.search.refresh -text Refresh -command ::GX::configurationModulesReload
     pack $w.search.label $w.search.query $w.search.refresh -side left -padx 4
@@ -68,12 +93,14 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
     $w.split add $w.split.list -weight 1
     $w.split add $w.split.detail -weight 2
     pack $w.split -fill both -expand 1
-    ttk::treeview $w.split.list.tree -columns {type version state} -show {tree headings} -selectmode browse -height 10
+    ttk::treeview $w.split.list.tree -style GXInstalled.Treeview -columns {type version state} -show {tree headings} -selectmode browse -height 10
+    bind $w.split.list.tree <Configure> [list ::GX::configurationModulesTableLayout $w.split.list.tree]
     $w.split.list.tree heading #0 -text "Name / ID"
     $w.split.list.tree column #0 -width 230 -minwidth 130
     foreach {key label width} {type Type 80 version Version 80 state State 90} {
         $w.split.list.tree heading $key -text $label
-        $w.split.list.tree column $key -width $width -minwidth 60
+        set minimum [expr {max(60,[font measure TkDefaultFont $label]+24)}]
+        $w.split.list.tree column $key -width [expr {max($width,$minimum)}] -minwidth $minimum
     }
     ttk::scrollbar $w.split.list.y -orient vertical -command [list $w.split.list.tree yview]
     ttk::scrollbar $w.split.list.x -orient horizontal -command [list $w.split.list.tree xview]
@@ -96,34 +123,60 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
     ttk::button $w.actions.manage -text "Plugin Manager…" -command ::GX::pluginManagerDialog
     ttk::button $w.actions.docs -text Documentation -command [list ::GX::configurationModulesDocumentation $category]
     pack $w.actions.manage $w.actions.docs -side left -padx 4
-    pack $w.actions -fill x -pady 6
+    # Reserve the existing actions before the expanding browser consumes the
+    # remaining height, including compact windows with a larger UI font.
+    pack $w.actions -side bottom -before $w.split -fill x -pady 6
 }
 proc ::GX::configurationModulesReload {} {
     set ::GX::ConfigurationModules::catalog {}
     configurationModulesRefresh
+    configurationPreviewComponentsRefresh
 }
 proc ::GX::configurationModulesCategoryMatches {record category} {
     set kind {}
     if {[dict get $record type] eq {module}} {set kind [moduleField [dict get $record id] kind {}]}
+    set fields [dict get $record fields]
+    set libraryImporter [expr {[descriptorValue $fields library_source_connector api_version {}] eq {1}}]
     switch -- $category {
+        contract_visualizers {return [expr {[dict get $record type] eq {module} && [descriptorValue $fields contract_visualizers api_version {}] eq {1}}]}
+        library_importers {return $libraryImporter}
         exports {return [expr {$kind eq {export}}]}
-        services {return [expr {$kind ni {viewer export preview}}]}
+        acquisition {return [expr {$kind eq {acquisition}}]}
+        services {return [expr {!$libraryImporter && $kind ni {viewer export preview acquisition}}]}
         default {error "Unknown module configuration category '$category'"}
+    }
+}
+proc ::GX::configurationModulesTableLayout {tree} {
+    if {![winfo exists $tree]} return
+    ttk::style configure GXInstalled.Treeview -rowheight [expr {[font metrics TkDefaultFont -linespace]+8}]
+    set font [ttk::style lookup Treeview.Heading -font]
+    if {$font eq {}} {set font TkHeadingFont}
+    foreach key {type version state} {
+        set minimum [expr {max(60,[font measure $font [$tree heading $key -text]]+24)}]
+        if {[$tree column $key -minwidth]!=$minimum} {$tree column $key -minwidth $minimum}
+        if {[$tree column $key -width]<$minimum} {$tree column $key -width $minimum}
     }
 }
 proc ::GX::configurationModulesRefresh {{category all}} {
     if {$category eq {all}} {
-        foreach kind {services exports} {configurationModulesRefresh $kind}
+        foreach kind {services library_importers exports acquisition contract_visualizers} {configurationModulesRefresh $kind}
         return
     }
     if {$category eq {services}} {
         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::query query ::GX::ConfigurationModules::selected selected
+    } elseif {$category eq {library_importers}} {
+        upvar #0 ::GX::ConfigurationModules::libraryImporterRecords records ::GX::ConfigurationModules::libraryImporterQuery query ::GX::ConfigurationModules::libraryImporterSelected selected
+    } elseif {$category eq {contract_visualizers}} {
+        upvar #0 ::GX::ConfigurationModules::visualizerRecords records ::GX::ConfigurationModules::visualizerQuery query ::GX::ConfigurationModules::visualizerSelected selected
+    } elseif {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionQuery query ::GX::ConfigurationModules::acquisitionSelected selected
     } else {
         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportQuery query ::GX::ConfigurationModules::exportSelected selected
     }
     variable ::GX::ConfigurationModules::catalog
     set tree .top.nb.configuration.sections.modules.kinds.$category.browser.split.list.tree
     if {![winfo exists $tree]} return
+    configurationModulesTableLayout $tree
     set records [dict create]
     $tree delete [$tree children {}]
     set match [string tolower [string trim $query]]
@@ -145,6 +198,12 @@ proc ::GX::configurationModulesRefresh {{category all}} {
 proc ::GX::configurationModulesSelect {{category services}} {
     if {$category eq {exports}} {
         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportSelected selected
+    } elseif {$category eq {library_importers}} {
+        upvar #0 ::GX::ConfigurationModules::libraryImporterRecords records ::GX::ConfigurationModules::libraryImporterSelected selected
+    } elseif {$category eq {contract_visualizers}} {
+        upvar #0 ::GX::ConfigurationModules::visualizerRecords records ::GX::ConfigurationModules::visualizerSelected selected
+    } elseif {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionSelected selected
     } else {
         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::selected selected
     }
@@ -156,8 +215,9 @@ proc ::GX::configurationModulesSelect {{category services}} {
     }
     set choice [$tree selection]
     if {[llength $choice]!=1 || ![dict exists $records [lindex $choice 0]]} {
-        ttk::label $parent.empty -text "No installed plugins match the search."
-        pack $parent.empty -anchor w
+        ttk::label $parent.empty -text "No installed plugins match the search." -wraplength 240
+        pack $parent.empty -fill x -anchor w
+        bind $parent.empty <Configure> [list $parent.empty configure -wraplength %w]
         set selected ""
         return
     }
@@ -167,13 +227,25 @@ proc ::GX::configurationModulesSelect {{category services}} {
     set fields [dict get $record fields]
     set text "[dict get $record name]\nID: $id\nType: $type    Version: [dict get $record version]\nState: [dict get $record state]\nHealth: [dict get $record health]\nOwnership: [expr {[dict get $record core] ? "CORE" : "Plugin"}] / [expr {[dict get $record managed] ? "managed package" : "bundled descriptor"}]\n"
     append text [descriptorValue $fields meta description ""]
+    if {$category eq {library_importers}} {
+        append text "\nRole: Persistent Library Source Connector\nDomains: [descriptorValue $fields library_source_connector library_types {}]\nAuthentication: [descriptorValue $fields library_source_connector authentication none]\nConnection: not probed (use the Library Browser)"
+    }
+    if {$category eq {contract_visualizers}} {
+        foreach role [contractVisualizerProviders] {
+            if {[dict get $role module_id] ne $id} continue
+            if {![dict get $role valid]} {append text "\nInvalid declaration: [dict get $role reason]";continue}
+            append text "\nProvider: [dict get $role token]\nContracts: [join [dict get $role contracts] {, }]\nTargets: [join [dict get $role targets] {, }]\nAvailable: [join [dict get $role available_targets] {, }]\nInheritance: [dict get $role inheritance]\nDocument kinds: [join [dict get $role document_kinds] {, }]"
+        }
+    }
     if {$type eq "module"} {append text "\nPublic APIs: [join [modulePublicApiIds $id] {, }]\nDependencies: [moduleField $id depends {}]"}
+    if {$type eq {module} && [moduleField $id kind {}] eq {preview}} {append text "\nPreview activation is framework-wide; Save user defaults to persist it."}
     ttk::label $parent.identity -text $text -justify left -wraplength 400
     pack $parent.identity -fill x -pady 4
     bind $parent <Configure> [list ::GX::configurationModulesResize $parent %w %h]
     if {$type eq "module"} {
         if {![moduleIsAlwaysAvailable $id]} {
-            ttk::button $parent.activation -text [expr {[moduleIsEnabled $id] ? "Disable module" : "Enable module"}] \
+            set scopeCaption [expr {[moduleField $id kind {}] eq {preview} ? {Preview} : {module}}]
+            ttk::button $parent.activation -text "[expr {[moduleIsEnabled $id] ? {Disable} : {Enable}}] $scopeCaption" \
                 -command [list ::GX::configurationModuleProviderToggle $id]
             pack $parent.activation -anchor w -pady 4
         }
@@ -188,7 +260,15 @@ proc ::GX::configurationModulesSelect {{category services}} {
     }
 }
 proc ::GX::configurationModulesDocumentation {{category services}} {
+    if {$category eq {contract_visualizers}} {
+        upvar #0 ::GX::ConfigurationModules::visualizerSelected selected
+    } elseif {$category eq {library_importers}} {
+        upvar #0 ::GX::ConfigurationModules::libraryImporterSelected selected
+    } elseif {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionSelected selected
+    } else {
     if {$category eq {exports}} {upvar #0 ::GX::ConfigurationModules::exportSelected selected} else {upvar #0 ::GX::ConfigurationModules::selected selected}
+    }
     if {[string match module:* $selected]} {documentationBrowserOpenModule [string range $selected 7 end]} else {.top.nb select .top.nb.help;documentationBrowserPopulate}
 }
 proc ::GX::configurationModuleProviderToggle {id} {
@@ -228,4 +308,5 @@ proc ::GX::configurationModulesResize {parent width {height {}}} {
     }
 }
 
+source [file join [file dirname [info script]] configuration_preview_components.tcl]
 source [file join [file dirname [info script]] configuration_module_editor.tcl]

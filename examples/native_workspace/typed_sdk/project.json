@@ -1,0 +1,15 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.typed_workspace_notes",
+  "version": "1.0.0",
+  "profile": "numeric_view_v1",
+  "language": "cpp",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "capabilities": [
+    {"api_id": "VIEWER_GUI_HOST_API_v1", "version": 1, "operations": ["text_set"]},
+    {"api_id": "NATIVE_WORKSPACE_API_v1", "version": 1, "operations": ["get", "status", "query", "set_state", "set_property", "save", "save_as"]}
+  ],
+  "provenance": {"example": "typed_workspace_notes", "scientific_source": null},
+  "tests": {"events": [], "expected_counter": 0, "expected_values": {}}
+}

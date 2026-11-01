@@ -32,45 +32,47 @@ scientific data merely to make it plottable.
 API name: `PLOT_DATASET_API_v2`  
 API version: `2`  
 PlotSpec schema: `PLOT_DATASET_PLOTSPEC_v2`  
-Current module release: `plot.dataset 3.13.1`; package minimum framework: GX-TXT `0.9.8.07`. Public API v1 and v2 contracts remain supported.
+First module release: `plot.dataset 2.0.0`  
+Original package minimum framework: GX-TXT `0.9.7.15`. Integrated CORE service guarantee: GX-TXT `0.9.7.17+`.
+Current module release: `plot.dataset 3.12.0`; package minimum framework: GX-TXT `0.9.8.07`.
 
-### Persistent-state and derived-runtime reconciliation
+### 3.3.5 persistent-state and derived-runtime reconciliation
 
-Before runtime generation, PlotSpec series are reconciled by stable series_id with current Graph Series. Graph Series remains the scientific identity authority; PlotSpec preserves panel membership and presentation for matching IDs. Stale presentation-only series are removed and newly committed Graph Series receive neutral presentation in the first existing panel. Missing, incompatible or unreadable runtime/cache is rebuilt from persistent state through normal rerender without removing variants. Explicit render/rerender selects the requested base plot or variant without changing persistent USE; variant serialization preserves the base runtime, and the summary is regenerated for every selected graph.
+Release 3.3.5 does not change PlotSpec v2 or public procedures. Before runtime generation, PlotSpec series are reconciled by stable series_id with current Graph Series. Graph Series remains the scientific identity authority; PlotSpec preserves panel membership and presentation for matching IDs. Stale presentation-only series are removed and newly committed Graph Series receive neutral presentation in the first existing panel. Missing, incompatible or unreadable runtime/cache is rebuilt from persistent state through normal rerender without removing variants. Explicit render/rerender selects the requested base plot or variant without changing persistent USE; variant serialization preserves the base runtime, and the summary is regenerated for every selected graph.
 
-### Elapsed-time runtime-unit normalization
+### 3.3.4 elapsed-time runtime-unit normalization
 
-For 2-D plots, temporal X coordinates are normalized internally to seconds immediately after data preparation. This matches Canonical Dataset API v2, which materializes HMS `elapsed_time` values as seconds, and prevents the original declared unit (`h`/`min`) from being applied a second time. Display-unit selection remains presentation-only and may render the canonical seconds as `s`, `min`, `h`, or `day`.
+Release 3.3.4 does not change PlotSpec v2 or public procedures. For 2-D plots, temporal X coordinates are normalized internally to seconds immediately after data preparation. This matches Canonical Dataset API v2, which materializes HMS `elapsed_time` values as seconds, and prevents the original declared unit (`h`/`min`) from being applied a second time. Display-unit selection remains presentation-only and may render the canonical seconds as `s`, `min`, `h`, or `day`.
 
-### Panel-local Y compatibility
+### 3.3.2 panel-local Y compatibility
 
-In a shared-X multi-panel plot, Y compatibility is evaluated independently for each `panel.id` and Y side (`left` / `right`). Different panels may therefore use unrelated Y quantities and units. X compatibility remains graph-wide. The renderer also anchors each right-Y label on the right overlay explicitly.
+Release 3.3.2 does not change the PlotSpec v2 schema or public procedures. In a shared-X multi-panel plot, Y compatibility is evaluated independently for each `panel.id` and Y side (`left` / `right`). Different panels may therefore use unrelated Y quantities and units. X compatibility remains graph-wide. The renderer also anchors each right-Y label on the right overlay explicitly.
 
-### Stale-reference reconciliation and Series-table usability
+### 3.3.1 stale-reference reconciliation and Series-table usability
 
-The current Plot Dataset service treats deletion of a canonical dataset or referenced X/Y variable as a normal session lifecycle event. Persisted PlotSpec series with missing scientific bindings are pruned; surviving series retain the exact `dataset_id + x_variable_id + y_variable_id`. Invalid error/uncertainty auxiliary bindings are removed independently. If no valid series remain, the persisted PlotSpec and stale graph/cache/summary artifacts are removed.
+Release 3.3.1 treats deletion of a canonical dataset or referenced X/Y variable as a normal session lifecycle event. Persisted PlotSpec series with missing scientific bindings are pruned; surviving series retain the exact `dataset_id + x_variable_id + y_variable_id`. Invalid error/uncertainty auxiliary bindings are removed independently. If no valid series remain, the persisted PlotSpec and stale graph/cache/summary artifacts are removed.
 
-The standard CORE Graph Series editor is scrollable for long lists. Through the public Series Editor Extension API v1 table-column hook, plot.dataset adds a read-only `Panel` column so panel membership is visible without opening each series.
+The standard CORE Graph Series editor is now scrollable for long lists. Through the backward-compatible GX-TXT 0.9.7.42 Series Editor Extension API v1 table-column hook, plot.dataset adds a read-only `Panel` column so panel membership is visible without opening each series.
 
-### Shared Axes-dialog integration
+### 3.3.0 shared Axes-dialog integration
 
-The public service supports the `axis_config_extension` capability. For any multi-panel artifact recognized by `plotRefForArtifact(path)`, `plot.dataset` can append provider-specific panel title, Y Left/Y Right label, display-unit and scale controls to the shared CORE **Axes / grid / 3D / color** dialog through GX-TXT 0.9.7.41 Axis Configuration Extension API v1. CORE panel-local numeric range/tick/grid state remains authoritative and is not duplicated by the provider extension.
+Release 3.3.0 adds the `axis_config_extension` capability. For any multi-panel artifact recognized by `plotRefForArtifact(path)`, `plot.dataset` can append provider-specific panel title, Y Left/Y Right label, display-unit and scale controls to the shared CORE **Axes / grid / 3D / color** dialog through GX-TXT 0.9.7.41 Axis Configuration Extension API v1. CORE panel-local numeric range/tick/grid state remains authoritative and is not duplicated by the provider extension.
 
-### Multi-panel geometry and artifact discovery
+### 3.2.1 multi-panel geometry and artifact discovery
 
-The public PlotSpec v2 multi-panel presentation geometry is as follows: the graph-wide title now follows the configured GX-TXT title typography and finalized top-panel geometry, and panel legends are created after stacked layout so their positions are derived from the final panel axes. Manual legend placement is translated from the graph-level setting into the corresponding panel-local position.
+Release 3.2.1 keeps the PlotSpec v2 schema unchanged. It corrects only multi-panel presentation geometry: the graph-wide title now follows the configured GX-TXT title typography and finalized top-panel geometry, and panel legends are created after stacked layout so their positions are derived from the final panel axes. Manual legend placement is translated from the graph-level setting into the corresponding panel-local position.
 
 The public API also adds `plotRefForArtifact path` and `panelIdsForArtifact path`. These calls resolve a rendered `plot.dataset` artifact back to its public plot reference/persisted panel order without exposing private PlotSpec files. GX-TXT CORE uses this public discovery in `stackedGraphPanels(path)` before its legacy stacked-plot fallback.
 
-### Panel configuration lifecycle
+### 3.2.0 panel configuration lifecycle
 
 Normal 2-D Graph Series are read by stable Dataset/Variable identity through Table Stream API v3 / Canonical Dataset API v2. Physical storage paths and column names are not part of the v2 scientific binding contract. Uniform implicit coordinates are valid X variables and are synthesized chunk-by-chunk by CORE. Large canonical series may be reduced only into bounded presentation data; canonical datasets are not modified.
 
-The panel-shaped PlotSpec schema for `plot.dataset.xy` supports an optional `multi_panel` state and per-panel `title`. Multi-panel lifecycle is configured from the normal Graph configuration window through GX-TXT 0.9.7.39 Graph Configuration Extension API v1. Each panel has independent Y Left/Y Right presentation while all panels share one visible X domain. Panel membership remains presentation state keyed by `series_id`; it never changes `dataset_id`, `x_variable_id`, or `y_variable_id`. `plot.dataset.xy_region` remains single-panel because its rectangle selection has one Y domain.
+Release 3.2.0 keeps the panel-shaped PlotSpec schema for `plot.dataset.xy` and adds an explicit optional `multi_panel` state plus optional per-panel `title`. Multi-panel lifecycle is configured from the normal Graph configuration window through GX-TXT 0.9.7.39 Graph Configuration Extension API v1. Each panel has independent Y Left/Y Right presentation while all panels share one visible X domain. Panel membership remains presentation state keyed by `series_id`; it never changes `dataset_id`, `x_variable_id`, or `y_variable_id`. `plot.dataset.xy_region` remains single-panel because its rectangle selection has one Y domain.
 
 For backward compatibility, a persisted/pre-3.2 PlotSpec with no `multi_panel` field and more than one panel is interpreted as enabled. An explicit `multi_panel=0` preserves the saved panel layout but renders through the established single-panel path; re-enabling restores that layout.
 
-`PLOT_DATASET_API_v1` remains a separate, stable public surface. v2 is additive; consumers written for v1 do not need to migrate. For 2D scientific rendering, bindings use Graph Series only: obsolete X/Y/Y2/Additional-series session fields are not used as a renderer fallback. The dedicated current 3D binding model remains separate.
+`PLOT_DATASET_API_v1` remains a separate, stable public surface. v2 is additive; consumers written for v1 do not need to migrate. In release 2.1.4, 2D scientific binding is Graph-Series-only: obsolete X/Y/Y2/Additional-series session fields are not used as a renderer fallback. The dedicated current 3D binding model remains separate.
 
 ## Discovery and capabilities
 
@@ -117,7 +119,7 @@ advertised.
 
 ## PlotSpec model
 
-The v2 data model is panel-shaped and accepts one or more panels for `plot.dataset.xy`:
+The v2 data model is panel-shaped. Release 3.2.0 accepts one or more panels for `plot.dataset.xy`:
 
 ```text
 PlotSpec
@@ -582,7 +584,7 @@ dict set panel axes x tick_positions "1;2;3" \
 The labels are presentation state in the persistent Plot Variant; the numeric
 X coordinate remains in the canonical Dataset. Semicolons separate labels.
 
-### Axis authority
+### Axis authority on GX-TXT 0.9.7.21+
 
 PlotSpec axis fields remain part of `PLOT_DATASET_PLOTSPEC_v2`, but overlapping
 presentation state is no longer maintained as an independent final override.
@@ -933,3 +935,82 @@ The consumer does not know how Graph Series are persisted, how units are
 converted, how GNU Octave is launched, where `runtime.ini` lives, how the cache
 is stored, or how the PNG path is constructed.  That orchestration belongs to
 `plot.dataset`.
+
+## Paired custom X ticks (P031 additive v2 owner)
+
+`setPanelAxis plotRef panelId x fields` accepts the existing `tick_positions`
+and `tick_labels` fields together. `sharedXAxisSet plotRef fields` accepts that
+pair, `display_unit`, and its existing `scale`, `major_step`, `minor_grid`.
+`sharedXAxisGet` returns the one effective shared declaration and its resolved
+actual display unit; captions retain exact case and Unicode. The current v3/v4
+Tcl delegates use this same v2 owner. Script Bridge/SDK admission is separate;
+this Tcl extension alone makes no new Script Bridge or SDK operation claim.
+
+Both tick fields are semicolon-separated strings in PlotSpec v2. Positions are
+numeric coordinates in the declared/effective **displayed X unit**, never a
+replacement for canonical X samples. Supply both fields, or supply both empty
+to restore automatic ticks. Literal semicolons and multiline/NUL captions are
+unsupported; the GUI pair editor must refuse ambiguous captions before joining.
+Limits are 1–1024 pairs, distinct finite numeric positions within ±1e300, and
+nonempty captions up to256 characters/1024 UTF-8 bytes. `1`, `1.0` and `1e0`
+are the same position; `-0` and `0` also duplicate. Repeated captions at distinct
+positions are allowed. Pair order remains intact, including unsorted positions.
+A log X domain requires every custom position to be positive. Positions outside
+the current visible range remain persisted so zoom/fit can reveal them.
+
+Changing `display_unit` without supplying new pairs converts inherited positions
+through the existing Unit Registry, including affine offsets. Explicit pairs
+supplied with a requested unit are already in that unit and are not converted
+again. CORE display-unit overrides transform only the disposable rendering
+projection; they do not rewrite saved pairs or Dataset coordinates. One merged
+X map/unit/direction serves all panels. Conflicting captions/directions/maps
+fail validation before the PlotSpec is written; positions compare by numeric
+value while captions compare exactly.
+
+`setPanelAxis` retains its existing replacement semantics for ordinary axis
+fields. A nonempty unrelated X edit preserves an existing paired map, converting
+it to the resulting display/source-fallback unit as needed; an empty axis dict
+still removes the complete axis. Shared mutation is the normal graph-wide map
+editor. Whole-panel histogram/box-whisker plots own derived X semantics and refuse
+explicit custom pairs; clear the pair before selecting those representations.
+
+### Native Workspace tick-source compatibility (P031)
+
+Plot axis tick positions/captions are persisted as exact typed **text** source,
+including semicolons, Unicode, whitespace and pair order. They are not inferred
+from Tcl list parsing. The shared Plot binding decoder also reads explicit older
+typed arrays when every declared numeric position has exactly one declared text
+caption and the values can be represented losslessly in the semicolon format.
+Empty legacy arrays remain automatic/no-custom axes. Other axis fields retain
+their existing typed shapes.
+
+A mismatched legacy array, mixed text/array representation, nonfinite numeric
+scalar or caption with an embedded separator is refused with a diagnostic.
+The reader does not guess word boundaries, concatenate unrelated labels, repair
+or overwrite the stored Workspace. A historical single caption containing spaces
+could have been split into multiple typed caption elements; that record requires
+review of its original source. Normal current Plot semantic validation remains
+with the public v2 owner, after lossless transport decoding.
+
+P031 exact caption transport: new sidecars declare
+`axis.x.tick_labels.encoding=utf8-base64` and put canonical UTF-8/base64 in the
+existing value scalar. This preserves outer caption whitespace through the
+shared INI reader. Legacy unencoded values remain supported as stored; unknown,
+malformed, oversized or non-UTF-8 encodings refuse. In-memory APIs and native
+Workspace state continue to carry the same exact semicolon-separated text.
+
+The existing Python/Octave Script Bridge registrations for v2 and inherited v3
+expose `shared_x_axis_get(plot_ref)` and
+`shared_x_axis_set(plot_ref, fields)`. Both take/return ordinary structs;
+`set_panel_axis(plot_ref, panel_id, axis, fields)` also admits the paired fields.
+These delegate to the same Tcl v2 owner. Call them through `gxtxt_api_call` with
+explicit `PLOT_DATASET_API_v2` or `PLOT_DATASET_API_v3` admission; this adds no
+filesystem, module administration or separate v4/native-widget permission.
+
+The retained Octave renderer projects inherited tick coordinates into its actual
+resolved X display unit once through UnitRegistry, including affine offsets.
+Explicit coordinates already in that unit remain unchanged. Exact captions and
+pair order stay associated in PNG/SVG/PDF output; scientific arrays and source
+PlotSpec bytes are unchanged by this projection. Raster glyph availability still
+depends on the existing graphics/font backend; readable Unicode raster output
+is separately qualified in the P031 rendering handoff.

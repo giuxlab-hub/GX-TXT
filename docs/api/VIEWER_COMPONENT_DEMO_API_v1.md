@@ -13,7 +13,8 @@ History, Native2D, Plot and Native3D owners. The Gallery is a Builder client.
 Each row contains the exact capability, including API/version/owner, supported
 parents, construction command, properties, events, status and limitations. It
 does not make an unavailable scientific capability available by drawing a box.
-There are 28 available types in dev107, including the genuine Native3D v2 host.
+Available types come from that runtime enumeration, including the genuine
+`NATIVE_3D_GUI_HOST_API_v2` host.
 
 `viewerGuiComponentDemoRegister type specification` registers bounded inert
 `properties`, `instructions` and optional `states` for an existing capability.
@@ -73,6 +74,11 @@ Test is a separate explicit connection to matching installed handlers inside
 the established marked private fixture. Selecting Demo never connects those
 handlers. `viewerGuiDesignCompose ... demo` refuses a nonempty handler dictionary,
 does not acquire a scientific Session token and disables real Workspace/History.
+Entering Demo from Builder disconnects its runtime test handlers. Returning from
+the inert Gallery only finishes Demo presentation; it does not reset a pending
+or active Runtime Test selected through the Builder's explicit fixture review.
+The Builder selector mirrors its actual handler-connection state after that
+review completes or is canceled.
 
 The Gallery shows exact capability metadata, instructions, Show example / Try
 interaction, Reset, Open public API guide and current synthetic events. Traces
@@ -82,7 +88,7 @@ the same actual instance; their assertion scope is explicit. A constructor or
 mount PASS does not establish every pointer operation or scientific correctness.
 
 General component icon authoring is not available in this contract. Decorative
-glyphs are not claimed as a supported runtime icon property. P0 debugger icons
+glyphs are not claimed as a supported runtime icon property. Debugger icons
 are a separate documented CORE control contract.
 
 See also [Viewer design](VIEWER_GUI_DESIGN_v1.md),

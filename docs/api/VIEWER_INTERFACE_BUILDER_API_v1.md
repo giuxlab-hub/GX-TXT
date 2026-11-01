@@ -78,3 +78,10 @@ uniform result guarantee for public `viewerOpen` (which can raise Tcl errors).
 The descriptor has no detailed operation metadata for its individual editing
 callbacks. This reference documents actual activation, not proof that every
 designer feature, scientific action, test or generated package has passed.
+
+
+## DEV111-P020 additive managed components
+
+See [typed Sketch and diagnostics integration](VIEWER_GUI_P020_ADDITIONS.md) for
+actual component properties, admitted C++ operations, grants, lifecycle and bounded
+event payloads. Existing v1 identities and non-opt-in consumers remain compatible.

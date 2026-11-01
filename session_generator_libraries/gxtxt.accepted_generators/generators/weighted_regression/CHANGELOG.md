@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0
+## 1.0.0 - 2026-09-23
 
 - Initial portable Weighted Regression Session Generator.
 - Added deterministic heteroscedastic linear and cubic polynomial datasets.

@@ -136,7 +136,7 @@ def run(args: argparse.Namespace) -> tuple[int, int, list[tuple[float, str, floa
     return total, skipped, results[:args.limit]
 
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--library', type=Path, required=True)
     parser.add_argument('--experimental', type=Path, required=True)
@@ -150,7 +150,7 @@ def main() -> None:
     parser.add_argument('--fingerprint-max', type=finite_float, required=True)
     parser.add_argument('--fingerprint-weight', type=finite_float, required=True)
     parser.add_argument('--limit', type=int, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.range_max <= args.range_min or args.step <= 0 or args.fingerprint_max <= args.fingerprint_min or not 0 <= args.fingerprint_weight <= 1 or args.limit < 1:
         raise ValueError('invalid ranking range/weight/limit')
     total, skipped, candidates = run(args)

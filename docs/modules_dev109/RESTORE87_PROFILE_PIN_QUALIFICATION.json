@@ -1,0 +1,34 @@
+{
+  "status": "HISTORICAL_MUTABLE_PROFILE_PIN_EXCEPTIONS_DISCLOSED",
+  "profile": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/gui_mainfixed11",
+  "prior_batch03_pins": 181,
+  "prior_pins_matching_now": 178,
+  "changed_profile_files": [
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/gui_mainfixed11/GXTXT_RESOURCE_ROOT/registry.sqlite3",
+      "expected": "97a4db55839ddcea43ad6a2f037797c3bb0efa235dd29ef07d24a806d9e15d92",
+      "actual": "8fee9b61e294e911e48e843effb41dec95253453663ad31936370f58cac69959",
+      "current_bytes": 24576,
+      "postrun_snapshot": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/batch04/MUTABLE_PROFILE_AFTER/GXTXT_RESOURCE_ROOT/registry.sqlite3"
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/gui_mainfixed11/XDG_CONFIG_HOME/gxtxt_pipeline/configuration.ini",
+      "expected": "273bbd93c6e4e179ce54c5f4440f0bc3058b7f35d73eb23abbb5234fd1b3bff2",
+      "actual": "579a5315f17c4fbe211336a96c7fc3ea61fbc880b27ae6357b07306bcd9d293b",
+      "current_bytes": 18874,
+      "postrun_snapshot": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/batch04/MUTABLE_PROFILE_AFTER/XDG_CONFIG_HOME/gxtxt_pipeline/configuration.ini"
+    },
+    {
+      "path": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/gui_mainfixed11/XDG_CONFIG_HOME/gxtxt_pipeline/projects.ini",
+      "expected": "6ca956518cad700aaaed65f7fdf627752c180d33bf0df059039b91b3c308b2d7",
+      "actual": "a2051a1b069a0f9b76cafd02c23f95f11e2e8e99f9aaa0b2f24de7259aeaf554",
+      "current_bytes": 1174,
+      "postrun_snapshot": "/srv/gxtxt/checkpoints/dev109/core_specialist_modules02/batch04/MUTABLE_PROFILE_AFTER/XDG_CONFIG_HOME/gxtxt_pipeline/projects.ini"
+    }
+  ],
+  "before_byte_snapshots_preserved": false,
+  "reviewer_confirmation": "Only saved Session/oracle/manifest files were inventoried before launch. No original resource registry byte snapshot or known backup/WAL. No database recovery/edit performed.",
+  "observation": "Three own private profile file hashes changed across the normal cold profile reuse/Open. No test configurationSet/Save or private flag/manifest edits occurred; production lifecycle writes were not frozen or snapshotted. Precise per-write owner not separately traced.",
+  "qualification": "The original181 pin map stays historical and unmodified; do not claim all181 still match. These three prior mutable-profile byte images were not preserved. Original saved Session/oracle/manifest files, failed helper/oracle receipts,42tracked source/test/doc files and7originalsealed artifacts remain unchanged. Current91reviewer pins and372loadedsource pins verified; native118flag comparison unaffected.",
+  "action": "Preserve exact post-run copies and hashes, disclose to MAIN; no overwrite/reconstruction/fake restoration/cleanup/replay."
+}

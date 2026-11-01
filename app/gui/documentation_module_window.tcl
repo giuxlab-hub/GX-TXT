@@ -1,7 +1,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Independent read-only hosts share the existing descriptor index and renderer.
 # This state contains widgets/navigation only, never a second document store.
-namespace eval ::GX::DocumentationManual {variable state;array set state {};variable htmlSerial;if {![info exists htmlSerial]} {set htmlSerial 0};variable generatorSerial;if {![info exists generatorSerial]} {set generatorSerial 0}}
+namespace eval ::GX::DocumentationManual {variable state;array set state {};variable htmlSerial;if {![info exists htmlSerial]} {set htmlSerial 0};variable generatorSerial;if {![info exists generatorSerial]} {set generatorSerial 0};variable presentationSerial;if {![info exists presentationSerial]} {set presentationSerial 0}}
+proc ::GX::documentationBrowserOpenApiWindow {api {module viewer.interface_builder} {parent {}}} {
+    documentationBrowserRefresh
+    set entry [documentationBrowserResolve api:$api]
+    set owner [dict get $entry owner]
+    # Provider-local references use their descriptor's existing containment
+    # rules. CORE references are opened in the requesting module's manual host.
+    if {[moduleField $owner descriptor {}] ne {}} {set module $owner}
+    set host [documentationBrowserOpenModuleWindow $module $parent]
+    $host.tabs select $host.tabs.manual
+    documentationBrowserManualShow $host [dict get $entry path]
+    raise $host
+    focus $host.search.entry
+    return $host
+}
+proc ::GX::documentationBrowserOpenReferenceWindow {path module {parent {}}} {
+    documentationBrowserRefresh
+    set path [documentationBrowserManualPathAllowed $module $path]
+    set host [documentationBrowserOpenModuleWindow $module $parent]
+    $host.tabs select $host.tabs.manual
+    documentationBrowserManualShow $host $path
+    raise $host;focus $host.search.entry
+    return $host
+}
 proc ::GX::documentationBrowserModuleManual {module} {
     set descriptor [moduleField $module descriptor {}]
     if {$descriptor eq {}} {error "Module '$module' is not installed; its manual is unavailable."}
@@ -50,6 +73,25 @@ proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
     uiFieldWindowFit $w 900 700;wm minsize $w 420 300
     # A manual survives its Viewer closing; it is deliberately not transient.
     set state($w,pending_anchor) {};set state($w,html_handle) {};set state($w,html_mode) 0;set state($w,tutorial_handle) {};set state($w,tutorial_ids) {};set state($w,tutorial_current) {};set state($w,tutorial_choice) {};set state($w,tutorial_status) {};set state($w,module) $module;set state($w,path) {};set state($w,back) {};set state($w,forward) {};set state($w,search) {};set state($w,status) {}
+    # Document links remain in this indexed, contained host. HTML's package
+    # resource policy need not admit raw Markdown or arbitrary framework paths.
+    menu $w.menu -tearoff 0;$w configure -menu $w.menu
+    menu $w.menu.file -tearoff 0
+    $w.menu.file add command -label {User Manual} -command [list ::GX::documentationBrowserManualReload $w]
+    $w.menu.file add separator
+    $w.menu.file add command -label Close -command [list destroy $w]
+    $w.menu add cascade -label File -underline 0 -menu $w.menu.file
+    menu $w.menu.view -tearoff 0 -postcommand [list ::GX::documentationBrowserManualEnable $w]
+    foreach {label direction} {Back back Forward forward} {$w.menu.view add command -label $label -command [list ::GX::documentationBrowserManualHistory $w $direction]}
+    $w.menu.view add separator
+    $w.menu.view add command -label {Find…} -accelerator Ctrl+F -command [list focus $w.search.entry]
+    $w.menu.view add separator
+    foreach {label operation} {{Zoom out} decrease {Actual size (100%)} reset {Zoom in} increase} {
+        $w.menu.view add command -label $label -command [list ::GX::documentationBrowserManualZoom $w $operation]
+    }
+    $w.menu add cascade -label View -underline 0 -menu $w.menu.view
+    menu $w.menu.references -tearoff 0 -postcommand [list ::GX::documentationBrowserManualReferencesPost $w]
+    $w.menu add cascade -label References -underline 0 -menu $w.menu.references
     ttk::frame $w.navigation
     foreach {key label command} [list back Back [list documentationBrowserManualHistory $w back] forward Forward [list documentationBrowserManualHistory $w forward] home {User Manual} [list documentationBrowserManualReload $w] close Close [list destroy $w]] {
         set callback [expr {[lindex $command 0] eq "destroy"?"destroy":"::GX::[lindex $command 0]"}]
@@ -100,6 +142,48 @@ proc ::GX::documentationBrowserManualDestroyed {w actual} {
     documentationBrowserHtmlClose $w tutorial_handle
     documentationBrowserManualImagesClear $w
     array unset ::GX::DocumentationManual::state "$w,*"
+}
+proc ::GX::documentationBrowserManualReferenceIds {module} {
+    documentationBrowserRefresh
+    if {[moduleField $module descriptor {}] eq {}} {return {}}
+    set ids {}
+    foreach kind {manual guide quick_start} {
+        set id module:$module:$kind
+        if {![dict exists $::GX::documentationBrowserEntries $id]} continue
+        set entry [dict get $::GX::documentationBrowserEntries $id]
+        if {[string tolower [file extension [dict get $entry path]]] in {.md .markdown .txt}} {
+            dict set ids $id {Technical manual (Markdown)};break
+        }
+    }
+    set d [parseIni [moduleField $module descriptor]]
+    foreach api [splitList [descriptorValue $d documentation api_refs {}]] {
+        set id api:$api
+        if {[dict exists $::GX::documentationBrowserEntries $id]} {dict set ids $id $api}
+    }
+    return $ids
+}
+proc ::GX::documentationBrowserManualReferencesPost {w} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w.menu.references] || ![info exists state($w,module)]} return
+    set menu $w.menu.references;$menu delete 0 end
+    if {[catch {set ids [documentationBrowserManualReferenceIds $state($w,module)]} reason] || ![dict size $ids]} {
+        $menu add command -label {No declared references available} -state disabled
+        return
+    }
+    dict for {id label} $ids {$menu add command -label $label -command [list ::GX::documentationBrowserManualReferenceOpen $w $id]}
+}
+proc ::GX::documentationBrowserManualReferenceOpen {w id} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w] || ![info exists state($w,module)]} return
+    try {
+        # Recheck the current descriptor/index at click time: a stale menu is
+        # never authority to open an unrelated document or removed module.
+        set ids [documentationBrowserManualReferenceIds $state($w,module)]
+        if {![dict exists $ids $id]} {error {The selected documentation reference is no longer declared or available.}}
+        set entry [documentationBrowserResolve $id]
+        $w.tabs select $w.tabs.manual
+        documentationBrowserManualShow $w [dict get $entry path]
+    } on error {message options} {set state($w,status) $message}
 }
 proc ::GX::documentationBrowserManualResize {w actual width} {
     if {$w eq $actual && [winfo exists $w.status]} {
@@ -179,6 +263,11 @@ proc ::GX::documentationBrowserManualImageClosed {w photo actual} {
     if {$w eq $actual} {catch {image delete $photo}}
 }
 proc ::GX::documentationBrowserManualUnavailable {w message} {
+    variable ::GX::DocumentationManual::state
+    variable ::GX::DocumentationManual::presentationSerial
+    if {![info exists state($w,presentation)] || [dict get $state($w,presentation) state] ne {error}} {
+        set state($w,presentation) [dict create schema gxtxt.documentation.presentation.v1 window $w window_id [winfo id $w] module $state($w,module) generation [incr presentationSerial] path {} document_id {} source_sha256 {} format {} renderer {} state error error [string range $message 0 2047] rendering_verified 0]
+    }
     documentationBrowserHtmlClose $w html_handle
     catch {destroy $w.body.html}
     set ::GX::DocumentationManual::state($w,html_mode) 0
@@ -195,57 +284,84 @@ proc ::GX::documentationBrowserManualReload {w} {
 }
 proc ::GX::documentationBrowserManualShow {w path {anchor {}} {record 1}} {
     variable ::GX::DocumentationManual::state
-    set path [documentationBrowserManualPathAllowed $state($w,module) $path]
-    set id {}
-    dict for {key entry} $::GX::documentationBrowserEntries {if {[dict get $entry path] eq $path} {set id $key;break}}
-    if {$id eq {}} {
-        set id "linked:$state($w,module):[sha256File $path]"
-        documentationBrowserAdd $id {Linked document} [file tail $path] linked $path $state($w,module)
-    }
-    set source [documentationBrowserRead $id]
-    if {$record && $state($w,path) ne {} && $state($w,path) ne $path} {lappend state($w,back) $state($w,path);set state($w,forward) {}}
-    set state($w,path) $path;set state($w,status) "[moduleField $state($w,module) name $state($w,module)] — [file tail $path]"
-    if {[string tolower [file extension $path]] in {.html .htm}} {
-        set state($w,html_mode) 1
-        pack forget $w.body.text $w.body.scroll
+    variable ::GX::DocumentationManual::presentationSerial
+    # This is a transient receipt of the existing renderer, not another index.
+    set state($w,presentation) [dict create schema gxtxt.documentation.presentation.v1 window $w window_id [winfo id $w] module $state($w,module) generation [incr presentationSerial] path {} document_id {} source_sha256 {} format {} renderer {} state loading error {} rendering_verified 0]
+    try {
+        set path [documentationBrowserManualPathAllowed $state($w,module) $path]
+        set id {}
+        dict for {key entry} $::GX::documentationBrowserEntries {if {[dict get $entry path] eq $path} {set id $key;break}}
+        if {$id eq {}} {
+            set id "linked:$state($w,module):[sha256File $path]"
+            documentationBrowserAdd $id {Linked document} [file tail $path] linked $path $state($w,module)
+        }
+        set resolved [documentationBrowserResolve $id]
+        set source [documentationBrowserRead $id]
+        if {[sha256File $path] ne [dict get $resolved source_sha256]} {error {Manual source changed while opening; reload the document.}}
+        dict set state($w,presentation) path $path
+        dict set state($w,presentation) document_id $id
+        dict set state($w,presentation) source_sha256 [dict get $resolved source_sha256]
+        dict set state($w,presentation) format [dict get $resolved format]
+        if {$record && $state($w,path) ne {} && $state($w,path) ne $path} {lappend state($w,back) $state($w,path);set state($w,forward) {}}
+        set state($w,path) $path;set state($w,status) "[moduleField $state($w,module) name $state($w,module)] — [file tail $path]"
+        if {[string tolower [file extension $path]] in {.html .htm}} {
+            dict set state($w,presentation) renderer HTML_VIEWER_API_v1
+            set state($w,html_mode) 1
+            pack forget $w.body.text $w.body.scroll
+            documentationBrowserHtmlClose $w html_handle
+            catch {destroy $w.body.html}
+            ttk::frame $w.body.html;pack $w.body.html -fill both -expand 1
+            documentationBrowserHtmlOpen $w html_handle $w.body.html $id
+            set state($w,pending_anchor) $anchor
+            documentationBrowserManualEnable $w
+            return
+        }
+        dict set state($w,presentation) renderer GX-Markup
+        set state($w,html_mode) 0
+        set state($w,pending_anchor) {}
         documentationBrowserHtmlClose $w html_handle
         catch {destroy $w.body.html}
-        ttk::frame $w.body.html;pack $w.body.html -fill both -expand 1
-        documentationBrowserHtmlOpen $w html_handle $w.body.html $id
-        set state($w,pending_anchor) $anchor
+        pack $w.body.scroll -side right -fill y;pack $w.body.text -fill both -expand 1
+        set text $w.body.text
+        foreach tag [$text tag names] {if {[string match gx_manual_* $tag]} {$text tag delete $tag}}
+        documentationBrowserManualImagesClear $w
+        set context [markdownNavigationContext documentation $id [dict create \
+            open_command [list ::GX::_documentationBrowserMarkdownOpen $w] \
+            status_command [list set ::GX::DocumentationManual::state($w,status)]]]
+        markupRenderStringToWidget $text $source [list ::GX::documentationBrowserManualImage $w] $context
+        $text see 1.0
+        if {$anchor ne {}} {documentationBrowserManualAnchor $w $anchor}
         documentationBrowserManualEnable $w
-        return
+        dict set state($w,presentation) state ready
+    } on error {message options} {
+        dict set state($w,presentation) state error
+        dict set state($w,presentation) error [string range $message 0 2047]
+        return -options $options $message
     }
-    set state($w,html_mode) 0
-    set state($w,pending_anchor) {}
-    documentationBrowserHtmlClose $w html_handle
-    catch {destroy $w.body.html}
-    pack $w.body.scroll -side right -fill y;pack $w.body.text -fill both -expand 1
-    set text $w.body.text
-    foreach tag [$text tag names] {if {[string match gx_manual_* $tag]} {$text tag delete $tag}}
-    documentationBrowserManualImagesClear $w
-    markupRenderStringToWidget $text $source [list ::GX::documentationBrowserManualImage $w]
-    # Relative links use this host's path/history, never the main Help state.
-    set display [$text get 1.0 end-1c];set at 0;set number 0
-    $text configure -state normal
-    while {[regexp -indices -start $at {\[[^]]+\]\([^)]+\)} $display range]} {
-        lassign $range first last
-        set literal [string range $display $first $last]
-        set index [$text search -exact -- $literal 1.0 end]
-        if {$index ne {} && [regexp {\[([^]]+)\]\(([^)]+)\)} $literal -> label target] && {gx_codeblock} ni [$text tag names $index]} {
-            set tag gx_manual_link_[incr number]
-            $text delete $index "$index + [string length $literal] chars"
-            $text insert $index $label $tag
-            $text tag configure $tag -foreground #145da0 -underline 1
-            $text tag bind $tag <Button-1> [list ::GX::documentationBrowserManualFollow $w $target]
-        }
-        set at [expr {$last+1}]
-    }
-    $text configure -state disabled
-    $text see 1.0
-    if {$anchor ne {}} {documentationBrowserManualAnchor $w $anchor}
-    documentationBrowserManualEnable $w
 }
+proc ::GX::documentationBrowserManualInspect {window} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $window] || ![info exists state($window,presentation)]} {error {No owned manual presentation exists for this window.}}
+    set result $state($window,presentation)
+    if {[dict get $result window_id] ne [winfo id $window]} {error {The manual window incarnation changed.}}
+    if {[info exists state($window,html_mode)] && $state($window,html_mode) && $state($window,html_handle) ne {}} {
+        if {[catch {set native [::GX::HTMLViewer::inspect $state($window,html_handle)]} message]} {
+            dict set result state error;dict set result error [string range $message 0 2047]
+        } else {
+            dict set result native $native
+            set source [dict get $native source]
+            if {$source ne {} && ([dict get $source document_id] ne [dict get $result document_id] || [dict get $source source_sha256] ne [dict get $result source_sha256])} {error {The native renderer now presents a different document source.}}
+            dict set result renderer_generation [dict get $native generation]
+            dict set result state [dict get $native state]
+            dict set result error [dict get $native last_error]
+            if {[dict get $native state] in {failed unavailable closed}} {dict set result state error}
+        }
+    }
+    # A ready renderer receipt is not independent evidence of correct pixels.
+    dict set result rendering_verified 0
+    return $result
+}
+
 proc ::GX::documentationBrowserManualEnable {w} {
     variable ::GX::DocumentationManual::state
     set native {};set tutorial [expr {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial"}]
@@ -255,7 +371,29 @@ proc ::GX::documentationBrowserManualEnable {w} {
         set enabled [expr {!$tutorial && [llength $state($w,$key)]>0}]
         if {$native ne {} && [dict get $native can_$key]} {set enabled 1}
         $w.navigation.$key state [expr {$enabled?{!disabled}:{disabled}}]
+        if {[winfo exists $w.menu.view]} {$w.menu.view entryconfigure [expr {$key eq {back}?0:1}] -state [expr {$enabled?{normal}:{disabled}}]}
     }
+    if {[winfo exists $w.menu.view]} {
+        set zoom [expr {$native ne {} ? [dict get $native zoom_percent] : 100}]
+        foreach {index condition} [list 5 [expr {$native ne {} && $zoom>50}] 6 [expr {$native ne {} && $zoom!=100}] 7 [expr {$native ne {} && $zoom<300}]] {
+            $w.menu.view entryconfigure $index -state [expr {$condition?{normal}:{disabled}}]
+        }
+    }
+}
+proc ::GX::documentationBrowserManualZoom {w operation} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w] || ![info exists state($w,module)]} return
+    set tutorial [expr {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial"}]
+    set field [expr {$tutorial?{tutorial_status}:{status}}]
+    try {
+        if {$operation ni {decrease reset increase}} {error {Unsupported documentation zoom action}}
+        set handle $state($w,[expr {$tutorial?{tutorial_handle}:{html_handle}}])
+        if {$handle eq {}} {error {HTML zoom is available for an active HTML guide or tutorial.}}
+        set receipt [::GX::HTMLViewer::inspect $handle]
+        set percent [expr {$operation eq {reset}?100:[dict get $receipt zoom_percent]+($operation eq {increase}?25:-25)}]
+        set percent [expr {max(50,min(300,$percent))}]
+        ::GX::HTMLViewer::navigate $handle [dict create action zoom percent $percent]
+    } on error {message options} {set state($w,$field) $message}
 }
 proc ::GX::documentationBrowserManualHistory {w direction} {
     variable ::GX::DocumentationManual::state
@@ -279,31 +417,23 @@ proc ::GX::documentationBrowserManualHistory {w direction} {
     documentationBrowserManualEnable $w
 }
 proc ::GX::documentationBrowserManualFollow {w target} {
-    variable ::GX::DocumentationManual::state
     if {![winfo exists $w]} return
-    if {[regexp {^https?://} $target]} {markupOpenWebLink $target;return}
-    if {[regexp {^[A-Za-z][A-Za-z0-9+.-]*:} $target] || [file pathtype [lindex [split $target #] 0]] eq {absolute}} {set state($w,status) {Unsupported or unsafe link scheme.};return}
-    lassign [split $target #] relative anchor
-    if {$relative eq {}} {documentationBrowserManualAnchor $w $anchor;return}
-    set state($w,historyFrom) $state($w,path)
-    if {[catch {documentationBrowserManualShow $w [file join [file dirname $state($w,path)] $relative] $anchor} message]} {set state($w,status) $message}
+    return [markupNavigationFollow $w.body.text $target]
+}
+proc ::GX::_documentationBrowserMarkdownOpen {w destination} {
+    if {[dict get $destination kind] ne {documentation}} {error {This guide host requires an indexed documentation target}}
+    set path [dict get $destination path]
+    if {[string tolower [file extension $path]] in {.html .htm}} {
+        documentationBrowserManualShow $w $path [dict get $destination fragment]
+        return {anchor_handled 1}
+    }
+    documentationBrowserManualShow $w $path
+    return [dict create widget $w.body.text]
 }
 proc ::GX::documentationBrowserManualAnchor {w anchor} {
     variable ::GX::DocumentationManual::state
     if {[info exists state($w,html_handle)] && $state($w,html_handle) ne {}} {catch {::GX::HTMLViewer::navigate $state($w,html_handle) [dict create action relative target #$anchor]};return}
-    set text $w.body.text
-    foreach tag {gx_h1 gx_h2 gx_h3} {
-        foreach {first last} [$text tag ranges $tag] {
-            set heading [string tolower [string trim [$text get $first $last]]]
-            regsub -all {[^[:alnum:] _-]} $heading {} heading
-            regsub -all {[ _]+} $heading {-} heading
-            if {$heading eq $anchor} {$text yview $first;return}
-        }
-    }
-    set label [string map {- { } _ { }} $anchor]
-    set index [$text search -nocase -exact -- $label 1.0]
-    if {$index eq {}} {set index [$text search -exact -- "id=\"$anchor\"" 1.0]}
-    if {$index ne {}} {$text yview $index} else {set ::GX::DocumentationManual::state($w,status) "Anchor unavailable: $anchor"}
+    return [markupNavigationFollow $w.body.text #$anchor]
 }
 proc ::GX::documentationBrowserManualSearch {w} {
     variable ::GX::DocumentationManual::state
@@ -465,6 +595,10 @@ proc ::GX::documentationBrowserHtmlOpen {w key parent document} {
         ::GX::HTMLViewer::load $state($w,$key) [dict create kind documentation document_id $document]
     } message]} {
         documentationBrowserHtmlClose $w $key
+        if {$key eq {html_handle} && [info exists state($w,presentation)]} {
+            dict set state($w,presentation) state error
+            dict set state($w,presentation) error [string range $message 0 2047]
+        }
         set unavailable {Interactive HTML is unavailable in this installation.}
         if {[info exists entry]} {
             set guidance [_documentationGeneratorGuidance $entry $state($w,module)]

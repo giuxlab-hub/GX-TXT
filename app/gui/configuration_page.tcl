@@ -1,10 +1,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-namespace eval ::GX { variable configurationUi;variable configurationGuiEditors {} }
+namespace eval ::GX { variable configurationUi;variable configurationGuiEditors {};variable configurationGuiBaselines {};variable configurationGuiSubscription {} }
+source [file join [file dirname [info script]] configuration_runtime.tcl]
 
 # Public GUI navigation: Configuration owns its pages and native widgets.
 # Callers request a finite page, never pass widget paths or Runtime values.
 proc ::GX::configurationOpenPage page {
-    if {$page ni {storage runtime computation execution libraries scripts viewers modules}} {error {Unknown Configuration page}}
+    if {$page ni {storage runtime computation execution libraries scripts viewers modules appearance maintenance}} {error {Unknown Configuration page}}
     set notebook .top.nb.configuration.sections
     if {![llength [info commands winfo]] || ![winfo exists $notebook.$page]} {error {Open the main GX-TXT interface before opening a Configuration page}}
     .top.nb select .top.nb.configuration
@@ -18,11 +19,19 @@ proc ::GX::buildConfigurationPage {} {
     datasetPreviewCacheInit
     variable configurationUi
     variable configurationGuiEditors
+    variable configurationGuiBaselines
+    variable configurationGuiSubscription
     # Only fields projected by real editors supply drafts to the central Save.
     # Other owners may update hidden values after this page was constructed.
     set configurationGuiEditors {}
+    set configurationGuiBaselines {}
+    if {$configurationGuiSubscription ne {}} {catch {configurationUnsubscribe $configurationGuiSubscription}}
+    set configurationGuiSubscription [configurationSubscribe ::GX::configurationGuiOwnerChanged]
     set f .top.nb.configuration
-    ttk::notebook $f.sections
+    bind $f <Destroy> [list ::GX::configurationGuiProjectionDestroyed $f %W]
+    # The public tab component retains the same notebook and page identities;
+    # its existing compact selector preserves full captions at large fonts.
+    uiFieldComponentCreate $f.sections tabs {} {} {}
     pack $f.sections -fill both -expand 1 -padx 8 -pady 8
     foreach group {Storage Runtime Computation Execution Libraries Scripts Viewers Modules} {
         set name [string tolower $group]
@@ -30,8 +39,10 @@ proc ::GX::buildConfigurationPage {} {
         $f.sections add $f.sections.$name -text $group
         grid columnconfigure $f.sections.$name 1 -weight 1
     }
+    set runtimeContent [configurationRuntimeBuild $f.sections.runtime]
     set row [dict create]
     dict for {id field} [configurationFields] {
+        if {![datasetPublicationV2DictDefault $field visible 1]} continue
         if {[string match {viewers.native3d.*} $id]} continue
         if {[string match {viewers.launcher.*} $id] || [string match execution.* $id]} continue
         if {[dict exists $field module_id]} continue
@@ -42,6 +53,8 @@ proc ::GX::buildConfigurationPage {} {
         dict set row $group [expr {$i + 1}]
         set widgetId [string map {. _ - _} $id]
         set configurationUi($id) [configurationGet $id]
+        dict set configurationGuiBaselines $id [configurationGet $id]
+        if {$group eq {Runtime}} {configurationRuntimeFieldCreate $runtimeContent $id $field;continue}
         if {$id eq "features.script_workspace"} {
             # Preserve the existing preference; check and label stay aligned.
             ttk::checkbutton $section.value_$widgetId -text [dict get $field label] -variable ::GX::configurationUi($id)
@@ -65,6 +78,10 @@ proc ::GX::buildConfigurationPage {} {
         }
         if {$id eq "plugins.package_chooser_directory"} {
             ttk::button $section.browse_$widgetId -text Browse… -command ::GX::configurationGuiPluginDirectory
+            grid $section.browse_$widgetId -row $i -column 2 -padx 4 -pady 5
+        }
+        if {$id eq {diagnostics.stderr_log_directory}} {
+            ttk::button $section.browse_$widgetId -text Browse… -command [list ::GX::configurationGuiDiagnosticDirectory $id]
             grid $section.browse_$widgetId -row $i -column 2 -padx 4 -pady 5
         }
         if {[string match {runtime.*} $id] && $id ni {runtime.markdown_viewer runtime.html_viewer}} {
@@ -148,19 +165,53 @@ proc ::GX::buildConfigurationPage {} {
     configurationModulesBuild $f.sections.modules [expr {[dict exists $row Modules] ? [dict get $row Modules] : 0}]
     scientificExecutionNodeManagerBuild $f.sections.execution
     cacheStoragePanelBuild $f.sections
+    frameworkMaintenanceBuild $f.sections
     ttk::frame $f.actions
     ttk::button $f.actions.save -text "Save user defaults" -command ::GX::configurationGuiSave
     ttk::label $f.actions.status -textvariable ::GX::configurationUi(status) -anchor w
-    set configurationUi(status) "Session settings remain in each Session manifest. Runtime state is not saved here."
+    bind $f.actions <Configure> [list ::GX::configurationRuntimeFooterResize $f.actions %w]
+    set configurationUi(status) "Preview ON/OFF is framework-wide. Other Session settings stay in each Session manifest."
     pack $f.actions.save -side left -padx 5
     pack $f.actions.status -side left -fill x -expand 1 -padx 8
     pack $f.actions -side bottom -fill x -padx 8 -pady {0 8} -before $f.sections
+    dict for {id widget} $configurationGuiEditors {if {![dict exists $configurationGuiBaselines $id]} {dict set configurationGuiBaselines $id [configurationGet $id]}}
 }
 
 proc ::GX::configurationGuiPluginDirectory {} {
     set initial [pluginInstallInitialDirectory $::GX::configurationUi(plugins.package_chooser_directory)]
     set directory [tk_chooseDirectory -title {Default plugin package directory} -initialdir $initial -mustexist 1]
     if {$directory ne {}} {set ::GX::configurationUi(plugins.package_chooser_directory) $directory}
+}
+
+# Reconcile only clean projections after another Configuration client commits.
+# A distinct unsaved draft remains visible instead of being silently replaced.
+proc ::GX::configurationGuiMaintenanceApplied {diff} {
+    foreach change $diff {if {[dict get $change scope] eq {user}} {configurationGuiOwnerChanged [dict get $change id]}}
+}
+proc ::GX::configurationGuiOwnerChanged id {
+    variable configurationUi;variable configurationGuiEditors;variable configurationGuiBaselines
+    if {$id eq {}} {dict for {field widget} $configurationGuiEditors {configurationGuiOwnerChanged $field};return}
+    if {![dict exists $configurationGuiEditors $id] || ![dict exists $configurationGuiBaselines $id]} return
+    set value [configurationGet $id];set old [dict get $configurationGuiBaselines $id]
+    set appearance [expr {$id in {ui.theme ui.font_family ui.font_size}}]
+    set key [expr {$appearance ? "appearance,$id" : $id}]
+    if {![info exists configurationUi($key)]} return
+    set draft $configurationUi($key)
+    if {$appearance && $draft eq {System/default}} {set draft system}
+    if {$draft ne $old} return
+    set guard [expr {[info exists configurationUi(native3d_guard)] ? $configurationUi(native3d_guard) : 0}]
+    set configurationUi(native3d_guard) 1
+    try {
+        set configurationUi($key) [expr {$appearance && $value eq {system} ? {System/default} : $value}]
+        if {$appearance} {set configurationUi($id) $value}
+        dict set configurationGuiBaselines $id $value
+    } finally {set configurationUi(native3d_guard) $guard}
+}
+proc ::GX::configurationGuiProjectionDestroyed {widget actual} {
+    if {$widget eq $actual && $::GX::configurationGuiSubscription ne {}} {
+        catch {configurationUnsubscribe $::GX::configurationGuiSubscription}
+        set ::GX::configurationGuiSubscription {}
+    }
 }
 
 proc ::GX::configurationGuiNative3DPresetChanged {name element operation} {
@@ -270,6 +321,7 @@ proc ::GX::configurationGuiSave {} {
     variable configurationUi
     variable configurationGuiEditors
     variable configurationValues
+    variable configurationGuiBaselines
     set candidate $configurationValues
     set previous $configurationValues
     if {[catch {
@@ -286,7 +338,11 @@ proc ::GX::configurationGuiSave {} {
                 set value $configurationUi(appearance,$id)
                 if {$value eq "System/default"} {set value system}
             }
-            dict set candidate $id [configurationValidate $id $value]
+            set value [configurationValidate $id $value]
+            # Clean projections never overwrite a value committed elsewhere.
+            # Dirty drafts retain their original expected value for conflict.
+            if {[dict exists $configurationGuiBaselines $id] && $value eq [dict get $configurationGuiBaselines $id]} continue
+            dict set candidate $id $value
         }
         if {[dict get $candidate computation.default_workers] > [dict get $candidate computation.max_workers]} {
             error "Default workers cannot exceed maximum workers."
@@ -296,9 +352,15 @@ proc ::GX::configurationGuiSave {} {
         dict for {id field} [configurationFields] {
             if {[dict exists $field module_id] || [dict get $field scope] ni {user module}} continue
             if {[dict get $candidate $id] ne [dict get $previous $id]} {
-                lappend changes [dict create id $id scope user value [dict get $candidate $id] expected [dict get $previous $id]]
+                set expected [expr {[dict exists $configurationGuiBaselines $id] ? [dict get $configurationGuiBaselines $id] : [dict get $previous $id]}]
+                lappend changes [dict create id $id scope user value [dict get $candidate $id] expected $expected]
             }
         }
+        # This explicit framework Save includes the live Preview choices even
+        # though that owner is projected by its dedicated component browser.
+        set preview [_modulePreviewChoices]
+        set savedPreview [datasetPublicationV2DictDefault $::GX::configurationSaved preview.module_enabled {}]
+        if {$preview ne $savedPreview} {lappend changes [dict create id preview.module_enabled scope user value $preview expected $preview]}
         configurationCommit $changes
         if {$changes eq {}} {configurationSave}
         configurationModulesSaved
@@ -308,7 +370,8 @@ proc ::GX::configurationGuiSave {} {
         set configurationUi(status) "Configuration was not saved: $reason"
         return
     }
-    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Popup recovery: effective now."
+    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Graphics, popup and tooltip settings: effective now."
+    dict for {id widget} $configurationGuiEditors {dict set configurationGuiBaselines $id [configurationGet $id]}
     configurationAppearanceRefresh
     set configurationUi(native3d_guard) 1
     set configurationUi(viewers.native3d.preset) [configurationGet viewers.native3d.preset]
@@ -359,7 +422,7 @@ proc ::GX::configurationAppearanceBuild {} {
     grid $p.theme.note -row 1 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::label $p.fonts.note -text {System/default preserves interpreter fonts. Family affects proportional named GUI fonts; heading weight and monospace family stay distinct. Size preserves relative named-font sizes (8–24 pt). Explicit private fonts and PDF output fonts are unchanged.} -justify left
     grid $p.fonts.note -row 2 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
-    foreach id {ui.x11_popup_repair_enabled ui.x11_popup_repair_delay_ms} {
+    foreach id {ui.x11_popup_repair_enabled ui.x11_popup_repair_delay_ms ui.x11_tooltip_opaque ui.x11_tooltip_premap} {
         set ::GX::configurationUi($id) [configurationGet $id]
     }
     ttk::checkbutton $p.remote.enabled -text {Enable remote X11 popup recovery} -variable ::GX::configurationUi(ui.x11_popup_repair_enabled)
@@ -378,6 +441,14 @@ proc ::GX::configurationAppearanceBuild {} {
     grid $p.remote.presets -row 2 -column 0 -columnspan 2 -sticky w -pady 3
     ttk::label $p.remote.status -textvariable ::GX::configurationUi(appearanceRecovery) -justify left
     grid $p.remote.status -row 3 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
+    foreach {key title row} {ui.x11_tooltip_opaque {Use opaque tooltip painting (P009)} 5 ui.x11_tooltip_premap {Position complete tooltip before mapping} 6} {
+        set widget $p.remote.[string map {. _} $key]
+        ttk::checkbutton $widget -text $title -variable ::GX::configurationUi($key)
+        grid $widget -row $row -column 0 -columnspan 2 -sticky w -padx 4 -pady 4
+        dict set configurationGuiEditors $key $widget
+    }
+    ttk::label $p.remote.tooltipNote -text {Tooltip options apply to the next tooltip on all displays, independently of popup recovery. Keep enabled for the accepted P009 presentation; disabling restores theme painting or ordinary mapping. Hover and destruction safety always remain active.} -wraplength 700 -justify left
+    grid $p.remote.tooltipNote -row 7 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::label $p.remote.note -text {After Save, recovery changes apply to future popups immediately. Only the recognized HC-Consult/VcXsrv X11 server is affected. 150 ms is the tested baseline, not a universal minimum; longer is not necessarily better. Disabled means no new damage requests.} -justify left
     grid $p.remote.note -row 4 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::labelframe $p.effective -text {Current effective appearance} -padding 8
@@ -385,6 +456,17 @@ proc ::GX::configurationAppearanceBuild {} {
     ttk::label $p.effective.warning -textvariable ::GX::configurationUi(appearanceWarning) -justify left
     pack $p.effective.values $p.effective.warning -fill x
     pack $p.effective -fill x -padx 8 -pady 5
+    ttk::labelframe $p.graphics -text {Graphical interaction performance} -padding 8
+    set ::GX::configurationUi(ui.graphics_profile) [configurationGet ui.graphics_profile]
+    set ::GX::configurationUi(ui.adaptive_grid_density) [configurationGet ui.adaptive_grid_density]
+    ttk::label $p.graphics.label -text {Intensive GUI activity}
+    ttk::combobox $p.graphics.profile -state readonly -values {Low Medium Fast} -textvariable ::GX::configurationUi(ui.graphics_profile) -width 14
+    ttk::label $p.graphics.note -text {After Save: Low maximum 5 FPS (default); Medium 10 FPS; Fast 20 FPS. Normal isolated input and final synchronization remain responsive.}
+    ttk::checkbutton $p.graphics.density -text {Adaptive Grid Density (additional 16-pixel suppression)} -variable ::GX::configurationUi(ui.adaptive_grid_density)
+    pack $p.graphics.label $p.graphics.profile $p.graphics.note $p.graphics.density -anchor w -pady 3
+    pack $p.graphics -fill x -padx 8 -pady 5
+    dict set configurationGuiEditors ui.graphics_profile $p.graphics.profile
+    dict set configurationGuiEditors ui.adaptive_grid_density $p.graphics.density
     sourceSurfaceAppearanceBuild $p
     # The existing Source Surface owner supplies the palette chooser and typed
     # controls. Saved schemes commit through their own actions, not this draft.
@@ -403,11 +485,12 @@ proc ::GX::configurationAppearanceBuild {} {
     pack $p.actions -fill x -padx 8 -pady 5
     bind $p.actions <Configure> [list ::GX::uiFieldControlsLayout $p.actions %w]
     configurationAppearanceRefresh
+    dict for {id widget} $configurationGuiEditors {if {![dict exists $::GX::configurationGuiBaselines $id]} {dict set ::GX::configurationGuiBaselines $id [configurationGet $id]}}
 }
 proc ::GX::configurationAppearanceResize {f width} {
     $f.canvas itemconfigure content -width $width
     set p $f.canvas.content
-    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.status $p.effective.values $p.effective.warning] {
+    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.tooltipNote $p.remote.status $p.effective.values $p.effective.warning $p.graphics.note] {
         $w configure -wraplength [expr {max(160,$width-50)}]
     }
 }
@@ -423,6 +506,7 @@ proc ::GX::configurationAppearanceReset {defaults} {
         if {[dict get $field group] ne "Appearance"} continue
         set value [expr {$defaults ? [dict get $field default] : [configurationGet $id]}]
         set ::GX::configurationUi($id) $value
+        if {!$defaults} {dict set ::GX::configurationGuiBaselines $id [configurationGet $id]}
         if {$id in {ui.theme ui.font_family ui.font_size}} {
             set ::GX::configurationUi(appearance,$id) [expr {$value eq "system" ? "System/default" : $value}]
         }

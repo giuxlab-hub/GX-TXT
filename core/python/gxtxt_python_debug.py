@@ -30,13 +30,23 @@ def atomic(path,value):
     os.replace(temp,path)
 
 class ManagedDebugger(bdb.Bdb):
-    def __init__(self,source,breakpoints):
+    def __init__(self,source,breakpoints,project_root=None,project_sha=None):
         super().__init__();self.source=str(Path(source).resolve());self.directory=Path(os.environ['GXTXT_DEBUG_DIRECTORY']);self.token=os.environ['GXTXT_DEBUG_TOKEN'];self.seq=0;self.last_check=0;self.last_command='';self.deadline=time.monotonic()+600
-        self.source_sha=hashlib.sha256(Path(source).read_bytes()).hexdigest()
+        self.source_sha=project_sha or hashlib.sha256(Path(source).read_bytes()).hexdigest()
+        self.project_root=Path(project_root).resolve() if project_root else None
+        self.sources={self.source}
+        if self.project_root:
+            from script_project import verify
+            manifest,_,_=verify(self.project_root.parent)
+            self.sources={str(self.project_root/x['path']) for x in manifest['files']}
         self.frames=[];self.termination_reason=None
-        for line in breakpoints:
-            error=self.set_break(self.source,int(line))
-            if error:raise ValueError(f'Breakpoint {line}: {error}')
+        by_file=breakpoints if isinstance(breakpoints,dict) else {None:breakpoints}
+        for name,lines in by_file.items():
+            target=str((self.project_root/name).resolve()) if name is not None else self.source
+            if target not in self.sources:raise ValueError('Breakpoint file is not admitted')
+            for line in lines:
+                error=self.set_break(target,int(line))
+                if error:raise ValueError(f'Breakpoint {name}:{line}: {error}')
         self.publish('STARTING',line=0)
     def publish(self,state,**values):
         self.seq+=1;self.state=dict(schema='gxtxt.script_debug.v1',backend='python.bdb',state=state,source=self.source,source_sha256=self.source_sha,sequence=self.seq,job_id=os.environ.get('GXTXT_JOB_ID',''),**values);atomic(self.directory/'state.json',self.state)
@@ -63,7 +73,7 @@ class ManagedDebugger(bdb.Bdb):
     def stack_snapshot(self,frame,selected=0):
         frames=[];cursor=frame
         while cursor is not None and len(frames)<32:
-            if str(Path(cursor.f_code.co_filename).resolve())==self.source:frames.append(cursor)
+            if str(Path(cursor.f_code.co_filename).resolve()) in self.sources:frames.append(cursor)
             cursor=cursor.f_back
         self.frames=frames;selected=max(0,min(selected,len(frames)-1));current=frames[selected] if frames else frame
         locals_={name:safe_value(value) for name,value in islice(current.f_locals.items(),128) if type(name) is str and not name.startswith('__')}
@@ -71,9 +81,9 @@ class ManagedDebugger(bdb.Bdb):
         stack=[dict(index=i,file=f.f_code.co_filename,line=f.f_lineno,function=f.f_code.co_name) for i,f in enumerate(frames)]
         # Inspection follows the selected native frame; retain the actual stop
         # separately so a caller selection cannot mislabel its locals/arrow.
-        return dict(line=current.f_lineno,function=current.f_code.co_name,execution_line=frame.f_lineno,execution_function=frame.f_code.co_name,stack=stack,selected_frame=selected,locals=locals_,globals=globals_,breakpoints=self.get_file_breaks(self.source))
+        return dict(file=current.f_code.co_filename,relative_file=str(Path(current.f_code.co_filename).relative_to(self.project_root)) if self.project_root else Path(current.f_code.co_filename).name,line=current.f_lineno,function=current.f_code.co_name,execution_file=frame.f_code.co_filename,execution_line=frame.f_lineno,execution_function=frame.f_code.co_name,stack=stack,selected_frame=selected,locals=locals_,globals=globals_,breakpoints=self.get_file_breaks(current.f_code.co_filename))
     def user_line(self,frame):
-        if str(Path(frame.f_code.co_filename).resolve())!=self.source:return
+        if str(Path(frame.f_code.co_filename).resolve()) not in self.sources:return
         self.publish('PAUSED',**self.stack_snapshot(frame))
         while True:
             if time.monotonic()>self.deadline:raise TimeoutError('Paused debugger lease expired after 600 seconds')
@@ -92,10 +102,10 @@ class ManagedDebugger(bdb.Bdb):
         # The next caller line is handled by native bdb return/next semantics.
         pass
     def user_exception(self,frame,exc_info):
-        if str(Path(frame.f_code.co_filename).resolve())==self.source:self.publish('EXCEPTION',line=frame.f_lineno,exception_type=exc_info[0].__name__)
+        if str(Path(frame.f_code.co_filename).resolve()) in self.sources:self.publish('EXCEPTION',file=frame.f_code.co_filename,line=frame.f_lineno,exception_type=exc_info[0].__name__)
 
-def run_debug(code,namespace,source,breakpoints):
-    debugger=ManagedDebugger(source,breakpoints)
+def run_debug(code,namespace,source,breakpoints,project_root=None,project_sha=None):
+    debugger=ManagedDebugger(source,breakpoints,project_root,project_sha)
     try:
         debugger.run(code,namespace,namespace)
         # bdb.run sets quitting=True in its finally even on normal completion.

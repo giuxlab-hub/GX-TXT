@@ -1,0 +1,15 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "9005be210454e29ab73ea238e5d924b21a46111ff154b75bf41b74d1d1f19acc",
+  "design_sha256": "a3df4043223c9744755a413c5c2ffe8bfef6b139efd922a01c482da09e39ba33",
+  "manual_assets": {},
+  "manual_sha256": "edc2b95be8b5849f36cbc06f0a6b11093fc859dfc74bb0c330bced75a5359e0f",
+  "module_id": "viewer.test_cad_2",
+  "policy_sha256": "edbdc602453f92afd0ed31a8b2b4ed7e8107569c5bf9c91ff36e80d4b9fd8f9b",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "c3b458972c81bcda43866f6baf03b77ca730649e03ddc2a3c5b7ef5100e300c0",
+  "source_sha256": "5ddebcd5b3d4b26650494d55985601467f3258ce24854de5a3065b5ee2d794a4",
+  "version": "1.0.1"
+}

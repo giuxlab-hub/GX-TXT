@@ -84,6 +84,6 @@ paths are checked against the export root.
 - Unsupported binary scientific formats are downloadable but not interpreted.
 - Missing graph artifacts are not regenerated merely for HTML export.
 
-## Graph Notes
+## Graph Notes in 1.0.4
 
 Graph Notes API resources are exported as separate note pages linked from graph entries, with graph backlinks. Base, Variant and Clone notes keep their stable associations. RGBA PNG assets and annotation overlays preserve transparency. Portable Dataset/Graph ZIPs are the scientific transfer formats; HTML export remains read-only.

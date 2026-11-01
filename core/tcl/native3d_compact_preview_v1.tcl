@@ -403,29 +403,49 @@ proc ::GX::native3DPreviewLargeClose {w} {
     native3DPreviewShow $w
     native3DPreviewResize $w
 }
+proc ::GX::native3DPreviewSaveDialogLayout {d width} {
+    set body $d.viewport.canvas.body
+    if {![winfo exists $body]} return
+    set wrap [expr {max(160,$width-24)}]
+    foreach name {info status} {$body.$name configure -wraplength $wrap}
+}
 proc ::GX::native3DPreviewSaveDialog {w} {
     variable ::GX::DatasetViewer::state
     if {$state($w,busy)} {setStatus {Wait for the current Native3D render before saving.} 100;return}
     if {![info exists state($w,sourceInfo)] || ![info exists state($w,scientificFigure)]} {setStatus {High-resolution Dataset publication requires an identified scientific graph.} 100;return}
     if {[info exists state($w,exportDialog)] && [winfo exists $state($w,exportDialog)]} {raise $state($w,exportDialog);return}
     set d $state($w,largeWindow).save
-    toplevel $d;wm title $d {Save Native3D image Dataset};wm transient $d $state($w,largeWindow)
+    set width [expr {min(760,max(360,[winfo screenwidth $state($w,largeWindow)]-60))}]
+    set height [expr {min(520,max(300,[winfo screenheight $state($w,largeWindow)]-120))}]
+    uiFieldDialogCreate $d $state($w,largeWindow) {Save Native3D image Dataset} ${width}x${height}
     set state($w,exportDialog) $d
     set state($w,exportId) "native3d.[dict get $state($w,sourceInfo) plot_ref variant_id].[clock seconds]"
     set state($w,exportResolution) {Full HD — 1920 × 1080}
     set state($w,exportStatus) {}
-    ttk::label $d.idLabel -text {New Dataset ID:};ttk::entry $d.id -textvariable ::GX::DatasetViewer::state($w,exportId) -width 40
-    ttk::label $d.resLabel -text {Image resolution:}
-    ttk::combobox $d.resolution -textvariable ::GX::DatasetViewer::state($w,exportResolution) -state readonly -values {{Full HD — 1920 × 1080} {4K — 3840 × 2160}} -width 32
-    ttk::label $d.info -text "Current camera, scientific presentation and graphics supersampling policy.\nExisting Dataset IDs are preserved. Native3D resource budgets apply." -wraplength 460
-    ttk::label $d.status -textvariable ::GX::DatasetViewer::state($w,exportStatus) -wraplength 460
-    ttk::button $d.save -text {Render & Publish Dataset} -command [list ::GX::native3DPreviewSave $w]
-    ttk::button $d.close -text Close -command [list destroy $d]
-    grid $d.idLabel $d.id -sticky ew -padx 8 -pady 6
-    grid $d.resLabel $d.resolution -sticky ew -padx 8 -pady 6
-    grid $d.info -columnspan 2 -sticky ew -padx 8 -pady 6
-    grid $d.status -columnspan 2 -sticky ew -padx 8 -pady 6
-    grid $d.save $d.close -padx 8 -pady 8
+    # Keep submission/Close outside the changing status text's scroll region.
+    # Scientific render/publication state and commands retain their owners.
+    ttk::frame $d.footer
+    pack $d.footer -side bottom -fill x -padx 8 -pady 8
+    ttk::button $d.footer.save -text {Render & Publish Dataset} -command [list ::GX::native3DPreviewSave $w]
+    ttk::button $d.footer.close -text Close -command [list destroy $d]
+    bind $d.footer <Configure> [list ::GX::uiFieldControlsLayout $d.footer %w [list $d.footer.save $d.footer.close]]
+    set body [scrollableDialogBody $d]
+    grid columnconfigure $body 0 -weight 1
+    ttk::label $body.idLabel -text {New Dataset ID:}
+    ttk::entry $body.id -textvariable ::GX::DatasetViewer::state($w,exportId) -width 1
+    ttk::label $body.resLabel -text {Image resolution:}
+    ttk::combobox $body.resolution -textvariable ::GX::DatasetViewer::state($w,exportResolution) -state readonly -values {{Full HD — 1920 × 1080} {4K — 3840 × 2160}} -width 1
+    ttk::label $body.info -text "Current camera, scientific presentation and graphics supersampling policy.\nExisting Dataset IDs are preserved. Native3D resource budgets apply." -wraplength [expr {$width-50}]
+    ttk::label $body.status -textvariable ::GX::DatasetViewer::state($w,exportStatus) -wraplength [expr {$width-50}]
+    set row 0
+    foreach name {idLabel id resLabel resolution info status} {
+        grid $body.$name -row $row -column 0 -sticky ew -padx 8 -pady 6
+        incr row
+    }
+    bind $d.viewport.canvas <Configure> +[list ::GX::native3DPreviewSaveDialogLayout $d %w]
+    uiFieldScrollAreaAttach $d.viewport.canvas $body
+    foreach name {id resolution} {bind $body.$name <FocusIn> +[list ::GX::uiFieldScrollSee $d.viewport.canvas $body $body.$name]}
+    uiFieldDialogPresent $d $body.id
 }
 proc ::GX::native3DPreviewSave {w} {
     variable ::GX::DatasetViewer::state
@@ -459,7 +479,7 @@ proc ::GX::native3DPreviewExportReady {w status result} {
     if {$status ne "ok"} {
         set state($w,exportStatus) "Image rendering failed: $result";unset -nocomplain state($w,exportRequest)
         file delete -force [file join $state($w,temp) screenshot.png]
-        if {$state($w,pending) ne {}} {set request $state($w,pending);set state($w,pending) {};meshDatasetRequest $w $request}
+        meshDatasetNext $w
         return
     }
     if {[catch {
@@ -478,5 +498,5 @@ proc ::GX::native3DPreviewExportReady {w status result} {
         catch {refreshDatasetInspectionChoices};catch {refreshNativeVariablesGui}
         setStatus $state($w,exportStatus) 100
     } message]} {set state($w,exportStatus) "Image publication failed: $message"}
-    if {$state($w,pending) ne {}} {set request $state($w,pending);set state($w,pending) {};meshDatasetRequest $w $request}
+    meshDatasetNext $w
 }

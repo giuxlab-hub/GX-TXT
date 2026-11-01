@@ -69,7 +69,8 @@ proc ::GX::meshDatasetWorkerStart {w} {
         if {[auto_execok prlimit] ne {}} {set command [concat [list prlimit --as=[expr {[configurationGet viewers.native3d.worker_address_space_budget_mib]*1024*1024}] --] $command]}
         set command [concat [list env LIBGL_ALWAYS_INDIRECT=0] $command]
         set state($w,previewSoftware) [expr {([info exists state($w,previewWidget)] || [info exists state($w,compactCanvas)]) && [configurationGet viewers.native3d.execution] eq "Auto"}]
-        if {[configurationGet viewers.native3d.execution] eq "Software" || $state($w,previewSoftware)} {set command [concat [list env LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe] $command]}
+        if {[configurationGet viewers.native3d.execution] eq "Software" || $state($w,previewSoftware)} {set command [concat [list env __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe GALLIUM_DRIVER=llvmpipe] $command]}
+        set command [_native3dWorkerLaunch $command]
         set worker [open [concat [list |] $command [list 2>[file join $temp worker.log]]] r+]
         set state($w,worker) $worker
         fconfigure $worker -blocking 0 -buffering line -encoding utf-8 -translation lf
@@ -110,8 +111,35 @@ proc ::GX::meshDatasetDecoded {w} {
 proc ::GX::meshDatasetRequest {w request} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,worker)]} return
-    if {$state($w,busy)} {set state($w,pending) $request;return}
+    set queue $state($w,pending);set kind [lindex $request 0]
+    if {$kind eq {navigate} && $state($w,busy)} {
+        set step [lrange $request 1 3];set png [lindex $request 4]
+        if {[llength $queue] && [lindex [lindex $queue end] 0] eq {navigate_batch}} {
+            set last [lindex $queue end];set steps [lindex $last 1]
+            if {[llength $steps]>=4096} {error {Native3D navigation buffer is full; wait for the current frame}}
+            lappend steps $step;set queue [lreplace $queue end end [list navigate_batch $steps $png]]
+        } else {lappend queue [list navigate_batch [list $step] $png]}
+    } elseif {$kind in {viewport render} && [llength $queue] && [lindex [lindex $queue end] 0] eq $kind} {
+        # Absolute presentation requests may supersede the same pending kind.
+        # Relative camera steps are preserved in their original order.
+        set queue [lreplace $queue end end $request]
+    } else {lappend queue $request}
+    if {[llength $queue]>32} {error {Native3D command buffer is full; wait for the current frame}}
+    set state($w,pending) $queue
+    meshDatasetNext $w
+}
+proc ::GX::meshDatasetNext {w} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,worker)] || $state($w,busy) || ![llength $state($w,pending)]} return
+    set request [lindex $state($w,pending) 0];set state($w,pending) [lrange $state($w,pending) 1 end]
     if {[catch {datasetViewerCheck $w} reason]} {datasetViewerClose $w;setStatus $reason 100;return}
+    if {[lindex $request 0] eq {render} && $state($w,image) ne {}} {
+        set scene [lindex $request 1]
+        foreach key {camera_position camera_target camera_up projection vertical_fov_degrees near_clip far_clip orthographic_height} {
+            if {[dict exists $state($w,view) $key]} {dict set scene view $key [dict get $state($w,view) $key]}
+        }
+        set request [lreplace $request 1 1 $scene]
+    }
     set state($w,busy) 1;set state($w,status) {Rendering in isolated Native3D worker; Cancel remains available.}
     set state($w,lastRequest) [lindex $request 0]
     set state($w,requestStarted) [clock milliseconds]
@@ -157,15 +185,24 @@ proc ::GX::meshDatasetReadable {w} {
     set worker $state($w,worker)
     if {[eof $worker]} {fileevent $worker readable {};meshDatasetFailure $w {Native3D worker stopped; close and reopen the Dataset.};return}
     if {[gets $worker line]<0} return
-    if {$line eq "GX3DE_VIEWER_WORKER_READY"} {set state($w,ready) 1;meshDatasetRender $w;return}
+    if {$line eq "GX3DE_VIEWER_WORKER_READY"} {
+        set state($w,ready) 1
+        meshDatasetRequest $w [list frame_transport [_native3dGuiFrameTransport]]
+        meshDatasetRender $w;return
+    }
     set state($w,busy) 0
     lassign $line status result
     if {[info exists state($w,previewWidget)] && ($state($w,previewEpoch)!=$::GX::ui(previewEpoch) || $state($w,previewStamp) ne [datasetPreviewStamp])} {datasetViewerClose $w;return}
     if {$state($w,lastRequest) eq "export_png"} {native3DPreviewExportReady $w $status $result;return}
     if {$status ne "ok"} {set state($w,pending) {};meshDatasetFailure $w "Native3D: $result";return}
+    if {$state($w,lastRequest) eq {frame_transport}} {
+        set state($w,frameTransport) [dict get $result frame_transport]
+        meshDatasetNext $w;return
+    }
     if {[catch {datasetViewerCheck $w} reason]} {datasetViewerClose $w;setStatus $reason 100;return}
     if {$state($w,lastRequest) eq "navcube_pick"} {
         if {$result>0} {meshDatasetRequest $w [list navcube_click {*}$state($w,cubePoint) [file join $state($w,temp) render.png]]}
+        meshDatasetNext $w
         return
     }
     set state($w,lastReceipt) $result
@@ -181,7 +218,7 @@ proc ::GX::meshDatasetReadable {w} {
     if {[info exists state($w,compactCanvas)]} {
         if {![info exists state($w,initialCamera)]} {set state($w,initialCamera) $state($w,view)}
         native3DPreviewDisplay $w
-        if {$state($w,pending) ne {}} {set request $state($w,pending);set state($w,pending) {};meshDatasetRequest $w $request}
+        meshDatasetNext $w
         return
     }
     if {[dict exists $result geometry]} {
@@ -216,7 +253,7 @@ proc ::GX::meshDatasetReadable {w} {
         datasetPreviewActionsState
     }
     set state($w,status) "$state($w,id) · [dict get $state($w,identity) format] · Units: $state($w,units). Left drag: orbit; middle drag: Pan; wheel: zoom."
-    if {$state($w,pending) ne {}} {set request $state($w,pending);set state($w,pending) {};meshDatasetRequest $w $request}
+    meshDatasetNext $w
 }
 proc ::GX::meshDatasetPreset {w preset} {
     variable ::GX::DatasetViewer::state
@@ -226,7 +263,7 @@ proc ::GX::meshDatasetPreset {w preset} {
 proc ::GX::meshDatasetNavigate {w mode x y} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,id)]} return
-    if {$state($w,ready)} {meshDatasetRequest $w [list navigate $mode $x $y [file join $state($w,temp) render.png]]}
+    if {$state($w,ready) && $state($w,image) ne {}} {meshDatasetRequest $w [list navigate $mode $x $y [file join $state($w,temp) render.png]]}
 }
 proc ::GX::meshDatasetDrag {w phase mode x y} {
     variable ::GX::DatasetViewer::state
@@ -237,6 +274,8 @@ proc ::GX::meshDatasetDrag {w phase mode x y} {
 
 proc ::GX::meshDatasetFailure {w message} {
     variable ::GX::DatasetViewer::state
+    set state($w,ready) 0;set state($w,busy) 0;set state($w,pending) {}
+    if {[info exists state($w,worker)]} {catch {fileevent $state($w,worker) readable {}}}
     set state($w,status) $message
     if {[info exists state($w,compactCanvas)]} {native3DPreviewFailure $w $message;return}
     if {[info exists state($w,previewWidget)]} {
@@ -314,7 +353,8 @@ proc ::GX::meshDatasetPreviewArtifact {id directory} {
     set command [list [auto_execok tclsh] [file join $::GX::scriptDir core native3d renderer_worker.tcl] [file join $::GX::scriptDir core native3d bin libgx3de_viewer_tcl.so] readonly]
     set policy [native3dGraphicsPolicy];dict set policy execution Software
     if {[auto_execok prlimit] ne {}} {set command [concat [list prlimit --as=[expr {[dict get $policy worker_address_space_budget_mib]*1024*1024}] --] $command]}
-    set command [concat [list env LIBGL_ALWAYS_INDIRECT=0 LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe] $command]
+    set command [concat [list env __GLX_VENDOR_LIBRARY_NAME=mesa LIBGL_ALWAYS_INDIRECT=0 LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe GALLIUM_DRIVER=llvmpipe] $command]
+    set command [_native3dWorkerLaunch $command]
     set channel [open [concat [list |] $command [list 2>[file join $directory native3d-worker.log]]] r+]
     fconfigure $channel -buffering line -encoding utf-8 -translation lf
     try {

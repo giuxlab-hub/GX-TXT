@@ -1,0 +1,4965 @@
+{
+  "accepted_source": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+  "frozen_files": {
+    "receipts/api.log": {
+      "mode": 420,
+      "sha256": "416f9454c86e97ba759219638fe044b454b12571e5be2cd57a53607d86d5fd9f",
+      "size": 2861
+    },
+    "receipts/api_plan.tsv": {
+      "mode": 420,
+      "sha256": "ebc4a75510f1f5020aaa2eec39424d709858979179bae0a0ecba8564fb08dd44",
+      "size": 8852
+    },
+    "receipts/preparation.json": {
+      "mode": 420,
+      "sha256": "106108670b8b26986447dcea1080aa5e6b19423c8f529344708b794345376bc1",
+      "size": 13138
+    },
+    "registry/installed.ini": {
+      "mode": 436,
+      "sha256": "ac8f9ed04deb5ac9f1e74ad8b269958453539866e773cc09930e532b36a5d5d5",
+      "size": 14095
+    }
+  },
+  "installed_payload_files": {
+    "plugins/modules/analysis.cross_spectral_transfer/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4732fc67eba05d027763a3d3f67795c36ae0f6618bb9a9439d9033d4cb3a2758",
+      "size": 2302
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "59c41cb3fd0cfb16297467b54831c792595b349f4e22925a3fe9ab5dc8cbce95",
+      "size": 299
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0ca713d936b310fde956dbe337022563ebc8a185442453e6d6791b5da37d1185",
+      "size": 10195
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b519c7870f776239fb926c5709a6de9d51b1a4a20b399f1d6530d3be01dca6fa",
+      "size": 1656
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "db49c0fec2abdea5461b01b7dbb19c84371b1a73e8e60b471fe20425f40c8fbc",
+      "size": 1103
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ccd2381dd57aeac2b9929be4ff5e0c728bcdf7fc65f5d00949f2a4c1ade1a7f3",
+      "size": 3355
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "51c157e96a8792aa19e63c33a812da2683e526ef425455483f1813307db8fcc0",
+      "size": 266
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/analysis_cross_spectral_transfer.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b7f22177450da8c7512b90f78d382b1a032c79ec2b300569ed4808191d8cf613",
+      "size": 655
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/analysis_cross_spectral_transfer_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "caf9fdc503aa13f0a49e654c45a1892a2c92f3d2ed5e6119bb4119625814c32b",
+      "size": 23332
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/cross_spectral_worker.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "00994429addd80d8d564fc0ec9eb9dce8dc4443da2a31d626afb7db8e05f6688",
+      "size": 3599
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/csx_compute_window.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "32d129c092f285e53c3e2e72e51d432371c1591970ed2bcd60222cf35deb9829",
+      "size": 2697
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/csx_scientific_fingerprint.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7247a8a87fc11b3f41b579c2eae352059a701c1eb172fb3a51c33466e5103667",
+      "size": 1083
+    },
+    "plugins/modules/analysis.cross_spectral_transfer/runtime/csx_source_stamp.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d9bc45d5cb9f569daa1691d0eaaabef2d2226c60f2fcc903e969ce879b5a63b1",
+      "size": 315
+    },
+    "plugins/modules/analysis.dataset_expression/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a58e1bd508e0a56505e793d9c86742ce5834fd0a6b65d8cac62bdf57bb3e33c6",
+      "size": 281
+    },
+    "plugins/modules/analysis.dataset_expression/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.dataset_expression/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f83328298f5e923c56de14d3b40d1134c0a0b25da8f47384ba2f07b7e62d9891",
+      "size": 2497
+    },
+    "plugins/modules/analysis.dataset_expression/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "02ab99b5deceaa10888fde93cfa7f277cce135122fc9647d8c1a0a7eb5d1f8ce",
+      "size": 90
+    },
+    "plugins/modules/analysis.dataset_expression/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "df561613278576bf15982ed1d102be1d991d3b49d8e7212d9a59f6029b1cd61d",
+      "size": 3058
+    },
+    "plugins/modules/analysis.dataset_expression/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9df1ce6169830f9465c1f1786759e938a4a6230b28f1724fd71a31b829656f7f",
+      "size": 135
+    },
+    "plugins/modules/analysis.dataset_expression/runtime/analysis_dataset_expression.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d4765e8538be62f6cf834ce23ab67c5a1a9b46cbcba3360a9659f187bb9b869f",
+      "size": 696
+    },
+    "plugins/modules/analysis.dataset_expression/runtime/analysis_dataset_expression_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a7aa8991a5c1002014ff48a8d53b3bfff5dd5c3fd18205d9565ac604e99d6a83",
+      "size": 16598
+    },
+    "plugins/modules/analysis.regression/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "aba34d424daaff24d15c1fd867cf50e849d4fde8f15f653572d8e6b0bb1b45ef",
+      "size": 713
+    },
+    "plugins/modules/analysis.regression/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.regression/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0df8cf13827d3c413cf6179bcd9f818c864ccddc82dc91f9ad965dcccaf4563c",
+      "size": 2917
+    },
+    "plugins/modules/analysis.regression/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "783dfbcedacac32b54b70213a7e3f8f5df165cfcfcbf14ed7c3b6616bc1191b4",
+      "size": 82
+    },
+    "plugins/modules/analysis.regression/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b52ca4e661bef52bdd2bd6a7640316eef625e28aea54aea6897b8e4b78026924",
+      "size": 680
+    },
+    "plugins/modules/analysis.regression/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ce51903f3005892948cdca1537a39b3368ac02e923e6d093e7ffe336db2cfde7",
+      "size": 3205
+    },
+    "plugins/modules/analysis.regression/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e63ca3e8f6b087cabb741821617fe72a3af994c071f6a65ff77f2778fbccd35e",
+      "size": 127
+    },
+    "plugins/modules/analysis.regression/runtime/analysis_regression.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9327075d8396706a34ac4e5ad6aa348d0ea97f1d9b32da718eab22be8962c2ed",
+      "size": 595
+    },
+    "plugins/modules/analysis.regression/runtime/analysis_regression_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "27bb2f75ca23e4bd399ad02d4c3ec2b29036fff869fa895e41f9782894eb0dde",
+      "size": 23477
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0afa6f7a99446597fac52f1a7e63ac8475a72d21eabb68692a682ce836ee4a8e",
+      "size": 153
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d630183e1c1e95f43dd322c8d3a8c09568e67e460eec9f0e9162c2231317ef6d",
+      "size": 1754
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a30b71e5d740af34663cd1248f38f29e9e97c03ba6cb8431b09266a3f3a967de",
+      "size": 517
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dce9a7d0057556d70125ba0c364765590e104b1a667cacd0fab981d5d08e0887",
+      "size": 2411
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f87e09a4e90e256f81360f8ea6ee906bce74828e8da6224fca873766e0a45808",
+      "size": 101
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/runtime/analysis_spectroscopy_nmr.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "648be3e64fc26aee76eb6509458d3c85c7ee7eb6fa975a9c6ff1b48896b8368c",
+      "size": 918
+    },
+    "plugins/modules/analysis.spectroscopy.nmr/runtime/nmr_pipeline.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c394bd73dd49f12f75136f77edd58e3ed6c51abe74af4483d28c49e91d6388e0",
+      "size": 10615
+    },
+    "plugins/modules/analysis.statistics.anova/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cabc0a311bf123f18fb9c06e6b901d1a7d2a40da61f34c4b2398ce0eac9aa54e",
+      "size": 662
+    },
+    "plugins/modules/analysis.statistics.anova/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.anova/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e5ddfd67653976b9c4226460222f8b868c98b55f8c130deb139eec5b3017054c",
+      "size": 1890
+    },
+    "plugins/modules/analysis.statistics.anova/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "10c2b158f9675c093ac7797ae2ae04c703b76496a9aebc0890a32615279bbba5",
+      "size": 85
+    },
+    "plugins/modules/analysis.statistics.anova/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cbb185e0e8e75e44e3b19a54923a2a16148220acfdec2417ca902ef13d88f604",
+      "size": 692
+    },
+    "plugins/modules/analysis.statistics.anova/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ff6df1dc0bb75aac950b3fec496fb19f89ac04b1bd658d2b86d6701596e277ce",
+      "size": 2406
+    },
+    "plugins/modules/analysis.statistics.anova/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "eff595314e8bcc85c8ff84928d541fbe39f1a2ce90c44bb7ea9d85f729894bb0",
+      "size": 136
+    },
+    "plugins/modules/analysis.statistics.anova/runtime/analysis_statistics_anova.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "54cfac86cd109d80da760800e6f5824b25bdea3b2f7212ee190e0735077da3a7",
+      "size": 689
+    },
+    "plugins/modules/analysis.statistics.anova/runtime/analysis_statistics_anova_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1086ad3dbf793abe5d97c13d376656fd62a4243d4a1c1e4f54cef2c80f91474f",
+      "size": 15405
+    },
+    "plugins/modules/analysis.statistics.correlation/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "36e6aed6387a612f39f0b5da6c5cfac6af818aa44eac40692e0c0a8951a4d3bc",
+      "size": 562
+    },
+    "plugins/modules/analysis.statistics.correlation/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.correlation/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "91434fd71dab49b34260fc78c6d397a10c991671c8fdab22a546af6c485d8575",
+      "size": 1220
+    },
+    "plugins/modules/analysis.statistics.correlation/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2c45e5e3bb1320ad11fcfc05edd866833e014e43dc36cf6c11ce73ff8f852080",
+      "size": 289
+    },
+    "plugins/modules/analysis.statistics.correlation/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "40bf45a6ed3568f3b88e7af08705b73941d8f8aa3b5a8c1335854250382ae772",
+      "size": 704
+    },
+    "plugins/modules/analysis.statistics.correlation/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5b63e398bbb59500002597f14e93c84eb0ebb003634d267d46bba5ef13377396",
+      "size": 2741
+    },
+    "plugins/modules/analysis.statistics.correlation/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "33690c52d7bb239966a9309d75ece7cf1d9af7363aacdb44b1d4c1f8a136750e",
+      "size": 155
+    },
+    "plugins/modules/analysis.statistics.correlation/runtime/analysis_statistics_correlation.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d1f4e3d1aaec17ed0026a05c7dbb3ae6ac38d9e2a7978b5d28e8d1f1b342cbca",
+      "size": 623
+    },
+    "plugins/modules/analysis.statistics.correlation/runtime/analysis_statistics_correlation_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ab7fb5eb893c35a321a4c989324516c34b3cdcfae52f92aba894fb9929c9c01c",
+      "size": 18568
+    },
+    "plugins/modules/analysis.statistics.distribution/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f4a065956f1b9fc965b22c4344a61a1ddf6cebef15ce174fbb4d8cd1cb2580b0",
+      "size": 251
+    },
+    "plugins/modules/analysis.statistics.distribution/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.distribution/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cd0b24d941a5963cd0e1b063ef612629c2a9dd6b9f20e61aa6f22b507939c8c6",
+      "size": 1298
+    },
+    "plugins/modules/analysis.statistics.distribution/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "78662f0b101415595c1711d1fbcd9616b1beb2280a2439cf70e4e073a56a4dcf",
+      "size": 94
+    },
+    "plugins/modules/analysis.statistics.distribution/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1669b240fe80bc30bf275befa6df76c9bbac52183500661c469976f59de21730",
+      "size": 2461
+    },
+    "plugins/modules/analysis.statistics.distribution/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "122cb898088420412c15db95ddb105ea22f1cef495fa417cb2c410f94950ba2f",
+      "size": 144
+    },
+    "plugins/modules/analysis.statistics.distribution/runtime/analysis_statistics_distribution.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e85bfc0cda717152d649a8722399418c1c7472f0c8c35c9f9a85b875c7ac3ab9",
+      "size": 705
+    },
+    "plugins/modules/analysis.statistics.distribution/runtime/analysis_statistics_distribution_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61f24fc8b92cd7b9eb69d0677908647dfb8079b28d5755c0a7618c918c0dece7",
+      "size": 13788
+    },
+    "plugins/modules/analysis.statistics.outliers/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ebfafcbfb13cd86ba8a29289e5b570ad0b4145fd717325086318d460b72566bb",
+      "size": 232
+    },
+    "plugins/modules/analysis.statistics.outliers/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.outliers/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "709447dd1dbfb776cfbb8afd8864c7b50fc65bcdc2aaa6b620b54cdffb41dcf8",
+      "size": 1252
+    },
+    "plugins/modules/analysis.statistics.outliers/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f20a19485095db485b307f07038c32cf2fe48d3b99cc63e8b4b208153bd5a2d3",
+      "size": 85
+    },
+    "plugins/modules/analysis.statistics.outliers/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c0ef350361a9bc232c44e37440958889a382e0eb7f99bef7c90850b9b3367b24",
+      "size": 1962
+    },
+    "plugins/modules/analysis.statistics.outliers/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9b485950e70d563063e46175debad1dd8ad097e5f8fc7cf8255a5c192e6b9f30",
+      "size": 131
+    },
+    "plugins/modules/analysis.statistics.outliers/runtime/analysis_statistics_outliers.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dd5a94693ff9f7379cb637d8eeb3ebe48724ff629b80d6c40f7faeb07e9786f8",
+      "size": 692
+    },
+    "plugins/modules/analysis.statistics.outliers/runtime/analysis_statistics_outliers_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cef2084f30dc5d34185675d88641c20095e4ed69633c59b48ea4f8ecc63ca95c",
+      "size": 10161
+    },
+    "plugins/modules/analysis.statistics.pca/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9c909c6d590eb19eb7418688d778e0d3fc5d4c36c46e23043632d6dcbfd047a7",
+      "size": 624
+    },
+    "plugins/modules/analysis.statistics.pca/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.pca/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a3eae23b0a4da746969597f39190edf421f85b08322002a3f01f562924dfd246",
+      "size": 2524
+    },
+    "plugins/modules/analysis.statistics.pca/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d275b847766d2473f5face1cf4926a4d5959456cdb53158101ad00e6873d9425",
+      "size": 100
+    },
+    "plugins/modules/analysis.statistics.pca/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0e3c5a7a59b4ee4f70386a066cc1dd6008e5c313050a83f81755de2b92a0f954",
+      "size": 688
+    },
+    "plugins/modules/analysis.statistics.pca/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "080acb42625cece3ee29d7d706ae632e56d309041fcd6d11cd36675e1ec008cd",
+      "size": 2795
+    },
+    "plugins/modules/analysis.statistics.pca/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "00e562d42bcbec922b5e0ab538a254d7748ea83c99f5888805670f4322a29949",
+      "size": 149
+    },
+    "plugins/modules/analysis.statistics.pca/runtime/analysis_statistics_pca.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3473ffb924771d38730f6f6be8ab08cc74b54a14ab49805f0352c2d0be0f8b94",
+      "size": 677
+    },
+    "plugins/modules/analysis.statistics.pca/runtime/analysis_statistics_pca_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7bba95dd8652962ca7f6f0ed46c11623eab20f73e3127d6ad17eaae09e9cd123",
+      "size": 19978
+    },
+    "plugins/modules/analysis.statistics.resampling/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1a375c1b73edaf56be005fbc60170dc8a6c909ddc6abf0136516803238ef46b0",
+      "size": 560
+    },
+    "plugins/modules/analysis.statistics.resampling/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.resampling/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ec88d8a8deeb3c88225a67ad0c61fc9db2a67baba6d9a705ca7d963d477918f1",
+      "size": 2763
+    },
+    "plugins/modules/analysis.statistics.resampling/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3412a3f85d6e164c0f84d5f646046fc7ec85de4f1c2962ab363e5405d76b5680",
+      "size": 194
+    },
+    "plugins/modules/analysis.statistics.resampling/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7d3acb6c522cc05ec15be104a703b71a0afc2ed2dfdc36c73b7c026a89b5d4ce",
+      "size": 702
+    },
+    "plugins/modules/analysis.statistics.resampling/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cf8f7af7d8125cd881aecc447e5fd979d2294c64bfdeacf43afce84a33fa9d12",
+      "size": 2918
+    },
+    "plugins/modules/analysis.statistics.resampling/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "60923307cf4dd2cdfdf4815987f0cf2cdfdf6da6e9953f87f03f04530148dd05",
+      "size": 148
+    },
+    "plugins/modules/analysis.statistics.resampling/runtime/analysis_statistics_resampling.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6742fbd1e202a562498486d13f36b47fed36664553c12231d1a9034a7d1e632d",
+      "size": 701
+    },
+    "plugins/modules/analysis.statistics.resampling/runtime/analysis_statistics_resampling_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f44dbd8cb27010392012911de5a96b4c97c7eeb69434eeb75e8d65e77f03df71",
+      "size": 15985
+    },
+    "plugins/modules/analysis.statistics.tests/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79598c47de26172e7875ed2068a62e16e34758e5b6cc45ded24271656d8c75f5",
+      "size": 541
+    },
+    "plugins/modules/analysis.statistics.tests/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.tests/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dfd09d75912e788d9abaacb7aa6a7e48e3c2162cf8514e5376cc9181b05370b1",
+      "size": 2250
+    },
+    "plugins/modules/analysis.statistics.tests/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e1f2d2a694582fc82ad790e4443ca88d5a22db35f20289da338ad8537b9eddc4",
+      "size": 88
+    },
+    "plugins/modules/analysis.statistics.tests/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "523d618af28ac36734ac49359a6d95629665c23a0ad0cbc64d21c4137ec548b5",
+      "size": 692
+    },
+    "plugins/modules/analysis.statistics.tests/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1d3c4a6fe3ce162fb1054a843e2cc6b4d06a5b92a08959cfecfd5fa8631a35ee",
+      "size": 2651
+    },
+    "plugins/modules/analysis.statistics.tests/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "500ce80a0c0f930140d4ec400be55070d27a97568379d0ef584c8fc0752f01a4",
+      "size": 139
+    },
+    "plugins/modules/analysis.statistics.tests/runtime/analysis_statistics_tests.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "740d9d0a6da77110e5603c088178d9821807bf8991ff5a368fda9899b371931a",
+      "size": 692
+    },
+    "plugins/modules/analysis.statistics.tests/runtime/analysis_statistics_tests_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "21ed4446afe0a9e436ad56b0afd05cef47fd7c2a5781edb221610fa214c0c7fb",
+      "size": 12905
+    },
+    "plugins/modules/analysis.statistics.weighted/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dae04d646445669d357f4f2fae2f5aa7c08f27702aa77035c4a03bc86e99ce9c",
+      "size": 580
+    },
+    "plugins/modules/analysis.statistics.weighted/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6e5fbb897ba13c94715522ef416b0027222cd7079c167b551a7cfa4a995dadc2",
+      "size": 42
+    },
+    "plugins/modules/analysis.statistics.weighted/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e27419078843ec71da121b495ff4777dd434b5afcbb354f05d6213285a92eed1",
+      "size": 2176
+    },
+    "plugins/modules/analysis.statistics.weighted/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9d33e8460b01db2520a5c4d77acc6e5ad5b2c93e68dac63c290a6df3cdd02661",
+      "size": 91
+    },
+    "plugins/modules/analysis.statistics.weighted/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0ff756c6965951cfa3a80c4147e527ec67407838447191b9a1e6d883e063a90e",
+      "size": 698
+    },
+    "plugins/modules/analysis.statistics.weighted/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1fbab2337b0c0521abc89127a42228a258843a0650dd74dbe45f8b9c5ec3f8d2",
+      "size": 2648
+    },
+    "plugins/modules/analysis.statistics.weighted/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ee1443ca1f7cd9d44eb83880b9ebfd5e7f41173b17fe3450bdce65dfb0793804",
+      "size": 145
+    },
+    "plugins/modules/analysis.statistics.weighted/runtime/analysis_statistics_weighted.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2b910008fdf5472c58eb3106f95b9a5a53bdcad031fcd35fd940935cd9b0196c",
+      "size": 698
+    },
+    "plugins/modules/analysis.statistics.weighted/runtime/analysis_statistics_weighted_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "22f24cf3b599fae03cb90b6d733600509b6fdefe32b8a181add1c0345a5bafbd",
+      "size": 16656
+    },
+    "plugins/modules/analysis.xas.normalize/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "58a50ee0eb2de5b44b0854d6e27effd5cf40025c3fe3d1e2fab1a3c38d03ecdb",
+      "size": 591
+    },
+    "plugins/modules/analysis.xas.normalize/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/analysis.xas.normalize/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "124549e44e5b84905df92a625224236938b232d00177f1a0a66313e78e82f2de",
+      "size": 1946
+    },
+    "plugins/modules/analysis.xas.normalize/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9a6a30ba5451a68dd3c65a24d9caa0f346f3542b80f4c1431d65f91f4d1916fa",
+      "size": 486
+    },
+    "plugins/modules/analysis.xas.normalize/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a5f20f8f6aa8ac76991ce8f0a62c4bc1d364e254065fbdf9d7aba0870204a865",
+      "size": 686
+    },
+    "plugins/modules/analysis.xas.normalize/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5f93c0940056dbad8333b42ab24168ceb3802907b71a47babc3efc81e201792d",
+      "size": 2688
+    },
+    "plugins/modules/analysis.xas.normalize/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "51b85eb32f61d92c91783494cb082402450c9044084b4c8ed7b6ca29098a10d5",
+      "size": 137
+    },
+    "plugins/modules/analysis.xas.normalize/runtime/analysis_xas_normalize.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f89464d472daeb01956ee41e7192db5dd8028efc15c73bf18324ddb8e495b8e6",
+      "size": 666
+    },
+    "plugins/modules/analysis.xas.normalize/runtime/analysis_xas_normalize_main.m": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a1326d5ed07ad339ed9ab6e9f8b73a87657135fc2f0bdd033e88e671da65d40e",
+      "size": 23189
+    },
+    "plugins/modules/contract.electronics_component/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cb3eec958086e52e9c054b3c30e448e73ad16d0802c36a68302ba5054f05b5b5",
+      "size": 65
+    },
+    "plugins/modules/contract.electronics_component/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "85e03f14f207f9f659efa7388b4ff7db94b4203f6ebbbb8f70f4aa006bca9732",
+      "size": 848
+    },
+    "plugins/modules/contract.electronics_component/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "874e610879d3d2aecae2575c91a1e4951cbb1fc25cf6b43d9fd331b26e8a6fdc",
+      "size": 312
+    },
+    "plugins/modules/contract.electronics_component/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "aae4d078cc7d3cd2e966dd77dc97e0d22568ecf27789c0f16623ca73355ac3f2",
+      "size": 536
+    },
+    "plugins/modules/contract.electronics_component/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ca1fe28d22195f323541d003aab4693091ca5160c3878b7cfbe6fb5f8466a121",
+      "size": 173
+    },
+    "plugins/modules/contract.scientific_measurement/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e83480569dcd2217dc00fff7ec5f7fd1b1a3f4e05e86a2ea754e4c18912c1d7d",
+      "size": 68
+    },
+    "plugins/modules/contract.scientific_measurement/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b7b770db62692457d8989a28b6af48caa9c2ade08408d1febaa7a9b03294c6d5",
+      "size": 2438
+    },
+    "plugins/modules/contract.scientific_measurement/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ea44745890a2b0decae2f3d61a7f8143ec973d74bca4865ff59b816cdd8bd9d9",
+      "size": 312
+    },
+    "plugins/modules/contract.scientific_measurement/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d2f090d1aac7587d4bdbbf5aff683e32e1036e611bac1c4b87fd04f2ac217425",
+      "size": 1138
+    },
+    "plugins/modules/contract.scientific_measurement/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7b6eacf237498bfdd239788356cd1677d37c645e4f2b4cb4aa72b423875949ca",
+      "size": 175
+    },
+    "plugins/modules/contract.scientific_publication/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cb3eec958086e52e9c054b3c30e448e73ad16d0802c36a68302ba5054f05b5b5",
+      "size": 65
+    },
+    "plugins/modules/contract.scientific_publication/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d750934ef649ac71a9dc4dd5d7c71216d1e1812228a8cd3d8120e45b385f363a",
+      "size": 844
+    },
+    "plugins/modules/contract.scientific_publication/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2bd7ba21509c694cd05bae76e5630ee0a2aebbc29bef3dbb878a9b9d766bc68b",
+      "size": 312
+    },
+    "plugins/modules/contract.scientific_publication/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cbb8edcf604e5d40b8e4d0dba9f11f86c66bc8a8c54b92067168e696ff944bb9",
+      "size": 527
+    },
+    "plugins/modules/contract.scientific_publication/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a1dff35e3d2ebc0b29edf165c774ab424fc20bed75af0ed3b67be63bfb373011",
+      "size": 175
+    },
+    "plugins/modules/domain.chemistry/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/domain.chemistry/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d911784ff3a75e5048401ec54d3608b27af4b92fcfc1ab83d300261b9b4d0dc9",
+      "size": 760
+    },
+    "plugins/modules/domain.chemistry/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "192feb340858fd30cacb236d7a25c0bb2e9768f932e1c9264b9a12e5437419c7",
+      "size": 484
+    },
+    "plugins/modules/domain.chemistry/api/structure_validation.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ad63188ffbb605296fd7907fa2fdddd3f32cb48914e54207980a2ef5b8ab3260",
+      "size": 1289
+    },
+    "plugins/modules/domain.chemistry/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b50782651c0c3c4b47ba3979083e3ddd1f7876d7565807a4c9544bcf7fd86efa",
+      "size": 472
+    },
+    "plugins/modules/domain.chemistry/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0810cbbd3fe6448d65ed2a29d73aab8d5a0900f82a53ef1bfe51d5f7b62e41d5",
+      "size": 154
+    },
+    "plugins/modules/domain.chemistry/schema.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d687997b7fd8befa14559209a95d5263b99a0c0637e668d8dbdbb30e2ad65b86",
+      "size": 4122
+    },
+    "plugins/modules/domain.electronics/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/domain.electronics/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "825aea791fed5f0f83385912cb464f822023e046ea0213318b99c4686d8f473e",
+      "size": 2509
+    },
+    "plugins/modules/domain.electronics/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0bda9c66f3fb653e6a7dbd7e670208da6f0f04ef554149348e5cf087f600b51d",
+      "size": 471
+    },
+    "plugins/modules/domain.electronics/api/records.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3c489cf49491d36ecfa2fd8c8da110d4e08456bf5c215f74e1c60be9a129fe4a",
+      "size": 5006
+    },
+    "plugins/modules/domain.electronics/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1edd2f007366a4f0a2bab2862c18c8deac3f602783a7c41ff3cf4a5e8511b1c8",
+      "size": 478
+    },
+    "plugins/modules/domain.electronics/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b5fba3adceedab8434104a2c87db2c05a5d08a6bc00b1ba2a03fe85f849e0338",
+      "size": 158
+    },
+    "plugins/modules/domain.electronics/schema.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "43f771468c9f9f866fa28c1aaef477c832d796528cf13c9af68f3508383e86e2",
+      "size": 9033
+    },
+    "plugins/modules/domain.publications/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/domain.publications/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "64517872bcfb7ec31fed9819c1aad0cd2be30ecbfc778da98c6a5787ff2d5f5a",
+      "size": 763
+    },
+    "plugins/modules/domain.publications/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ce976c92b95a1ba1a41180fe9437ba710805703e42be9432a6923123e3b9abf6",
+      "size": 390
+    },
+    "plugins/modules/domain.publications/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5a675255a4237b2fc17cd654d257fef69dc489e6fd7eedec47aa8a283e313f4c",
+      "size": 481
+    },
+    "plugins/modules/domain.publications/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cadeb03d1ecf14be63eb74290c5f1fea1a8003bc8a99dba4f21d5c711b283540",
+      "size": 160
+    },
+    "plugins/modules/domain.publications/schema.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3b4e9d6f3fb88c6c36488fe6e9795c12b343ec074e29b22306454eb762823ae0",
+      "size": 1302
+    },
+    "plugins/modules/domain.scientific_spectra/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "0847a9547866161d991ace67a36736561226491cc7fbda5962be77ed5096a186",
+      "size": 444
+    },
+    "plugins/modules/domain.scientific_spectra/LICENSE": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "cb3eec958086e52e9c054b3c30e448e73ad16d0802c36a68302ba5054f05b5b5",
+      "size": 65
+    },
+    "plugins/modules/domain.scientific_spectra/README.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "e666aecbad5d43e7f5ba25bc9f39530caa83dfdf3b831cbc7a830e75c02966b1",
+      "size": 7823
+    },
+    "plugins/modules/domain.scientific_spectra/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "18c3486997ab3516e60e2ab46c397294a356a8ddf29e27ce6def041e53a082ab",
+      "size": 659
+    },
+    "plugins/modules/domain.scientific_spectra/api/measurement_description.py": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "03086998db741543d0581b1a2eb7fb3bc79c5dad8126b49d278b8c83f7755759",
+      "size": 14246
+    },
+    "plugins/modules/domain.scientific_spectra/api/spectrum_validation.py": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "6b37f71d86d0ea20c38c0773db950518fea71f838e7f00dacd17b7dd1862efd0",
+      "size": 1897
+    },
+    "plugins/modules/domain.scientific_spectra/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "3ad1f66df95bcf10d5b043ca724378b7246ed48db9d9c849250f41c95d6e5353",
+      "size": 636
+    },
+    "plugins/modules/domain.scientific_spectra/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "b94c38e982ef4e07b9590701357a533ec8066fc386b7d6267d6565dc4232a701",
+      "size": 169
+    },
+    "plugins/modules/domain.scientific_spectra/schema.json": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "3947ca342269e09d7a6e74a437e3d900ea78bee379af7935d0d194bc680aa806",
+      "size": 8456
+    },
+    "plugins/modules/domain.technical_resources/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/domain.technical_resources/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "89a27043735e78e1f512b45d696d6a5cb02bc6b304de15fc1f8d87d2970fdbce",
+      "size": 770
+    },
+    "plugins/modules/domain.technical_resources/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ec783152eaa303c4b7848d7c9bdb3bd8fad63eca58f2cd29f3e8e4ef007699ff",
+      "size": 390
+    },
+    "plugins/modules/domain.technical_resources/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1c90f13a10123aba99723a00b89916706476a0cacbbf3dd7da74a748c1d4c724",
+      "size": 502
+    },
+    "plugins/modules/domain.technical_resources/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "08fc1b0b3bbf847823fb0da159e4374e6bbb4bed0ba8213e2c7b44db94f1f0b4",
+      "size": 174
+    },
+    "plugins/modules/domain.technical_resources/schema.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "773f63bb41ff3d0ee6927a3ea6734102b06705630954148cfc7b5d7f380c6847",
+      "size": 1510
+    },
+    "plugins/modules/export.curve_dataset/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "c27b08e805a38c10b09aa89eefef78224b5af55a7870aee6c1105b91746a4fcd",
+      "size": 260
+    },
+    "plugins/modules/export.curve_dataset/LICENSE": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/export.curve_dataset/MANUAL.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "5bebf5ff1fe1de6e3e73d087f45e13aa0535f9356ccb00d08018e0d856e59d43",
+      "size": 3071
+    },
+    "plugins/modules/export.curve_dataset/README.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "4e60a49af4c29cdc45b43f2ecbddadc2963a23966ca5e690c046f67e1e3f3474",
+      "size": 529
+    },
+    "plugins/modules/export.curve_dataset/SHA256SUMS": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "b05343e2f4ce2f9b0c389d3fa374678cde79e3ee65e9056a2cf663ccf7e97ae3",
+      "size": 667
+    },
+    "plugins/modules/export.curve_dataset/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "b05343e2f4ce2f9b0c389d3fa374678cde79e3ee65e9056a2cf663ccf7e97ae3",
+      "size": 667
+    },
+    "plugins/modules/export.curve_dataset/TEST_RESULTS.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "1db1bb4cacdc2de9f1fcd27e5e4d81cc464364d40c6380d336cdd2123e0ab666",
+      "size": 953
+    },
+    "plugins/modules/export.curve_dataset/api/curve_dataset_export_api_v1.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "6d8064319895fc304692fc4684945521bd9934dc13e232bbd0b02c85b698546c",
+      "size": 6840
+    },
+    "plugins/modules/export.curve_dataset/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "10c2a4eb82a107d1c889f1b959175bcc532f4ca3d8dedd0a5efb87955e92f628",
+      "size": 3031
+    },
+    "plugins/modules/export.curve_dataset/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "67db0d4c43c6b930420442f69a28a66464b708e867d42cc5ad113f419096806e",
+      "size": 160
+    },
+    "plugins/modules/export.native2d_presentation/LICENSE": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/export.native2d_presentation/MANUAL.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "b126bd893fd6e9bc5b8b7cb61bda4486a566d8827aef4c0caf6e595a454692ce",
+      "size": 1499
+    },
+    "plugins/modules/export.native2d_presentation/SHA256SUMS": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "a3a98c71b26552425f59d4e6c41fd43b522c69482e5adc72c65ee76983cc79a8",
+      "size": 514
+    },
+    "plugins/modules/export.native2d_presentation/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "014312bba854be31df3d497390b319b81911ac77c5fbd72837c63df5cb5b565b",
+      "size": 593
+    },
+    "plugins/modules/export.native2d_presentation/api/native2d_export_api_v1.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "f34820985816161d21aaffbb4bf52b27ab53105bcf9d6927b22fce9c52d881b7",
+      "size": 1631
+    },
+    "plugins/modules/export.native2d_presentation/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "287313d30d7448d064dc491645136d4aec39dcec2a2e8e3a805145b3cb25d620",
+      "size": 3439
+    },
+    "plugins/modules/export.native2d_presentation/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "49e66643f5ae3d3a325c5994f98d0c08884d7f08ca1a33c462cfec720bb2a462",
+      "size": 162
+    },
+    "plugins/modules/export.native2d_presentation/runtime/native2d_export.py": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "5d7de5a67897343345a8f93dc5e0356d37a9e3310de7d1213ce8099c232c3c72",
+      "size": 9257
+    },
+    "plugins/modules/export.native3d_geometry/LICENSE": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/export.native3d_geometry/MANUAL.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "986686541936b75d34397fe1c2cc7683baf4386b484c7ca7657b40c2ef645238",
+      "size": 2024
+    },
+    "plugins/modules/export.native3d_geometry/SHA256SUMS": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "34a15c4d702dc107fd708c50372b08de0984fdd4768a0b9c55509791e4368bb9",
+      "size": 428
+    },
+    "plugins/modules/export.native3d_geometry/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "34a15c4d702dc107fd708c50372b08de0984fdd4768a0b9c55509791e4368bb9",
+      "size": 428
+    },
+    "plugins/modules/export.native3d_geometry/api/native3d_geometry_export_api_v1.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "38cf8442595fa5f30d96c7982e864c8f21137cf3e692c8e028640c105e80fa85",
+      "size": 601
+    },
+    "plugins/modules/export.native3d_geometry/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "ae11cf29eeed21c0ec3e7708a3fa85b75bbee195fa32fee4ea36bc02853617cd",
+      "size": 7945
+    },
+    "plugins/modules/export.native3d_geometry/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "1b6b8e20ab4ec5149c9c0a7e5460847261ff19cf981f0285a7c89c03aa5bad14",
+      "size": 154
+    },
+    "plugins/modules/library.chemistry.records/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/library.chemistry.records/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dd42ed62539ac2b0932e8f4ada7e0137901c5d1d04f341e06b6bfa1d52731186",
+      "size": 768
+    },
+    "plugins/modules/library.chemistry.records/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "324b9496acc2bfc330105e8e53c2e81600da2587cc5297a3111a2aec176a4260",
+      "size": 394
+    },
+    "plugins/modules/library.chemistry.records/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "58142fbc13456cdf4673725eede5b0a874b0c8b5bd97d5e2090002d7de42a8c7",
+      "size": 1671
+    },
+    "plugins/modules/library.chemistry.records/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3139ada23ce668325b5a3404b6d884b6a931a4c70b2a77493b42a9ef38fa8e37",
+      "size": 550
+    },
+    "plugins/modules/library.chemistry.records/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "859ef31f591b57490c0b4b9b92839bf64890a5c6e54781a579582706bc59efdc",
+      "size": 171
+    },
+    "plugins/modules/library.electronics.components/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/library.electronics.components/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b43c5eb019a15c2d6a909f4d9350d654f3e0510e5ab94528b4e249a4082527c4",
+      "size": 773
+    },
+    "plugins/modules/library.electronics.components/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8e9e0d65cdb741d1645dbd34dd113891409ba41b4fa5dc77a45b776e3eeb87fe",
+      "size": 394
+    },
+    "plugins/modules/library.electronics.components/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "264a739ffb2ed196dd04d48b675ac333080e567c802304c1d2c2913bc2c11136",
+      "size": 1676
+    },
+    "plugins/modules/library.electronics.components/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1c19334979575710d4b3868437733beea896a9105a90e77eaa26f1c619cf10bf",
+      "size": 572
+    },
+    "plugins/modules/library.electronics.components/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "08fe27910f6f2c0127fecac265c1e4a81856dd19e27991034e18b67091c95921",
+      "size": 181
+    },
+    "plugins/modules/library.molecular.structures/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/library.molecular.structures/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "93418fb078eeefe6b56170092013a02bfd886e42dcc4927e44de8dce4be73b9e",
+      "size": 771
+    },
+    "plugins/modules/library.molecular.structures/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fe62927abb04de1a5d4070ab2c20987801f8fa6493a87ed1bad7ec0b041b1f11",
+      "size": 394
+    },
+    "plugins/modules/library.molecular.structures/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c0fd0e4079333c0ac5e6fdae2648e1ce806cdd04cbfcc21a2eba4f9fded02c66",
+      "size": 1674
+    },
+    "plugins/modules/library.molecular.structures/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b93708b2f30344ff5bca12016daee7c6287896878a67bcb65a824664c4e9495b",
+      "size": 562
+    },
+    "plugins/modules/library.molecular.structures/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "21969f12843fbfae9357e4f0d42f358f98bf0569fe4308fa9ffb4b42ff26e892",
+      "size": 177
+    },
+    "plugins/modules/library.scientific.publications/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/library.scientific.publications/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b8939685995597a2e1cc41a6f0ced6abda56f07cd25843a088111d299d878801",
+      "size": 774
+    },
+    "plugins/modules/library.scientific.publications/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5d5d3d5d4e1c28bbeeb9d1dbb7b403d77288cf6b3a3080f5abb225ad292505e9",
+      "size": 394
+    },
+    "plugins/modules/library.scientific.publications/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6a3765dfc757680cbfd4811ef1d89ea82473a392321f70f365db6a01896a99f1",
+      "size": 1677
+    },
+    "plugins/modules/library.scientific.publications/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "375c77ddb171fff3a34dc5636e3d9611af71a1f2a148a88be3a788b8fe97605f",
+      "size": 577
+    },
+    "plugins/modules/library.scientific.publications/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "35b56a43b987b6c5f80bb1d65e00ce60631b4afdfaeb990f7fb29f9973b90978",
+      "size": 183
+    },
+    "plugins/modules/library.scientific.spectra/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cb3eec958086e52e9c054b3c30e448e73ad16d0802c36a68302ba5054f05b5b5",
+      "size": 65
+    },
+    "plugins/modules/library.scientific.spectra/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "140d1e8287081c9093b7ffa058bf94cc7d8fd8e9dd39d2228e50ef07acfa8e34",
+      "size": 559
+    },
+    "plugins/modules/library.scientific.spectra/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b6a20c16fe45196f7e6b72fa7e229e5923002182c87aeae4e4604cd74fddcb73",
+      "size": 394
+    },
+    "plugins/modules/library.scientific.spectra/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e53b7d98d6dcc70c309e005e6d67e8c46221af0947765d363aec22eaf1d12109",
+      "size": 282
+    },
+    "plugins/modules/library.scientific.spectra/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1a67b1191fe5aa15dc53e32eefba79a64165dcf05c1516b0195cd936e01e3240",
+      "size": 640
+    },
+    "plugins/modules/library.scientific.spectra/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1e7e01d61de8c7e89938fd98975cb5becbf0e039d45ad4107f9fe053d993df59",
+      "size": 157
+    },
+    "plugins/modules/library.technical.resources/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/library.technical.resources/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "389f589008c2192a554df496d74e8a9b7ed9c5ec8069b7b1f43668c8bb2bdbe9",
+      "size": 770
+    },
+    "plugins/modules/library.technical.resources/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e8089a204833ba9308121935ae3da0bc49c964df68a9fb80997640d20cdc50e7",
+      "size": 394
+    },
+    "plugins/modules/library.technical.resources/api/provider.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "408b734fe2e7c9461e2f39e5f385c11e66da3c955efe4482058eb9ba03a2a81c",
+      "size": 1673
+    },
+    "plugins/modules/library.technical.resources/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7f80d75aa35aafcee4faf2dc413d056faf022a9b192b75d91c1d85ca4dd7dced",
+      "size": 568
+    },
+    "plugins/modules/library.technical.resources/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "77cd6527ab6cca5dee9acb9c8aef8404627a06803ce4b5d77c181822be172db1",
+      "size": 175
+    },
+    "plugins/modules/preview.curve_digitizer/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "f52f6a7f9fc34f1ba57611af820251256cc6c3c32b35ef89a0cdd9847837756e",
+      "size": 5836
+    },
+    "plugins/modules/preview.curve_digitizer/CORE_GAPS.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "be2d4a7f660479815657f47b3a39da5dde64529e8db69c95fcc36a04e638d268",
+      "size": 4204
+    },
+    "plugins/modules/preview.curve_digitizer/MANUAL.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "cc36aad5e1f5c1cd6853169126d481dc472a03d2b4606d2dcbc44ed39ac67cfe",
+      "size": 10524
+    },
+    "plugins/modules/preview.curve_digitizer/README.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "bebc20e2996b3e1bed8110fd679336c1fa7de500a9b9a0a6dd06fba5a810f9d2",
+      "size": 2605
+    },
+    "plugins/modules/preview.curve_digitizer/RELEASE_VALIDATION.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "9a2a7e239283c37aa2bd8981a346f2b9383dcd41b3bb98ccf44f6ef14bde1dc4",
+      "size": 8644
+    },
+    "plugins/modules/preview.curve_digitizer/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "d8aac746f70725e4742f7c1b1a972d6c78398b97744911182f1f8d27ee0f68d6",
+      "size": 2008
+    },
+    "plugins/modules/preview.curve_digitizer/api/preview.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "0d3a10d61f79846629a77449d14fe727f1a1d1aeafd6a391e10b1367a459e767",
+      "size": 38126
+    },
+    "plugins/modules/preview.curve_digitizer/api/table_preview.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "38f22771ac24b868a0aba1b2a060111eede13fadf2a4a87a0a8c04f6e98dd1e2",
+      "size": 18249
+    },
+    "plugins/modules/preview.curve_digitizer/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "f41391bee5e48ec719e63ffa90e13b0d9d9c23b69cbe6ec2b73438071ddf3315",
+      "size": 2337
+    },
+    "plugins/modules/preview.curve_digitizer/gui/table_design.tcldict": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "cbc45ac8aa61797c57fa5d138042724daa3e4b841f11245bc20748a7c87bc0a5",
+      "size": 2694
+    },
+    "plugins/modules/preview.curve_digitizer/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "53306dc714550116a17437a37d3463dea0613efe6aa985f5470bd0eefe652973",
+      "size": 1154
+    },
+    "plugins/modules/preview.curve_digitizer/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "fdb3ed2799c7ca82f08837c06604424c5db05ba521c00c4ea4a9fa86e70d47ad",
+      "size": 207
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_async_core_table_022.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "96c8b040ec5b3aad8d30f8bb4b9391cd763ee862e3cea0371d5a4ec36c7061ad",
+      "size": 9973
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_builder_design_012.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "fa4b3c09049cc2e5992c4f96f16d0daa544142f8926068b112c37b3eb7a0a561",
+      "size": 2216
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_calibration_id_021.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "10a772f5242f1749ecb222efe40dc71e16981656c475b575356afbcbd5de2f5f",
+      "size": 11193
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_compact_toolbar_018.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "f0d9ad17362259ae6ee6508ade97af7227dcad7261a69c1ac3b6c42e87da1581",
+      "size": 4047
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_core_retained_curves_022.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "42baa126a4d5b0bc15b0d1ecc8cc02c6925331d6ca2bfa9ccf23648c87e29c32",
+      "size": 4609
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_point_id_019.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "7901e3d0a01218042ce9d7673982657bfdb190f282832df2920e79b0461d99c4",
+      "size": 7499
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_preview_async_012.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "ba34dbb17da777506c627c8cddf82256e42c8bb447fd91f417e79c88e8a9b9e9",
+      "size": 7881
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_preview_dispatch_014.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "5d88633d746e03a9064a9e4ee7def34ca93dd804dc7864a937b2fa0be9dc21ba",
+      "size": 8390
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_preview_y2_016.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "44fb063354397a09dd44d5acb85cbc1c207df8fa7e06d8ee1267340cfe5555da",
+      "size": 4563
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_table_preview_017.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "eb74e7d13a0325379d3ba1bcf6582191479c51b6b8a97ef4bc22939a7f203535",
+      "size": 6192
+    },
+    "plugins/modules/preview.curve_digitizer/tests/test_uncertainty_cache_020.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "cdf05d20f04f50bea2c7645341d4eeb5fc5eab9194e95642487b64bbb05b518c",
+      "size": 9480
+    },
+    "plugins/modules/preview.markdown_document/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/preview.markdown_document/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a9740ab0b9e880211812a9c65edd626e2623ee3f64c1cb8dc824a5f2662c7540",
+      "size": 2216
+    },
+    "plugins/modules/preview.markdown_document/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b7f27b4e82c3a8b0323fb729265fb94b508a6ca82c3e3dc02a3e806c28205e1c",
+      "size": 1180
+    },
+    "plugins/modules/preview.markdown_document/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8332fdd385b920001de9de15ca63d1047cb42b01759568efb7d00227bbf7e911",
+      "size": 1639
+    },
+    "plugins/modules/preview.markdown_document/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "36fa99ffc9db3a297ca69eb39561c1165c3f6546f32bb5e54cc9d6b2beb08b38",
+      "size": 770
+    },
+    "plugins/modules/preview.markdown_document/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "33f0c8d2aa62df4b18a49ecfcd4c8c5a8a2318f7603df3ac871494847c8f7320",
+      "size": 1208
+    },
+    "plugins/modules/preview.markdown_document/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/preview.markdown_document/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cf363740e5acf2716fcfbfb529ab94ea1db0b5a483fbb4c0ed03553417dd6b0c",
+      "size": 1181
+    },
+    "plugins/modules/preview.markdown_document/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "59add9f6411c592b91a6db980f0576ad34aa33e887af2485670712a71f794b33",
+      "size": 12280
+    },
+    "plugins/modules/preview.markdown_document/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "649216ceea45fa0c7175979a95b78e99bd7834bdea2d16cdeda453db54ed2dc0",
+      "size": 5592
+    },
+    "plugins/modules/preview.markdown_document/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61639f2aaeca8667935d934ffa82871d609015ff8fe2faec2a3a2fc5606c6a0b",
+      "size": 16176
+    },
+    "plugins/modules/preview.markdown_document/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "af13ac7fe5ac2155c2dfd2b3d60d4072d052225315e76594a55196d82da08a92",
+      "size": 89504
+    },
+    "plugins/modules/preview.markdown_document/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2580d899bd8782fe7f1fd50189096785568bf5a261122ea9d75aaf7dc188588b",
+      "size": 157
+    },
+    "plugins/modules/preview.markdown_document/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "babf078fb7bf567b645ddda956b7d30f449607dd5ee448dbd791b85de7d2c933",
+      "size": 37357
+    },
+    "plugins/modules/preview.markdown_document/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0b1c9e732aabad7e4b7712d5675c8b243558fd765a6370333b47ec5b9e21ed4d",
+      "size": 4095
+    },
+    "plugins/modules/preview.markdown_document/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a9740ab0b9e880211812a9c65edd626e2623ee3f64c1cb8dc824a5f2662c7540",
+      "size": 2216
+    },
+    "plugins/modules/preview.markdown_document/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f75229dc5199b2bbc4f5771f1bd4c11434ea7aeb1c47760311df756e909edc8e",
+      "size": 296
+    },
+    "plugins/modules/preview.markdown_document/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "33f0c8d2aa62df4b18a49ecfcd4c8c5a8a2318f7603df3ac871494847c8f7320",
+      "size": 1208
+    },
+    "plugins/modules/preview.markdown_document/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "84aa4e00cafdd99ca630c0ba0335a5bb978928a00553d7f06086bb1a8928d7ae",
+      "size": 772
+    },
+    "plugins/modules/preview.markdown_document/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "30b69af78d4fe5c1d1f569590de387df9c0052f6b25e9e37a3eb15264e89c2f7",
+      "size": 683
+    },
+    "plugins/modules/preview.oscilloscope_waveform/API_CONTRACTS.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ad4088cfeeace8aa28db635f96b44af7e3f0df6cb8c645309599cf36f7348ae9",
+      "size": 6075
+    },
+    "plugins/modules/preview.oscilloscope_waveform/AUTHORING.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79908c73da0540aa76fc893131725ee9221b44c234ceac32c83693eae4104db8",
+      "size": 2889
+    },
+    "plugins/modules/preview.oscilloscope_waveform/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ca109201af291166c6ea4d0e97b2ef035ed7d4e16f8b05c0e2c514cd56b28052",
+      "size": 93
+    },
+    "plugins/modules/preview.oscilloscope_waveform/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "21385a5c2d43f4939cb62cfd1b33981ce03bd8c197a7aa6fa5450efe3e0f86a9",
+      "size": 4372
+    },
+    "plugins/modules/preview.oscilloscope_waveform/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b523589732d5490467780bd83308d0f42e0eb67ab4e4a5637a274d4220bb2202",
+      "size": 819
+    },
+    "plugins/modules/preview.oscilloscope_waveform/api/preview.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "413f551f696317d941e11c044e06083edd9d538e8633d0d9a5bb8a9f91f534d0",
+      "size": 3001
+    },
+    "plugins/modules/preview.oscilloscope_waveform/generated/handler_defaults.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f855771b2c8473929148a1415b79b66b112f3404326006820e10e3fdaab79562",
+      "size": 1277
+    },
+    "plugins/modules/preview.oscilloscope_waveform/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bb88d56dcc4f4b6b29aa4137c91b43433efa917a1cf63c733afddad743f9f583",
+      "size": 4322
+    },
+    "plugins/modules/preview.oscilloscope_waveform/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fb871db97fc651290cab553472fbb2c92360f63d8877a538c99b3a9ae003e43c",
+      "size": 7506
+    },
+    "plugins/modules/preview.oscilloscope_waveform/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c3aa0922f7f40087fbaf938a6be3baa1bde46f448d24ce3deab13fb153075a71",
+      "size": 904
+    },
+    "plugins/modules/preview.oscilloscope_waveform/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b1eed386c757954379dbf147fa0b0086889ba85b69cf3c304c1ca02b745249a1",
+      "size": 156
+    },
+    "plugins/modules/preview.scientific_frame/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/preview.scientific_frame/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0155aac229b1174f5d84a98b62d81a59403b3fe1c3873d959ad32d9e7e850fad",
+      "size": 1553
+    },
+    "plugins/modules/preview.scientific_frame/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "563a0ade70c0c1b8a2b9d24ec7c48e166e6b8bbd186e5618216d0abb52454e93",
+      "size": 1376
+    },
+    "plugins/modules/preview.scientific_frame/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9e16901b6fd746458d47b46437b3c257d56dd5cfa3a8c59178d6718c92bba48d",
+      "size": 1751
+    },
+    "plugins/modules/preview.scientific_frame/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9217e33d40cdb41acecb8f11e6ff243bbbce0b66d8678cf5a07d82721e4a37cf",
+      "size": 762
+    },
+    "plugins/modules/preview.scientific_frame/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c8e6c678bf4c20e6605c467199c1582bc86e87f194d8cd614f6e69e9c4590b6e",
+      "size": 7487
+    },
+    "plugins/modules/preview.scientific_frame/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/preview.scientific_frame/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c6219048b637a2ddd20854a104c6916da067a9db6d9949e49eb24b5fcdde9775",
+      "size": 1027
+    },
+    "plugins/modules/preview.scientific_frame/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+      "size": 15010
+    },
+    "plugins/modules/preview.scientific_frame/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+      "size": 6701
+    },
+    "plugins/modules/preview.scientific_frame/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "767ef48d85a012a5a76fbdabab8279b19d03d3b0b211a1c2a0dd74798f8235af",
+      "size": 20901
+    },
+    "plugins/modules/preview.scientific_frame/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e8992485f12998fe44c41f402344ff23980fcd08d09c4b9e835e19fed61c0ec2",
+      "size": 119520
+    },
+    "plugins/modules/preview.scientific_frame/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "87748578cd13c1e36468d300249760f3459fd59d9e1f14463500f19578c9005f",
+      "size": 164
+    },
+    "plugins/modules/preview.scientific_frame/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bd00f75d6cac41d53a25b4e34b362017870ddba1f8ca59fe607bd07a86158f27",
+      "size": 38613
+    },
+    "plugins/modules/preview.scientific_frame/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4563832c1f47b0e5997c46b8e07e66f0b64694fa2b0006c4384a3337f808a5d8",
+      "size": 5102
+    },
+    "plugins/modules/preview.scientific_frame/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0155aac229b1174f5d84a98b62d81a59403b3fe1c3873d959ad32d9e7e850fad",
+      "size": 1553
+    },
+    "plugins/modules/preview.scientific_frame/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6969ec405db7160794cb8718b8b1512f7c38969e9304265951ca8c8a68f7c67e",
+      "size": 493
+    },
+    "plugins/modules/preview.scientific_frame/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c8e6c678bf4c20e6605c467199c1582bc86e87f194d8cd614f6e69e9c4590b6e",
+      "size": 7487
+    },
+    "plugins/modules/preview.scientific_frame/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ecfffb695829559ff83ed47f61e67ca683353e91a6c49bf92f18a0baf6817e7c",
+      "size": 737
+    },
+    "plugins/modules/preview.scientific_frame/source/include/scientific_preview_routing.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3c7d52329313cfd3bef18a68a34b599c978bbc259ff9fdc9401fd0716444cccb",
+      "size": 9605
+    },
+    "plugins/modules/preview.scientific_frame/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b1121b030ff2dc802885a6edfe40e06813f74f3572395af8909938f80eb93a51",
+      "size": 1057
+    },
+    "plugins/modules/preview.scientific_spectrum/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/preview.scientific_spectrum/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "301ac41cf6aab25f5eda492891c59c8ef042a422204e8499fc8a4ab4462d4f87",
+      "size": 1987
+    },
+    "plugins/modules/preview.scientific_spectrum/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "694c8c3d8adb35c5d34f8615ec2b3bf37d4d16db48f465cd3c365e025903230d",
+      "size": 1379
+    },
+    "plugins/modules/preview.scientific_spectrum/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a2d25838794ee1a6eee7b489c4c0113bd0f5dc0a9bb5605d3acc725942bb0e2b",
+      "size": 1751
+    },
+    "plugins/modules/preview.scientific_spectrum/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f1306fb4e723634f49c687062eb104379c2aa3b4875809d82ace74b8bd4d9d73",
+      "size": 786
+    },
+    "plugins/modules/preview.scientific_spectrum/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2398f43418c6857db4f16059c15edba259be5ee35cc0ada379f30abc7dfddaee",
+      "size": 7492
+    },
+    "plugins/modules/preview.scientific_spectrum/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/preview.scientific_spectrum/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4fb9e2f2fd55d78034198617f7f0b8f1144db224570549d1bced9a0cf58a235d",
+      "size": 1021
+    },
+    "plugins/modules/preview.scientific_spectrum/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+      "size": 15010
+    },
+    "plugins/modules/preview.scientific_spectrum/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+      "size": 6701
+    },
+    "plugins/modules/preview.scientific_spectrum/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "767ef48d85a012a5a76fbdabab8279b19d03d3b0b211a1c2a0dd74798f8235af",
+      "size": 20901
+    },
+    "plugins/modules/preview.scientific_spectrum/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2eb90157c63b98c8ca51f4f2e4ba9bb97de092963e4df418470fd56356468ea4",
+      "size": 119520
+    },
+    "plugins/modules/preview.scientific_spectrum/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "03f0f0655f9286b8eec58e6cf71af7b2ddeba32b345c14b4767ba5985b3bab64",
+      "size": 161
+    },
+    "plugins/modules/preview.scientific_spectrum/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9002241ed6019ca6f431cd38c62bd394e2fe9f38a400b18fef8d1a3c84a9c227",
+      "size": 38686
+    },
+    "plugins/modules/preview.scientific_spectrum/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "78b538840805d7731292d100f4c8435ef18f311cb9a71cf18a4c88617e93deed",
+      "size": 5083
+    },
+    "plugins/modules/preview.scientific_spectrum/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "301ac41cf6aab25f5eda492891c59c8ef042a422204e8499fc8a4ab4462d4f87",
+      "size": 1987
+    },
+    "plugins/modules/preview.scientific_spectrum/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61a2f6840975f2f4731b446ccee628fdf78183c9a924062c2b7923646e869006",
+      "size": 493
+    },
+    "plugins/modules/preview.scientific_spectrum/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2398f43418c6857db4f16059c15edba259be5ee35cc0ada379f30abc7dfddaee",
+      "size": 7492
+    },
+    "plugins/modules/preview.scientific_spectrum/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "31e857efd6d01d7ebef10b862c8bb485d4e72cfeb9661c768b72f66385041e3e",
+      "size": 694
+    },
+    "plugins/modules/preview.scientific_spectrum/source/include/scientific_preview_routing.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3c7d52329313cfd3bef18a68a34b599c978bbc259ff9fdc9401fd0716444cccb",
+      "size": 9605
+    },
+    "plugins/modules/preview.scientific_spectrum/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "124a79ef7ea3e9dc6cdb9238fd92dbf86d943be971dbbc306bf688bbc38084c6",
+      "size": 1155
+    },
+    "plugins/modules/preview.scientific_trace/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/preview.scientific_trace/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5d0d263e12161b69601db936c6632fb86d502aadc0d787bff6f8ebe4f4e51ac2",
+      "size": 1547
+    },
+    "plugins/modules/preview.scientific_trace/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c27c9dfd2202ca29c5e4b5f5643b37eeac57ee76db8f3ebd158c4989750f9193",
+      "size": 1376
+    },
+    "plugins/modules/preview.scientific_trace/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "431671c894247d7e119669a0e31dbfbe84b1ac704797930fd7a70358d0238367",
+      "size": 1751
+    },
+    "plugins/modules/preview.scientific_trace/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f0b825e0d9e700ab282dfff62c4090d7826b8e7af53bdab3341b9722ce61b13e",
+      "size": 762
+    },
+    "plugins/modules/preview.scientific_trace/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bbc95c7cd8d65545db97e02c2c48d9b0f5a4c1f185b54988e91b39f132733591",
+      "size": 7483
+    },
+    "plugins/modules/preview.scientific_trace/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/preview.scientific_trace/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3ed6e0891aa5c9af5b570a717d8b339796cee563ea05a4f7cdbc68480c0a3091",
+      "size": 1014
+    },
+    "plugins/modules/preview.scientific_trace/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+      "size": 15010
+    },
+    "plugins/modules/preview.scientific_trace/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+      "size": 6701
+    },
+    "plugins/modules/preview.scientific_trace/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "767ef48d85a012a5a76fbdabab8279b19d03d3b0b211a1c2a0dd74798f8235af",
+      "size": 20901
+    },
+    "plugins/modules/preview.scientific_trace/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2eb90157c63b98c8ca51f4f2e4ba9bb97de092963e4df418470fd56356468ea4",
+      "size": 119520
+    },
+    "plugins/modules/preview.scientific_trace/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5a413f9a983cb825b8d8be024ea9f7f7603eb8a842a651f4a495655f3a03809a",
+      "size": 160
+    },
+    "plugins/modules/preview.scientific_trace/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a5e1a1fc5193ed6cf29db29e2b84126f564ded671273959b8d5903e5d84c6b85",
+      "size": 38683
+    },
+    "plugins/modules/preview.scientific_trace/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "442e9ce632e178df721b28ec4863b2d177100f67272e87bf89f185ee425c976e",
+      "size": 5080
+    },
+    "plugins/modules/preview.scientific_trace/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5d0d263e12161b69601db936c6632fb86d502aadc0d787bff6f8ebe4f4e51ac2",
+      "size": 1547
+    },
+    "plugins/modules/preview.scientific_trace/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61a2f6840975f2f4731b446ccee628fdf78183c9a924062c2b7923646e869006",
+      "size": 493
+    },
+    "plugins/modules/preview.scientific_trace/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bbc95c7cd8d65545db97e02c2c48d9b0f5a4c1f185b54988e91b39f132733591",
+      "size": 7483
+    },
+    "plugins/modules/preview.scientific_trace/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "31e857efd6d01d7ebef10b862c8bb485d4e72cfeb9661c768b72f66385041e3e",
+      "size": 694
+    },
+    "plugins/modules/preview.scientific_trace/source/include/scientific_preview_routing.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3c7d52329313cfd3bef18a68a34b599c978bbc259ff9fdc9401fd0716444cccb",
+      "size": 9605
+    },
+    "plugins/modules/preview.scientific_trace/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bcf128a0c507d730c23dc1cf3949ad5c28d5a4157571cc448d3e581fa701d7a0",
+      "size": 1149
+    },
+    "plugins/modules/preview.uml_document/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/preview.uml_document/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1a4e4a42028ffc436558cd1a106753f36b2f118b5113ca4ed4949b5b6b2f608f",
+      "size": 4419
+    },
+    "plugins/modules/preview.uml_document/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e5941a71c3e2fc796a0a3bbcef7b49e673824d116861d586525a9db9d7bb4b1c",
+      "size": 1175
+    },
+    "plugins/modules/preview.uml_document/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "65f4d5f59d5fb00077244908b14ba2c5b4054cd00de6750264e9dce04feab943",
+      "size": 1639
+    },
+    "plugins/modules/preview.uml_document/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f09b8109e95abf42f53a41f7d741216e2a56420e7bd984c88598b10db4f1a639",
+      "size": 730
+    },
+    "plugins/modules/preview.uml_document/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5e0bc57bd86ea90e6c5f12862fd9741645708cbad29075c1bb0a7a56da8885f0",
+      "size": 1030
+    },
+    "plugins/modules/preview.uml_document/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/preview.uml_document/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7aef70509f9c4e165e9dc94d5b3fde265b0c1626b197f1001c1e64df05941467",
+      "size": 1154
+    },
+    "plugins/modules/preview.uml_document/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+      "size": 12975
+    },
+    "plugins/modules/preview.uml_document/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+      "size": 6043
+    },
+    "plugins/modules/preview.uml_document/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "37dadd00d75ed67f72de30b6c5f84a71db55059805c65b0e7d4fe9a93264c125",
+      "size": 16796
+    },
+    "plugins/modules/preview.uml_document/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c760771dbe6f616467b7b4d3526f96abe8d799e4855f2c2f038eb1d3ddec4e21",
+      "size": 90528
+    },
+    "plugins/modules/preview.uml_document/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6cb0b638ea5cba944891cf279bfd5302d2023244005a246af884fb67d570c33c",
+      "size": 138
+    },
+    "plugins/modules/preview.uml_document/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3128ad9ba0062c16d26cf85bf375e8f865fe85f8282b7f55cae098a2b155ab18",
+      "size": 37498
+    },
+    "plugins/modules/preview.uml_document/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5ab2024cd0ce3bc74fecc26e3e74684977133736bf8ff8764b8b40716ae6acc4",
+      "size": 4075
+    },
+    "plugins/modules/preview.uml_document/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1a4e4a42028ffc436558cd1a106753f36b2f118b5113ca4ed4949b5b6b2f608f",
+      "size": 4419
+    },
+    "plugins/modules/preview.uml_document/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9e807c498678cf5835a4d2b3554ccab27f75673fa15fe8e4f64ad664ba3d1dfe",
+      "size": 296
+    },
+    "plugins/modules/preview.uml_document/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5e0bc57bd86ea90e6c5f12862fd9741645708cbad29075c1bb0a7a56da8885f0",
+      "size": 1030
+    },
+    "plugins/modules/preview.uml_document/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "eea9d03552e103714026378c44c2d96436d52cfa3326a9485627014f2a1aa6a0",
+      "size": 770
+    },
+    "plugins/modules/preview.uml_document/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e787a00328ae946710a200798f2dd12be39fa4c9eb3da9570e3d8024071a7c52",
+      "size": 869
+    },
+    "plugins/modules/source.lcsc/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/source.lcsc/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1b44837e4c87b7f864e3eabd6cb5854e14b032a48fe5575fec7a62400b131223",
+      "size": 2608
+    },
+    "plugins/modules/source.lcsc/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "291185ad3c6b2383f1b649f4ba2fcc2afef35ebff7b74939cd995c9890314462",
+      "size": 395
+    },
+    "plugins/modules/source.lcsc/api/connector.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b20ff9ca5351f4deaffb2809f00bc12b915039311ebdb2d154f41999cfbc9c6f",
+      "size": 5687
+    },
+    "plugins/modules/source.lcsc/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "adde520d6180140ad898884a080191eeba8664a8c5435f164fcde689dd40d189",
+      "size": 706
+    },
+    "plugins/modules/source.lcsc/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f9f1745b7086431919bb60b43b06e379b9082d7cd13dcc0ff0af496284a262af",
+      "size": 152
+    },
+    "plugins/modules/source.mouser/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/source.mouser/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c4e0a28154825b58f59ca40eb690e47edf5f5a22234950c6d0506c7d1fbd8965",
+      "size": 3464
+    },
+    "plugins/modules/source.mouser/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7def9a35fbd9ee3cfe4a413a2a9ed41199176f9e0e6003671c813db67e4bb28b",
+      "size": 395
+    },
+    "plugins/modules/source.mouser/api/connector.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9ded20b86c4aa20e518403dc2d0799d1ac345bf4a19990df84f7360a4c63924a",
+      "size": 5109
+    },
+    "plugins/modules/source.mouser/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "39dc4c05c6de3b347ab8660c8c25dc2bd184a188ff1db794c1b0e50c1d52d993",
+      "size": 737
+    },
+    "plugins/modules/source.mouser/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0970ed15b560dd6c3e058610ea6df1f7244049883783d104d925e750f386d9cf",
+      "size": 156
+    },
+    "plugins/modules/source.pubchem/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e930cba82df22de14aa793a5b0ec410949728f80e3c82121d979d5d858a0ea5",
+      "size": 119
+    },
+    "plugins/modules/source.pubchem/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4e346d0083640f8612f2bfee4704df30a4251f44c89b70e6b54a619e473adc5f",
+      "size": 2364
+    },
+    "plugins/modules/source.pubchem/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d575d440851562e4aa011a3f42e874a0e437e733eea3c08dc34ec20f8de1e58e",
+      "size": 395
+    },
+    "plugins/modules/source.pubchem/api/connector.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "84d991c3253cc90004b0485d4542dda89070fc2f943ce539ba4c216e147afa34",
+      "size": 9649
+    },
+    "plugins/modules/source.pubchem/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f77ef98b0c600bfb0f3b3223685b5c08e5ee462d681d67b1ab09c92e03bb6364",
+      "size": 802
+    },
+    "plugins/modules/source.pubchem/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8ea9df6bef748dddeb1ece1dc62b8170699b786fc1c41e526c4fae15153d35b4",
+      "size": 158
+    },
+    "plugins/modules/viewer.comparison_example/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.comparison_example/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d3e2bb0c8d36bfdfde0bb644dbe94f682b0a69668aa42e6bf5aa8d161a4aab36",
+      "size": 8734
+    },
+    "plugins/modules/viewer.comparison_example/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "273e047de2b7eb9cce6d2d86a0aa904d5dd1e4b8c597d7f675be59b10ab96dc8",
+      "size": 1561
+    },
+    "plugins/modules/viewer.comparison_example/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "85b4a49f0f598b3069613d2144249d840987e923348d0a05a83dee6bc4ac2b23",
+      "size": 1841
+    },
+    "plugins/modules/viewer.comparison_example/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8ac6233574f77659c2f7670b47d610da06799ab19944e2a82cfa72efb2e59238",
+      "size": 1415
+    },
+    "plugins/modules/viewer.comparison_example/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8aa3bb3899f93d1b13f2118fe77de34c8b4a3e01ce3062e26e4aaa9e4ea82eb2",
+      "size": 8069
+    },
+    "plugins/modules/viewer.comparison_example/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/viewer.comparison_example/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61cc33fa855f8cf565f1d8a366446bfd42f4346154b59d0fd96ab06806a8e720",
+      "size": 4914
+    },
+    "plugins/modules/viewer.comparison_example/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e1774ac74583a25f73240274201f9207c4d40cc40f3216a1b81199f64c1f596c",
+      "size": 16071
+    },
+    "plugins/modules/viewer.comparison_example/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "22db0c2bf9a8434e7ae77868c40d0f55d569c3b065f32b4edf92da1f29d30cde",
+      "size": 6991
+    },
+    "plugins/modules/viewer.comparison_example/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "632d715af648423b4c1aa63f70899da9b32956664fc2d6c40798f9f160f9c3ef",
+      "size": 21590
+    },
+    "plugins/modules/viewer.comparison_example/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "55dca273732006a54ed7af588831f9d595bfe38388cf0e8f63ea4ffee31fee81",
+      "size": 109416
+    },
+    "plugins/modules/viewer.comparison_example/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e097cfce12e425ced77ffdf89eb16bbea1c9cafcca61fb7957de1b429358ca69",
+      "size": 157
+    },
+    "plugins/modules/viewer.comparison_example/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4dc073803442fdc6f184bccc44f5f36074511c9819236b97814a3a8aff4a5821",
+      "size": 39849
+    },
+    "plugins/modules/viewer.comparison_example/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e4dd7c8dde3577c9c3b2e5f7906b853b143b0826a6bfa8aea62c49bfd3eeef5f",
+      "size": 5314
+    },
+    "plugins/modules/viewer.comparison_example/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d3e2bb0c8d36bfdfde0bb644dbe94f682b0a69668aa42e6bf5aa8d161a4aab36",
+      "size": 8734
+    },
+    "plugins/modules/viewer.comparison_example/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e7b0383c6cb821dfe60a38b640963ede51088e64264d47c12ba899e1143e7246",
+      "size": 677
+    },
+    "plugins/modules/viewer.comparison_example/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8aa3bb3899f93d1b13f2118fe77de34c8b4a3e01ce3062e26e4aaa9e4ea82eb2",
+      "size": 8069
+    },
+    "plugins/modules/viewer.comparison_example/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6b28bf01026edd3b66142b448dfefcd47a75126d29b6d6d965780e6efe495c62",
+      "size": 683
+    },
+    "plugins/modules/viewer.comparison_example/source/include/comparison_client.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dbbb6de1cf3f1c6a2e27c04c66444cb38405871034646e056edc80c0d1fa9f4e",
+      "size": 332
+    },
+    "plugins/modules/viewer.comparison_example/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1915a17b037676e980c4aadce41ef71e632f4b6f317d3ae1b3462b8498ac0d93",
+      "size": 1919
+    },
+    "plugins/modules/viewer.comparison_example/source/src/comparison_client.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "faee83f792be03535b8bf911777d0d6a987a72d73be5fc0c4cf04d22c9b8d28f",
+      "size": 5375
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/API_CONTRACTS.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fe2f74ff595ad715ba352aaefa6d41db66697e361e13a7f081d3498789196a10",
+      "size": 4055
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ca109201af291166c6ea4d0e97b2ef035ed7d4e16f8b05c0e2c514cd56b28052",
+      "size": 93
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "982e05ab59d497e3c8dbec45d1323e2f1c17586bf62d78e0815525cf498a9c0d",
+      "size": 601
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9d885b7c40672dabe75f09b987985909f0592c262730552fbb7a65ab19faac3f",
+      "size": 1064
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "01a952ded023be614d13265d58bceace018904044a2a61a12936401f50ce844c",
+      "size": 2634
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/generated/handler_defaults.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "55243357122c0d5ebf3149af5a1547338d944ed7ffdb66dd85e9c13990b17ed0",
+      "size": 620
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d4a9797fc27e9c83c62114883aa06aedaff3772a2057248689678a1004f4c84a",
+      "size": 1946
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6711d2224afd73dbf8bb0d6e99f4af3cf688c7c863969f1e524a42693b198989",
+      "size": 503
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "de4d176f4950286cb6df4fcd4daa5535832a68d3ae3a5a1bd4669dc0e69bb9fb",
+      "size": 5770
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3e59875d740c4060bfc1968dab1129eb6bccbacc53b07c7c34b24b1b9ec55dce",
+      "size": 164
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/resources/icons/CATALOG_ICON_PROVENANCE.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6ea1d254ad091177dae86cce7350a26835c3ccbd492dd3df00aafed45c97e641",
+      "size": 667
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/resources/icons/catalog_scientific_xy.png": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "172bd16ee940e7a2c5dbb6ed95ffe460472a79bd7c59abf92aad196e11994304",
+      "size": 5698
+    },
+    "plugins/modules/viewer.dev107_scientific_xy/resources/icons/catalog_scientific_xy.svg": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5b9befe46604c4ead9c9c1d4756569ef91335b80334998ac07a01095fb1a901c",
+      "size": 898
+    },
+    "plugins/modules/viewer.engine_3d/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "9d7332a3499472d7909c42c2e2150d22fa931478ba91a60527470fa476842637",
+      "size": 1751
+    },
+    "plugins/modules/viewer.engine_3d/MANUAL.md": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "e3c0307566f3e94a8ad54e66ed6acfa1f59de084acd65be35ea81709500f199b",
+      "size": 4778
+    },
+    "plugins/modules/viewer.engine_3d/SHA256SUMS": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "d68cbfdd18ca5dc152715c8d54890691dfea299e42b1772a27a409763f9cf555",
+      "size": 663
+    },
+    "plugins/modules/viewer.engine_3d/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "d68cbfdd18ca5dc152715c8d54890691dfea299e42b1772a27a409763f9cf555",
+      "size": 663
+    },
+    "plugins/modules/viewer.engine_3d/build_native.sh": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "2ee6cbff5beb6b04fe52e3559204972630863fde6d126b02aaaf933f71a46fd9",
+      "size": 562
+    },
+    "plugins/modules/viewer.engine_3d/icons/engine_3d.png": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "dbd626eb39482840718d967e72e2995bb6137c0b2fda11afe2fd0d5a13d482a5",
+      "size": 13236
+    },
+    "plugins/modules/viewer.engine_3d/icons/engine_3d.svg": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "9701047d9f5f9b6abbc308ec004569a90197858b7cc6db9b85aa1859e8f0bd0f",
+      "size": 1094
+    },
+    "plugins/modules/viewer.engine_3d/module.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "02639e671a2be6cfa194ac0dfa4bc9cbdb5ce1923b0dc260b1ec70a359519aa7",
+      "size": 1084
+    },
+    "plugins/modules/viewer.engine_3d/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "0b8f729d253d51448e8e1ab581ddd742227924b55c0cc1da4b0a44e5e25c8a0e",
+      "size": 138
+    },
+    "plugins/modules/viewer.engine_3d/runtime/engine_viewer.tcl": {
+      "git_executable": false,
+      "mode": 436,
+      "sha256": "8ebe990c5f91b2fa14dfa9b4684187235df1f03fb40a0fdf4a2b971baddca3f9",
+      "size": 263
+    },
+    "plugins/modules/viewer.ir_spectroscopy/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.ir_spectroscopy/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6694c8e3d6aaa7310e605ce61524d46d7151161e90826631a3f00d79d35d020d",
+      "size": 5714
+    },
+    "plugins/modules/viewer.ir_spectroscopy/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6d389a6ad8d494b988facf3c4a8658d0a50407065d65312bc4d24dc9cc122fee",
+      "size": 1556
+    },
+    "plugins/modules/viewer.ir_spectroscopy/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2208449aa608676b865a67dd5f7eddc9f9add7db71490ba4e556eca3e1440746",
+      "size": 2129
+    },
+    "plugins/modules/viewer.ir_spectroscopy/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "37c2eb5eddbb0254ca6e2238f0b610a0fafdfe01e75f8bceba3c6b4ba3e03160",
+      "size": 1358
+    },
+    "plugins/modules/viewer.ir_spectroscopy/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+      "size": 20217
+    },
+    "plugins/modules/viewer.ir_spectroscopy/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/viewer.ir_spectroscopy/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e93c1410c459aa673e2df4f82f2138fb0e0b46cea1188c1be989ed71aabf0929",
+      "size": 5207
+    },
+    "plugins/modules/viewer.ir_spectroscopy/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9be634bd797e7d8d04f051129d0ff084cc191fc2215a0958806ebeb3929f055a",
+      "size": 16717
+    },
+    "plugins/modules/viewer.ir_spectroscopy/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cadcfcaf2f4e36e5159f782d248478dc4f49101c793564cabeffe30b0b68c816",
+      "size": 7122
+    },
+    "plugins/modules/viewer.ir_spectroscopy/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "09fffc74b595b05a4ae0ba88be100e1f4631320f5e5d8f19b96a7ac2ca9e345b",
+      "size": 22076
+    },
+    "plugins/modules/viewer.ir_spectroscopy/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f94cea9fb7064b6dd0c75c4c632f89304f495b06dda79b3be6a12032325179ea",
+      "size": 109856
+    },
+    "plugins/modules/viewer.ir_spectroscopy/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5dcb06f4c3a765fcb47c8c52b1bdb723eb0e9bbbd85ed0a1590dba4d982d8645",
+      "size": 167
+    },
+    "plugins/modules/viewer.ir_spectroscopy/resources/icons/catalog.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4699b8331ac9b9efde60b6583f87fb3a46f698d8e2f356727df4113be327ad79",
+      "size": 463
+    },
+    "plugins/modules/viewer.ir_spectroscopy/resources/icons/xy_plot.png": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1db549d2c25c30a2fdbcd39ef92d639a4e36c0ccc5d0a4ba00704a5b7bd38c6f",
+      "size": 1810
+    },
+    "plugins/modules/viewer.ir_spectroscopy/resources/icons/xy_plot.source.svg": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "dcecab36863917943110ec70231efd2f03f66f0dccfb010103208da6b1a443a2",
+      "size": 262
+    },
+    "plugins/modules/viewer.ir_spectroscopy/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d06de71052250f43a2babfbb64b1c4d6254b08349e8f156116eee1744c4363d9",
+      "size": 40148
+    },
+    "plugins/modules/viewer.ir_spectroscopy/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0cef242404cdb53f1cb947c5fb911a3de29703e3b78ecec987211ec17c4f1b62",
+      "size": 5446
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6694c8e3d6aaa7310e605ce61524d46d7151161e90826631a3f00d79d35d020d",
+      "size": 5714
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0ed0157819ca0695ad52b881356bfb0ddc7a957cca577955d32932ae8bcb3f80",
+      "size": 675
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+      "size": 20217
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7",
+      "size": 470
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/include/ir_viewer_client.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a77b6a89f3f21baefe9540928f1d1b451bdad8a4f33dadf1819179fe1f64009b",
+      "size": 266
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1cbb442cb0ec3b9686f4ecd57b61d42e3bc588444f5fad7ffcefbf0af94e3bf5",
+      "size": 2141
+    },
+    "plugins/modules/viewer.ir_spectroscopy/source/src/ir_viewer_client.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cb3f8abd3243ae63e917f4f4d0e756de9f0b81cb0939baf507aacededb787e50",
+      "size": 4553
+    },
+    "plugins/modules/viewer.markdown_documents/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.markdown_documents/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "160582549a7ac606468170ae24fda8f071ac294b6c3c59a47ee4024c74c1482c",
+      "size": 3594
+    },
+    "plugins/modules/viewer.markdown_documents/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "84744b1177f4785ef4daa754ff70491b6e36e1d88823fd2dc0a0f2bae524faa7",
+      "size": 1181
+    },
+    "plugins/modules/viewer.markdown_documents/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "65df0294117c66745ccefdaac3a8f138a963c16d055c482a83b7005a6b651401",
+      "size": 1639
+    },
+    "plugins/modules/viewer.markdown_documents/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d491cb81f586fe18770600913007a059ecc603c57bb217ef3952cf7263e8219a",
+      "size": 1415
+    },
+    "plugins/modules/viewer.markdown_documents/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d58a1245fa8004b90031734a1d885f60252b58cb6461092e49ea862dd123e9d9",
+      "size": 4867
+    },
+    "plugins/modules/viewer.markdown_documents/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/viewer.markdown_documents/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "77508d8a518daf68c9702c782e33799892ac3f654b12dc8f17fe72bb17ccd7d4",
+      "size": 5050
+    },
+    "plugins/modules/viewer.markdown_documents/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "59add9f6411c592b91a6db980f0576ad34aa33e887af2485670712a71f794b33",
+      "size": 12280
+    },
+    "plugins/modules/viewer.markdown_documents/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "649216ceea45fa0c7175979a95b78e99bd7834bdea2d16cdeda453db54ed2dc0",
+      "size": 5592
+    },
+    "plugins/modules/viewer.markdown_documents/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "61639f2aaeca8667935d934ffa82871d609015ff8fe2faec2a3a2fc5606c6a0b",
+      "size": 16176
+    },
+    "plugins/modules/viewer.markdown_documents/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cdec2775214f31b9adfdfae1cde82b2c1932eabe67cfbcc119eb71c48d372acc",
+      "size": 93576
+    },
+    "plugins/modules/viewer.markdown_documents/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fdd9c8c52fa54f3d33abbb2bf324f5ebab01b172d9e290495503cf0f5f425cbd",
+      "size": 150
+    },
+    "plugins/modules/viewer.markdown_documents/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3fbd16aece9a51f311135d50f0e898696cf690d2de25e13ff83516a56df7f899",
+      "size": 37735
+    },
+    "plugins/modules/viewer.markdown_documents/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a2be20494c95e3e9546c14db2685674da92963748781c88a95bb9f878b8beb19",
+      "size": 4143
+    },
+    "plugins/modules/viewer.markdown_documents/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "160582549a7ac606468170ae24fda8f071ac294b6c3c59a47ee4024c74c1482c",
+      "size": 3594
+    },
+    "plugins/modules/viewer.markdown_documents/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3fbf7f9a0f56f3ee29af9d52dfe8059cdce5858fd05639b3e4716cc66aee60ca",
+      "size": 297
+    },
+    "plugins/modules/viewer.markdown_documents/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d58a1245fa8004b90031734a1d885f60252b58cb6461092e49ea862dd123e9d9",
+      "size": 4867
+    },
+    "plugins/modules/viewer.markdown_documents/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "40a5aea48de5a92d93193ce257443ca5e3b9b60424eea307b579ee91360b2e51",
+      "size": 2030
+    },
+    "plugins/modules/viewer.markdown_documents/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "eb88c011ee08b3b5d8da80df8bce51e4627567afc437f09bac618a7a058e351f",
+      "size": 1009
+    },
+    "plugins/modules/viewer.native_3d/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bb602436d3e4f0a0596d8c074ddc47de3b5ddf2c8e949fc010016e84eca7cb19",
+      "size": 9903
+    },
+    "plugins/modules/viewer.native_3d/LINUX_RUNTIME_DEPENDENCIES.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "512495b4aa6da04ae1f197f243b372594113567d4f6016e8ff6cb3a8f81c8f0b",
+      "size": 2670
+    },
+    "plugins/modules/viewer.native_3d/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8cec7d50959e9b37c2229f211a113428d8ff228c0d3e4c9aa7f336c4831ff4a6",
+      "size": 10335
+    },
+    "plugins/modules/viewer.native_3d/NATIVE_3D_VIEWER_API_v1.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "053bdbdc77187d00a9e3ebd810ab6e842a353ef581b2fd0f35981c939b824988",
+      "size": 8505
+    },
+    "plugins/modules/viewer.native_3d/SHA256SUMS": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "05169f9f823324ded12b331ddb164d67a8c692870c7e8714fbb8db1ae3b57147",
+      "size": 16135
+    },
+    "plugins/modules/viewer.native_3d/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ec9c8f4ead02acac541d176cb172ac3e602fea87f487a63a5ee5940ecab4421b",
+      "size": 16042
+    },
+    "plugins/modules/viewer.native_3d/THIRD_PARTY_NOTICES.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a29be83152caa8a4b8d4df778dc0ff6ba932aee4d98d671192204660a05a6d47",
+      "size": 2816
+    },
+    "plugins/modules/viewer.native_3d/api/native_3d_viewer_api_v1.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "80e56a16d515c657347f72953a7d2d15a5e00ba0eebdb7270639c40a42f863b9",
+      "size": 108075
+    },
+    "plugins/modules/viewer.native_3d/api/script_bridge_binding.py": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c0a8aab62538cb455284771791224847d00e3d3ae9e3cca602540192e75df6d9",
+      "size": 1681
+    },
+    "plugins/modules/viewer.native_3d/api/workspace_provider.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9fb3aba2d80ccd01e084e53cbe519e3a9b3007c7d91a1f823b90451170e6ff62",
+      "size": 6493
+    },
+    "plugins/modules/viewer.native_3d/bin/gx3d-host": {
+      "git_executable": true,
+      "mode": 493,
+      "sha256": "acba10b7b7f649b7a2a8636583dd170afdf3c2833a619232a07187ec7065a1e6",
+      "size": 296032
+    },
+    "plugins/modules/viewer.native_3d/bin/gx3d-worker": {
+      "git_executable": true,
+      "mode": 493,
+      "sha256": "53ec174cf17d98e9b2bb5ff31ee2809603cc119cdf6c3c9aa2e42c343e51adac",
+      "size": 209000
+    },
+    "plugins/modules/viewer.native_3d/icons/native_3d.png": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "02d9f1ce315c9b21c67720be293ffa417127e37c538cc4a1769438d192f0f9e7",
+      "size": 13299
+    },
+    "plugins/modules/viewer.native_3d/icons/native_3d.svg": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9256108f085d1f27590da2704cffad29bdd6bfb38dc1922c0f2085dfa75ac0da",
+      "size": 1079
+    },
+    "plugins/modules/viewer.native_3d/include/gx3d.h": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4f3dd24c10c2b161c56d7e9d5d81818970d8710e07afea7b8181ac47ccd36356",
+      "size": 4184
+    },
+    "plugins/modules/viewer.native_3d/lib/libgx3d.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "204914e6b6f3d89e8111ecf51e2b6ab18d0cdd2c344d7dd037dae368b55ff160",
+      "size": 101832
+    },
+    "plugins/modules/viewer.native_3d/licenses/opencascade/LICENSE_LGPL_21.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e237fa56668030e928551ddd60f05df5fe957f75eab874bbd017e085ed722e7c",
+      "size": 26434
+    },
+    "plugins/modules/viewer.native_3d/licenses/opencascade/OCCT_LGPL_EXCEPTION.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "04580a884ea6cea294402649ff7b5cbb167d47462d1340a4ed33e550db10a81b",
+      "size": 663
+    },
+    "plugins/modules/viewer.native_3d/licenses/openssl/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+      "size": 10175
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "11232448be82e0ea2c2c66219c2e36389f42249894070ee10c549ff182fc08b6",
+      "size": 1761
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "11232448be82e0ea2c2c66219c2e36389f42249894070ee10c549ff182fc08b6",
+      "size": 1761
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkAcceleratorsVTKmCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "376f7f507577786a6415abbcf0d98e64e755194051366266af4621fc4fcb4333",
+      "size": 2106
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkAcceleratorsVTKmDataModel/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "376f7f507577786a6415abbcf0d98e64e755194051366266af4621fc4fcb4333",
+      "size": 2106
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkAcceleratorsVTKmFilters/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkCommonCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkCommonDataModel/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkCommonExecutionModel/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkCommonMath/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkDICOMParser/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "207ac5fbf0e944b6dc725b1ff9182ef2402763bb39e00f9a7e3bfc90bfb1c2ca",
+      "size": 1822
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersExtraction/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersGeneral/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3b611790735500dff353f358cc97b283521bb334f5404cd6240d7fea315950fa",
+      "size": 3450
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersGeometry/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersHybrid/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersImaging/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersParallelImaging/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersParallelStatistics/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersSources/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersStatistics/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkFiltersVerdict/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkGUISupportQt/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkGUISupportQtSQL/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkGeovisCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOADIOS2/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOExport/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "27f537cfa93d17a11939834d98e5dd91ed61ad8583b054f1bb6bdcd28f3ae290",
+      "size": 2456
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOInfovis/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOLANLX3D/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0ddd251503507a152197e515e2e55cc8d7089c93c52d4b6160fcf2f35c821a93",
+      "size": 2288
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOMINC/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cc52791b4ea851ff1fccae1c315fd2a843d4c15ed07bf4ee55454056ce0de611",
+      "size": 2260
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOMySQL/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIONetCDF/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "53b4cbb06188bf11b6b5d9c936513c262aa38ac6b96c9c8aed62781859a9f947",
+      "size": 3026
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOOCCT/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f7aa19ccc27c0aca1a462fb651cfc8e181a23d6dda2c25d8349dbaada40c31a8",
+      "size": 1566
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOODBC/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOPIO/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9c7c8dc10168d317e46fa96f1fe1ed1e418b4ea05d783971930f7116e1ef5d62",
+      "size": 3052
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOPLY/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f986802c1b8a0498fdf559c65877b760422468c1bf9ca8243ae959e97f7530c1",
+      "size": 731
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOParallelLSDyna/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOPostgreSQL/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOSQL/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkIOXdmf2/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6eb134f3c1426a4432ddbf34f81fcad2536234142f15b71306a726a796cf580a",
+      "size": 1647
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkImagingCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInfovisBoost/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInfovisBoostGraphAlgorithms/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInfovisCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInfovisLayout/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInteractionStyle/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkInteractionWidgets/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingLabel/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingOpenXR/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0f24371c7bb1743dda4be65130f132fb20b55ed43970f2e9fd04d35b4a4c5f7f",
+      "size": 640
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingParallel/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingQt/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkRenderingVolume/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkViewsCore/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkViewsInfovis/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkViewsQt/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79e00eba197fb5baa8e5d1d76a8bbc7509be8ea07e1e6e11386778ff2cf4c8ba",
+      "size": 1781
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkdiy2/LEGAL.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "db26f00306300a38f343aa377a23f571622ce493e3cb23ef98918fc28e2e47d6",
+      "size": 1164
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkdiy2/LICENSE.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "728b467c7bd03d90a106d036a65724e52959db853e4eefb65c4fbf3e7ac10816",
+      "size": 2418
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkexodusII/COPYRIGHT": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d5256febd35b763a6f4b96829a6f84da2ca121967ce336142dfe5dc97c567d17",
+      "size": 1666
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkfides/LICENSE.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "69ff14d6186884b61812e2c51c0329f7f59ffc5f55a007fa11682603485451d8",
+      "size": 1671
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkglad/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cbb325cd4ac5bd06717ffa34a322b984f9d285e4c67c8ca1b7380d6ef08c2a77",
+      "size": 3014
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkh5hut/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "479eb2ffa04d8702392ef502dc3a248a34da5169d63ffa9c7c301ec53214f0a2",
+      "size": 3809
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkkissfft/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a2840585f8411be8e6826a31ef15ae65c950bd74a2437a73b013398a934ad0c6",
+      "size": 246
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkkwiml/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2c1b4faf0e1f1a23a56c657959eb138add74e175b8c8949275f9f54d3a376365",
+      "size": 1518
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkloguru/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "55e2d7d11d3125e5881f5024d533e45ef39f5ffb15b37bdcafa2cbc909714af7",
+      "size": 331
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkmetaio/License.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "de2b1b69404af9ca85e649957a57ea0b0cd2fa89c90ca999954d8ca9fae0c09b",
+      "size": 3612
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkpegtl/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8dd848eff55d8f925ad676daf6cba065c4ef7b85698ae1fbdc6603ae4fa32cba",
+      "size": 1104
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtksys/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7aa92ae0b86f73f81947d177639556fe7f8ea42a74762ecdf563e3daf7106a40",
+      "size": 1813
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtktoken/license.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2153f6031e7beb4a69eaf701c061187f134281ef1b52b63eddfaf3c1498e91d2",
+      "size": 1462
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkvpic/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "27f537cfa93d17a11939834d98e5dd91ed61ad8583b054f1bb6bdcd28f3ae290",
+      "size": 2456
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkxdmf2/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a83401d8e4e4e8da2d6901f0c85480f9ca2007d9f4eeb12fc0143e6fda165d47",
+      "size": 1650
+    },
+    "plugins/modules/viewer.native_3d/licenses/vtk/vtkxdmf3/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "486d69367fa9db177f07fdca375ab79fa46c8d2b7b0844feae588f08939ecfa3",
+      "size": 1650
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/fmt-12.1.0-h1ced75a_1/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "07580f2a3b35709ce703d523f447b242f6dfec7582a8c0df102c7fa2849375f8",
+      "size": 1431
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/freeimage-3.18.0-h81f0cfa_25/license-fi.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0bb9a3123297c73ae6e19c70459fb0e58f313f67ca63176fd43f8e77668b8243",
+      "size": 17577
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/freeimage-3.18.0-h81f0cfa_25/license-gplv2.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d51615a1a47f1ddbb027920d60d3fc30a00e1284c795a47857883e641349fadf",
+      "size": 17878
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/freeimage-3.18.0-h81f0cfa_25/license-gplv3.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "084be110e3e8757d8e6945cda1fbc7e5073bbe688dc19b92c0d8440155d8e282",
+      "size": 34801
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/imath-3.2.2-h1608b31_0/LICENSE.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c20236d3b39fd20eba8e3d1fb3b892a5483df2e7d8d61bf43f165d3fac22f601",
+      "size": 1497
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/lcms2-2.19.1-hf2c6c5f_3/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6dbd60437f8ef91d8de1f08ad75882547fd4931bfcc3566a0735f28db1484d31",
+      "size": 1080
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/lerc-4.2.0-hd936e49_0/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "77a8b761727c75e2167b15bfdf61b2c0bcf8792271228bebe80779106ad00671",
+      "size": 9198
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libdeflate-1.25-h1a1d4e4_1/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4ad69099cb4374836fd27583d9991e2838cd86b6e4666ab26b2d32582c91e73a",
+      "size": 1078
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libexpat-2.8.5-hac47afa_0/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "31b15de82aa19a845156169a17a5488bf597e561b2c318d159ed583139b25e87",
+      "size": 1144
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libfreetype6-2.14.3-hdbac1cb_2/docs/FTL.TXT": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5a5ee54c5001bbad1cdc1a57cc3dd4c42199b2da09d39c7ee41fab002d02967f",
+      "size": 6743
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libfreetype6-2.14.3-hdbac1cb_2/docs/GPLv2.TXT": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c4120c6752c910c299e3bd9cb3a46ff262c268303ca2069b61f92f10a5656c18",
+      "size": 17994
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libjpeg-turbo-3.2.0-hfd05255_1/LICENSE.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ba6bceebcba0fdd35488477c2cca8c4632ce82c74dbfbc87d886ce6fc4433579",
+      "size": 6077
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/liblzma-5.8.3-hfd05255_1/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "616a3ad264ce29b8f1cb97e53037b139d406899ca8d1f799651e17bfa09830b8",
+      "size": 3119
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/liblzma-5.8.3-hfd05255_1/COPYING.0BSD": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0b01625d853911cd0e2e088dcfb743261034a091bb379246cb25a14cc4c74bf1",
+      "size": 607
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libpng-1.6.58-hdc8cecf_1/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bdb0a645ea18c60507d0368379b1ac5474b92255fcc2d115e07486a7672ba526",
+      "size": 5345
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libraw-0.22.2-h345c428_0/libraw/LICENSE.LGPL": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "eea173a556abac0370461e57e12aab266894ea6be3874c2be05fd87871f75449",
+      "size": 24389
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libtiff-4.7.2-h8f73337_1/LICENSE.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0e27c2382d7b8147972bbb746e04059a1152c8d0fda9d03ef1399d1a433c4ade",
+      "size": 2416
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libwebp-base-1.6.0-h4d5522a_1/COPYING": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5aec868f669e384a22372a4e8a1a6cd7d44c64cd451f960ca69cc170d1e13acf",
+      "size": 1496
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/libzlib-1.3.2-hfd05255_3/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e32ff4e00d9d94930537635291da39e7e612703334bf6fde8c7f1686fe8a45a2",
+      "size": 1002
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/lz4-c-1.10.0-h6a83c73_2/lib/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8b58c446121a109ccf32edc094bba3010a3d85e4ee3702950db55e4d3e87736c",
+      "size": 1311
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/occt-7.9.3-novtk_h1b358ef_103/LICENSE_LGPL_21.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e237fa56668030e928551ddd60f05df5fe957f75eab874bbd017e085ed722e7c",
+      "size": 26434
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/openexr-3.4.15-hea798b2_0/LICENSE.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "84853c91d4c2e0310741d4773469d98bb93e61029608e0ba0882a3fffdf330bd",
+      "size": 1501
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/openjpeg-2.5.4-h90fa87c_2/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a6af136f3e15038a666b61f376612a07d9a4e48cb7c01adbf3e33b3f14ab49b6",
+      "size": 2112
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/openjph-0.31.0-hf13a347_0/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5ddf5177863dfc9ab65fa129d587db651241f00e21ed2427b218bea997591f98",
+      "size": 1448
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/openssl-3.6.4-hf411b9b_0/LICENSE.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a",
+      "size": 10175
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/pugixml-1.15-h372dad0_0/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "667553d89e287203ca6ed690fa8cfc0ba24b3d7e624724bf14e6c63aab44911e",
+      "size": 3062
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/tbb-2023.1.0-hdcfe883_0/LICENSE.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "size": 11357
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/tbb-2023.1.0-hdcfe883_0/third-party-programs.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1634857eb058dce5278c57a832b8974190785145f4be9acdbdb511f3a0c4091c",
+      "size": 11631
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/ucrt-10.0.26100.0-h57928b3_0/LICENSE.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f4589c739597890dd40bccb6bf20632a99c228bdd20cfbf585b5b30c9e61b3fb",
+      "size": 29410
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vc14_runtime-14.51.36247-habf1de7_41/LICENSE.DOCX": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "08651651a7602fc7c0e2763de0fde1ff9f868df2780597cd1775ee9d6441c783",
+      "size": 39553
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vc14_runtime-14.51.36247-habf1de7_41/LICENSE.RTF": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9020a331682370e8359e02c5e51762d375896d62f42e33aef331be83255036bc",
+      "size": 45
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vc14_runtime-14.51.36247-habf1de7_41/LICENSE.TXT": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cf89b37107c22cf8ce21043da1da143087b86ce7fd4556f91c25bc429533807e",
+      "size": 7590
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vcomp14-14.51.36247-habf1de7_41/LICENSE.DOCX": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "08651651a7602fc7c0e2763de0fde1ff9f868df2780597cd1775ee9d6441c783",
+      "size": 39553
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vcomp14-14.51.36247-habf1de7_41/LICENSE.RTF": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9020a331682370e8359e02c5e51762d375896d62f42e33aef331be83255036bc",
+      "size": 45
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vcomp14-14.51.36247-habf1de7_41/LICENSE.TXT": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "cf89b37107c22cf8ce21043da1da143087b86ce7fd4556f91c25bc429533807e",
+      "size": 7590
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/Copyright.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "11232448be82e0ea2c2c66219c2e36389f42249894070ee10c549ff182fc08b6",
+      "size": 1761
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-cgns-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "72056fcc0ed284f66f52b04801b5e355ba99c3135eb4d88d7dbaf4befc217f3e",
+      "size": 1479
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-exprtk-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "51b0f96225e1a0025ee22edd5c5dd91e33a32550c1231d56347eb1ac30cdedf1",
+      "size": 1197
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-fast_float-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4dbc9c4f2ef9c347275a9ccb8451192a8df7785bb097943da261563a897d2567",
+      "size": 1104
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-ioss-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f7dfbf26d2722f9b32f4269b5dc26e9433cf18dd4db6c3a6c4d1f1d017a1818c",
+      "size": 1693
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-libharu-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "2cd5ceaf2c5a2682a12a31a21f6567c8798a53b09d4ccb3a5e1abe6ab90b1737",
+      "size": 921
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-loguru-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "9443cc2ea07c68838c0b52fbea694137638013d9b7769bc6277c423e8ffd8ae8",
+      "size": 340
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-pegtl-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "50371566f37c9eeac521b735ad42df6636ea315fb3742e67b7775abc7e75cf50",
+      "size": 1123
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-scn-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+      "size": 11558
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-token-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "79969e86a67892f84e92af67aa96f67d3cb70f19de3993f6bb9278ca1ad5a8d6",
+      "size": 1488
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-verdict-license.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c5145609f2b70450768237eee7c3d3308e7c64b12aa546565db1a7a3d8dffa68",
+      "size": 1700
+    },
+    "plugins/modules/viewer.native_3d/licenses/windows-runtime/zstd-1.5.7-h534d264_7/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8",
+      "size": 1549
+    },
+    "plugins/modules/viewer.native_3d/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1ccbdef1e2b23c85cb0aa4c2998c1d6530ececb7494cc1d75578b03dcddc5f01",
+      "size": 2978
+    },
+    "plugins/modules/viewer.native_3d/native/CMakeLists.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d7b550d3892573670b19ef4d6ad0462475dcac72da77d12ead476fb76f633d3e",
+      "size": 2918
+    },
+    "plugins/modules/viewer.native_3d/native/include/gx3d.h": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "4f3dd24c10c2b161c56d7e9d5d81818970d8710e07afea7b8181ac47ccd36356",
+      "size": 4184
+    },
+    "plugins/modules/viewer.native_3d/native/src/display_cache.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5a5655ad76fad497c4b02c47184ccff4440b1a922164540bc7a656fbf44b6ea3",
+      "size": 11715
+    },
+    "plugins/modules/viewer.native_3d/native/src/gx3d.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6b1c0444eee0367677d73a1767e3a2f3cc1f7846ce2d0d248c7eb10d1016d125",
+      "size": 23890
+    },
+    "plugins/modules/viewer.native_3d/native/src/host.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "896ab5ad5430d53980eb9d26cd02750db3f18b7374147a6d9e2dd99ca9ea333e",
+      "size": 95106
+    },
+    "plugins/modules/viewer.native_3d/native/src/repeat_components.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "bd6a8b1b71bb0aee2f69e52ea5a9d04ef62477c8c737f3fb5ed32a849e0bf1a4",
+      "size": 9447
+    },
+    "plugins/modules/viewer.native_3d/native/src/step_transfer_cache.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c95153c61e6352d902db8a9616f862c86ab5d9ed9b2c877e568eedbcdd646c76",
+      "size": 6847
+    },
+    "plugins/modules/viewer.native_3d/native/src/worker.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f93ea103deaa458be7bb12af17fe66d88573ac1f9c107ed05332b7dff17583a5",
+      "size": 49258
+    },
+    "plugins/modules/viewer.native_3d/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5c6c18921406f947f343351a891e3f1e09af54d1be3a0376a35f51e643a7ee6e",
+      "size": 136
+    },
+    "plugins/modules/viewer.scientific_image_inspector/CHANGELOG.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7c7f30c81e54e4af60ca392f4d6089d2edd26f6d1ecb0fad6ecc005cdc5b6994",
+      "size": 20483
+    },
+    "plugins/modules/viewer.scientific_image_inspector/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.scientific_image_inspector/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "82359ee5083bcb2a5f5abd419c7066835ea5707453fe817dd9b8f30d559fd785",
+      "size": 63729
+    },
+    "plugins/modules/viewer.scientific_image_inspector/README.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "64c9ac24748cf0b8a97acfdca973e6516e90707160c66d2e4094ef036cad62fb",
+      "size": 10920
+    },
+    "plugins/modules/viewer.scientific_image_inspector/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b187e539a74ba6735d98c63536e3c55cdd5aab9a9f34bdf7fa87d72076b3b3ff",
+      "size": 3122
+    },
+    "plugins/modules/viewer.scientific_image_inspector/api/scientific_image_inspector_api_v1.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fe0eba42281ac55b1d1eba89e202cca128639f918bf49a71356880cf566c30ae",
+      "size": 1603
+    },
+    "plugins/modules/viewer.scientific_image_inspector/api/workspace_native.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6f7257e0ae7dfbbde0542a4519757aca656042437a66d86bcfe2dd63bce60945",
+      "size": 3357
+    },
+    "plugins/modules/viewer.scientific_image_inspector/api/workspace_provider.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6a6ee74c7ccc348e955bc245dd18b9178564af64a498cd7d747579d1ae4633cc",
+      "size": 3512
+    },
+    "plugins/modules/viewer.scientific_image_inspector/docs/API.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "babc0bbd8b2b33be835115134950fba6984dbc87f72c816ad8dcf8f29a2de883",
+      "size": 9147
+    },
+    "plugins/modules/viewer.scientific_image_inspector/docs/TECHNICAL_REPORT.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "57c0de651c2191287f966e6a64ad518bd5e5382dc06d405926b5d76c74ab3194",
+      "size": 22140
+    },
+    "plugins/modules/viewer.scientific_image_inspector/icons/scientific_image_inspector.png": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "38d2ab31777df322cf7735372d8af7b540a541b82fcbf9c5f61e775860a97e2c",
+      "size": 11003
+    },
+    "plugins/modules/viewer.scientific_image_inspector/icons/scientific_image_inspector.svg": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "50fb9e24e0c132dd50cbbe2904d3628ad6d3e7d7f0eba3560fe24ecf004d8e48",
+      "size": 1222
+    },
+    "plugins/modules/viewer.scientific_image_inspector/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "19bf8aca076fdf779d3ae27a4f22ffc1293a7f8beccd60d1863223c34c765c01",
+      "size": 5726
+    },
+    "plugins/modules/viewer.scientific_image_inspector/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "772489d1de6debaaab433d195599fd044803b38f8ad926e78f192012126ab0e8",
+      "size": 240
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/annotation_tools.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0efa876105f6553e7e124b45d6e9cb4f65b2456b5d727b7f914ded79926b47d5",
+      "size": 32073
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/annotations_json.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1e70397f146e0cf4b29acce5b7a8a0a71bb6ff473352e97e6e80ecada000baea",
+      "size": 2649
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/article.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f02737ee1df97c82750e945ae30ad4e69d4261174ed97614aa084c3db40b005d",
+      "size": 15875
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/article_gui.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "ec2ffd2d00f82196ca0bc902a139be282371228d4b914404f92bca30b7c2c3c5",
+      "size": 43128
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/catalog.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "f7956188a21a3eb80239273ec9afc0d4f1e696e9e4cd041f0d5daa9f0d0f3124",
+      "size": 12500
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/editor_controls.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "781fef63e51c2862d5361cc77581ebb038ee9056495401f134bd3388d3839535",
+      "size": 12717
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/engine.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "84ba9853eef8481c1695774d13a9575b4fb2d9bc9eb2e0eec8dbaf433f51d23e",
+      "size": 24428
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/gui.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "40ac8e660ceea44238349abf4846e174f2d6bce952b50f1554ff11e005a8b848",
+      "size": 73039
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/history_strip.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7cad585445881152eedf7b6a6962b5189bcebdae06ef24fbee3ecb1ea56972d2",
+      "size": 20787
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/local_sources.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6083ee47769ba8f2067e061517380fcaa1a0109afd6ba716372ef6cc4d45bcc7",
+      "size": 2054
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/lod.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e33fb75aef24ae44612865f858a1e0756612e60b04d1ac8e148468a2fc46c5a4",
+      "size": 6867
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/manifest.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "375e28b5cc13e18a5a825556220591c9aed85c4466e8e3aab5218e5dc9103e8d",
+      "size": 6990
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/native_canvas.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "6c72865fa9e305e6f8411ec894228c5242ccf99f6a54e73ffa0be7ddf31db7f5",
+      "size": 29672
+    },
+    "plugins/modules/viewer.scientific_image_inspector/runtime/roi_context.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "612eec45c6369bd507f259fcab5d12a355e2311023db7795f296815c1cd71c40",
+      "size": 9595
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/article_gui_smoke.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3d079b44aff2000a62f481ec718c61801ffa244f1a6dc4df78caf5ad680f3520",
+      "size": 40902
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/catalog_smoke.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d6c25c1d0f84adab533c776304500a06aeaa2c8023b6ad00a784a5df666608d4",
+      "size": 1526
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/documentation_version.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "51d754e4c602446c48e9050eecc99b4ee6eb5251bce2e9026384066a1a50e72a",
+      "size": 3518
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/engine_integration.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "0879abba28dbe29cfb95898e1d4614d1809f3b6ff19d65041c8d82ea55f74f71",
+      "size": 6944
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/figure_integration.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "98b869a506ca17829934335caf3fc47a99834fcccf26313dbf706352660982d8",
+      "size": 6756
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/gui_smoke.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "fcfad975411aaa77b6fd5d78d96feee8ec9c8274c025f3ddbe4036996c0b057d",
+      "size": 17648
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/presets_integration.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "18f7bff26db6f09ab9002109c9bd7a7cd67f3221086a2f9ec495868d0d6c3f4e",
+      "size": 2965
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/run_tests.sh": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "51fb6e9a8d7118cab9d5b2d830c8ad6227a1f6b68cf3ef5fd60e0ea2ce59cb9b",
+      "size": 671
+    },
+    "plugins/modules/viewer.scientific_image_inspector/tests/workspace_model.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "a727993a63cefcf35fe14567f4e4833bee7bf4af0142896ba740c33efab0bddf",
+      "size": 1175
+    },
+    "plugins/modules/viewer.script_library/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.script_library/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e6cb207c49491e23d0903b1df23106da9048f8c0e93e5fa50e036ddaf0544210",
+      "size": 1803
+    },
+    "plugins/modules/viewer.script_library/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5eb661590dd88d4b69d5d5908da1e84464a05eefde3ce419e87ab14a4198ccf5",
+      "size": 1178
+    },
+    "plugins/modules/viewer.script_library/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e7a676bcf607de24b0b42caf5ffb5dc3298c3120f79664e4a299149b1ca3f182",
+      "size": 1639
+    },
+    "plugins/modules/viewer.script_library/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "581fa6aa09da37fc8127aab10df16097ebed028847ac398b87262fa704676579",
+      "size": 1339
+    },
+    "plugins/modules/viewer.script_library/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "48eb587ac3a852568d9f69fe43f96b5c3a36b5bdfc8079da1822db82dd81aded",
+      "size": 7888
+    },
+    "plugins/modules/viewer.script_library/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/viewer.script_library/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b5e063e99a38e49cda73c1a837c81f09307e31d74c9fadd3371a92e14c55ac99",
+      "size": 4723
+    },
+    "plugins/modules/viewer.script_library/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+      "size": 15010
+    },
+    "plugins/modules/viewer.script_library/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+      "size": 6701
+    },
+    "plugins/modules/viewer.script_library/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "767ef48d85a012a5a76fbdabab8279b19d03d3b0b211a1c2a0dd74798f8235af",
+      "size": 20901
+    },
+    "plugins/modules/viewer.script_library/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b17bb6132504dd228a1bb6a25ba0b365c159449bccc5ce598f19b6095c67feda",
+      "size": 131440
+    },
+    "plugins/modules/viewer.script_library/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "c9bddffe70a47198f46d67750f82d9b3f988c654b188995e680f162a61b251bf",
+      "size": 142
+    },
+    "plugins/modules/viewer.script_library/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7aff5c223f8126fb129511e0800a596aada2e5052b624a6910c69b11d0e57cf1",
+      "size": 38481
+    },
+    "plugins/modules/viewer.script_library/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "52abcf6cb87fe9535fcdca931e978ef2211cdb6908e230130f99a9bff0ad226a",
+      "size": 4716
+    },
+    "plugins/modules/viewer.script_library/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e6cb207c49491e23d0903b1df23106da9048f8c0e93e5fa50e036ddaf0544210",
+      "size": 1803
+    },
+    "plugins/modules/viewer.script_library/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "1ff108656eca03c0a75da63dc6ced87ec9f96c7cdf18c404ddc0b0ef33b1077d",
+      "size": 298
+    },
+    "plugins/modules/viewer.script_library/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "48eb587ac3a852568d9f69fe43f96b5c3a36b5bdfc8079da1822db82dd81aded",
+      "size": 7888
+    },
+    "plugins/modules/viewer.script_library/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "804fba4400756f3072243aa9f392bf433acd7bb868a772ec730617d40dd286c4",
+      "size": 11343
+    },
+    "plugins/modules/viewer.script_library/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "72e51c8806d6dc8ec4d3939d2f2be166a743b5303328519a5832c4c8fa4fd186",
+      "size": 1242
+    },
+    "plugins/modules/viewer.uml_editor/LICENSE": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "plugins/modules/viewer.uml_editor/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+      "size": 5300
+    },
+    "plugins/modules/viewer.uml_editor/RESTRICTED_VIEWER_PROVENANCE.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "16da8d742df587903515751d59cbce0b9d439a6713a4538a12eed36a5dd8c803",
+      "size": 1173
+    },
+    "plugins/modules/viewer.uml_editor/SHA256SUMS.txt": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "74084310177393ed08922e1530ac3242893ba9203a777bce6f8bfa0295675cee",
+      "size": 1639
+    },
+    "plugins/modules/viewer.uml_editor/api/viewer.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d9cd2a5f9860a9a1ed5ef348ad3a026d0399c62f2d763623f5592f1240af5cc4",
+      "size": 1263
+    },
+    "plugins/modules/viewer.uml_editor/gui/design.tcldict": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+      "size": 5536
+    },
+    "plugins/modules/viewer.uml_editor/handlers.tcl": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+      "size": 75
+    },
+    "plugins/modules/viewer.uml_editor/module.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+      "size": 4850
+    },
+    "plugins/modules/viewer.uml_editor/native/SDK_CONTRACT.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+      "size": 12975
+    },
+    "plugins/modules/viewer.uml_editor/native/gxtxt_viewer_sdk_v1.hpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+      "size": 6043
+    },
+    "plugins/modules/viewer.uml_editor/native/trusted_adapter_v1.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "37dadd00d75ed67f72de30b6c5f84a71db55059805c65b0e7d4fe9a93264c125",
+      "size": 16796
+    },
+    "plugins/modules/viewer.uml_editor/native/viewer.so": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "5b7319741b70619cc0fc789e0d0e97016647b447fbb57cfc786ef1ea64d27841",
+      "size": 94624
+    },
+    "plugins/modules/viewer.uml_editor/plugin-package.ini": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "579c22351cdc3f4013c9878af2110fe1d7f0c95702bcc9c4523d7345f3ac642e",
+      "size": 134
+    },
+    "plugins/modules/viewer.uml_editor/review/build.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "b6e14e1065000a7de222e7640797e33870c39781ec59bde5c9c3f60221049675",
+      "size": 37987
+    },
+    "plugins/modules/viewer.uml_editor/review/validation.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "8c0b74faf6681c1ed6c50908274f6c40c341b634253595b47787d9dc2dfbd450",
+      "size": 4148
+    },
+    "plugins/modules/viewer.uml_editor/source/MANUAL.md": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+      "size": 5300
+    },
+    "plugins/modules/viewer.uml_editor/source/SOURCE_MANIFEST.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "d716fc7f1710caf99350f6bfebc0bce493bcaba1bc1104a49f55e6a602405b3c",
+      "size": 297
+    },
+    "plugins/modules/viewer.uml_editor/source/design.gxtxt-viewer": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+      "size": 5536
+    },
+    "plugins/modules/viewer.uml_editor/source/handlers.cpp": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "7140255a9bbf101c8dda818154e422eea2c2748d37536afcf5349a5b58540004",
+      "size": 2253
+    },
+    "plugins/modules/viewer.uml_editor/source/project.json": {
+      "git_executable": false,
+      "mode": 420,
+      "sha256": "967b78e537054a3928f93b5e1b04574864b15b3a4eab399eb0de3fc4c1ad7cae",
+      "size": 1275
+    }
+  },
+  "managed_ids": [
+    "analysis.cross_spectral_transfer",
+    "analysis.dataset_expression",
+    "analysis.regression",
+    "analysis.spectroscopy.nmr",
+    "analysis.statistics.anova",
+    "analysis.statistics.correlation",
+    "analysis.statistics.distribution",
+    "analysis.statistics.outliers",
+    "analysis.statistics.pca",
+    "analysis.statistics.resampling",
+    "analysis.statistics.tests",
+    "analysis.statistics.weighted",
+    "analysis.xas.normalize",
+    "contract.electronics_component",
+    "contract.scientific_measurement",
+    "contract.scientific_publication",
+    "domain.chemistry",
+    "domain.electronics",
+    "domain.publications",
+    "domain.scientific_spectra",
+    "domain.technical_resources",
+    "export.curve_dataset",
+    "export.native2d_presentation",
+    "preview.curve_digitizer",
+    "preview.markdown_document",
+    "preview.oscilloscope_waveform",
+    "preview.scientific_frame",
+    "preview.scientific_spectrum",
+    "preview.scientific_trace",
+    "preview.uml_document",
+    "viewer.comparison_example",
+    "viewer.dev107_scientific_xy",
+    "viewer.engine_3d",
+    "viewer.ir_spectroscopy",
+    "viewer.markdown_documents",
+    "viewer.native_3d",
+    "viewer.scientific_image_inspector",
+    "viewer.script_library",
+    "viewer.uml_editor",
+    "export.native3d_geometry",
+    "library.chemistry.records",
+    "library.electronics.components",
+    "library.molecular.structures",
+    "library.scientific.publications",
+    "library.scientific.spectra",
+    "library.technical.resources",
+    "source.lcsc",
+    "source.mouser",
+    "source.pubchem"
+  ],
+  "module_packaging_sha256": "cfdf35bc617dfa2b8b9accb08484d4ef90975c1c34f834ca42c061d98123fd48",
+  "non_demo_payload_fingerprint": "b8e09d273a599b4ef4ea1a92319a7e35c8bd24f4dd98828885f2fa90306a475e",
+  "packages": [
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.cross_spectral_transfer_1.1.3_accepted.zip",
+      "id": "analysis.cross_spectral_transfer",
+      "path": "distribution/packages/analysis.cross_spectral_transfer_1.1.3_accepted.zip",
+      "sha256": "a99a40ebf1a9ddddfdd30c0a640fa34b6cd66de1a1f8d86a32ce19481a64930f",
+      "source_module_path": "plugins/modules/analysis.cross_spectral_transfer",
+      "type": "module",
+      "version": "1.1.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.dataset_expression_1.0.1_accepted.zip",
+      "id": "analysis.dataset_expression",
+      "path": "distribution/packages/analysis.dataset_expression_1.0.1_accepted.zip",
+      "sha256": "38b95583ea20e28871439f355d0f4a3a1e77f1f3145b6d532c5606e1e53e8fb7",
+      "source_module_path": "plugins/modules/analysis.dataset_expression",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.regression_1.1.0.zip",
+      "id": "analysis.regression",
+      "path": "distribution/packages/analysis.regression_1.1.0.zip",
+      "sha256": "bb7c383dd26ad2bd20fe09c1ce2731bf16ba8ce06cd7d0ded19d062a9f1c0d15",
+      "source_module_path": "plugins/modules/analysis.regression",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.spectroscopy.nmr_1.0.0.zip",
+      "id": "analysis.spectroscopy.nmr",
+      "path": "distribution/packages/analysis.spectroscopy.nmr_1.0.0.zip",
+      "sha256": "95097fbc3591cdf3c4a5bf7ddff910c5a9ba80d191c0825f71244b2d559fd5cf",
+      "source_module_path": "plugins/modules/analysis.spectroscopy.nmr",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.anova_1.1.0.zip",
+      "id": "analysis.statistics.anova",
+      "path": "distribution/packages/analysis.statistics.anova_1.1.0.zip",
+      "sha256": "a3446423798156184c4567c24f341842bc117f09018a6ae6ffcfbfefe4cc7df8",
+      "source_module_path": "plugins/modules/analysis.statistics.anova",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.correlation_1.1.0.zip",
+      "id": "analysis.statistics.correlation",
+      "path": "distribution/packages/analysis.statistics.correlation_1.1.0.zip",
+      "sha256": "460c1f6718558b6cda013cce1320419889ac14f43f321f1089e4c6f2c319a6d5",
+      "source_module_path": "plugins/modules/analysis.statistics.correlation",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.distribution_1.0.1_accepted.zip",
+      "id": "analysis.statistics.distribution",
+      "path": "distribution/packages/analysis.statistics.distribution_1.0.1_accepted.zip",
+      "sha256": "c4053900654d79401c68457096b90b782ebf28116efc652bed8947666f21371b",
+      "source_module_path": "plugins/modules/analysis.statistics.distribution",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.outliers_1.0.1_accepted.zip",
+      "id": "analysis.statistics.outliers",
+      "path": "distribution/packages/analysis.statistics.outliers_1.0.1_accepted.zip",
+      "sha256": "b0496d7d00264a6ece125fc6adedb123461d92ccd693a4a61919ec89232d0884",
+      "source_module_path": "plugins/modules/analysis.statistics.outliers",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.pca_1.1.0.zip",
+      "id": "analysis.statistics.pca",
+      "path": "distribution/packages/analysis.statistics.pca_1.1.0.zip",
+      "sha256": "b6c25f591f7c18ab66805bb0fe3fe5f1770e8568bf6b7c8e77e669d75ce0b762",
+      "source_module_path": "plugins/modules/analysis.statistics.pca",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.resampling_1.1.0.zip",
+      "id": "analysis.statistics.resampling",
+      "path": "distribution/packages/analysis.statistics.resampling_1.1.0.zip",
+      "sha256": "f72a0c4c2d9b4b130f0944dd30839c0868cf2aaff91516cfd66a73074f8eb6a2",
+      "source_module_path": "plugins/modules/analysis.statistics.resampling",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.tests_1.1.0.zip",
+      "id": "analysis.statistics.tests",
+      "path": "distribution/packages/analysis.statistics.tests_1.1.0.zip",
+      "sha256": "7f627b588875cb2144ffefb6fd112444c77faeaafca986eb107907f9c2a5a734",
+      "source_module_path": "plugins/modules/analysis.statistics.tests",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.statistics.weighted_1.1.0.zip",
+      "id": "analysis.statistics.weighted",
+      "path": "distribution/packages/analysis.statistics.weighted_1.1.0.zip",
+      "sha256": "4ec40787b2e60b61f8f1c89257b85b693755faa76a122ec037b3d567421f0d29",
+      "source_module_path": "plugins/modules/analysis.statistics.weighted",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "analysis.xas.normalize_1.0.2_accepted.zip",
+      "id": "analysis.xas.normalize",
+      "path": "distribution/packages/analysis.xas.normalize_1.0.2_accepted.zip",
+      "sha256": "c8cc967feba98b20ad93095db20f957a1767ce9ac9a3332dcfbee393e81a4603",
+      "source_module_path": "plugins/modules/analysis.xas.normalize",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.electronics_component_1.0.0_dev111_p028.zip",
+      "id": "contract.electronics_component",
+      "path": "distribution/packages/contract.electronics_component_1.0.0_dev111_p028.zip",
+      "sha256": "489dd6147e9ef020df9cc5ed738555f653fe1a1a18c749e03117e9d3ecb3e010",
+      "source_module_path": "plugins/modules/contract.electronics_component",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "id": "contract.scientific_measurement",
+      "path": "distribution/packages/contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "sha256": "b6076ea9e6c5fd2e066bf35dca6965d640353b10d5c56a88f4ea47e1d5d2a084",
+      "source_module_path": "plugins/modules/contract.scientific_measurement",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "contract.scientific_publication_1.0.0_dev111_p028.zip",
+      "id": "contract.scientific_publication",
+      "path": "distribution/packages/contract.scientific_publication_1.0.0_dev111_p028.zip",
+      "sha256": "ebf493833c0f52d992feb104a4f04e918d1c84592464256908f50c7a84ea21cc",
+      "source_module_path": "plugins/modules/contract.scientific_publication",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.chemistry_1.0.0_dev111_p028.zip",
+      "id": "domain.chemistry",
+      "path": "distribution/packages/domain.chemistry_1.0.0_dev111_p028.zip",
+      "sha256": "367f8010ed57d0dbc2c93429f9d3f74dafa8a7194513b83d37a79bfbe23579df",
+      "source_module_path": "plugins/modules/domain.chemistry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.electronics_1.0.1_dev111_p028_r2.zip",
+      "id": "domain.electronics",
+      "path": "distribution/packages/domain.electronics_1.0.1_dev111_p028_r2.zip",
+      "sha256": "e3dd29766fbf362bf3e7c93fed72427bd0f443964fbbd5127d73331f5a46b8be",
+      "source_module_path": "plugins/modules/domain.electronics",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.publications_1.0.0_dev111_p028.zip",
+      "id": "domain.publications",
+      "path": "distribution/packages/domain.publications_1.0.0_dev111_p028.zip",
+      "sha256": "750aa17af344d4ac6235ed83aeaf64a2c2763daa671c558eb9525983a91f645d",
+      "source_module_path": "plugins/modules/domain.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "id": "domain.scientific_spectra",
+      "path": "distribution/packages/domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "sha256": "aae6c6670b89e4c6b5c85fc8e816fa556421cf9e3bcaca48e574d02ca6f152e0",
+      "source_module_path": "plugins/modules/domain.scientific_spectra",
+      "type": "module",
+      "version": "1.1.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "domain.technical_resources_1.0.0_dev111_p028.zip",
+      "id": "domain.technical_resources",
+      "path": "distribution/packages/domain.technical_resources_1.0.0_dev111_p028.zip",
+      "sha256": "b2239b21b374dc05817088d69cc23566ce7abded49c9c725f39c705855a8aa3d",
+      "source_module_path": "plugins/modules/domain.technical_resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "export.curve_dataset_1.0.0_linux_dev109.zip",
+      "id": "export.curve_dataset",
+      "path": "distribution/packages/export.curve_dataset_1.0.0_linux_dev109.zip",
+      "sha256": "e76c9198bc2cb767d27c0d3fca0d398084278c49fd20909399a9739e72c580fd",
+      "source_module_path": "plugins/modules/export.curve_dataset",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "export.native2d_presentation_1.0.1_linux_dev109.zip",
+      "id": "export.native2d_presentation",
+      "path": "distribution/packages/export.native2d_presentation_1.0.1_linux_dev109.zip",
+      "sha256": "814f57525e659184d5b916d71572bcda2d72350c5dfe68ac5ad1abc7dcb9a4c6",
+      "source_module_path": "plugins/modules/export.native2d_presentation",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "viewer.curve_digitizer",
+        "plot.dataset"
+      ],
+      "filename": "preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "id": "preview.curve_digitizer",
+      "path": "distribution/packages/preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "sha256": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2",
+      "source_module_path": "plugins/modules/preview.curve_digitizer",
+      "type": "module",
+      "version": "0.1.12"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.markdown_document_1.0.0_dev111_p030.zip",
+      "id": "preview.markdown_document",
+      "path": "distribution/packages/preview.markdown_document_1.0.0_dev111_p030.zip",
+      "sha256": "fb8e4429ecd1df42eed79b254871beaf672a2a624c1bc47c79b084ace6847363",
+      "source_module_path": "plugins/modules/preview.markdown_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.oscilloscope_waveform_1.0.0_dev111_p028.zip",
+      "id": "preview.oscilloscope_waveform",
+      "path": "distribution/packages/preview.oscilloscope_waveform_1.0.0_dev111_p028.zip",
+      "sha256": "7f2fb480447e75f17bdac1196c3be1bbcbc7ade663d2f4f03ec0269be5b0a787",
+      "source_module_path": "plugins/modules/preview.oscilloscope_waveform",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_frame",
+      "path": "distribution/packages/preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "sha256": "70c6521ca9f342987845aa2b0d07ece8d9d1c1371a1b1ae7ff60a6406edd26f3",
+      "source_module_path": "plugins/modules/preview.scientific_frame",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_spectrum",
+      "path": "distribution/packages/preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "sha256": "8e95ebf19645563e120c51cc1af9108f8eba870eba523cbfc176a6a5c4c56b35",
+      "source_module_path": "plugins/modules/preview.scientific_spectrum",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "id": "preview.scientific_trace",
+      "path": "distribution/packages/preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "sha256": "e7d781ff40c74399fdad28a3a9fb86211b62271b216e97213c2c5a9833ffd781",
+      "source_module_path": "plugins/modules/preview.scientific_trace",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "preview.uml_document_1.0.0_dev111_p031.zip",
+      "id": "preview.uml_document",
+      "path": "distribution/packages/preview.uml_document_1.0.0_dev111_p031.zip",
+      "sha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "source_module_path": "plugins/modules/preview.uml_document",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "viewer.comparison_example_1.0.2.zip",
+      "id": "viewer.comparison_example",
+      "path": "distribution/packages/viewer.comparison_example_1.0.2.zip",
+      "sha256": "4cc0878a07dc6a528a6988cfe50be8801fb2993ad0d6cd14c5a90b59badcbb26",
+      "source_module_path": "plugins/modules/viewer.comparison_example",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.dev107_scientific_xy_1.0.1_accepted.zip",
+      "id": "viewer.dev107_scientific_xy",
+      "path": "distribution/packages/viewer.dev107_scientific_xy_1.0.1_accepted.zip",
+      "sha256": "938e9bc2240d2a93e05c1db2ae40cb622a975644f4e5d584cf345b9e8d020178",
+      "source_module_path": "plugins/modules/viewer.dev107_scientific_xy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.engine_3d_0.1.6_linux_dev103.zip",
+      "id": "viewer.engine_3d",
+      "path": "distribution/packages/viewer.engine_3d_0.1.6_linux_dev103.zip",
+      "sha256": "bf23632329aceb0ee1ca8389c289802f3580c35f8aa55055fc055c63f4954fe7",
+      "source_module_path": "plugins/modules/viewer.engine_3d",
+      "type": "module",
+      "version": "0.1.6"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "math.numeric"
+      ],
+      "filename": "viewer.ir_spectroscopy_1.0.1.zip",
+      "id": "viewer.ir_spectroscopy",
+      "path": "distribution/packages/viewer.ir_spectroscopy_1.0.1.zip",
+      "sha256": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+      "source_module_path": "plugins/modules/viewer.ir_spectroscopy",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.markdown_documents_1.0.2_dev111_p030.zip",
+      "id": "viewer.markdown_documents",
+      "path": "distribution/packages/viewer.markdown_documents_1.0.2_dev111_p030.zip",
+      "sha256": "6a94ff11bd9f8a0801203d3b144f748057634be68183b2999d30c9301a476b2a",
+      "source_module_path": "plugins/modules/viewer.markdown_documents",
+      "type": "module",
+      "version": "1.0.2"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.native_3d_0.9.9_accepted.zip",
+      "id": "viewer.native_3d",
+      "path": "distribution/packages/viewer.native_3d_0.9.9_accepted.zip",
+      "sha256": "9e4d750e6a768769d1b7169bd24c3b33b7f13bb1de5f9aeb911253bbc996a00e",
+      "source_module_path": "plugins/modules/viewer.native_3d",
+      "type": "module",
+      "version": "0.9.9"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.scientific_image_inspector_0.4.3_accepted.zip",
+      "id": "viewer.scientific_image_inspector",
+      "path": "distribution/packages/viewer.scientific_image_inspector_0.4.3_accepted.zip",
+      "sha256": "cc94894ff5fbb0943c11137151767eb629539d1de6f743cd9668bbf24fba4653",
+      "source_module_path": "plugins/modules/viewer.scientific_image_inspector",
+      "type": "module",
+      "version": "0.4.3"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.script_library_1.0.4_dev111_p033.zip",
+      "id": "viewer.script_library",
+      "path": "distribution/packages/viewer.script_library_1.0.4_dev111_p033.zip",
+      "sha256": "4320405e468bfb5ab93018c22f7e910d03a485da1983fd27b98141090a277320",
+      "source_module_path": "plugins/modules/viewer.script_library",
+      "type": "module",
+      "version": "1.0.4"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [],
+      "filename": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "id": "viewer.uml_editor",
+      "path": "distribution/packages/viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "sha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "source_module_path": "plugins/modules/viewer.uml_editor",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "viewer.engine_3d"
+      ],
+      "filename": "export.native3d_geometry_1.0.0_linux_dev109.zip",
+      "id": "export.native3d_geometry",
+      "path": "distribution/packages/export.native3d_geometry_1.0.0_linux_dev109.zip",
+      "sha256": "1a1a531305e26dbf0774f4b36898640ec4b7b798a6d412ebac423533d3554378",
+      "source_module_path": "plugins/modules/export.native3d_geometry",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.chemistry"
+      ],
+      "filename": "library.chemistry.records_1.0.0_dev111_p028.zip",
+      "id": "library.chemistry.records",
+      "path": "distribution/packages/library.chemistry.records_1.0.0_dev111_p028.zip",
+      "sha256": "5351c1296f5e8a556aa1169af846901cea492554644b07d695ee270c53a3c34e",
+      "source_module_path": "plugins/modules/library.chemistry.records",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.electronics"
+      ],
+      "filename": "library.electronics.components_1.0.0_dev111_p028.zip",
+      "id": "library.electronics.components",
+      "path": "distribution/packages/library.electronics.components_1.0.0_dev111_p028.zip",
+      "sha256": "3bc7facdc9b133938b5ecd8aae74ae006683c91c71c7f5f4ea0bf3e0c59008d7",
+      "source_module_path": "plugins/modules/library.electronics.components",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.chemistry"
+      ],
+      "filename": "library.molecular.structures_1.0.0_dev111_p028.zip",
+      "id": "library.molecular.structures",
+      "path": "distribution/packages/library.molecular.structures_1.0.0_dev111_p028.zip",
+      "sha256": "97f7bf9184ed7524a7ec58f5245dc2425ef00b6dd158409f390b7d44e82b7203",
+      "source_module_path": "plugins/modules/library.molecular.structures",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.publications"
+      ],
+      "filename": "library.scientific.publications_1.0.0_dev111_p028.zip",
+      "id": "library.scientific.publications",
+      "path": "distribution/packages/library.scientific.publications_1.0.0_dev111_p028.zip",
+      "sha256": "2f2173bd31e34ed3e212bba1146e32f82e76f2fa4e94ecfcce24e4c2151905c9",
+      "source_module_path": "plugins/modules/library.scientific.publications",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.scientific_spectra"
+      ],
+      "filename": "library.scientific.spectra_1.0.0_dev111_p028.zip",
+      "id": "library.scientific.spectra",
+      "path": "distribution/packages/library.scientific.spectra_1.0.0_dev111_p028.zip",
+      "sha256": "aa7debd31bf73517d3ea4c7c0ab2de62f63ce2688ff2037511a0395a6ce57123",
+      "source_module_path": "plugins/modules/library.scientific.spectra",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "domain.technical_resources"
+      ],
+      "filename": "library.technical.resources_1.0.0_dev111_p028.zip",
+      "id": "library.technical.resources",
+      "path": "distribution/packages/library.technical.resources_1.0.0_dev111_p028.zip",
+      "sha256": "d47a6e6baaeb8b2b3a150dd9c9efd04bc9fee2d3ac2ef009859eb8e0bde47397",
+      "source_module_path": "plugins/modules/library.technical.resources",
+      "type": "module",
+      "version": "1.0.0"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.electronics.components"
+      ],
+      "filename": "source.lcsc_1.0.1_dev111_p028_r2.zip",
+      "id": "source.lcsc",
+      "path": "distribution/packages/source.lcsc_1.0.1_dev111_p028_r2.zip",
+      "sha256": "65ff0bb94a80e38dd31ede4c7963fffada9260bed056fd58f9f71b0fbd4f37d8",
+      "source_module_path": "plugins/modules/source.lcsc",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.electronics.components"
+      ],
+      "filename": "source.mouser_1.0.1_dev111_p028_r2.zip",
+      "id": "source.mouser",
+      "path": "distribution/packages/source.mouser_1.0.1_dev111_p028_r2.zip",
+      "sha256": "321eb2a8448b91fabf6ab5e96aadbce57eb09f753fb22bfda0a87154b366f2d1",
+      "source_module_path": "plugins/modules/source.mouser",
+      "type": "module",
+      "version": "1.0.1"
+    },
+    {
+      "always_available": false,
+      "core_literal": "0",
+      "delivery": "PREINSTALLED_MANAGED_NO_USER_INSTALL",
+      "depends": [
+        "library.chemistry.records",
+        "library.molecular.structures",
+        "library.scientific.publications"
+      ],
+      "filename": "source.pubchem_1.0.1_dev111_p028_r2.zip",
+      "id": "source.pubchem",
+      "path": "distribution/packages/source.pubchem_1.0.1_dev111_p028_r2.zip",
+      "sha256": "ab15a5440195874eb0f986dee1573b7c5f7433dba5e3fe920bdbe45b248697bf",
+      "source_module_path": "plugins/modules/source.pubchem",
+      "type": "module",
+      "version": "1.0.1"
+    }
+  ],
+  "qualification": "Legitimate actual API registry seed; reproducibility uses these frozen bytes, not rerunning timestamps",
+  "schema": "gxtxt.dev112.registry_seed.v1",
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8",
+  "status": "OFFICIAL_API_PREPARATION_SUCCEEDED",
+  "tool_pins": {
+    "distribution/install_worker.tcl": "2139537e2afd963f6c69347e31bffe545bd499e3007ab7649ff60ac5c2fc5a24",
+    "distribution/migrate.py": "7c64f9655e4605123c5fd8e9e7cd631bcf43fd8f41ec4e6529c6c271731c237e",
+    "validation/dev112_release/prepare_registry.py": "2c16c27470350dc9d743f07cac226d16479c90905df4bf161e8e7c7ee8d1dbda"
+  }
+}

@@ -1,5 +1,224 @@
 # GX-TXT Acquisition Handler Plugin API v1
 
+## Managed native producer protocol (P032, additive)
+
+The existing API has a target-specific native protocol
+`gxtxt.native_acquisition_request.v1`. `acquisitionHandlerDispatchApiInfo`
+reports `native_operation_contracts`, exact limits and
+`native_runtime_available`. An unavailable runtime explicitly refuses; a
+catalog declaration alone does not authorize execution. The ordinary Tcl
+handler and prepared Publication interfaces retain their existing contracts.
+
+An admitted package/profile requests a subset of `source_info`, `source_read`,
+`cancelled`, `progress`, `prepare_output`, `output_write`, `output_finish`,
+`helper_call`, `scientific_spectrum_parse` and `scientific_spectrum_read`.
+The last two reuse the common CORE decoder over an already granted source and
+bounded request-local pages; see `SCIENTIFIC_SPECTRUM_IMPORT_API_v1.md`.
+CORE intersects profile operations, package declarations and the
+current phase's admitted operations. Every exchange rechecks the live package,
+request/phase, cancellation and relevant Session incarnation. Source handles
+are opaque indexed capabilities; authored code receives no RAW/source path or
+FD. A slice contains at most65536 raw bytes, transported as canonical base64
+with exact offset/count/EOF. Inspection may honestly lack a full reviewed SHA;
+Test/import require it. Metadata identity alone is not a content hash: a
+same-stat edit may reach a read, but reviewed full-SHA finalization must refuse
+before canonical publication.
+
+Numeric output bytes stay in CORE-issued typed buffers. `output_write` carries
+only opaque IDs, sequential offset/count and optional checked chunk SHA.
+`output_finish` returns a provisional reference. CORE requires actor closure,
+final byte/SHA/source checks and actual scoped capability admission before
+resolving the reference to `gxtxt.acquisition_prepared_numeric.v1` through the
+existing Publication v2 transaction. Test discards; inspection cannot output.
+The legacy output form supports rank1. The additive explicit-dimensions overload
+supports rank1..16 and independent coordinate lengths,64 outputs,
+128 variables/output and512MiB per variable; see
+`ACQUISITION_PUBLICATION_API_v1.md`. Helper registration is not execution admission; unavailable helper
+capabilities refuse. No native operation grants arbitrary paths, Tcl commands,
+Registry access or administrative Dataset mutation.
+
+Installed native packages use the ordinary Module catalog and Plugin Manager.
+CORE admits the distributed binary, matching source closure, SDK, factory,
+profile and current public operations before starting a fixed managed worker.
+The existing Acquisition callbacks route to this worker; authors do not supply
+a Tcl facade. `format_profile` selects one declared local profile, including its
+actual text/binary source kind. Existing Acquisition activation policy applies
+(Acquisition tools are always available), as do dependency and pending-update
+guards. Changing configuration, Namespace, Session incarnation or the reviewed
+package during a request refuses that request rather than retargeting it.
+
+P033 retains the exact accepted DEV111-P032 SDK-v1 ABI contract as a bounded
+compatibility case. Admission still verifies all distributed SDK, fixed adapter
+and policy bytes against both build and validation receipts. An older package
+must match the three exact accepted P032 SHA-256 values together and request
+only its original eight operations. Altered/unknown old contracts and new
+capabilities under an old contract refuse. All current source/profile/binary,
+factory, live capability, process/source confinement and final SHA checks remain
+mandatory. The runtime receipt identifies `sdk_admission`; this permits existing
+compiled code, without recompilation or changing an accepted package.
+
+`AcquisitionRequest.mapping` is an inert object with `variables` (the reviewed
+mapping rows), `dataset_id` and `contract` (the host's proposed output identity
+and contract). Its `config` contains only the ordinary typed ModuleConfig
+snapshot. Neither object grants publication or replacement authority. Native
+outputs must use a contract declared for the actual selected profile; replacing
+an existing Dataset is unavailable on this Acquisition pathway.
+
+The private CORE transport uses existing Script Job request ownership and
+Resource Management, with live host preflight and cancellation checks. After
+native actor reap, CORE adopts sealed arrays into its existing Acquisition
+transaction and rechecks their SHA before and after transfer. Prepared variables
+may add `sha256` to the previous `{variable_id schema path}` declaration; legacy
+three-field declarations remain supported. Exact typed arrays require the
+existing `typed_numeric` storage capability, negotiated through the normal
+storage policy without selecting a new writer. An explicit incompatible storage
+request refuses. Existing Publication owns schema checks, canonical SHA and
+atomic rollback, RAW provenance and optional Group creation.
+
+Canonical metadata records `acquisition.profile`, its SHA, module manifest and
+binary SHA, plus exact typed configuration JSON/SHA and the native completion
+JSON. When declared, `acquisition.config_schema_sha256` pins the ordinary Module
+configuration schema as well. Native outputs receive the actual admitted Module
+version; a contradictory authored producer version refuses. Producer metadata
+cannot replace these CORE facts. Inspection can run
+without a Session; Test prepares and hashes buffers then discards them. A Test
+result explicitly reports `scientific_acceptance=0`: successful parsing alone
+does not certify scientific publication, Group lifecycle or cold reopening.
+Managed Tcl/Python helpers use the fixed CORE subordinate dispatcher.
+`native_helper_runtime_available` reports that wired runtime's presence; actual
+execution still requires `helper_call` in both the installed module and selected
+profile, an exact registered runtime-helper ID/language/entrypoint/source SHA,
+and the current CORE request/lease. Merely registering a helper never executes
+it. Missing runtime, roster or capability explicitly refuses.
+
+Each call runs one fixed child under the same managed Acquisition Job. The
+parent checks actual PID, factory pins and enforced filesystem/process guard
+before invoke, rechecks live module/configuration/Session/lease/source closure
+while waiting and after reap, and returns only finite typed metadata. No source
+FD/path, output buffer, Registry, scheduler or publication interface is supplied
+to helper code. Python receives/returns plain JSON data; Tcl receives/returns the
+existing native Workspace JSON typed nodes in a bounded safe interpreter in the
+same child PID. The separately pinned CORE codec is preloaded without granting
+it as a root-owned system file. Python execution has a filesystem/process
+boundary, not a Python-language, account or network sandbox claim.
+
+One Acquisition request permits at most 32 calls, 1 MiB cumulative arguments/results/
+diagnostics and 30 seconds spent in helpers. Each call has at most 192 KiB argument
+and result metadata, 8 KiB captured diagnostics plus 8 KiB raw diagnostic pipe data,
+6 seconds parent deadline, 2 seconds CPU/5 seconds worker wall alarm and 256 MiB
+address space. Tcl additionally enforces 100000 commands, 1.5 second deadline and
+recursion 64. Parent drains capped diagnostic pipes and reaps every child before
+accepting its result; crash, limit, stale identity or revocation refuses the
+native request. Helper results are not scientific publication receipts.
+
+New native producers may declare additional contracts through the existing
+Module/Contract Registry sections. Before changing that Registry projection,
+CORE refuses a provided identity already owned by CORE or another provider and
+cycles reachable through the combined parent declarations. Legacy declarations
+retain their existing behavior. Unknown future parent names remain honest
+declarations, with no provider or scientific-compatibility claim inferred from
+their mere presence. Source editing/export and actual scientific qualification
+remain distinct operations.
+
+## Managed import requests (P028, additive)
+
+`acquisitionHandlerImportSourcesAsync module session sources datasetId contract
+variables ?options? ?callback?` returns `{operation_id request_id session state}`.
+It is a trusted user/admin host operation; `sources` contains1..64 reviewed local
+paths, `variables` is bounded to256 KiB and `options` to64 KiB with the same
+`source_provenance`/`destination_namespace` semantics as synchronous dispatch.
+The normal GUI opts in only for a handler declaring `managed_request` capability.
+Old six/seven-argument synchronous APIs and non-opted handlers remain compatible.
+
+An auxiliary managed ScriptJob request owns the process group, bounded controls,
+progress, cancellation and drain. The worker calls the SAME Acquisition and
+Publication APIs under one Dataset Authority transaction. No new scheduler,
+Dataset registry, writer or recovery journal is added. Session token, source and
+module/config/runtime identities are pinned; source SHA is checked across the
+whole operation. A Session change cancels the original operation and never
+retargets it to the newly opened Session. Worker-local settings do not overwrite
+the authoritative Session Manifest; the normal matching host GUI may persist its
+current drafts through the existing writer after successful completion.
+
+The callback receives `{ok 1 result result}` where result includes `operation_id`,
+`status completed|cancelled`, `session`, `module_id`, `dataset_ids`, or the normal
+`{ok 0 error diagnostic}`. Recovery failure includes `recovery_required 1` and
+retains BUSY protection. Progress reports phases and actual processed rows/variables
+or channels; `prepared_channels` means finalized inside the pending transaction,
+not a committed partial Group. A completion receipt enlisted in that transaction
+distinguishes a real committed result from a late cancellation race.
+
+`acquisitionHandlerCancelAsync operation_id ?reason?` requests cancellation and
+returns a boolean. Repeated cancellation is idempotent. Recovery runs only after
+the owned request group has drained; it restores partial payloads, Registry, RAW,
+metadata and Group. Cleanup removes only a newly created empty exact request RAW
+directory, preserving pre-existing directories and any contents. Resource release
+uses the live host's existing Resource Management authority. No child impersonates
+its parent to release resources.
+
+`acquisitionHandlerAuthorityBusy session` is a cheap nonblocking host query.
+Mutable Dataset operations keep their lock/recovery guards and refuse BUSY while
+the managed import owns that Session. Advisory Browser/Preview refresh retains the
+last view and coalesces until the same Session becomes available. Protected
+resource accounting is coalesced asynchronously on Tk hosts; scientific locking,
+journaling and recovery remain synchronous authorities. This is independent of
+the explicit user Cancel operation.
+
+Dataset Authority COMMIT fsyncs every enlisted surviving file, then each affected
+ancestor directory once in deepest-first order, before the same durable committed
+journal marker. This coalesces redundant directory flushes inside one durability
+boundary; it does not skip file flushes, disable durability or mark partial output
+committed. Pending recovery, abort and committed-journal cleanup retain their
+existing ordering and ownership. Normal publication flushes files serially:
+measured full Rigol comparisons did not establish a reliable gain from concurrent
+flushes on the shared storage. The private authority protocol retains an optional
+1..8 worker count for isolated qualification. Only fsync calls on already
+quiescent enlisted files may run concurrently in those experiments. All started
+flushes join before any directory flush or committed marker, including on an I/O
+error; journal/Registry mutations remain on the single Dataset owner. The private
+count defaults to1 for predecessor callers. Public Dataset/Acquisition signatures
+and source precision remain unchanged.
+
+`acquisitionHandlerExecuteWorker command request` preserves the handler's normal
+synchronous command outside a managed worker. Within the admitted request it
+uses the existing bounded process envelope (1 MiB diagnostic output,64 KiB line,
+8 KiB retained tail), with no source/content evaluation. Control request bound is
+1 MiB; progress/control records are at most64 KiB. `acquisitionPublishPrepared`
+also accepts an optional fifth `callbacks` dictionary for existing phase progress
+and cancellation checks before numeric transfer and finalize. Actual canonical
+storage remains `DATASET_PUBLICATION_API_v2`.
+
+A handler declaring `consumable_prepared_buffers` may return the boolean result
+field `prepared_buffers_consumable=1` with its admitted `prepared_publications`.
+CORE derives the consumable root from its own transaction's `datasets/` directory;
+the producer cannot nominate another root. Each prepared file is reference-counted
+across all channels and Variables, including a shared time axis. After its last
+successful writer acknowledgement, CORE may delete that transient file before
+remaining finalization work. RAW, canonical output and undeclared files are never
+consumables. Handlers without this explicit opt-in retain their staged buffers
+until ordinary transaction cleanup. Failures and cancellation still use the same
+outer Dataset Authority rollback. The normal adapter uses serial providers because
+measured full-fixture comparisons did not establish a reliable parallel gain.
+
+## Selected Library source dispatch
+
+The host operations `acquisitionHandlerImportSourceToSession moduleId session
+sourcePath proposedId proposedContract variableMap ?dispatchOptions?` and
+`acquisitionHandlerImportSourcesToSession` (source-path list instead of one path)
+accept an additive optional dictionary. Old six-argument calls retain their
+behavior and return actual Dataset IDs.
+
+`source_provenance` is a dictionary of at most 64 `library.*` metadata fields,
+pinned by the Library-to-Acquisition adapter. It is merged into each actual
+output's structured metadata before registration; conflicting values refuse.
+`destination_namespace` is an optional ordinary published Namespace. Both use
+the same Acquisition/Dataset transaction as RAW, payload, metadata, Registry
+and any declared Group. No post-import private Dataset writer is needed.
+Unknown options, unowned metadata names, oversized options (>64 KiB), pending
+destinations, bound module contexts and Script-registration outcomes refuse.
+Whole Groups move together; standalone results use the existing Namespace owner.
+No remote search or Library population invokes this explicit Session dispatch.
+
 **Status:** public framework API, introduced in GX-TXT Pipeline v0.8.9.  
 **License:** GNU GPL v3 or later.
 
@@ -304,7 +523,7 @@ created_at
 
 SHA-256 values are computed by GX-TXT, not trusted from plug-in output.
 
-### Structured Dataset Metadata transfer
+### Structured Dataset Metadata handoff
 
 For a descriptor containing `structured_metadata`, CORE performs this lifecycle:
 
@@ -664,3 +883,50 @@ media_type=<MIME media type>
 ```
 
 These fields describe the canonical dataset representation and are independent of the scientific `contract`.
+
+### Acquisition project Test (P032)
+
+The primary **Run → Test** command in Acquisition Plugin Builder and **Develop → Test**
+in its C++ source Workspace share one CORE selection/configuration dialog. Choose
+1–64 ordinary files, an actual saved format profile and typed configuration.
+Configuration values here are transient Test overrides of the declared defaults;
+they do not change ModuleCfg, Configuration or a Session Manifest. Cancel keeps
+source and drafts. Changed source revisions refuse and require a fresh review.
+
+`VIEWER_DEVELOPMENT_API_v1` retains its `test` operation. For an Acquisition target
+its `request_json` uses `gxtxt.acquisition_project_test.v1` with `expected_revision`
+(from public ProjectFiles `describe`), `profile_id`, absolute chosen `sources`,
+and optional typed `config`. The complete request is bounded to64KiB; files are
+bounded to2GiB aggregate and the actual native Test to60seconds after admission.
+No private Tcl command is required. `project_test_available` is distinct from the
+Viewer-style `runtime_available` flag; Acquisition has no synthetic Viewer Demo.
+
+Test uses the existing normal candidate exporter and distributed native admission
+without installing/registering the module. The same Source Grant checks full SHA,
+the existing guarded broker executes the actual compiled callbacks, and the same
+typed buffer owner verifies/seals then discards provisional outputs after reap.
+No Session, Registry entry, Dataset, Dataset Group or scientific publication is
+created. The current producer/profile/config/source closure remains pinned;
+foreign profiles, stale revisions, unknown config, FIFO/linked sources, protected
+producer replacement and malformed output identity refuse. The private
+`derived/acquisition-test.json` reports actual guard, configuration and source
+identities, discarded output schema/SHA and reap; it explicitly does not certify
+scientific correctness or final installed-module behavior. Normal Plugin Manager
+admission and real canonical import/rollback/GUI acceptance remain separate.
+
+Project Test first invokes the saved **recognize** and **inspect** callbacks in
+separate admitted, bounded read-only phases. It reports their actual metadata
+and reaped actors before the full import-callback Test; an unrecognized source
+refuses without creating numeric outputs. All three phases share the reviewed
+source/configuration closure and overall60second native deadline. This exercises
+the declared callbacks without assigning scientific validity to their claims.
+The Acquisition API and Development metadata report helper availability through
+the same actual CORE helper admission owner, independently of reference catalog
+presence.
+
+Native Acquisition `integer` configuration is signed64. CORE rejects values
+outside −9223372036854775808…9223372036854775807 before JSON/native conversion.
+The normal Configuration owner and shared project Test form apply these implicit
+bounds unless the producer declares a narrower range. Programmatic ModuleCfg
+inspection is checked again at admission. General UI Field bignums, typed
+scientific uint64 payloads and the existing codec ABI keep their domains.

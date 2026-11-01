@@ -10,9 +10,12 @@ while {[gets stdin line] >= 0} {
     if {[catch {
         set command [lindex $line 0]
         set args [lrange $line 1 end]
-        if {$readonly&&$command ni {capabilities render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate camera viewport scientific_axes export_png export_vector close}} {error {Read-only consultation worker rejects this operation}}
+        if {$readonly&&$command ni {capabilities frame_transport sketch_resources render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate navigate_batch camera viewport scientific_axes projection export_png export_vector close}} {error {Read-only consultation worker rejects this operation}}
         switch -- $command {
             capabilities {if {[llength $args]} {error "capabilities takes no arguments"};set result [::GX3DEViewer::capabilities]}
+            frame_transport {if {[llength $args] ni {1 2}} {error {frame_transport expects png|fast_png and optional current-frame destination}};set result [::GX3DEViewer::frame_transport {*}$args]}
+            sketch_resources {if {[llength $args]!=3} {error {sketch_resources expects operation, changes and PNG}};set result [::GX3DEViewer::sketch_resources {*}$args]}
+            projection {if {[llength $args] ni {1 2 4}} {error "projection expects operation, optional query argument or finite plane-fit request"};set result [::GX3DEViewer::projection {*}$args]}
             cad {if {[llength $args]!=3} {error "cad expects owner scope, action and request"};set result [::GX3DEViewer::cad {*}$args]}
             render {if {[llength $args] != 5} {error "render expects scene, PNG, width, height, stage"};set result [::GX3DEViewer::render {*}$args]}
             graphics_probe {if {[llength $args] != 1} {error "graphics_probe expects policy"};set result [::GX3DEViewer::graphics_probe {*}$args]}
@@ -27,6 +30,7 @@ while {[gets stdin line] >= 0} {
             navcube_pick {if {[llength $args] != 2} {error "navcube_pick expects x,y"};set result [::GX3DEViewer::navcube_pick {*}$args]}
             navcube_click {if {[llength $args] != 3} {error "navcube_click expects x,y,PNG"};set result [::GX3DEViewer::navcube_click {*}$args]}
             navigate {if {[llength $args] != 4} {error "navigate expects mode, delta x, delta y, PNG"};set result [::GX3DEViewer::navigate {*}$args]}
+            navigate_batch {if {[llength $args] != 2} {error {navigate_batch expects ordered camera steps and PNG}};set result [::GX3DEViewer::navigate_batch {*}$args]}
             gizmo_select {if {[llength $args] != 7} {error "gizmo_select expects layer, space, families, pivot, marker, size, PNG"};set result [::GX3DEViewer::gizmo_select {*}$args]}
             gizmo_pick {if {[llength $args] != 2} {error "gizmo_pick expects x,y"};set result [::GX3DEViewer::gizmo_pick {*}$args]}
             gizmo_begin {if {[llength $args] != 2} {error "gizmo_begin expects x,y"};set result [::GX3DEViewer::gizmo_begin {*}$args]}

@@ -59,6 +59,7 @@ def build_manifest(config: dict, project, image_width: int, image_height: int, *
         raise ValueError("Calibration homography is invalid.")
     x, y = project.x_axis, project.y_axis
     xa, ya = _axis(x), _axis(y)
+    y2 = _axis(project.y2_axis) if project.y2_axis is not None else None
     y_down = ya["minimum"] > ya["maximum"]
     normalized = _flat_matrix(H)
     transform = {
@@ -68,6 +69,8 @@ def build_manifest(config: dict, project, image_width: int, image_height: int, *
         "normalized_homography": normalized,
         "x_axis": xa, "y_axis": ya,
     }
+    if y2 is not None:
+        transform["y2_axis"] = y2
     # The projective matrix alone maps to normalized plot coordinates;
     # append the exact linear axis mapping only where it is mathematically valid.
     scientific = None
@@ -134,6 +137,8 @@ def build_manifest(config: dict, project, image_width: int, image_height: int, *
         "source_to_calibration_homography": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
         "upstream_processing": "unknown",
     }
+    if y2 is not None:
+        manifest["axis_model_version"] = 2
     manifest["raster_geometry"] = raster_geometry
     manifest["calibration_method"] = {
         "type": calibration_type,
@@ -152,6 +157,8 @@ def build_manifest(config: dict, project, image_width: int, image_height: int, *
         "y_axis": {k: ya[k] for k in ("minimum", "maximum", "scale", "unit")},
         "raster_geometry": raster_geometry,
     }
+    if y2 is not None:
+        identity["y2_axis"] = {k: y2[k] for k in ("minimum", "maximum", "scale", "unit")}
     canonical = json.dumps(identity, sort_keys=True, ensure_ascii=False,
                            separators=(",", ":"), allow_nan=False)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -231,6 +238,8 @@ def metadata_fields(manifest: dict) -> dict[str, str]:
                                        if isinstance(v, (dict, list)) else str(v))
     for k in ("calibration_id", "calibration_sha256", "calibration_identity_payload"):
         result[METADATA_PREFIX + k] = str(manifest[k])
+    if manifest.get("axis_model_version") == 2:
+        result[METADATA_PREFIX + "axis_model_version"] = "2"
     if "calibration_measurements" in manifest:
         result[METADATA_PREFIX + "calibration_group_id"] = str(manifest["calibration_group_id"])
         result[METADATA_PREFIX + "active_measurement_id"] = str(manifest["active_measurement_id"])

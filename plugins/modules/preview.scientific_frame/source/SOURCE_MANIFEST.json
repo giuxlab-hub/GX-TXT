@@ -1,0 +1,17 @@
+{
+  "source_manifest": [
+    {
+      "bytes": 737,
+      "path": "handlers.cpp",
+      "role": "entrypoint",
+      "sha256": "ecfffb695829559ff83ed47f61e67ca683353e91a6c49bf92f18a0baf6817e7c"
+    },
+    {
+      "bytes": 9605,
+      "path": "include/scientific_preview_routing.hpp",
+      "role": "header",
+      "sha256": "3c7d52329313cfd3bef18a68a34b599c978bbc259ff9fdc9401fd0716444cccb"
+    }
+  ],
+  "source_tree_sha256": "e1d9eeef0a6a906d8f5b48f2303311c713384637f9583e92b539d932111b5a51"
+}

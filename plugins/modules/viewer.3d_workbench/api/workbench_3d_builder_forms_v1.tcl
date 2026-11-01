@@ -18,12 +18,13 @@ proc ::GX::Workbench3D::guiFormCommands {} {
         duplicate_object group_create group_duplicate group_ungroup group_translate_form
         group_rotate_form group_scale_form planar_section planar_projection
         preview_accept preview_cancel profile_source_form extrusion_form
-        working_unit_form working_plane_form publish_dataset_form}
+        working_unit_form working_plane_form publish_dataset_form sketch_create sketch_open sketch_close}
 }
 proc ::GX::Workbench3D::guiForm {action} {
     variable editAction
     if {$action ni [guiFormCommands]} {error {Unknown finite Workbench3D form}}
     switch -- $action {
+        sketch_create - sketch_open - sketch_close {sketchGuiCommand $action}
         import_dataset_form {importDatasetForm}
         combine_form {combineForm}
         extrusion_targets_form {extrusionTargetsForm}

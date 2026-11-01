@@ -639,7 +639,9 @@ proc ::GX::DatasetCurveFit::_runNumeric {model degree initial training source do
             dict set report fitted [_readCsv [file join $temp fitted.csv] 2]
             dict set report residual [_readCsv [file join $temp residual.csv] [::GX::datasetPublicationV2DictDefault $report residual_stride 4]]
         }
-        dict set report numeric_statistics [dict get [::GX::ScientificTransportv1::readResult [file join $temp statistics.ini]] values]
+        set transported [::GX::ScientificTransportv1::readResult [file join $temp statistics.ini]]
+        dict set report numeric_statistics [dict get $transported values]
+        dict set report numeric_statistics_types [dict get $transported types]
         set rowFile [dict get $workerEnvironment GXDCF_TRAIN_ROW_IDS]
         if {[dict exists $report numeric_statistics region_selection]} {
             set rowFile [file join $temp region_training_rows.bin]
@@ -2260,6 +2262,7 @@ proc ::GX::DatasetCurveFit::_closeWindow {w {saveChanges 1}} {
     if {$saveChanges && ![catch {_assertSession $w}]} {
         if {[catch {
             _saveState $w
+            if {[dict exists $::GX::ScientificHistory::viewers $w]} {::GX::scientificHistoryViewerFlush $w}
             if {$state($w,documentId) ne ""} {::GX::interactiveDocumentResourceCollect $state($w,documentId)}
         } err]} {
             tk_messageBox -parent $w -icon error -type ok -title "Dataset Curve Fit" -message "Could not save viewer state: $err"
@@ -2511,6 +2514,7 @@ proc ::GX::DatasetCurveFit::fitPrimitive {points family unit} {
         dict set report statistical_results $role [::GX::StatisticsV1::fromNumeric math.numeric.$model [dict get $raw operation] $raw $context [dict get $facts $role] [dict create producer viewer.dataset_curve_fit source_identity explicit_point_input]]
     }
     dict unset report numeric_statistics
+    dict unset report numeric_statistics_types
     set report [_applyStatisticsAliases $report]
     _native;set scene [::GX::Native2D::core scene]
     try {set definition [::GX::Native2D::core interaction_from_fit $scene $family [split [dict get $report parameters] ,]]} finally {::GX::Native2D::core destroy $scene}

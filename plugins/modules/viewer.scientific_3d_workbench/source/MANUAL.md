@@ -159,3 +159,35 @@ record's name does not refresh its source geometry.
 When the main toolbar changes to **Actions…** in a narrow window, open that menu to reach its original document, inspection and geometry actions. The wide window restores the normal toolbar buttons. Use the inspector’s vertical scrollbar to reach document controls and the **Solids**, **Mesh**, **Inspect**, **Organize** and **Publish** pages. If a page is wider than the inspector, use the horizontal scrollbar at its bottom to bring the left or right action column fully into view. Use Tab to move between controls, then scroll as needed to read the full caption. Different scroll positions show different columns; controls need not all be visible at once. The native geometry view remains separate from the inspector, and scrolling the inspector does not change geometry, units or History.
 
 For source-grounded worked examples, extract the separate illustrated HTML guide and open its index. It covers generated inputs, exact solids, measurements, constraints, units, publication, face images, Recipe replay and document recovery.
+
+
+## Shared exact Sketch on the Workbench working plane (0.1.8)
+
+Use the compact **Sketch** menu or the three added controls on **Solids**.
+**Create working-plane Sketch…** creates a new shared exact two-dimensional
+Sketch using the current Workbench length unit and working plane. Open the
+intended canonical geometry document and review that unit/plane first. The
+shared Sketch editor provides its normal exact 2D tools and 3D context; the
+ordinary Viewer forwards only a finite public command and stores no geometry.
+
+**Open associated Sketch…** reopens the most recently associated Sketch in this
+Workbench document. When no associated Sketch exists, the owner asks you to
+create one first. **Close Sketch** closes that shared editor through its normal
+lifetime owner. Save the Sketch and geometry through their normal controls;
+closing the view does not replace the scientific document or silently export a
+profile. The Sketch's exact Document and P017 History remain authoritative.
+Creating its association uses the existing Workbench semantic commit owner.
+
+This package preserves all 136 accepted interface components and their ordinals,
+every existing handler/menu/action and the existing scientific Workbench owner.
+The three actions and the Sketch menu append to the public Builder declaration.
+Native source changed to dispatch those new commands, so its callback contract
+also changes. An old source-bound interface Workspace is not automatically
+compatible: the current public additive-upgrade review rejects changed C++
+source with **C++ source changed; automatic state migration is unavailable**.
+No compatibility receipt or retained History state is rewritten. Preserve the
+old Workspace and open its original canonical geometry document through the
+normal document controls in the updated Viewer, then save a new interface
+Workspace as needed. Original scientific documents/resources remain under their
+existing Session and owner guards. This source/package qualification is separate
+from installed GUI, Sketch gesture, Save/reopen or scientific acceptance.

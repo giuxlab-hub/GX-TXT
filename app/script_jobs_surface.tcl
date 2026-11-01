@@ -2,58 +2,120 @@ namespace eval ::GX {variable scriptJobsUiEpoch 0}
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX {variable scriptJobsUi;variable scriptJobsSeen {};variable scriptJobsBusy 0}
 proc ::GX::scriptRunBindingsToggle {} {
-    set w .gxtxtScriptRun
-    if {[winfo ismapped $w.bindings]} {grid remove $w.bindings} else {grid $w.bindings}
-    after idle ::GX::scriptRunFit
+    variable scriptRunUi
+    set panel $scriptRunUi(body).bindings
+    if {[winfo ismapped $panel]} {grid remove $panel} else {grid $panel}
+}
+proc ::GX::scriptRunBindingChoices {n {clear 1}} {
+    variable scriptRunUi
+    set w $scriptRunUi(body).bindings.r$n
+    if {![winfo exists $w]} return
+    set choices {}
+    foreach item [dict get [datasetCatalogSnapshot] datasets] {
+        if {[dict get $item namespace] eq $scriptRunUi(namespace,$n)} {lappend choices [dict get $item dataset_id]}
+    }
+    set scriptRunUi(eligible,$n) [lsort $choices]
+    $w.dataset configure -values $scriptRunUi(eligible,$n)
+    if {$clear || $scriptRunUi(dataset,$n) ni $choices} {set scriptRunUi(dataset,$n) {};set scriptRunUi(revision,$n) {}}
+    set scriptRunUi(detail,$n) [expr {$choices eq {} ? {No Datasets in this namespace. Select another namespace or remove this input.} : {Select a Dataset to freeze its revision for review.}}]
+}
+proc ::GX::scriptRunBindingSelected {n} {
+    variable scriptRunUi
+    if {[catch {
+        set id $scriptRunUi(dataset,$n)
+        if {[datasetNamespaceGet $scriptRunUi(session) $id] ne $scriptRunUi(namespace,$n)} {error {Dataset moved; select its current namespace}}
+        set scriptRunUi(revision,$n) [datasetRevisionToken $id $scriptRunUi(session)]
+        set scriptRunUi(detail,$n) "$id · [datasetField $id contract {}] · revision captured"
+    } reason]} {set scriptRunUi(revision,$n) {};set scriptRunUi(detail,$n) $reason}
 }
 proc ::GX::scriptRunBindingAdd {} {
     variable scriptRunUi
-    set n [incr scriptRunUi(input_count)];set w .gxtxtScriptRun.bindings.r$n
-    ttk::frame $w
-    set scriptRunUi(alias,$n) input$n;set scriptRunUi(label,$n) {};set scriptRunUi(dataset,$n) {}
-    ttk::entry $w.alias -textvariable ::GX::scriptRunUi(alias,$n) -width 14
-    ttk::entry $w.label -textvariable ::GX::scriptRunUi(label,$n) -width 18
-    ttk::combobox $w.dataset -textvariable ::GX::scriptRunUi(dataset,$n) -values $scriptRunUi(eligible) -state readonly -width 36
-    ttk::button $w.remove -text Remove -command [list destroy $w]
-    pack $w.alias $w.label $w.dataset $w.remove -side left -padx 3
-    pack $w -side top -fill x -pady 2
-    after idle ::GX::scriptRunFit
+    set n [incr scriptRunUi(input_count)];set w $scriptRunUi(body).bindings.r$n
+    ttk::labelframe $w -text "Input $n" -padding 8
+    set scriptRunUi(alias,$n) input$n;set scriptRunUi(label,$n) {};set scriptRunUi(dataset,$n) {};set scriptRunUi(revision,$n) {}
+    set scriptRunUi(namespace,$n) $scriptRunUi(namespace)
+    foreach {key title width} {alias {Semantic alias} 16 label {Display label (optional)} 22 namespace Namespace 28 dataset {Dataset ID} 28} {
+        ttk::label $w.l_$key -text $title
+        if {$key in {namespace dataset}} {ttk::combobox $w.$key -textvariable ::GX::scriptRunUi($key,$n) -state readonly -width $width
+        } else {ttk::entry $w.$key -textvariable ::GX::scriptRunUi($key,$n) -width $width}
+    }
+    $w.namespace configure -values [datasetNamespaceList $scriptRunUi(session)]
+    bind $w.namespace <<ComboboxSelected>> [list ::GX::scriptRunBindingChoices $n]
+    bind $w.dataset <<ComboboxSelected>> [list ::GX::scriptRunBindingSelected $n]
+    foreach {key row column} {alias 0 0 label 0 1 namespace 2 0 dataset 2 1} {
+        grid $w.l_$key -row $row -column $column -sticky w -padx 3
+        grid $w.$key -row [expr {$row+1}] -column $column -sticky ew -padx 3 -pady {2 6}
+    }
+    grid columnconfigure $w 0 -weight 1;grid columnconfigure $w 1 -weight 1
+    ttk::button $w.remove -text {Remove input} -command [list destroy $w]
+    foreach {key text} {alias {Unique scientific input name, such as measured or reference.} label {Optional presentation label; it does not change Dataset identity.} namespace {Filters this row only. Changing namespace clears this row’s reviewed Dataset.} dataset {Select an exact canonical Dataset and capture its current revision.} remove {Remove this input request; the canonical Dataset is preserved.}} {native2DViewportTooltip $w.$key $text}
+    grid $w.remove -row 4 -column 1 -sticky e -padx 3
+    ttk::label $w.detail -textvariable ::GX::scriptRunUi(detail,$n) -wraplength 380
+    grid $w.detail -row 4 -column 0 -sticky ew -padx 3
+    pack $w -side top -fill x -pady 4
+    scriptRunBindingChoices $n
+    after idle [list ::GX::scriptRunResize .gxtxtScriptRun [winfo width .gxtxtScriptRun]]
 }
 proc ::GX::scriptRunBindingsBuild {w row} {
     variable scriptRunUi
     set scriptRunUi(session) $::GX::currentSession
     set scriptRunUi(namespace) [datasetNamespaceCurrentGet]
     set scriptRunUi(importOverride) 0
-    set scriptRunUi(input_count) 0;set scriptRunUi(eligible) {};set scriptRunUi(output_id) {};set scriptRunUi(output_label) {};set scriptRunUi(replace) 0
-    foreach item [dict get [datasetCatalogSnapshot] datasets] {
-        if {[dict get $item namespace] eq $scriptRunUi(namespace)} {lappend scriptRunUi(eligible) [dict get $item dataset_id]}
-    }
-    ttk::button $w.advanced -text {Dataset bindings (optional)…} -command ::GX::scriptRunBindingsToggle
-    grid $w.advanced -row $row -column 0 -columnspan 2 -sticky w -padx 8
+    set scriptRunUi(input_count) 0;set scriptRunUi(output_id) {};set scriptRunUi(output_label) {};set scriptRunUi(replace) 0
+    ttk::button $w.advanced -text {Inputs and output ▾} -command ::GX::scriptRunBindingsToggle
+    grid $w.advanced -row $row -column 0 -sticky w -pady {12 3}
     incr row
     ttk::frame $w.bindings
-    grid $w.bindings -row $row -column 0 -columnspan 2 -sticky ew -padx 8 -pady 4
-    ttk::label $w.bindings.scope -text "Current namespace: $scriptRunUi(namespace). Change it in Datasets before opening Run." -wraplength 650
-    pack $w.bindings.scope -side top -anchor w
-    ttk::label $w.bindings.header -text {Semantic alias                 Display label                    Dataset ID}
-    pack $w.bindings.header -side top -anchor w
-    ttk::button $w.bindings.add -text {+ Input Dataset} -command ::GX::scriptRunBindingAdd
-    pack $w.bindings.add -side top -anchor w
-    if {![llength $scriptRunUi(eligible)]} {
-        ttk::label $w.bindings.empty -text {No canonical Datasets in this namespace. Parameter-only scripts can run without inputs.}
-        pack $w.bindings.empty -side top -anchor w
+    grid $w.bindings -row $row -column 0 -sticky ew
+    ttk::label $w.bindings.scope -text {Each input has its own namespace. Changing a row never changes the Session Current namespace.} -wraplength 560
+    pack $w.bindings.scope -side top -anchor w -pady 4
+    ttk::button $w.bindings.add -text {Add input Dataset} -command ::GX::scriptRunBindingAdd
+    pack $w.bindings.add -side top -anchor w -pady 5
+    ttk::labelframe $w.bindings.output -text {Output request (optional)} -padding 8
+    pack $w.bindings.output -side bottom -fill x -pady 8
+    grid columnconfigure $w.bindings.output 1 -weight 1
+    foreach {key title variable} {id {Dataset ID} output_id label {Display label} output_label} {
+        ttk::label $w.bindings.output.l_$key -text $title
+        ttk::entry $w.bindings.output.$key -textvariable ::GX::scriptRunUi($variable) -width 24
     }
-    ttk::frame $w.bindings.output
-    pack $w.bindings.output -side top -fill x -pady 5
-    ttk::label $w.bindings.output.name -text {Output ID / label}
-    ttk::entry $w.bindings.output.id -textvariable ::GX::scriptRunUi(output_id) -width 26
-    ttk::entry $w.bindings.output.label -textvariable ::GX::scriptRunUi(output_label) -width 22
-    ttk::checkbutton $w.bindings.output.replace -text {Replace owned} -variable ::GX::scriptRunUi(replace)
-    pack $w.bindings.output.name $w.bindings.output.id $w.bindings.output.label $w.bindings.output.replace -side left -padx 3
-    ttk::label $w.bindings.hint -text {Optional output applies to scripts that read the runtime output binding. Blank preserves the script's declared output.} -wraplength 650
-    pack $w.bindings.hint -side top -anchor w
-    grid remove $w.bindings
+    grid $w.bindings.output.l_id -row 0 -column 0 -sticky w -padx 3
+    grid $w.bindings.output.id -row 0 -column 1 -sticky ew -padx 3 -pady 3
+    grid $w.bindings.output.l_label -row 1 -column 0 -sticky w -padx 3
+    grid $w.bindings.output.label -row 1 -column 1 -sticky ew -padx 3 -pady 3
+    ttk::checkbutton $w.bindings.output.replace -text {Replace owned output} -variable ::GX::scriptRunUi(replace)
+    native2DViewportTooltip $w.bindings.output.replace {Request replacement only of this script producer's own Dataset. Input namespaces grant no output rights.}
+    grid $w.bindings.output.replace -row 2 -column 0 -columnspan 2 -sticky w -padx 3 -pady 4
+    ttk::label $w.bindings.output.hint -text {Publication defaults to the script producer’s private namespace. Input namespaces grant no output rights. Blank keeps the script’s output policy; only a real Publication commit creates output.} -wraplength 540
+    grid $w.bindings.output.hint -row 3 -column 0 -columnspan 2 -sticky ew -padx 3
     return [expr {$row+1}]
+}
+proc ::GX::scriptWorkspaceSubmittedFor {epoch response} {
+    variable scriptRunUi
+    if {![winfo exists .gxtxtScriptRun] || $scriptRunUi(epoch) != $epoch} return
+    set scriptRunUi(submitting) 0
+    scriptRunBusy 0
+    scriptWorkspaceSubmitted $response
+}
+proc ::GX::scriptRunBusy {busy} {
+    variable scriptRunUi
+    if {$busy} {
+        set scriptRunUi(disabled_states) {}
+        set queue [list $scriptRunUi(body) .gxtxtScriptRun.run .gxtxtScriptRun.validate]
+        while {[llength $queue]} {
+            set widget [lindex $queue 0];set queue [lrange $queue 1 end]
+            if {![winfo exists $widget]} continue
+            lappend queue {*}[winfo children $widget]
+            if {[winfo class $widget] in {TEntry TCombobox TButton TCheckbutton TSpinbox}} {
+                dict set scriptRunUi(disabled_states) $widget [$widget state]
+                $widget state disabled
+            }
+        }
+    } elseif {[info exists scriptRunUi(disabled_states)]} {
+        dict for {widget state} $scriptRunUi(disabled_states) {
+            if {[winfo exists $widget]} {$widget state !disabled;if {{disabled} in $state} {$widget state disabled}}
+        }
+        set scriptRunUi(disabled_states) {}
+    }
 }
 proc ::GX::scriptWorkspaceSubmitted {response} {
     variable scriptRunUi
@@ -304,9 +366,7 @@ proc ::GX::scriptRunFit {} {
     set w .gxtxtScriptRun
     if {![winfo exists $w]} return
     update idletasks
-    set width [expr {min([winfo screenwidth $w]-80,max(660,[winfo reqwidth $w]))}]
-    set height [expr {min([winfo screenheight $w]-100,[winfo reqheight $w])}]
-    wm geometry $w ${width}x${height}
+    wm geometry $w [expr {min(820,[winfo screenwidth $w]-60)}]x[expr {min(740,[winfo screenheight $w]-90)}]
 }
 
 source [file join [file dirname [info script]] script_job_details_surface.tcl]

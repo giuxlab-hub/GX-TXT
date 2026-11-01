@@ -1,12 +1,12 @@
 # Changelog
 
-## 1.2.0
+## 1.2.0 — 2026-10-13 (dev097 candidate)
 
 - Public CORE statistical-result interpretation and publication metadata.
 - Numeric-owned mean uncertainty; explicit sampling assumptions and undefined/unavailable states.
 - Existing scientific variable IDs and historical releases preserved.
 
-## 1.1.0
+## 1.1.0 — 2026-09-24
 
 - Added automatic public `plot.dataset` histogram and box/whisker variants using GX-TXT 0.9.7.86 `PLOT_DATASET_API_v2` through the public Plot Dataset Octave Bridge v1.
 - Added compatible-unit grouping through the public Unit Registry.
@@ -15,7 +15,7 @@
 - Added the deterministic ready-to-run Descriptive Statistics Student Lab Session Generator package, including a student exercise guide.
 - Kept CORE unchanged.
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Added production `analysis.statistics.descriptive` module.
 - Added repeatable multi-variable selection with stable Dataset/Variable identity supplied by GX-TXT CORE.

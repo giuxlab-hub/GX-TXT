@@ -1,9 +1,11 @@
+# 1.3.2 checkpoint note
+
+The numerical frame kernel now uses public NUMERIC_API transforms. Graphical behavior and large-data cache controls documented below are retained, not yet migrated to plot.dataset. See MIGRATION_REMAINING.md and TEST_RESULTS.md for status.
+
 # Time-Dependent FFT — User Manual
 
-The numerical frame kernel uses public NUMERIC_API transforms. Its current scientific graphics and large-data cache behavior are documented below; it does not use the Plot Dataset renderer for every result.
-
 Module ID: `analysis.time_dependent_fft`  
-Module version: `1.3.3`  
+Version: `1.3.1`  
 Minimum framework: GX-TXT `0.9.7.77`  
 License: GNU GPL v3 or later
 
@@ -121,7 +123,7 @@ The module deliberately keeps this Dataset intact. It is not broken into 55 scie
 
 ## 4. Run mode — avoiding unnecessary FFT recalculation
 
-The module separates scientific calculation from presentation.
+Version 1.3.0 separates scientific calculation from presentation.
 
 ### Auto — recommended
 

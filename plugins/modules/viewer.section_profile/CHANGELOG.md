@@ -1,4 +1,4 @@
-## 1.0.1
+## 1.0.1 — 2026-10-17
 
 Closing the Viewer compares bound window identities safely and unsubscribes its native source exactly once.
 

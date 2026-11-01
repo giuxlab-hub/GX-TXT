@@ -22,11 +22,13 @@ proc ::GX::launchGui_v048 {} {
     variable version
 
     package require Tk 8.6
+    stderrDiagnosticsGuiAttach
     uiAppearanceInitialize
     uiFieldComboboxInstall
-    wm title . "GX-TXT Pipeline v$version"
+    wm title . "GX-TXT Pipeline v[frameworkDisplayVersion]"
     ::GX::uiFieldWindowFit . 1280 840
     wm minsize . 920 650
+    wm protocol . WM_DELETE_WINDOW ::GX::sessionWorkspaceApplicationClose
     bind all <Map> +[list ::GX::uiFieldWindowMapped %W]
 
     ttk::frame .top
@@ -49,7 +51,7 @@ proc ::GX::launchGui_v048 {} {
     pack .top.sessionbar.open .top.sessionbar.new .top.sessionbar.save .top.sessionbar.export .top.sessionbar.import -side left -padx 3
     pack .top.sessionbar -fill x -pady {0 6}
 
-    ttk::notebook .top.nb
+    uiFieldComponentCreate .top.nb tabs {} {} {}
     pack .top.nb -fill both -expand 1
 
     foreach {tab text} {acq "Acquisition" preview "CSV Preview" channels "Channels" instr "Instrumentation" exp "Experiment" projects "Projects" modules "Modules" configuration "Configuration" analysis "Analysis" graphs "Plots" print "Print / PDF" run "Run" results "Results" help "Help"} {
@@ -70,10 +72,10 @@ proc ::GX::launchGui_v048 {} {
     ::GX::buildRunPage
     ::GX::buildResultsPage
     ::GX::buildHelpPage
-    bind .top.nb <<NotebookTabChanged>> {::GX::onNotebookChanged .top.nb;::GX::datasetPageTabChanged}
+    bind .top.nb <<NotebookTabChanged>> {+::GX::onNotebookChanged .top.nb;::GX::datasetPageTabChanged}
     after 100 {::GX::refreshCsvPreview; ::GX::refreshManifestPreview; ::GX::refreshResults; ::GX::refreshModuleCatalog; ::GX::refreshCustomCompareTree; ::GX::refreshAnalysisStatus; ::GX::refreshGraphs; ::GX::discoverPrinters}
 
-    guiLog "GX-TXT Pipeline v$version"
+    guiLog "GX-TXT Pipeline v[frameworkDisplayVersion]"
     guiLog "Default worker: $cfg(worker_file)"
     guiLog "The RAW source file is never modified."
     guiLog "Block-based streaming import; intermediate .part files are stored in the channels directory."

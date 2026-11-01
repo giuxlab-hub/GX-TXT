@@ -130,22 +130,33 @@ proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0}
     set state($prefix,dimensions) $dims
     if {$preparedDimensions eq "@discover" && [dict exists $saved selections] && [dict exists $saved ordering] && [datasetPublicationV2DictDefault $saved schema_identity {}] ne [_datasetScientificProfileIdentity $id]} {scientificDatasetFilterPersist $arrayName $prefix}
     foreach child [winfo children $parent] {if {[winfo toplevel $child] ne $child} {destroy $child}}
-    ttk::button $parent.configure -text {Configure filters / grouping…} -command [list ::GX::scientificDatasetFilterConfigure $parent $arrayName $prefix]
-    grid $parent.configure -row 0 -column 0 -sticky w -padx 3
+    ttk::button $parent.configure -text {Filters / grouping…} -width 0 -command [list ::GX::scientificDatasetFilterConfigure $parent $arrayName $prefix]
     set i 0
     foreach d $dims {
         if {[dict get $d type] ni {family curve calibration}} continue
         set vid [dict get $d variable_id]
         set title [dict get {family Family curve Curve calibration Calibration} [dict get $d type]]
         ttk::frame $parent.f$i
-        ttk::label $parent.f$i.label -text "$title: [dict get $d label] ($vid)[expr {[dict get $d unit] eq {}?{}:", source [dict get $d unit]"}]"
-        ttk::button $parent.f$i.choose -text {Select values…} -command [list ::GX::scientificDatasetFilterDialog $parent $arrayName $prefix $vid]
-        pack $parent.f$i.label $parent.f$i.choose -side left -padx 3
-        grid $parent.f$i -row [expr {$i+1}] -column 0 -sticky w
+        ttk::label $parent.f$i.label -text "$title: [dict get $d label]" -wraplength 180
+        ttk::button $parent.f$i.choose -text {All values…} -width 0 -command [list ::GX::scientificDatasetFilterDialog $parent $arrayName $prefix $vid]
+        pack $parent.f$i.label $parent.f$i.choose -side left -padx 2
         incr i
     }
     set state($prefix,filterParent) $parent
     scientificDatasetFilterLabels $arrayName $prefix
+    # Reuse CORE's responsive control layout: one row when it fits, wrapping
+    # whole selectors at larger fonts/narrow widths. Stable widget paths and
+    # callbacks are retained; complete IDs/units remain in Configure.
+    bind $parent <Configure> [list ::GX::_scientificDatasetFilterBarLayout $parent %w]
+    _scientificDatasetFilterBarLayout $parent [winfo width $parent]
+}
+proc ::GX::_scientificDatasetFilterBarLayout {parent width} {
+    if {![winfo exists $parent]} return
+    set children [list $parent.configure]
+    foreach child [winfo children $parent] {
+        if {[regexp {\.f[0-9]+$} $child]} {lappend children $child}
+    }
+    uiFieldControlsLayout $parent $width $children
 }
 proc ::GX::scientificDatasetFilterLabels {arrayName prefix} {
     upvar #0 $arrayName state

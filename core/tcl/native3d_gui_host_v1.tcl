@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Thin Viewer Provider/Tk adapter. Geometry and pixels are produced by libgx3de.
 namespace eval ::GX::Engine3D {
+    variable documentPresentations {}
     variable window .gx3de_viewer
     variable embedded 0
     variable hostWidgetChanging 0
@@ -178,7 +179,34 @@ namespace eval ::GX::Engine3D {
 }
 
 proc ::GX::native3DGuiHostApiInfo {} {
-    return [dict create api_id NATIVE_3D_GUI_HOST_API_v1 api_version 1 shared_renderer 1 shared_worker 1 operations {configure mount suspend resume backend panel rpc close compact_preview_acquire compact_preview_release camera_reset camera_roll scientific_axes_grid shared_enlarged_viewport screenshot_dataset_publication layer_texture_validate layer_texture_bind layer_texture_anchor}]
+    return [dict create api_id NATIVE_3D_GUI_HOST_API_v1 api_version 1 shared_renderer 1 shared_worker 1 operations {configure mount suspend resume backend panel rpc close compact_preview_acquire compact_preview_release camera_reset camera_roll scientific_axes_grid shared_enlarged_viewport screenshot_dataset_publication layer_texture_validate layer_texture_bind layer_texture_anchor cad_surface document_presentation_set document_presentation_remove document_presentation_inspect}]
+}
+proc ::GX::native3DGuiHostDocumentPresentationSet {snapshot} {
+    set document [dict get $snapshot document_id]
+    set current [interactiveDocumentMetadata $document]
+    if {[dict get $snapshot session_token] ne [interactiveDocumentSessionToken] || [dict get $snapshot generation] ne [dict get $current generation] || [dict get $snapshot revision] ne [dict get $current revision]} {error {Saved display belongs to an expired Document revision}}
+    set layers [dict get $snapshot layers]
+    if {[dict size $layers]>4096} {error {Saved display exceeds4096 constituents}}
+    set count 0
+    dict for {id layer} $layers {
+        if {![regexp {^[a-zA-Z0-9_]+$} $id] || [dict get $layer source_mode] ne {memory_geometry}} {error {Saved display requires bounded retained memory geometry}}
+        incr count [llength [dict get $layer vertices]]
+    }
+    if {$count>1048576} {error {Saved display exceeds one million presentation points}}
+    # This is a derived renderer resource, never a geometry/Document registry.
+    # It is admitted only for the current host and never serialized as science.
+    dict set ::GX::Engine3D::documentPresentations $document [dict create owner [list [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]] snapshot $snapshot]
+    return [dict create document_id $document revision [dict get $snapshot revision] layers [dict size $layers] points $count]
+}
+proc ::GX::native3DGuiHostDocumentPresentationRemove {document} {
+    dict unset ::GX::Engine3D::documentPresentations $document
+}
+proc ::GX::native3DGuiHostDocumentPresentationInspect {} {
+    set out {}
+    dict for {document record} $::GX::Engine3D::documentPresentations {
+        dict set out $document [dict merge [dict remove [dict get $record snapshot] layers] [dict create layer_count [dict size [dict get $record snapshot layers]]]]
+    }
+    return $out
 }
 proc ::GX::Engine3D::ownerModule {} {return $::GX::Engine3D::ownerModule}
 proc ::GX::Engine3D::ownerProvider {} {return $::GX::Engine3D::ownerProvider}
@@ -225,7 +253,7 @@ proc ::GX::Engine3D::loadNative {} {
     set script [file join $::GX::scriptDir core native3d renderer_worker.tcl]
     set workerLog [file join [::GX::configurationCacheDirectory] "gx3de_viewer_worker_[pid].log"]
     set saved [dict create]
-    foreach key {LIBGL_ALWAYS_SOFTWARE LIBGL_ALWAYS_INDIRECT MESA_LOADER_DRIVER_OVERRIDE GALLIUM_DRIVER} {
+    foreach key {LIBGL_ALWAYS_SOFTWARE LIBGL_ALWAYS_INDIRECT MESA_LOADER_DRIVER_OVERRIDE GALLIUM_DRIVER __GLX_VENDOR_LIBRARY_NAME} {
         if {[info exists ::env($key)]} {dict set saved $key [list 1 $::env($key)]} \
             else {dict set saved $key [list 0 ""]}
     }
@@ -234,6 +262,9 @@ proc ::GX::Engine3D::loadNative {} {
         set ::env(LIBGL_ALWAYS_INDIRECT) 0
         set ::env(MESA_LOADER_DRIVER_OVERRIDE) llvmpipe
         set ::env(GALLIUM_DRIVER) llvmpipe
+        # Mesa driver hints do not select Mesa when GLVND chooses NVIDIA.
+        # Scope the explicit Software policy to this isolated worker only.
+        if {$::tcl_platform(platform) eq "unix"} {set ::env(__GLX_VENDOR_LIBRARY_NAME) mesa}
     } else {
         unset -nocomplain ::env(LIBGL_ALWAYS_SOFTWARE) ::env(MESA_LOADER_DRIVER_OVERRIDE) ::env(GALLIUM_DRIVER)
         set ::env(LIBGL_ALWAYS_INDIRECT) 0
@@ -244,6 +275,7 @@ proc ::GX::Engine3D::loadNative {} {
         set command [concat [list [auto_execok prlimit] --as=[expr {$budget*1024*1024}] --] $command]
     }
     try {
+        set command [::GX::_native3dWorkerLaunch $command]
         set worker [open "|[concat $command [list 2>$workerLog]]" r+]
         incr ::GX::Engine3D::workerGeneration
     } finally {
@@ -257,6 +289,12 @@ proc ::GX::Engine3D::loadNative {} {
     if {$response ne "GX3DE_VIEWER_WORKER_READY"} {
         catch {::close $worker};set worker ""
         error "Native renderer worker did not initialize; see $workerLog: $response"
+    }
+    puts $worker [list frame_transport [::GX::_native3dGuiFrameTransport]];flush $worker
+    set response [waitLine 30000]
+    if {[lindex $response 0] ne {ok}} {
+        stopWorker
+        error "Native renderer frame transport did not initialize; install matching CORE sources and binary. $response"
     }
 }
 proc ::GX::Engine3D::workerReadable {} {
@@ -344,7 +382,9 @@ proc ::GX::Engine3D::rpc {request} {
     }
     if {[llength $response] != 2} {error "Invalid native renderer reply: $response"}
     if {[lindex $response 0] ne "ok"} {error [lindex $response 1]}
-    return [lindex $response 1]
+    set result [lindex $response 1]
+    if {[info exists ::GX::Native3DSurface::legacyUsers] && $::GX::Native3DSurface::legacyUsers} {::GX::Native3DSurface::legacyReply $result}
+    return $result
 }
 proc ::GX::Engine3D::graphicsCheck {} {
     if {$::GX::Engine3D::workerBusy} {error "Wait for the current Native 3D request before checking the renderer"}
@@ -499,7 +539,23 @@ proc ::GX::Engine3D::column {datasetId variableId} {
     }
     return [expr {$position-1}]
 }
-proc ::GX::Engine3D::preparedScene {scene} {return [::GX::native3DScenePrepare $scene]}
+proc ::GX::Engine3D::preparedScene {scene} {
+    set prepared [::GX::native3DScenePrepare $scene]
+    dict for {document record} $::GX::Engine3D::documentPresentations {
+        set snapshot [dict get $record snapshot]
+        if {[dict get $record owner] ne [list [ownerModule] [ownerProvider]] ||
+            [dict get $snapshot session_token] ne [::GX::interactiveDocumentSessionToken] ||
+            [catch {::GX::interactiveDocumentMetadata $document} current] ||
+            [dict get $snapshot generation] ne [dict get $current generation] ||
+            [dict get $snapshot revision] ne [dict get $current revision]} {dict unset ::GX::Engine3D::documentPresentations $document;continue}
+        dict for {id layer} [dict get $snapshot layers] {
+            set name saved_${document}_$id
+            if {[dict exists $prepared layers $name]} {error {Saved presentation layer collides with scientific geometry}}
+            dict set prepared layers $name $layer
+        }
+    }
+    return $prepared
+}
 proc ::GX::native3DScenePrepare {scene} {
     set layers [dict get $scene layers]
     dict for {id layer} $layers {
@@ -562,11 +618,15 @@ proc ::GX::Engine3D::displayNativePng {path} {
     if {![pngComplete $path]} {error "Native renderer did not produce a complete PNG"}
     set lastPng $path
     if {[winfo exists $window.canvas]} {
-        if {$photo ne ""} {image delete $photo}
-        set photo [image create photo -file $path]
-        $window.canvas delete all
+        set cad [expr {[info exists ::GX::Native3DSurface::legacyUsers] && $::GX::Native3DSurface::legacyUsers}]
+        if {$cad && $photo ne {}} {$photo configure -file $path} else {
+            if {$photo ne ""} {image delete $photo}
+            set photo [image create photo -file $path]
+        }
+        if {$cad} {$window.canvas delete native_image} else {$window.canvas delete all}
         $window.canvas create image 0 0 -anchor nw -image $photo -tags native_image
         $window.canvas configure -scrollregion [list 0 0 [image width $photo] [image height $photo]]
+        if {$cad} {::GX::Native3DSurface::legacyPresented}
     }
 }
 proc ::GX::Engine3D::gizmoImageRequest {request} {
@@ -589,6 +649,9 @@ proc ::GX::Engine3D::renderScene {scene {destination ""} {stage full}} {
     variable cancelRequested
     if {$destination eq ""} {set destination [tempPng]}
     set prepared [preparedScene $scene]
+    # The active shared CAD overlay owns its scientific plane grid. Preserve
+    # the consumer's saved view, and suppress only the redundant native guide.
+    if {[info exists ::GX::Native3DSurface::legacyUsers] && $::GX::Native3DSurface::legacyUsers} {dict set prepared view working_plane_visible 0}
     set cacheRoot [file join [::GX::configurationCacheDirectory] gx3de_viewer derived]
     file mkdir $cacheRoot
     dict set prepared cache_root $cacheRoot
@@ -1085,8 +1148,8 @@ proc ::GX::Engine3D::beginCanvasDragReady {x y} {
     }
     beginDrag orbit $x $y
 }
-proc ::GX::Engine3D::beginDrag {mode x y} {
-    if {$mode eq "orbit" && $::GX::Engine3D::planeMode} {
+proc ::GX::Engine3D::beginDrag {mode x y {navigationOnly 0}} {
+    if {!$navigationOnly && $mode eq "orbit" && $::GX::Engine3D::planeMode} {
         if {$::GX::Engine3D::workerBusy} {error "Wait for the current render before dragging a plane"}
         rpc [list plane_begin $::GX::Engine3D::planeTarget $::GX::Engine3D::planeAction \
             $::GX::Engine3D::planeHandle $::GX::Engine3D::planeSlot $x $y]
@@ -1094,7 +1157,7 @@ proc ::GX::Engine3D::beginDrag {mode x y} {
         set ::GX::Engine3D::planeLastUpdate 0
         set ::GX::Engine3D::status "Dragging $::GX::Engine3D::planeTarget $::GX::Engine3D::planeAction"
     }
-    if {$mode eq "orbit" && $::GX::Engine3D::gizmoActive && !$::GX::Engine3D::workerBusy} {
+    if {!$navigationOnly && $mode eq "orbit" && $::GX::Engine3D::gizmoActive && !$::GX::Engine3D::workerBusy} {
         set handle [rpc [list gizmo_begin $x $y]]
         if {$handle > 0} {set mode gizmo;set ::GX::Engine3D::status "Dragging manipulator handle $handle"}
     }
@@ -2376,6 +2439,10 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
 }
 proc ::GX::Engine3D::close {} {
     if {$::GX::Engine3D::hostWidgetChanging} return
+    # The scientific owner may reject Close while a staged edit awaits a
+    # decision. Do this before invalidating its surface or cancelling queues.
+    if {$::GX::Engine3D::closeHook ne {}} {uplevel #0 [list {*}$::GX::Engine3D::closeHook]}
+    set ::GX::Engine3D::documentPresentations {}
     hostEscapeRemove
     incr ::GX::Engine3D::mountGeneration
     if {$::GX::Engine3D::resizePending ne {}} {catch {after cancel $::GX::Engine3D::resizePending};set ::GX::Engine3D::resizePending {}}
@@ -2400,7 +2467,6 @@ proc ::GX::Engine3D::close {} {
         after cancel $::GX::Engine3D::timelineTimer
         set ::GX::Engine3D::timelineTimer ""
     }
-    if {$::GX::Engine3D::closeHook ne {}} {uplevel #0 [list {*}$::GX::Engine3D::closeHook]}
     stopWorker
     set ::GX::Engine3D::gizmoActive 0
     incr ::GX::Engine3D::renderGeneration
@@ -2451,8 +2517,8 @@ proc ::GX::Engine3D::stopWorker {} {
 # Retained Plot v4 representations use the same native host and public Viewer
 # scene state; no live Dataset or source Variant is needed to inspect them.
 proc ::GX::native3DScientificDocumentRead {id} {
-    set item [interactiveDocumentRead $id]
-    if {[dict get $item module_id] ne {plot.dataset}||[dict get $item provider_id] ne {native_3d}||[dict get $item format] ne {gxtxt.plot_dataset.native_v4_scene}} {error {Document is not an owned native Plot v4 scientific representation}}
+    set item [sessionWorkspaceGet $id]
+    if {[dict get $item module_id] ne {plot.dataset}||[dict get $item provider_id] ne {plot_dataset_3d_v4}||[dict get $item format] ne {gxtxt.plot_dataset.native_v4_scene}} {error {Document is not an owned native Plot v4 scientific representation}}
     set payload [dict get $item payload]
     if {[dict get $payload renderer_owner] ne {PLOT_DATASET_API_v4}||![dict exists $payload scientific_figure]} {error {Invalid native scientific representation ownership}}
     return $payload

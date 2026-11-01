@@ -13,7 +13,7 @@ namespace eval ::GX::UiField {
     variable controlsStacked {}
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldComponentEnabled uiFieldChoicesSet uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldInspectionColumnsFit uiFieldInspectionColumnsSchedule uiFieldIconApply uiFieldMenuIconApply uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentTableWidget uiFieldComponentTableRead uiFieldComponentTableCopy uiFieldComponentItemsSet uiFieldComponentLayout uiFieldScrollableCreate uiFieldScrollAreaAttach uiFieldViewerRegionsSet uiFieldDatasetChoices}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldComponentEnabled uiFieldChoicesSet uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldInspectionColumnsFit uiFieldInspectionColumnsSchedule uiFieldIconApply uiFieldMenuIconApply uiFieldComponentCapabilities uiFieldComponentDescriptor uiFieldComponentCreate uiFieldComponentRead uiFieldComponentTableWidget uiFieldComponentTableRead uiFieldComponentTableCopy uiFieldComponentItemsSet uiFieldComponentLayout uiFieldTabOverflowAttach uiFieldScrollableCreate uiFieldScrollAreaAttach uiFieldViewerRegionsSet uiFieldDatasetChoices}]
 }
 
 # Viewer-bounded choice projection. The combobox remains the value/variable
@@ -264,12 +264,34 @@ proc ::GX::uiFieldCreate {widget descriptor variableName {changed ""}} {
     if {$type eq "color"} {bind $widget <Configure> [list ::GX::uiFieldColorLayout $widget %w]
     } elseif {[datasetPublicationV2DictDefault $descriptor compact 0]} {
         bind $widget <Configure> [list ::GX::_uiFieldCompactLayout $widget %W %w]
+        set parent [winfo parent $widget]
+        while {$parent ne {}} {
+            if {[winfo class $parent] eq {Canvas}} {
+                set callback [list ::GX::_uiFieldCompactLayout $widget $widget %w]
+                bind $parent <Configure> +$callback
+                dict set widgets $widget compactViewport $parent
+                dict set widgets $widget compactViewportCallback $callback
+                break
+            }
+            set parent [winfo parent $parent]
+        }
     }
     return $widget
 }
 proc ::GX::_uiFieldCompactLayout {widget actual width} {
     variable ::GX::UiField::widgets
     if {$actual ne $widget || $width<2 || ![dict exists $widgets $widget]} return
+    set width [expr {min($width,[winfo width $widget])}]
+    # A scrolling inspector may allocate its natural content wider than the
+    # visible canvas. Reflow against what the user can actually see, rather
+    # than treating that offscreen allocation as room for Reset/Inherit.
+    if {[dict exists $widgets $widget compactViewport]} {
+        set viewport [dict get $widgets $widget compactViewport]
+        if {[winfo exists $viewport] && [winfo ismapped $viewport]} {
+            set indent [expr {max(0,[winfo rootx $widget]-[winfo rootx $viewport])}]
+            set width [expr {min($width,max(1,[winfo width $viewport]-$indent-4))}]
+        }
+    }
     set row [expr {[winfo exists $widget.caption] ? 1 : 0}]
     set buttons {};set required [winfo reqwidth $widget.entry]
     foreach name {reset inherit} {
@@ -323,6 +345,14 @@ proc ::GX::uiFieldColorLayout {widget width} {
 proc ::GX::uiFieldDestroy {widget actual} {
     if {$widget ne $actual} return
     variable ::GX::UiField::widgets
+    if {[dict exists $widgets $widget compactViewport]} {
+        set viewport [dict get $widgets $widget compactViewport]
+        set callback [dict get $widgets $widget compactViewportCallback]
+        if {[winfo exists $viewport]} {
+            set keep {};foreach line [split [bind $viewport <Configure>] \n] {if {$line ne $callback} {lappend keep $line}}
+            bind $viewport <Configure> [join $keep \n]
+        }
+    }
     dict unset widgets $widget
     unset -nocomplain ::GX::UiField::errors($widget) ::GX::UiField::alpha($widget) ::GX::UiField::rgb($widget)
 }
@@ -480,6 +510,9 @@ proc ::GX::uiFieldFormCreate {window title fields initial apply {parent ""} {sec
         incr row
     }
     grid columnconfigure $window.viewport.content 0 -weight 1
+    # Reuse the maintained contained-scroll owner for ordinary field forms,
+    # including provider registration. Native editors keep their own wheel.
+    uiFieldScrollAreaAttach $window.viewport $window.viewport.content
     dict set forms $window [dict create fields $fields widgets $mapping apply $apply]
     bind $window <Escape> [list destroy $window]
     bind $window <Destroy> [list ::GX::uiFieldFormDestroy $window %W]
@@ -510,20 +543,56 @@ proc ::GX::uiFieldFormSee {window widget} {
     if {[winfo exists $notebook]} {foreach tab [$notebook tabs] {if {[string match ${tab}.* $widget]} {$notebook select $tab;break}}}
     uiFieldScrollSee $window.viewport $window.viewport.content $widget
 }
-proc ::GX::uiFieldScrollSee {viewport content widget} {
+proc ::GX::uiFieldVisibleBounds {widget} {
+    if {![winfo exists $widget] || ![winfo ismapped $widget]} {return {x 0 y 0 width 0 height 0}}
+    set left [winfo rootx $widget];set top [winfo rooty $widget]
+    set right [expr {$left+[winfo width $widget]}];set bottom [expr {$top+[winfo height $widget]}]
+    set window [winfo toplevel $widget];set parent $widget
+    while {$parent ne $window} {
+        set parent [winfo parent $parent]
+        if {![winfo ismapped $parent]} {return {x 0 y 0 width 0 height 0}}
+        set left [expr {max($left,[winfo rootx $parent])}];set top [expr {max($top,[winfo rooty $parent])}]
+        set right [expr {min($right,[winfo rootx $parent]+[winfo width $parent])}]
+        set bottom [expr {min($bottom,[winfo rooty $parent]+[winfo height $parent])}]
+    }
+    # A Toplevel's logical parent is not its native clipping parent.
+    return [dict create x $left y $top width [expr {max(0,$right-$left)}] height [expr {max(0,$bottom-$top)}]]
+}
+proc ::GX::uiFieldViewportNotify {viewport scrollbar first last} {
+    if {![winfo exists $viewport] || ![winfo exists $scrollbar]} return
+    $scrollbar set $first $last
+    if {[bind $viewport <<GXViewportChanged>>] ne {}} {event generate $viewport <<GXViewportChanged>> -when tail}
+}
+proc ::GX::uiFieldScrollSee {viewport content widget {alignment nearest}} {
+    if {$alignment ni {nearest start}} {error {Unknown scroll alignment}}
     if {![winfo exists $viewport]||![winfo exists $widget]} return
     set total [winfo reqheight $content]
     # Root-coordinate differences also cover nested controls and widgets
     # packed into a different geometry parent, without depending on ancestry.
     set y [expr {[winfo rooty $widget]-[winfo rooty $content]}];set h [winfo height $widget]
     set top [$viewport canvasy 0];set bottom [$viewport canvasy [winfo height $viewport]]
-    # Canvas scrolling rounds to its increment. Leave a full increment of
-    # clearance so focused native controls cannot remain under the next panel.
-    set margin [expr {max(4,[$viewport cget -yscrollincrement])+4}]
-    if {$h>[winfo height $viewport] || $y<$top} {
-        $viewport yview moveto [expr {max(0,($y-$margin)/double(max(1,$total)))}]
+    set room [winfo height $viewport]
+    set increment [$viewport cget -yscrollincrement]
+    set managed [expr {[llength [info commands ::GX::_uiFieldTabViewportFor]] && [_uiFieldTabViewportFor $widget] eq $viewport}]
+    # The existing tab owner scrolls three24px units per wheel event. A tight
+    # focus request may need pixel alignment, without changing that distance.
+    set step [expr {$managed ? 24 : $increment}]
+    set margin [expr {max(4,$step)+4}]
+    if {$managed && $h<=$room} {set margin [expr {min($margin,($room-$h)/2)}]}
+    set target {}
+    if {$alignment eq {start} || $h>[winfo height $viewport] || $y<$top} {
+        set target [expr {max(0,($y-$margin)/double(max(1,$total)))}]
     } elseif {$y+$h>$bottom} {
-        $viewport yview moveto [expr {max(0,($y+$h+$margin-[winfo height $viewport])/double(max(1,$total)))}]
+        set target [expr {max(0,($y+$h+$margin-$room)/double(max(1,$total)))}]
+    }
+    if {$target ne {}} {
+        # Restoring24px here would quantize the origin again and can clip a
+        # physically fitting control. Only the existing managed tab viewport
+        # retains pixel precision; its wheel owner preserves the normal72px
+        # movement. Other canvases retain their original increment/behavior.
+        set precise [expr {$managed && $h<=$room && $room-$h<$step}]
+        if {$precise} {$viewport configure -yscrollincrement 1}
+        $viewport yview moveto $target
     }
 }
 proc ::GX::uiFieldFormApply {window} {
@@ -722,106 +791,29 @@ proc ::GX::uiFieldComboboxPopupDamage {popup} {
         if {[llength [info commands ::GX::configurationAppearanceRefresh]]} {configurationAppearanceRefresh}
     }
 }
-proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
-    if {$children eq {}} {set children [winfo children $frame]}
-    if {[dict exists $::GX::UiField::controlsTrailing $frame]} {
-        foreach child [dict get $::GX::UiField::controlsTrailing $frame] {
-            if {![winfo exists $child]} continue
-            set at [lsearch -exact $children $child]
-            if {$at>=0} {set children [lreplace $children $at $at]}
-            lappend children $child
-        }
-    }
-    # Restore only the grid weight temporarily owned by the narrow fallback.
-    # The normal layout retains the caller's original column policy.
-    if {[dict exists $::GX::UiField::controlsStacked $frame]} {
-        grid columnconfigure $frame 0 -weight [dict get $::GX::UiField::controlsStacked $frame]
-        dict unset ::GX::UiField::controlsStacked $frame
-    }
-    foreach child $children {pack forget $child}
-    # Keep each label next to its input when wrapping. Treating them as
-    # unrelated cells split labels from fields at larger fonts/narrow widths.
-    set groups {};set index 0
-    while {$index<[llength $children]} {
-        set child [lindex $children $index];incr index
-        set next [lindex $children $index]
-        if {[winfo class $child] in {TLabel Label}&&$next ne ""&&[winfo class $next] in {Entry TEntry Combobox TCombobox Spinbox TSpinbox Scale TScale}} {
-            $child configure -wraplength [expr {max(64,$width-[winfo reqwidth $next]-18)}]
-            lappend groups [list $child $next];incr index
-        } else {
-            if {[winfo class $child] in {TLabel Label}} {$child configure -wraplength [expr {max(64,$width-18)}]}
-            lappend groups [list $child]
-        }
-    }
-    # Use every available row width before adding another row. A fixed six-
-    # group ceiling could push core editing controls below a Workbench pane.
-    for {set columns [llength $groups]} {$columns>=1} {incr columns -1} {
-        set sizes [lrepeat [expr {2*$columns}] 0];set i 0
-        foreach group $groups {
-            set col [expr {$i%$columns}]
-            set part 0
-            foreach child $group {
-                set cell [expr {2*$col+$part}];incr part
-                lset sizes $cell [expr {max([lindex $sizes $cell],[winfo reqwidth $child]+6)}]
-            }
-            incr i
-        }
-        set total 0;foreach size $sizes {incr total $size}
-        if {$total<=$width || $columns==1} break
-    }
-    if {$columns==1 && $total>$width} {
-        # A pair wider than its container cannot remain side by side. Give
-        # each part a full row and let the existing entry shrink/scroll its
-        # own text instead of placing it beyond the visible container edge.
-        dict set ::GX::UiField::controlsStacked $frame [grid columnconfigure $frame 0 -weight]
-        set cleanup [list ::GX::_uiFieldControlsDestroyed $frame %W]
-        if {$cleanup ni [split [bind $frame <Destroy>] \n]} {bind $frame <Destroy> +$cleanup}
-        grid columnconfigure $frame 0 -weight 1
-        set height 0;set row 0
-        foreach group $groups {
-            foreach child $group {
-                set label [expr {[winfo class $child] in {TLabel Label}}]
-                if {$label} {$child configure -wraplength [expr {max(1,$width-6)}]}
-                grid $child -row $row -column 0 -columnspan 1 -sticky [expr {$label ? {w} : {ew}}] -padx 3 -pady 2
-                incr height [expr {[winfo reqheight $child]+4}];incr row
-            }
-        }
-        return [dict create columns 1 rows $row height $height]
-    }
-    set heights {};set i 0
-    foreach group $groups {
-        set row [expr {$i/$columns}];set col [expr {2*($i%$columns)}];incr i
-        set span [expr {[llength $group]==1 ? 2 : 1}]
-        foreach child $group {
-            dict set heights $row [expr {max([datasetPublicationV2DictDefault $heights $row 0],[winfo reqheight $child]+4)}]
-            set info [grid info $child]
-            if {$info eq {} || [dict get $info -row]!=$row || [dict get $info -column]!=$col||[dict get $info -columnspan]!=$span} {
-                grid $child -row $row -column $col -columnspan $span -sticky w -padx 3 -pady 2
-            }
-            incr col
-        }
-    }
-    set height 0;dict for {row pixels} $heights {incr height $pixels}
-    return [dict create columns $columns rows [dict size $heights] height $height]
-}
-proc ::GX::uiFieldControlsAppend {frame widget} {
-    if {![winfo exists $widget] || [winfo parent $widget] ne $frame} {error {Appended control must belong to its layout container}}
-    set children [datasetPublicationV2DictDefault $::GX::UiField::controlsTrailing $frame {}]
-    if {$widget ni $children} {
-        dict lappend ::GX::UiField::controlsTrailing $frame $widget
-        if {$children eq {}} {bind $frame <Destroy> +[list ::GX::_uiFieldControlsDestroyed $frame %W]}
-    }
-    set visible {}
-    foreach child [winfo children $frame] {if {[winfo manager $child] ne {}} {lappend visible $child}}
-    uiFieldControlsLayout $frame [winfo width $frame] $visible
-}
-proc ::GX::_uiFieldControlsDestroyed {frame actual} {
-    if {$frame ne $actual} return
-    foreach state {controlsTrailing controlsStacked} {
-        if {[dict exists [set ::GX::UiField::$state] $frame]} {dict unset ::GX::UiField::$state $frame}
-    }
-}
+source [file join [file dirname [info script]] ui_field_controls_layout_v1.tcl]
+
 namespace eval ::GX::UiField {variable tableLayoutAfter {}}
+proc ::GX::_uiFieldTreeFontRows {tree style} {
+    if {![winfo exists $tree]} return
+    set height [expr {[font metrics TkDefaultFont -linespace]+8}]
+    if {[ttk::style lookup $style -rowheight] ne $height || [ttk::style lookup $style -font] ne {TkDefaultFont}} {
+        ttk::style configure $style -font TkDefaultFont -rowheight $height
+    }
+    if {[$tree cget -style] ne $style} {$tree configure -style $style}
+    # Tk can retain an already computed row metric when a theme is selected
+    # again even though its style lookup reports the new value. Refresh only
+    # when an actual visible row proves that cache stale; avoid event loops.
+    foreach item [$tree children {}] {
+        set bounds [$tree bbox $item]
+        if {[llength $bounds]!=4} continue
+        if {[lindex $bounds 3]!=$height} {
+            $tree configure -style Treeview
+            $tree configure -style $style
+        }
+        break
+    }
+}
 proc ::GX::uiFieldInspectionColumnsFit {tree {options {}}} {
     ttk::style configure GXInspection.Treeview -font TkDefaultFont -rowheight [expr {[font metrics TkDefaultFont -linespace]+8}]
     if {[$tree cget -style] ne "GXInspection.Treeview"} {$tree configure -style GXInspection.Treeview}

@@ -1,0 +1,56 @@
+{
+  "record_types": {
+    "scientific.publication": {
+      "library_type": "scientific.publications",
+      "label": "Scientific publication / citation",
+      "fields": {
+        "identifiers": {
+          "type": "object",
+          "required": true
+        },
+        "title": {
+          "type": "string"
+        },
+        "authors": {
+          "type": "array"
+        },
+        "journal": {
+          "type": "string"
+        },
+        "year": {
+          "type": "integer"
+        },
+        "source_record": {
+          "type": "object"
+        },
+        "abstract": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "resource_contracts": {
+        "application/pdf": "document.pdf",
+        "image/png": "image.raster",
+        "image/jpeg": "image.raster",
+        "image/gif": "image.raster",
+        "chemical/x-mdl-sdfile": "molecular.structure"
+      },
+      "content_contract": "scientific.publication"
+    }
+  },
+  "relations": {
+    "publication.has_document": {
+      "label": "Associated actual document",
+      "from_types": [
+        "scientific.publication"
+      ],
+      "to_types": [
+        "technical.document"
+      ]
+    }
+  },
+  "schema": "gxtxt.library_domain.v1",
+  "provider_id": "domain.publications"
+}

@@ -1,0 +1,241 @@
+{
+  "format": "task210.tutorial_observations_shell.v1",
+  "content_id": "tutorial.ticino_valley_3d",
+  "status": "PARTIAL_ACTUAL_GUI_PREVIEW_FAILED",
+  "source_expectations_only": false,
+  "actual_installed_build": null,
+  "actual_profile": null,
+  "actual_display": null,
+  "actual_registered_library": {
+    "display_name": "GX-TXT Accepted Session Generators",
+    "technical_id": null,
+    "version": null
+  },
+  "actual_registered_generator": {
+    "name": "Ticino Valley 3D Cartography",
+    "version": "1.0.1"
+  },
+  "actual_session": {
+    "cold_reopen": false,
+    "short_name": "task210-ticino-001",
+    "display_title": "Ticino Valley cartography and synthetic hydraulics",
+    "immutable_id": null
+  },
+  "actual_datasets": [
+    {
+      "name": "ticino_valley_grid",
+      "GUI_rows_samples": 5440,
+      "GUI_variable_count": 21,
+      "contract": "table.generic",
+      "actual_dataset_id": null
+    },
+    {
+      "name": "ticino_river_centerline",
+      "GUI_rows_samples": 443,
+      "GUI_variable_count": 9,
+      "contract": "table.generic",
+      "actual_dataset_id": null
+    },
+    {
+      "name": "ticino_valley_settlements",
+      "GUI_rows_samples": 573,
+      "GUI_variable_count": 14,
+      "contract": "table.generic",
+      "actual_dataset_id": null
+    },
+    {
+      "name": "ticino_hydraulic_demo",
+      "GUI_rows_samples": 560,
+      "GUI_variable_count": 14,
+      "contract": "table.generic",
+      "actual_dataset_id": null
+    }
+  ],
+  "actual_variables": [
+    {
+      "dataset": "ticino_hydraulic_demo",
+      "name": "x_km",
+      "id": "v0004",
+      "unit": "km"
+    },
+    {
+      "dataset": "ticino_hydraulic_demo",
+      "name": "y_km",
+      "id": "v0005",
+      "unit": "km"
+    },
+    {
+      "dataset": "ticino_hydraulic_demo",
+      "name": "water_surface_elevation_m",
+      "id": "v0012",
+      "unit": "m"
+    }
+  ],
+  "actual_graphs": [],
+  "actual_jobs": [],
+  "actual_reports": [],
+  "actual_metrics": null,
+  "actual_captures": [
+    {
+      "path": "assets/steps/grid_variables.png",
+      "raw_capture_number": "012",
+      "sha256": "d1459755021739ed5d234e34aa2d45d1cea447cc9ec5b794ccb17970d3a94a80",
+      "bytes": 89840,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Grid Variables distinguish projected metres, local kilometres and population density. Generic schema roles do not establish measured provenance. This frame shows 21 Variables, not grid topology or a map."
+    },
+    {
+      "path": "assets/steps/hydraulic_units_entered.png",
+      "raw_capture_number": "041",
+      "sha256": "65fd1793127230c08eca8147e4eccac72af7d07d14f95ca64bf4c0173b336964",
+      "bytes": 74180,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Documented hydraulic units entered through Variables: m for offset, reference/bed/water-surface elevation and depth; m/s for velocity. This is before Save, with the velocity field focused. Later normal Save and Technical Details readback are operator observations, not shown here. No conversion, calibration or cold persistence is established."
+    },
+    {
+      "path": "assets/steps/synthetic_hydraulics_warning.png",
+      "raw_capture_number": "048",
+      "sha256": "d24d08eb21d368280552f33d19b9b1e5246fcb5e3539536a8fa8cff8f1de6336",
+      "bytes": 107945,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "The imported metadata declares synthetic=true, calibrated=false, measured=false and internal-consistency-only scope. Read the complete selected warning in the lower Value field: not CFD, a shallow-water model, a flood model or a prediction. The table row is clipped; these are provenance declarations, not independent numerical validation."
+    },
+    {
+      "path": "assets/steps/hydraulic_preview_failed.png",
+      "raw_capture_number": "060",
+      "sha256": "3ba6d2591f34a71f21cab7780b518f602b93643dfe13e5c43c19aadd121021d1",
+      "bytes": 57819,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "One hydraulic Preview Render ended: Preview unavailable: Worker exit status 1. X/Y are local kilometres; the complete Z selection, water_surface_elevation_m (m), v0012, is attributed to the operator record because the selector is clipped here. No successful scientific plot or native 3D interaction was observed; dependent work stopped. Cause unknown."
+    },
+    {
+      "path": "assets/steps/quality_report_unavailable.png",
+      "raw_capture_number": "061",
+      "sha256": "2f17e3af97b4e405c426f2b2c0b844084dc84fec55b174590b63b41112542f13",
+      "bytes": 52479,
+      "pixels": "UNCHANGED_ORIGINAL_1920x1080",
+      "caption": "Quality reports no published report while Preview remains unavailable. Missing diagnostics or uncertainty do not mean zero error. This is an unavailable report, not a Quality PASS or numerical comparison."
+    }
+  ],
+  "actual_timings": null,
+  "actions": [
+    {
+      "id": "T01",
+      "scope": "Allocated stage/build and registered catalog identity",
+      "status": "PARTIAL",
+      "actual_outcome": "Frozen candidate13 observed, not installed/activated; displayed generator1.0.1 and accepted-library name, technical library identity not fully read back.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T02",
+      "scope": "Normal deliberate generation and fresh Session provenance",
+      "status": "EXERCISED_AND_WORKING",
+      "actual_outcome": "One normal Generate created the intended fresh named Session; no raw reimport. Private-path success dialog remains private; operator record supplies acknowledgement.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T03",
+      "scope": "Four canonical Dataset/Variable contracts, counts and meaningful coordinate choices",
+      "status": "PARTIAL",
+      "actual_outcome": "Four actual table.generic row/sample and Variable counts read; all IDs/dtypes/enabled/units/roles were not fully audited. Source-defined grid topology not numerically validated.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T04",
+      "scope": "Dataset-specific metadata, actual missing units and supported recorded corrections or owner gaps",
+      "status": "PARTIAL",
+      "actual_outcome": "Four matching metadata files imported/reviewed and Save clicked; documented river/hydraulic units entered and Technical Details read back after normal Variables Save. Cold persistence untested.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T05",
+      "scope": "Four-source native Preview and eligible controls",
+      "status": "FAILED_BUG",
+      "actual_outcome": "One hydraulic Render failed Worker exit status1. No retry, native3D or control workflow. Other-source Previews not tested.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T06",
+      "scope": "Normal module Run/Jobs, bindings, report and metrics",
+      "status": "NOT_TESTED",
+      "actual_outcome": "Not reached; dependent demo/graphs stopped after first hydraulic Preview failure.",
+      "evidence": []
+    },
+    {
+      "id": "T07",
+      "scope": "Nine actual graph/provider/variant contexts with scientific labels",
+      "status": "NOT_TESTED",
+      "actual_outcome": "Not reached; dependent demo/graphs stopped after first hydraulic Preview failure.",
+      "evidence": []
+    },
+    {
+      "id": "T08",
+      "scope": "Meaningful presentation change and normal rerender",
+      "status": "NOT_TESTED",
+      "actual_outcome": "Not reached; dependent demo/graphs stopped after first hydraulic Preview failure.",
+      "evidence": []
+    },
+    {
+      "id": "T09",
+      "scope": "Independent full actual Plots inventory/matrix and supported outputs",
+      "status": "NOT_TESTED",
+      "actual_outcome": "Not reached; dependent demo/graphs stopped after first hydraulic Preview failure.",
+      "evidence": []
+    },
+    {
+      "id": "T10",
+      "scope": "Save and normal in-process reopen",
+      "status": "PARTIAL",
+      "actual_outcome": "Normal Notes and Save configuration acknowledgement then normal WM close observed. In-process reopen and cold persistence not tested.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    },
+    {
+      "id": "T11",
+      "scope": "Fresh application reopening and retained state",
+      "status": "NOT_TESTED",
+      "actual_outcome": null,
+      "evidence": []
+    },
+    {
+      "id": "T12",
+      "scope": "Common-host discovery, HTML/CSS/JS/navigation and native generator available/unavailable action",
+      "status": "NOT_TESTED",
+      "actual_outcome": null,
+      "evidence": []
+    },
+    {
+      "id": "T13",
+      "scope": "Human-visible timings with measurement limits and retained failures/recovery",
+      "status": "NOT_TESTED",
+      "actual_outcome": "Raw chronology and deliberate settling preserved; first/final-frame latency and comparative performance not measured.",
+      "evidence": [
+        "evidence/ticino001.json"
+      ]
+    }
+  ],
+  "full_plots_matrix_complete": false,
+  "complete_tutorial": false,
+  "original_candidate_parity_accepted": false,
+  "actual_gui_evidence_executed": true,
+  "raw_source_expectation_record": "provenance.json:baseline_source_record",
+  "qualification": "Ticino001 partial operator observations are in evidence/ticino001.json. Historical baseline/source counts and expected graph suffixes remain source expectations; no independent numeric verification, complete Variable-ID/dtype audit, cold persistence or final quality follows.",
+  "actual_candidate_build": {
+    "version": "0.9.8.10-dev-111",
+    "commit": "e9aad5063f1223f4746760e6fc6e79f26392a412",
+    "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+    "installed": false,
+    "activated": false
+  }
+}

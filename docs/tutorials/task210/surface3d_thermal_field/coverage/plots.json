@@ -1,0 +1,511 @@
+{
+  "record_type": "partial_actual_thermal_plots_inventory",
+  "content_id": "tutorial.surface3d_thermal_field",
+  "content_version": "0.1.0",
+  "status": "INCOMPLETE_ACTUAL_GUI",
+  "scope": "This thermal tutorial only; no evidence inherited from another tutorial",
+  "actual_inventory": {
+    "revision": "staged110-thermal001-plus002-partial",
+    "sha256": null,
+    "gui_build": "0.9.8.10-dev-110",
+    "observed_controls": [
+      "selection.1",
+      "selection.2",
+      "selection.3",
+      "selection.4",
+      "selection.5",
+      "render.1",
+      "render.2",
+      "presentation.1",
+      "presentation.2",
+      "presentation.3",
+      "presentation.4",
+      "presentation.5",
+      "presentation.6",
+      "data_variants.1",
+      "data_variants.2",
+      "data_variants.3",
+      "data_variants.4",
+      "graph.1",
+      "graph.2",
+      "graph.3",
+      "graph.4",
+      "graph.5",
+      "import_export.1",
+      "import_export.2",
+      "import_export.3",
+      "import_export.4"
+    ],
+    "complete": false
+  },
+  "actual_session_id": "task210-thermal-001",
+  "actual_generator_library_id": "org.giuxlab.gxtxt.accepted_generators",
+  "actual_generator_id": "surface3d_thermal_field",
+  "actual_dataset_ids": [
+    "thermal.surface.source"
+  ],
+  "actual_variable_ids": [
+    "v0001",
+    "v0002",
+    "v0003"
+  ],
+  "actual_graph_ids": [
+    "demo.visualization.surface3d.surface",
+    "plot.dataset.xyz"
+  ],
+  "coverage_rows": [
+    {
+      "control_id": "selection.1",
+      "actual_visible_label": "All",
+      "actual_menu_path": "Selection",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/051_menu_selection.png"
+    },
+    {
+      "control_id": "selection.2",
+      "actual_visible_label": "None",
+      "actual_menu_path": "Selection",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/051_menu_selection.png"
+    },
+    {
+      "control_id": "selection.3",
+      "actual_visible_label": "Toggle",
+      "actual_menu_path": "Selection",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/051_menu_selection.png"
+    },
+    {
+      "control_id": "selection.4",
+      "actual_visible_label": "Up",
+      "actual_menu_path": "Selection",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/051_menu_selection.png"
+    },
+    {
+      "control_id": "selection.5",
+      "actual_visible_label": "Down",
+      "actual_menu_path": "Selection",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/051_menu_selection.png"
+    },
+    {
+      "control_id": "render.1",
+      "actual_visible_label": "Rerender selected",
+      "actual_menu_path": "Render",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/052_menu_render.png"
+    },
+    {
+      "control_id": "render.2",
+      "actual_visible_label": "Rerender module",
+      "actual_menu_path": "Render",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/052_menu_render.png"
+    },
+    {
+      "control_id": "presentation.1",
+      "actual_visible_label": "Legend...",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "presentation.2",
+      "actual_visible_label": "Place legend",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "presentation.3",
+      "actual_visible_label": "Axes...",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "presentation.4",
+      "actual_visible_label": "Title and labels...",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "presentation.5",
+      "actual_visible_label": "Graphics...",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "presentation.6",
+      "actual_visible_label": "Annotate...",
+      "actual_menu_path": "Presentation",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/053_menu_presentation.png"
+    },
+    {
+      "control_id": "data_variants.1",
+      "actual_visible_label": "Variants...",
+      "actual_menu_path": "Data / Variants",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/054_menu_data_variants.png"
+    },
+    {
+      "control_id": "data_variants.2",
+      "actual_visible_label": "Select data...",
+      "actual_menu_path": "Data / Variants",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "disabled",
+      "status": "PRESENT_BUT_DISABLED",
+      "visible_result": "Disabled in this actual demo3D context",
+      "scientific_reason": "Disabled in the captured selected demo surface context. Eligible scientific selection was not exercised; underlying owner reason was not diagnosed. No artificial trace supplied.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/054_menu_data_variants.png"
+    },
+    {
+      "control_id": "data_variants.3",
+      "actual_visible_label": "Select area",
+      "actual_menu_path": "Data / Variants",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "disabled",
+      "status": "PRESENT_BUT_DISABLED",
+      "visible_result": "Disabled in this actual demo3D context",
+      "scientific_reason": "Disabled in the captured selected demo surface context. Eligible scientific selection was not exercised; underlying owner reason was not diagnosed. No artificial trace supplied.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/054_menu_data_variants.png"
+    },
+    {
+      "control_id": "data_variants.4",
+      "actual_visible_label": "Clear area",
+      "actual_menu_path": "Data / Variants",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "disabled",
+      "status": "PRESENT_BUT_DISABLED",
+      "visible_result": "Disabled in this actual demo3D context",
+      "scientific_reason": "Disabled in the captured selected demo surface context. Eligible scientific selection was not exercised; underlying owner reason was not diagnosed. No artificial trace supplied.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/054_menu_data_variants.png"
+    },
+    {
+      "control_id": "graph.1",
+      "actual_visible_label": "Clone...",
+      "actual_menu_path": "Graph",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/055_menu_graph.png"
+    },
+    {
+      "control_id": "graph.2",
+      "actual_visible_label": "Edit clone...",
+      "actual_menu_path": "Graph",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/055_menu_graph.png"
+    },
+    {
+      "control_id": "graph.3",
+      "actual_visible_label": "Delete...",
+      "actual_menu_path": "Graph",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/055_menu_graph.png"
+    },
+    {
+      "control_id": "graph.4",
+      "actual_visible_label": "Graph info...",
+      "actual_menu_path": "Graph",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "EXERCISED_AND_WORKING",
+      "visible_result": "Graph Info displayed the actual selected surface identity",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/057_graph_info_surface.png"
+    },
+    {
+      "control_id": "graph.5",
+      "actual_visible_label": "Notes...",
+      "actual_menu_path": "Graph",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/055_menu_graph.png"
+    },
+    {
+      "control_id": "import_export.1",
+      "actual_visible_label": "Export...",
+      "actual_menu_path": "Import / Export",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/056_menu_import_export.png"
+    },
+    {
+      "control_id": "import_export.2",
+      "actual_visible_label": "Export annotated...",
+      "actual_menu_path": "Import / Export",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/056_menu_import_export.png"
+    },
+    {
+      "control_id": "import_export.3",
+      "actual_visible_label": "Export Graph ZIP...",
+      "actual_menu_path": "Import / Export",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/056_menu_import_export.png"
+    },
+    {
+      "control_id": "import_export.4",
+      "actual_visible_label": "Import Graph ZIP...",
+      "actual_menu_path": "Import / Export",
+      "context": "Selected demo surface graph, staged110, thermal001",
+      "observed_eligibility": "visible",
+      "status": "NOT_TESTED",
+      "visible_result": "Menu entry observed; operation not fully exercised",
+      "scientific_reason": null,
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage01/manual_evidence/056_menu_import_export.png"
+    }
+  ],
+  "inert_row_template": {
+    "control_id": null,
+    "actual_visible_label": null,
+    "actual_menu_path": null,
+    "requested_normal_gui_action": null,
+    "actual_session_id": null,
+    "actual_dataset_ids": [],
+    "actual_variable_ids": [],
+    "actual_graph_ids": [],
+    "compatibility_hypothesis": null,
+    "observed_eligibility": null,
+    "scientific_reason": null,
+    "status": "NOT_TESTED",
+    "visible_result": null,
+    "evidence": [],
+    "interaction_ids": [],
+    "defect_id": null,
+    "corrective_owner": null,
+    "failed_receipt": null,
+    "retake_receipt": null,
+    "library_id": null,
+    "library_version": null,
+    "catalog_resolution_receipt": null
+  },
+  "outcome_vocabulary_for_later_actual_rows": [
+    "EXERCISED_AND_WORKING",
+    "PRESENT_BUT_INAPPLICABLE",
+    "PRESENT_BUT_DISABLED",
+    "FAILED_BUG",
+    "NOT_TESTED"
+  ],
+  "planned_groups": [
+    {
+      "planning_group": "source/provider/type selection",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "panels/tabs/variants",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "series/legends",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "axes/units/ranges/scales",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "grid/ticks/style/settings",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "Fit/zoom/pan/resize/3D consultation",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "rerender/refresh/source identity",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "save/reopen/export/Print flows",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    }
+  ],
+  "completion": {
+    "all_actual_visible_controls_accounted_for": false,
+    "scientific_review": null,
+    "quality_acceptance": null
+  },
+  "limitations": [
+    "Partial26 observed top-level menu entries only, not complete inventory/denominator or coverage percentage",
+    "Dialog/control options, othergraph contexts and additionaldirectactions remain unreconciled",
+    "Menu opening alone is NOT_TESTED operation; disabled dispositions apply only observed demo3Dcontext",
+    "Full workflow/directaction receipts remain separate; no PASS transfers between tutorials",
+    "Nine continuation function/context records are separate from the26initialmenuentries, not a combinedcompletecontrolsdenominator; actual nestedcontrolinventory incomplete"
+  ],
+  "continuation_cases": [
+    {
+      "case_id": "variant.new_from_base",
+      "visible_label": "New from base",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Created p0001 through the existing manual XYZ Variant manager; this frame precedes its final rename and save.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/023_new_variant.png"
+    },
+    {
+      "case_id": "variant.save_render",
+      "visible_label": "Save and render",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Inspected the stable XYZ bindings and surface type; normal rendering completed. Graph-list preservation failed separately.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/027_saved_variant_list.png"
+    },
+    {
+      "case_id": "variant.selection",
+      "visible_label": "Thermal source surface",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Selected the saved p0001 and observed its available 3D action.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/029_selected_saved_variant.png"
+    },
+    {
+      "case_id": "variant.native3d",
+      "visible_label": "3D",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Observed genuine saved-Variant geometry with mm/mm/K axes; graphic limitations remain.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/031_native_variant_surface.png"
+    },
+    {
+      "case_id": "variant.native_fit",
+      "visible_label": "Fit",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Invoked Fit before and after rotation. Camera reset and complete label margins were not established.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/034_native_refit_after_rotation.png"
+    },
+    {
+      "case_id": "variant.native_rotation",
+      "visible_label": "Mouse drag in native canvas",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Mouse dragging visibly changed the camera. No source change or performance equivalence is claimed.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/033_native_rotated.png"
+    },
+    {
+      "case_id": "variant.native_return",
+      "visible_label": "×",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Closed the native view normally and returned to its raster.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/035_return_to_variant_raster.png"
+    },
+    {
+      "case_id": "variant.graph_info",
+      "visible_label": "Graph info...",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "EXERCISED_AND_WORKING",
+      "observed_scope": "Read the actual module, graph, Variant and artifact identity before and after in-process Open.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/045_reopened_variant_identity.png"
+    },
+    {
+      "case_id": "variant.list_preservation",
+      "visible_label": "Graph list after new Variant",
+      "context": "Manual plot.dataset.xyz saved Variant p0001; actual packet 002b in staged dev110",
+      "status": "FAILED_BUG",
+      "observed_scope": "The original contour entry became hidden. MAIN diagnosed a false alias; the first difference is preserved and no fix was tested.",
+      "evidence_external": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/thermal_manual_stage02b/manual_evidence/028_first_graph_list_difference.png"
+    }
+  ]
+}

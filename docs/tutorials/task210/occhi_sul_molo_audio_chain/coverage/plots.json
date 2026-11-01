@@ -1,0 +1,156 @@
+{
+  "record_type": "independent_audio_plots_matrix_planning_no_actual_inventory",
+  "content_id": "tutorial.occhi_sul_molo_audio_chain",
+  "content_version": "0.1.0",
+  "status": "PARTIAL_SETTINGS_OBSERVATIONS_FULL_MATRIX_NOT_TESTED",
+  "scope": "This audio tutorial only; own complete future matrix required, no other tutorial evidence inherited",
+  "actual_inventory": {
+    "revision": null,
+    "sha256": null,
+    "gui_build": null,
+    "denominator": null,
+    "observed_controls": [],
+    "complete": false
+  },
+  "actual_session_id": null,
+  "actual_generator_library_id": null,
+  "actual_generator_id": null,
+  "actual_dataset_ids": [],
+  "actual_variable_ids": [],
+  "actual_graph_refs": [],
+  "coverage_rows": [],
+  "inert_row_template": {
+    "control_id": null,
+    "actual_visible_label": null,
+    "actual_menu_path": null,
+    "requested_normal_gui_action": null,
+    "actual_session_id": null,
+    "actual_dataset_ids": [],
+    "actual_variable_ids": [],
+    "actual_graph_refs": [],
+    "compatibility_hypothesis": null,
+    "observed_eligibility": null,
+    "scientific_reason": null,
+    "status": "NOT_TESTED",
+    "visible_result": null,
+    "evidence": [],
+    "interaction_ids": [],
+    "latency": null,
+    "defect_id": null,
+    "corrective_owner": null,
+    "failed_receipt": null,
+    "retake_receipt": null,
+    "library_id": null,
+    "library_version": null,
+    "catalog_resolution_receipt": null
+  },
+  "outcome_vocabulary_for_later_actual_rows": [
+    "EXERCISED_AND_WORKING",
+    "PRESENT_BUT_DISABLED",
+    "PRESENT_BUT_INAPPLICABLE",
+    "FAILED_BUG",
+    "NOT_TESTED"
+  ],
+  "planned_groups": [
+    {
+      "planning_group": "binary-source",
+      "compatibility_hypothesis": "Binary provenance and supported Preview; zero numeric Variables before Decode",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "waveform",
+      "compatibility_hypothesis": "Actual decoded time/FS channel(s), source selection, eligible style/legend/panels; log-domain restrictions",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": [],
+      "partial_context": "Audio002 settings observed/Plot attempted, lastRUNNING; no completed waveform or full control coverage"
+    },
+    {
+      "planning_group": "fft-spectrum",
+      "compatibility_hypothesis": "Actual one-channel block spectrum; normalization/reference/units and positive-frequency domains",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "spectral-features",
+      "compatibility_hypothesis": "Actual nonnegative amplitude input and descriptive distribution quantities",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "time-frequency",
+      "compatibility_hypothesis": "Complete science versus reduced cache/display Dataset lineage; actual time/frequency/spectral quantity",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "window-comparison",
+      "compatibility_hypothesis": "First/middle/last actual resolved passage windows; legitimate overlay and legend",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "native3d-png",
+      "compatibility_hypothesis": "Admitted actual XYZ geometry versus PNG pixels, distinct Fit/crop/zoom operations",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    },
+    {
+      "planning_group": "common-actions",
+      "compatibility_hypothesis": "Full actual menus/options/dialogs/variants/annotations/Notes/Clone/ZIP/Print/persistence/timing",
+      "status": "NOT_TESTED",
+      "actual_controls": [],
+      "evidence": []
+    }
+  ],
+  "completion": {
+    "all_actual_visible_controls_accounted_for": false,
+    "scientific_review": null,
+    "quality_acceptance": null
+  },
+  "limitations": [
+    "No actual audio menu/leaf/conditional-dialog inventory yet",
+    "No thermal26 observations, PASS or disabled/inapplicable statuses inherited",
+    "Historical527 source seed is preserved externally and is not a GUI denominator",
+    "Future shared inventory revisions require separate audio outcomes and affected-action retakes",
+    "Audio002 Series/reduction observations are separate partial context; no terminal Plot or full current control denominator"
+  ],
+  "source_context_outside_Plots_matrix": {
+    "status": "BINARY_SOURCE_PREVIEW_OBSERVED_DECODE_FAILED",
+    "actual_session_name": "task210-audio-001",
+    "binary_dataset_id": "occhi_sul_molo_lavoro",
+    "allocation": "60441cb6-3103-4a9e-ac67-065aa8400e83",
+    "candidate": "df799e0c24459ee3d0548e8337722a0e80da3074",
+    "evidence": [
+      "assets/011_binary_audio_actual_info.png",
+      "assets/012_binary_preview_guidance.png"
+    ],
+    "qualification": "Source binary Dataset Preview only; no actual Plots control inventory or successfully decoded source. Downstream NOT_TESTED, not scientific inapplicability.",
+    "epoch": "HistoricalAudio001"
+  },
+  "audio002_partial_context": {
+    "record": "../evidence/audio002.json",
+    "candidate": "afcf94214a11b7d4eab62eb6d65997a8077605b0",
+    "decoded_dataset_id": "occhi_sul_molo_lavoro.decoded",
+    "normal_Decode_PASS": true,
+    "Series_and_reduction_settings_observed": true,
+    "one_Plot_attempt_terminal": "NOT_ESTABLISHED_LAST_RUNNING",
+    "actual_rendered_count": null,
+    "full_current_control_inventory": false,
+    "actual_denominator": null,
+    "qualification": "Configured controls observed only; no actual coverage rows or working-function outcomes inferred from interrupted render",
+    "evidence": [
+      "assets/audio002_018_decoded_technical_details.png",
+      "assets/audio002_019_decoded_variables.png",
+      "assets/audio002_040_waveform_series_id_corrected.png",
+      "assets/audio002_045_waveform_target_2000_verified.png"
+    ]
+  }
+}

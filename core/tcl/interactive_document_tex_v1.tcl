@@ -12,7 +12,7 @@ proc ::GX::_interactiveDocumentTeXManifestsEqual {left right} {
     return 1
 }
 proc ::GX::interactiveDocumentTeXRegister {module provider viewer} {
-    sessionWorkspaceProviderRegister $provider [dict create module_id $module type {LaTeX article} schema gxtxt.tex_project.v1 version 1 validate ::GX::_interactiveDocumentTeXValidate open [list ::GX::_interactiveDocumentTeXOpen $module $viewer] viewer_provider $viewer]
+    sessionWorkspaceProviderRegister $provider [dict create module_id $module type {LaTeX article} schema gxtxt.tex_project.v1 version 1 validate ::GX::_interactiveDocumentTeXValidate open [list ::GX::_interactiveDocumentTeXOpen $module $viewer] viewer_provider $viewer native_contract NATIVE_WORKSPACE_API_v1 encode ::GX::nativeWorkspaceTeXEncode native_required_fields {source_revision int assets object last_build object last_good_pdf object}]
 }
 proc ::GX::_interactiveDocumentTeXOpen {module viewer document} {
     return [viewerOpen $module $viewer [dict create tex_document_id $document]]
@@ -91,7 +91,7 @@ proc ::GX::interactiveDocumentTeXSave {document source assets {history {}}} {
         scientificHistoryValidate [dict get $workspace module_id] $history
         dict set payload history $history
     }
-    return [sessionWorkspaceUpdate $document $payload]
+    return [sessionWorkspaceUpdate $document $payload $workspace]
 }
 proc ::GX::_interactiveDocumentTeXCopyResource {reference destination} {
     interactiveDocumentResourceInfo $reference
@@ -237,7 +237,7 @@ proc ::GX::_interactiveDocumentTeXBuilt {document response} {
             set receipt [dict remove $receipt log_path pdf_path]
         }
         dict set payload last_build $receipt
-        sessionWorkspaceUpdate $document $payload
+        sessionWorkspaceUpdate $document $payload $workspace
     } on error {message options} {
         set receipt [dict create status rejected message $message source_revision [dict get $context revision] errorcode [datasetPublicationV2DictDefault $options -errorcode NONE]]
     } finally {

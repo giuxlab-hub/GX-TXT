@@ -81,8 +81,8 @@ SESSIONS / MANIFEST
 Documentation:
 - API: docs/api/
 - Guides: docs/guides/
-- Architecture overview: ARCHITECTURE.md.
-- Third-party licensing: THIRD_PARTY_NOTICES.md.
+- Architecture: docs/architecture/
+- Validation history: docs/validation/.
 
 License: GPL-3.0-or-later.}
     $f.txt configure -state disabled

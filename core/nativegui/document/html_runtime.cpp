@@ -408,6 +408,18 @@ class Runtime final : public QObject {
     Activation activation;
     bool closing = false;
     QTimer loadTimeout;
+    QSize requestedSize{800, 600};
+
+    void setViewVisible(bool visible) {
+        view.setVisible(visible);
+        if (visible) {
+            // QWidget hide/show can recreate its native window and discard
+            // the foreign QWindow parent/geometry. Rebind the actual current
+            // window after show, using only the admitted host resize intent.
+            view.windowHandle()->setParent(foreign.get());
+            view.setGeometry(0, 0, requestedSize.width(), requestedSize.height());
+        }
+    }
 
     void flushOutput() {
         while (!pendingOutput.isEmpty()) {
@@ -477,8 +489,12 @@ class Runtime final : public QObject {
         }
         request = command.request;
         if (command.op == "close") { shutdown(); return; }
-        if (command.op == "resize") view.resize(command.width, command.height);
-        else if (command.op == "visible") { if (!command.visible) activation.clear(); requestedVisible = command.visible; view.setVisible(requestedVisible && state == "ready"); }
+        if (command.op == "resize") {
+            requestedSize = QSize(command.width, command.height);
+            view.resize(requestedSize);
+            if (view.isVisible()) setViewVisible(true);
+        }
+        else if (command.op == "visible") { if (!command.visible) activation.clear(); requestedVisible = command.visible; setViewVisible(requestedVisible && state == "ready"); }
         else if (command.op == "focus") view.setFocus(Qt::OtherFocusReason);
         else if (command.op == "zoom") view.setZoomFactor(command.percent / 100.0);
         else if (command.op == "find") page.findText(command.target);
@@ -586,7 +602,7 @@ public:
                 loadTimeout.stop();
                 const bool ok = info.status() == QWebEngineLoadingInfo::LoadSucceededStatus && !navigation.stopping && !navigation.timedOut;
                 state = ok ? "ready" : "unavailable";
-                view.setVisible(ok && requestedVisible);
+                setViewVisible(ok && requestedVisible);
                 if (clearHistoryForSource) { page.history()->clear(); clearHistoryForSource = false; }
                 const QString code = navigation.timedOut ? QStringLiteral("LOAD_TIMEOUT") :
                     navigation.stopping || info.status() == QWebEngineLoadingInfo::LoadStoppedStatus ? QStringLiteral("CANCELLED") : QStringLiteral("LOAD_FAILED");
@@ -612,7 +628,7 @@ public:
         foreign.reset(QWindow::fromWinId(static_cast<WId>(parent)));
         if (!foreign) fail("PLATFORM_UNSUPPORTED", "Foreign parent window is unsupported");
         view.setAttribute(Qt::WA_NativeWindow); view.setWindowFlag(Qt::FramelessWindowHint);
-        view.winId(); view.windowHandle()->setParent(foreign.get()); view.resize(800, 600); view.show();
+        view.winId(); setViewVisible(true);
         emitReceipt("started");
     }
     ~Runtime() override { view.hide(); view.setPage(nullptr); }
@@ -720,8 +736,13 @@ int main(int argc, char **argv) {
             ::fcntl(STDOUT_FILENO, F_SETFL, ::fcntl(STDOUT_FILENO, F_GETFL) | O_NONBLOCK) < 0)
             fail("CONTROL_UNAVAILABLE", "Control pipes cannot be configured");
         QWebEngineUrlScheme scheme(schemeName.toLatin1()); scheme.setSyntax(QWebEngineUrlScheme::Syntax::Host);
-        scheme.setFlags(QWebEngineUrlScheme::SecureScheme | QWebEngineUrlScheme::LocalScheme |
-                        QWebEngineUrlScheme::LocalAccessAllowed | QWebEngineUrlScheme::CorsEnabled | QWebEngineUrlScheme::FetchApiAllowed);
+        // This nonce-scoped Host scheme has ordinary same-origin semantics.
+        // File-like LocalScheme makes Chromium supply opaque "null" origins
+        // for its subresources, which the strict asset handler must refuse.
+        // No local-file privilege is required: every resource is served only
+        // through the contained AssetRoot and exact nonce/initiator checks.
+        scheme.setFlags(QWebEngineUrlScheme::SecureScheme |
+                        QWebEngineUrlScheme::CorsEnabled | QWebEngineUrlScheme::FetchApiAllowed);
         QWebEngineUrlScheme::registerScheme(scheme);
         // Consume only our own startup flags; Chromium receives no authored argv.
         int qtArgc = 1; QApplication app(qtArgc, argv);

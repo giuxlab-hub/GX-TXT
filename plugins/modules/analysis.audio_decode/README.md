@@ -1,12 +1,17 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Audio decode (`analysis.audio_decode`)
 
-The `standard_octave` decoder recalculates its stable decoded Dataset ID through
+Version **2.0.1** safely recalculates its stable decoded Dataset ID through
 Dataset Publication API v2 same-owner replacement. CORE refuses cross-owner
 replacement and restores the prior artifact and registry entry if publication
-does not commit. The module is compatible with large Canonical Datasets and
-delegates audio parsing and decoding to CORE rather than maintaining a separate
-audio parser, FFmpeg wrapper or decimal CSV materialization path. Audio decoding is delegated to **CORE Audio Decode API v1** and canonical
+does not commit.
+
+Version **2.0.0** modernized the existing GX-TXT audio waveform decoder for the
+Large Dataset architecture introduced by GX-TXT 0.9.7.28.
+
+The module remains a `standard_octave` analysis module. It no longer owns an
+audio parser, an FFmpeg wrapper, a decoded-file cache, or a CSV materialization
+path. Audio decoding is delegated to **CORE Audio Decode API v1** and canonical
 waveform publication uses **Dataset Publication API v2** with **Storage Auto**.
 
 ## Data flow
@@ -21,7 +26,8 @@ audio.waveform source
     -> canonical timeseries.table
 ```
 
-The normal decoding path creates neither a complete intermediate decoded PCM file nor a decimal waveform CSV.
+No complete decoded PCM file and no decimal waveform CSV are created by the
+normal v2 path.
 
 ## Scientific representation
 
@@ -33,7 +39,7 @@ coordinate variable_id: time
 channel variable_ids: channel_1, channel_2, ...
 ```
 
-Output display names follow the current canonical conventions:
+Display/canonical names remain compatible with the previous module:
 
 ```text
 time_s
@@ -53,7 +59,8 @@ count  = decoded frame count
 The time payload is therefore not stored once per sample. Canonical Dataset API
 v2 and Table Stream API v3 reconstruct only the requested range.
 
-Channel variables are published as `float64`, preserving the documented `float64` scientific output representation.
+Channel variables are published as `float64`, preserving the scientific output
+representation of the 1.x module after its decimal CSV was read back.
 
 ## Amplitude semantics
 

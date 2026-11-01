@@ -1,0 +1,137 @@
+#INFO: **** input file is /home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_numeric_v09809/validation/gxtxt-0.9.8.10-dev-006-chemistry-crystal-density-nmr-multisource-worksheet-ux/crystal_density/generate_density.py ****
+#!/usr/bin/env python3
+"""Reproducible PySCF calculations for GX-TXT real density examples.
+
+The two SCF calculations are deliberately small validation cases. Their CUBE
+files contain solver-computed electron densities, not analytic illustrations.
+"""
+from pathlib import Path
+import hashlib
+import json
+import pyscf
+from pyscf import gto, scf
+from pyscf.tools import cubegen
+from pyscf.pbc import gto as pbc_gto, scf as pbc_scf
+
+HERE = Path(__file__).resolve().parent
+OUT = HERE / "computed"
+OUT.mkdir(exist_ok=True)
+
+water = gto.M(
+    atom="O 0.000000 0.000000 0.000000; H 0.758602 0.000000 0.504284; H -0.758602 0.000000 0.504284",
+    unit="Angstrom", basis="sto-3g", charge=0, spin=0, verbose=4,
+    output=str(OUT / "water_pyscf.log"),
+)
+mf = scf.RHF(water)
+mf.conv_tol = 1e-9
+mf.kernel()
+if not mf.converged:
+    raise RuntimeError("Water SCF did not converge")
+cubegen.density(water, str(OUT / "water_density.cube"), mf.make_rdm1(),
+                nx=48, ny=48, nz=48, margin=3.0)
+
+# Diamond conventional cubic cell, COD 2101499 lattice parameter, expressed
+# as primitive vectors with the two-site diamond basis. Periodic RHF density.
+a = 3.56658
+cell = pbc_gto.Cell()
+cell.a = [[0, a/2, a/2], [a/2, 0, a/2], [a/2, a/2, 0]]
+cell.atom = [["C", (3*a/8, 3*a/8, 3*a/8)],
+             ["C", (5*a/8, 5*a/8, 5*a/8)]]
+cell.unit = "Angstrom"
+cell.basis = "gth-szv"
+cell.pseudo = "gth-pade"
+cell.mesh = [15, 15, 15]
+cell.verbose = 4
+cell.output = str(OUT / "diamond_pyscf.log")
+cell.build()
+pmf = pbc_scf.RHF(cell)
+pmf.conv_tol = 1e-7
+pmf.max_cycle = 60
+pmf.kernel()
+if not pmf.converged:
+    raise RuntimeError("Diamond periodic SCF did not converge")
+cubegen.density(cell, str(OUT / "diamond_density.cube"), pmf.make_rdm1(),
+                nx=32, ny=32, nz=32, resolution=None)
+
+report = {
+    "solver": "PySCF", "solver_version": pyscf.__version__,
+    "water": {"method": "molecular RHF/STO-3G", "energy_hartree": mf.e_tot},
+    "diamond": {"method": "periodic Gamma-point RHF/GTH-SZV/GTH-Pade", "energy_hartree": pmf.e_tot},
+    "files": {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in OUT.iterdir() if p.is_file()},
+}
+(OUT / "calculation_provenance.json").write_text(json.dumps(report, indent=2) + "\n")
+print(json.dumps(report, indent=2))
+#INFO: ******************** input file end ********************
+
+
+System: uname_result(system='Linux', node='server', release='6.12.101+deb13-amd64', version='#1 SMP PREEMPT_DYNAMIC Debian 6.12.101-1 (2026-08-05)', machine='x86_64')  Threads 2
+Python 3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]
+numpy 2.5.3  scipy 1.18.1  h5py 3.16.0
+Date: Thu Oct  1 19:39:19 2026
+PySCF version 2.14.0
+PySCF path  /home/giu/electronics-server/work-agent/TK_GIUXLAB/_work_numeric_v09809/validation/gxtxt-0.9.8.10-dev-006-chemistry-crystal-density-nmr-multisource-worksheet-ux/crystal_density/.venv/lib/python3.13/site-packages/pyscf
+
+[CONFIG] conf_file None
+[INPUT] verbose = 4
+[INPUT] num. atoms = 2
+[INPUT] num. electrons = 8
+[INPUT] charge = 0
+[INPUT] spin (= nelec alpha-beta = 2S) = 0
+[INPUT] symmetry False subgroup None
+[INPUT] Mole.unit = Angstrom
+[INPUT] Symbol           X                Y                Z      unit          X                Y                Z       unit  Magmom
+[INPUT]  1 C      1.337467500000   1.337467500000   1.337467500000 AA    2.527447275507   2.527447275507   2.527447275507 Bohr   0.0
+[INPUT]  2 C      2.229112500000   2.229112500000   2.229112500000 AA    4.212412125845   4.212412125845   4.212412125845 Bohr   0.0
+
+nuclear repulsion = -12.7879179035974
+number of shells = 4
+number of NR pGTOs = 32
+number of NR cGTOs = 8
+basis = gth-szv
+ecp = {}
+CPU time:         0.67
+lattice vectors  a1 [0.000000000, 3.369929701, 3.369929701]
+                 a2 [3.369929701, 0.000000000, 3.369929701]
+                 a3 [3.369929701, 3.369929701, 0.000000000]
+dimension = 3
+low_dim_ft_type = None
+Cell volume = 76.5407
+rcut = 21.31940052177759 (nimgs = [6 6 6])
+precision = 1e-08
+pseudo = gth-pade
+mesh = [15, 15, 15] (3375 PWs)
+    = ke_cutoff [42.58475401 42.58475401 42.58475401]
+
+
+******** <class 'pyscf.pbc.scf.hf.RHF'> ********
+method = RHF
+initial guess = minao
+damping factor = 0
+level_shift factor = 0
+DIIS = <class 'pyscf.scf.diis.CDIIS'>
+diis_start_cycle = 1
+diis_space = 8
+diis_damp = 0
+SCF conv_tol = 1e-07
+SCF conv_tol_grad = None
+SCF max_cycles = 60
+direct_scf = True
+direct_scf_tol = 1e-13
+chkfile to save SCF result = /tmp/tmpgjhuegrc
+max_memory 4000 MB (current use 130 MB)
+******** PBC SCF flags ********
+kpt = [0. 0. 0.]
+Exchange divergence treatment (exxdiv) = ewald
+    madelung (= occupied orbital energy shift) = 0.6802607890002268
+    Total energy shift due to Ewald probe charge = -1/2 * Nelec*madelung = -2.721043156
+DF object = <pyscf.pbc.df.fft.FFTDF object at 0x7fc3f09c56a0>
+Set gradient conv threshold to 0.000316228
+Initial guess from minao.
+init E= -17.3939174591005
+  HOMO = 0.62590782342738  LUMO = 0.911733824017107  gap/eV = 7.77772
+cycle= 1 E= -10.1372290243528  delta_E= 7.26  |g|= 1.88e-13  |ddm|= 5.39
+  HOMO = 0.292900164571175  LUMO = 1.16037919071368  gap/eV = 23.60531
+cycle= 2 E= -10.1372290243528  delta_E=    0  |g|= 9.05e-14  |ddm|= 5.63e-13
+  HOMO = 0.292900164571175  LUMO = 1.16037919071368  gap/eV = 23.60531
+Extra cycle  E= -10.1372290243528  delta_E= 1.78e-15  |g|= 3.89e-14  |ddm|= 2.34e-13
+converged SCF energy = -10.1372290243528

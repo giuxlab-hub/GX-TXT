@@ -8,16 +8,19 @@ proc ::GX::CurveWorkbench::_constraintPanel {w} {
 # scientific coordinate, spline arm, transform and semantic reference.
 proc ::GX::CurveWorkbench::_buildViewport {w} {
     variable st
-    foreach {key value} {leftVisible 1 listVisible 1 pointsVisible 1 composeVisible 1 compareVisible 1 utilityOverride 0 tangentDrag {} zoomBox {} viewportReady 0} {set st($w,$key) $value}
+    foreach {key value} {leftVisible 1 listVisible 1 pointsVisible 1 composeVisible 1 compareVisible 0 utilityOverride 0 tangentDrag {} zoomBox {} viewportReady 0} {set st($w,$key) $value}
     pack forget $w.right.viewport.canvas
     pack $w.right.viewport -fill both -expand 1 -before $w.right.residualLabel
     pack $w.right.viewport.canvas -in $w.right.viewport -fill both -expand 1
     ::GX::native2DViewportHostCreate $w.right.viewport $w.right.viewport.canvas $st($w,scene) [list ::GX::CurveWorkbench::_viewportChanged $w]
     set actions [dict create fit_all [list ::GX::CurveWorkbench::_fit $w 0] reset [list ::GX::CurveWorkbench::_fit $w 0] fit_selected [list ::GX::CurveWorkbench::_fit $w 1] pan [list ::GX::CurveWorkbench::_scienceTool $w pan] object_snap [list ::GX::CurveWorkbench::_objectSnapToggle $w] zoom_box [list ::GX::CurveWorkbench::_zoomBoxStart $w]]
     set st($w,viewportControls) [::GX::native2DViewportControls $w.right.viewport.canvas {select transform fit_all fit_selected zoom_in zoom_out zoom_box pan reset grid grid_snap object_snap} $actions]
-    set body [::GX::native2DViewportPanelCreate $w.right.viewport.canvas compare {Compare / residuals} bottom-right {max_width 200 max_height 45 priority 5}]
-    pack forget $body
-    [winfo parent $body].header.toggle configure -command [list ::GX::CurveWorkbench::_compareToggle $w]
+    set body [::GX::native2DViewportPanelCreate $w.right.viewport.canvas compare {Compare / residuals} bottom-right {max_width 360 max_height 480 min_width 220 priority 5 scroll 1 close 1}]
+    set st($w,comparisonControls) $body
+    set panel [::GX::native2DViewportPanelWidget $w.right.viewport.canvas compare]
+    $panel.header.toggle configure -command [list ::GX::CurveWorkbench::_compareToggle $w]
+    $panel.header.close configure -command [list ::GX::CurveWorkbench::_comparisonPanelHide $w]
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 1
     ttk::menubutton $w.toolbar.settings -text Settings -menu $w.toolbar.settings.menu
     set menu $w.toolbar.settings.menu;menu $menu -tearoff 0
     foreach {key label} {leftVisible {Left utility area} listVisible {Objects list} pointsVisible {Defining handles / points} composeVisible {Ordered composition}} {
@@ -38,17 +41,23 @@ rename ::GX::CurveWorkbench::_commandLayout ::GX::CurveWorkbench::_commandLayout
 proc ::GX::CurveWorkbench::_commandLayout {w width} {
     variable st
     if {![winfo exists $w.toolbar.settings]} {tailcall _commandLayout_viewport056_base $w $width}
-    set children {};foreach key {add undo redo objects points view settings workspace} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}
+    set children {};foreach key {add undo redo objects points view settings workspace help} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}
     if {$st($w,moreControls)} {foreach key {duplicate split reverse visibility lock remove insert pan sourcePreview} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}}
     foreach child [winfo children $w.toolbar] {if {$child ni $children} {pack forget $child;grid forget $child}}
     ::GX::native2DToolbarLayout $w.toolbar $width $children
+    if {[winfo exists $w.toolbar.help] && [winfo manager $w.toolbar.workspace] eq {grid}} {
+        set pos [grid info $w.toolbar.workspace]
+        if {[dict get [grid info $w.toolbar.help] -row] != [dict get $pos -row]} {
+            grid configure $w.toolbar.help -row [dict get $pos -row] -column [expr {[dict get $pos -column]+[dict get $pos -columnspan]}]
+        }
+    }
 }
 rename ::GX::CurveWorkbench::_sketchBarLayout ::GX::CurveWorkbench::_sketchBarLayout_viewport056_base
 proc ::GX::CurveWorkbench::_sketchBarLayout {w width} {
     _sketchBarLayout_viewport056_base $w $width
 
 }
-proc ::GX::CurveWorkbench::_viewportChanged {w} {_draw $w;_viewPersistLater $w}
+proc ::GX::CurveWorkbench::_viewportChanged {w} {_viewportDrawLater $w;_viewPersistLater $w}
 proc ::GX::CurveWorkbench::_objectSnapToggle {w} {variable st;set st($w,cadObjectSnap) [expr {!$st($w,cadObjectSnap)}]}
 proc ::GX::CurveWorkbench::_utilityVisibility {w {automatic 0}} {
     variable st
@@ -64,16 +73,23 @@ proc ::GX::CurveWorkbench::_utilityVisibility {w {automatic 0}} {
     _save $w
 }
 proc ::GX::CurveWorkbench::_compareToggle {w} {
-    variable st;set st($w,compareVisible) [expr {!$st($w,compareVisible)}]
-    if {$st($w,compareVisible)} {
-        set st($w,residualPanelShown) -1;_residualLayout $w
-        grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
-        pack $w.metric -side bottom -fill x -before $w.main
-    } else {
-        grid remove $w.validation
-        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
-    }
-    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare [expr {!$st($w,compareVisible)}]
+    variable st
+    ::GX::native2DViewportPanelToggle $w.right.viewport.canvas compare
+    set st($w,compareVisible) [expr {![dict get $::GX::ViewportHost::hosts $w.right.viewport.canvas panels compare collapsed]}]
+    _viewportChanged $w
+}
+proc ::GX::CurveWorkbench::_comparisonPanelOpen {w} {
+    variable st
+    set st($w,compareVisible) 1
+    ::GX::native2DViewportPanelShow $w.right.viewport.canvas compare 1
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 0
+    _comparisonRefresh $w
+    _viewportChanged $w
+}
+proc ::GX::CurveWorkbench::_comparisonPanelHide {w} {
+    variable st
+    set st($w,compareVisible) 0
+    ::GX::native2DViewportPanelShow $w.right.viewport.canvas compare 0
     _viewportChanged $w
 }
 rename ::GX::CurveWorkbench::_constraintOpen ::GX::CurveWorkbench::_constraintOpen_viewport056_base
@@ -215,7 +231,8 @@ proc ::GX::CurveWorkbench::_buildWorkspace {w} {
     set st($w,workspaceName) $openingName
     ttk::menubutton $w.toolbar.workspace -text Workspace -menu $w.toolbar.workspace.menu
     set menu $w.toolbar.workspace.menu;menu $menu -tearoff 0
-    foreach {label command} [list {New named workspace…} [list ::GX::CurveWorkbench::_newWorkspace $w] {Rename workspace…} [list ::GX::CurveWorkbench::_renameWorkspace $w] {Session Workspaces…} [list ::GX::sessionWorkspaceDialog $w] {View notes} [list ::GX::CurveWorkbench::_workspaceNotes $w view] {Edit notes} [list ::GX::CurveWorkbench::_workspaceNotes $w edit]] {$menu add command -label $label -command $command}
+    ::GX::sessionWorkspaceViewerMenu $menu curve_workbench [_workspaceCallbacks $w] $w
+    $menu add separator
     $menu add command -label {Workspace Configuration…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateConfigurationOpen $w]]
     _commandLayout $w [winfo width $w.toolbar]
 }
@@ -228,25 +245,23 @@ proc ::GX::CurveWorkbench::_newWorkspaceApply {w values} {
     set name [::GX::_workspaceName [dict get $values name]]
     set configuration [_coordinateConfigurationNormalize [dict remove $values name]]
     _close $w
+    if {[winfo exists $w]} {return $w}
     set next [open [dict create workspace_id new workspace_name $name coordinate_configuration $configuration]]
     _save $next
 }
 proc ::GX::CurveWorkbench::_renameWorkspace {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     ::GX::uiFieldFormCreate $w.renameWorkspace {Rename Session workspace} {name {type string required 1 label Name}} [dict create name [dict get [::GX::sessionWorkspaceGet $st($w,document)] name]] [list ::GX::CurveWorkbench::_renameWorkspaceApply $w] $w
 }
 proc ::GX::CurveWorkbench::_renameWorkspaceApply {w values} {variable st;::GX::sessionWorkspaceRename $st($w,document) [dict get $values name];set st($w,workspaceName) [dict get $values name]}
-proc ::GX::CurveWorkbench::_workspaceNotes {w mode} {variable st;_save $w;::GX::noteDocumentOpen $st($w,document) $mode}
+proc ::GX::CurveWorkbench::_workspaceNotes {w mode} {variable st;_flushWorkspace $w;::GX::noteDocumentOpen $st($w,document) $mode}
 proc ::GX::CurveWorkbench::_restoreViewportPreferences {w} {
     variable st;if {![winfo exists $w]} return
     # Responsive layout may already have removed this pane before the idle
     # saved-preference callback. Reapplying hidden state must be idempotent.
     if {!$st($w,leftVisible)&&"${w}.leftScroll" in [$w.main panes]} {$w.main forget $w.leftScroll}
     foreach {key widgets} {listVisible {active curveFrame renameRow} pointsVisible {pointFrame pager numeric interval} composeVisible {compose}} {if {!$st($w,$key)} {foreach name $widgets {set widget $w.leftScroll.viewport.content.$name;if {[winfo exists $widget]} {pack forget $widget}}}}
-    if {!$st($w,compareVisible)} {
-        grid remove $w.validation
-        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
-    }
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare [expr {!$st($w,compareVisible)}]
 }
 proc ::GX::CurveWorkbench::_buildImages {w} {
     variable st
@@ -265,7 +280,7 @@ proc ::GX::CurveWorkbench::_imageAttach {w} {
     set file [::GX::workspaceOpenFile acquisition_dir -title {Attach calibrated reference image} -filetypes {{{Raster images} {.png .jpg .jpeg .gif .bmp .tif .tiff}} {{All files} *}}]
     if {$file eq {}} return
     ::GX::unitRegistryConversionPlan $st($w,sketchUnit) m
-    _save $w
+    _flushWorkspace $w
     set path [file normalize $file];lassign [::GX::_native2DRasterHelper info $path] width height
     set resource [::GX::interactiveDocumentResourceImportNumeric $st($w,document) $path {format image.raster}]
     set state [dict create resource_id [dict get $resource sha256] length_unit $st($w,sketchUnit) width $width height $height scale 1 rotation 0 translation {0 0} opacity .7 visible 1 locked 0]
@@ -345,7 +360,7 @@ proc ::GX::CurveWorkbench::_imageCalibrationApply {w id points before values} {
     set st($w,status) {Reference image uniformly calibrated. Its reference points are Native controls usable by snapping and construction.}
 }
 proc ::GX::CurveWorkbench::_workspacePreview {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     set resource [::GX::native2DCanvasPreview $st($w,scene) $st($w,document) fit {width 480 height 300}]
     ::GX::sessionWorkspacePreviewSet $st($w,document) $resource
     set st($w,status) {Session workspace scene preview refreshed; UI chrome and transient feedback are excluded.}
@@ -466,7 +481,7 @@ proc ::GX::CurveWorkbench::_responsiveCompare {w} {
     variable st
     if {![winfo exists $w.right.viewport.canvas]||![info exists st($w,viewportReady)]||!$st($w,viewportReady)} return
     if {[winfo width $w]<1000&&$st($w,leftVisible)&&!$st($w,utilityOverride)} {set st($w,leftVisible) 0;_utilityVisibility $w 1}
-    if {[winfo height $w.right.viewport.canvas]<170&&$st($w,compareVisible)} {_compareToggle $w}
+    if {[winfo height $w.right.viewport.canvas]<170&&$st($w,compareVisible)} {set st($w,compareVisible) 0;::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 1}
 }
 
 proc ::GX::CurveWorkbench::_imagesRefresh {w} {
@@ -488,4 +503,20 @@ proc ::GX::CurveWorkbench::_imageSummary {w} {
     if {![dict exists $st($w,images) $id]} return
     set image [::GX::Native2D::core image_get $st($w,scene) [dict get $st($w,images) $id native]]
     set st($w,imageSummary) "[expr {[dict get $image calibrated]?{Calibrated}:{Unscaled — calibrate before dimensioning}}]. Unit: [dict get $image length_unit]; uniform scale: [dict get $image scale] / pixel; rotation: [dict get $image rotation] rad; translation: [dict get $image translation]."
+}
+
+proc ::GX::CurveWorkbench::_helpBuild {w} {
+    if {![winfo exists $w.toolbar.help]} {
+        ttk::menubutton $w.toolbar.help -text Help -menu $w.toolbar.help.menu
+        menu $w.toolbar.help.menu -tearoff 0
+        $w.toolbar.help.menu add command -label {User Manual…} -accelerator F1 -command [list ::GX::CurveWorkbench::_helpManual $w]
+        $w.toolbar.help.menu add command -label {About Curve Workbench…} -command [list ::GX::CurveWorkbench::_helpAbout $w]
+    }
+    bind $w <F1> [list ::GX::CurveWorkbench::_helpManual $w]
+    _commandLayout $w [winfo width $w.toolbar]
+}
+proc ::GX::CurveWorkbench::_helpManual {w} {::GX::documentationBrowserOpenModuleWindow viewer.curve_workbench $w}
+proc ::GX::CurveWorkbench::_helpAbout {w} {
+    set version [::GX::moduleField viewer.curve_workbench version {}]
+    tk_messageBox -parent $w -title {About Curve Workbench} -type ok -icon info -message "Curve Workbench $version" -detail {GX-TXT scientific Curve Workbench. GPL-3.0-or-later.}
 }

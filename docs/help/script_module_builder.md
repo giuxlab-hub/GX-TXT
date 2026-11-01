@@ -2,7 +2,7 @@
 
 Script Module Builder packages a researcher authored GNU Octave `.m` or Python `.py` script as an ordinary installable GX-TXT Analysis module. It copies the scientific source bytes exactly. It generates `module.ini`, `plugin-package.ini`, documentation, SHA-256 inventories and a flat-root Plugin Install ZIP around that source. A generated module needs no Tcl/Tk code.
 
-Open **Modules → Tools → Script Module Builder…**. Choose **New from script…** for a file or **New from registered…** for a Script Library or Session registry `script.ini`. Enter module details, add Analysis Sources, variable selectors, configuration fields and API requirements, then set outputs and notes. **Validate** checks the project; **Build ZIP** writes a new package. The project is JSON so it can be reopened and versioned. The GUI buttons create the common declarations; the JSON view also supports advanced settings.
+Open **Modules → Tools → Script Module Builder…**. Choose **New from script…** for a file or **New from registered…** for a qualified User/Session Script or whole Project from the public Registry. Enter module details, add Analysis Sources, variable selectors, configuration fields and API requirements, then set outputs and notes. **Validate** checks the project; **Build ZIP** writes a new package. The project is JSON so it can be reopened and versioned. The primary Project menu creates the common declarations; the JSON view also supports advanced settings.
 
 The command-line form uses the same implementation:
 
@@ -148,3 +148,24 @@ The module ID must be `example.policy` for that preparation file root. Register 
 Runnable examples `examples/experiment_duplication_policy/policy_python.json` and `policy_octave.json` wrap `policy_author.py` and `.m`. Build with `python3 tools/gxtxt_module_builder.py build examples/experiment_duplication_policy/policy_python.json /tmp/new-policy-packages`; install the resulting ZIP normally, enable, choose a fresh primary Dataset and Run. They discover capabilities, inspect supported/absent policy, validate safe and unsafe flat descriptors and read the preparation receipt through actual `gxtxt_api_call`. Both also read canonical Dataset metadata and produce an ordinary output report. Use a new output directory for each immutable package build. `minimal_python.json`/`minimal_octave.json` demonstrate copying no settings; safe projects copy only reviewed gain. Neither source injects duplication logic.
 
 Builder requires the policy v1 capability and Python's standard tkinter/Tcl runtime (headless validation creates no Tk window). The package declares dev079 as the earliest known capable release; execution validation discovers the capability rather than pinning an exact framework release.
+
+## Multifile Projects and source-declared APIs
+
+The Source files and Public APIs pages inspect the complete saved Project through
+the existing static CORE owner, preserving relative entrypoint and helper paths.
+PROVIDED operations are derived from `gxtxt_api_export` declarations; CONSUMED
+`gxtxt_api_require` requirements remain separate. No source is imported or run at
+Build. Open implementations through the shared language Workspace, Save All
+there, then explicitly refresh the Builder snapshot. Unsaved standalone scripts
+must be saved first; no Registry identity is inferred from a filesystem path.
+
+The exact typed operation manifest is packaged at `api/provided_operations.json`
+with its SHA and source pins, and each API lists its own actual methods in its
+normal descriptor section. Invalid nonempty declarations refuse the whole Build.
+Run → Validate / Build ZIP are managed asynchronous requests with Cancel and
+source/record/context guards. The generated public binding delegates actual
+function execution to the existing managed language runner, after requiring
+`provided_function_jobs_v1` and `provided_bridge_control_arrays_v1` from
+`SCRIPT_EXECUTION_API_v1`; static discovery never grants execution authority.
+See the tool [manual](../../plugins/modules/tool.script_module_builder/MANUAL.md)
+and [managed provided API contract](../api/SCRIPT_PROVIDED_API_RUNTIME_v1.md).

@@ -10,7 +10,7 @@
 - Use public CORE statistical semantics for reports, uncertainty and atomic Dataset metadata; retain historical Dataset field IDs with explicit meanings.
 - Add an explicit measurement-noise assumption for chi-squared interpretation.
 
-## 1.0.1
+## 1.0.1 — 2026-09-28
 
 - Classified the independently packaged module as a managed external plugin.
 

@@ -288,7 +288,7 @@ the existing supervised Scientific Execution and Document Resource services.
 See [Native2D raster composition](NATIVE2D_RASTER_COMPOSITION.md) for the exact
 bounded requests/results, source-unit policy, geometry/mask distinctions,
 alpha/inversion/feather semantics, non-destructive processing, persistence and
-existing Native3D texture transfer. The host-only
+existing Native3D texture handoff. The host-only
 `native2DGeometryViewportAttach` / `native2DGeometryViewportDraw` adapters mount
 a scoped scene through the existing ViewportHost and presentation owners.
 They do not expose a Script GUI construction protocol or create another scene,
@@ -501,7 +501,7 @@ These additive operations preserve API version1 and execution-owned object/const
 
 Whole Fixed/locked objects are excluded from movable parameters; Fixed controls retain their individual position equations. Dimensional overconstraint/redundancy is rejected atomically and can be explicitly retried as driven. State restoration validates already-saved geometry, using `gx2d_constraint_create_state`, without replaying a fresh driving operation. `gx2d_relationship_state` is additive and leaves `gx2d_constraint_v2` ABI intact. Angular tolerance is radians; curvature tolerance is inverse working length and is reexpressed with physical units. Annotation world XY is presentation, independent of scientific dimension value. The resolved numeric value and working unit remain part of the relationship contract.
 
-Bounds/limits and supported mathematical families are documented in [Native2D implementation notes](../../core/native2d/README.md). Rank is local; analysis_complete=false precludes a fully-constrained claim. Unsupported/singular/nonconvergent cases return explicit errors. These public operations do not publish a Dataset, invent identities or accept foreign scene tokens.
+Bounds/limits and supported mathematical families are documented in [Native2D sketch architecture](../architecture/SKETCH_dev054.md). Rank is local; analysis_complete=false precludes a fully-constrained claim. Unsupported/singular/nonconvergent cases return explicit errors. These public operations do not publish a Dataset, invent identities or accept foreign scene tokens.
 
 ## semantic construction
 
@@ -736,7 +736,7 @@ endpoint, raw pointer, constituent top-level object or sampled proxy is created.
 
 ## Workspace parameter and retained-network contracts
 
-See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and the retained-network behavior specified in this API for exact topology/reference/constraint semantics.
+See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and [retained networks](NATIVE2D_NETWORK_dev065.md) for exact topology/reference/constraint semantics.
 
 ## compatible segment and curve placements
 
@@ -778,7 +778,7 @@ text, grid, dimensions and reference images; camera state is guarded and restore
 
 ## additive constituent contracts
 
-See the constituent contracts specified in this API for stable scoped
+See [Native2D constituent contracts](NATIVE2D_PARTS_dev092.md) for stable scoped
 part identities, independent marker state and batch updates, device picking and
 placement, compound semantic references, atomic owned-definition persistence,
 truthful traversal/materialization and public image calibration reset. Python

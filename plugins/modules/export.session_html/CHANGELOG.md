@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.4 / GX-TXT dev-051
+## 1.0.4 — 2026-10-06 / GX-TXT dev-051
 
 - Include independent Graph Notes and graph-page note backlinks, preserve true PNG alpha in annotated export and retain clean/annotated switching. Align runtime component version with package metadata.
 
@@ -17,7 +17,7 @@
 
 - Aligned the bundled module descriptor, Plugin Install metadata and API version at 1.0.1.
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Initial GX-TXT Session HTML Export.
 - Offline Session navigation and provenance pages.

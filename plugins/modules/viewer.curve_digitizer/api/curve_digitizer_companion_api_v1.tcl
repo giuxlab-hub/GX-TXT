@@ -19,7 +19,8 @@ proc ::GX::CurveDigitizerCompanion::_ownedDocumentRead {documentId} {
     variable documentFormat
     variable documentFormatVersion
     _requireSession
-    set full [::GX::interactiveDocumentRead $documentId]
+    ::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_VIEWER_API_v1
+    set full [::GX::CurveDigitizer::_ownedDocumentRead $documentId]
     if {[dict get $full module_id] ne $ownerModule || [dict get $full provider_id] ne $ownerProvider} {
         error "Interactive Document '$documentId' is not owned by Curve Digitalizer."
     }
@@ -88,7 +89,7 @@ proc ::GX::CurveDigitizerCompanion::configurationList {} {
     variable ownerProvider
     _requireSession
     set out {}
-    foreach item [::GX::interactiveDocumentList $ownerModule $ownerProvider] {
+    foreach item [::GX::nativeWorkspaceQuery $ownerProvider $ownerModule] {
         set full [_ownedDocumentRead [dict get $item id]]
         set context [_runBridgeContext [dict get $full payload]]
         lappend out [dict create \
@@ -192,7 +193,8 @@ proc ::GX::CurveDigitizerCompanion::commitPixelPoints {documentId curveId expect
         fconfigure $in -encoding utf-8 -translation lf
         set updatedPayload [read $in]
         close $in
-        set updated [::GX::interactiveDocumentUpdate $documentId $updatedPayload $documentFormat $documentFormatVersion]
+        ::GX::CurveDigitizer::_documentUpdate $documentId $updatedPayload $sessionToken $expectedDocumentSha [dict get $full generation] [dict get $full revision]
+        set updated [_ownedDocumentRead $documentId]
         return [dict create \
             document_id [dict get $updated id] \
             document_sha256 [dict get $updated sha256] \

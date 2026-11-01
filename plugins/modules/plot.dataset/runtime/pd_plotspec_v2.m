@@ -66,7 +66,7 @@ function x=merged_shared_x(panels)
     a=panels(pi).axes.x;
     for fi=1:numel(fields)
       f=fields{fi};if(!isfield(a,f)),continue;endif
-      v=a.(f);if(ischar(v)),v=strtrim(v);endif
+      v=a.(f);if(ischar(v)&&!strcmp(f,'tick_labels')&&!strcmp(f,'label')),v=strtrim(v);endif
       if(isempty(v)),continue;endif
       if(!isfield(x,f)),x.(f)=v;endif
     endfor
@@ -91,7 +91,20 @@ function out=read_style(d,sec,prefix)
   out=struct();for f={'color','line_style','line_width','marker','marker_size','marker_fill','opacity'},name=f{1};if(is_true(gxtxt_ini_get(d,[sec '.' prefix '.' name '.present'],'0'))),out.(name)=gxtxt_ini_get(d,[sec '.' prefix '.' name '.value'],'');endif;endfor
 endfunction
 function out=read_axis(d,sec,prefix)
-  out=struct();for f={'label','display_unit','scale','direction','min','max','tick_positions','tick_labels','major_step','minor_grid'},name=f{1};if(is_true(gxtxt_ini_get(d,[sec '.' prefix '.' name '.present'],'0'))),out.(name)=gxtxt_ini_get(d,[sec '.' prefix '.' name '.value'],'');endif;endfor
+  out=struct();for f={'label','display_unit','scale','direction','min','max','tick_positions','tick_labels','major_step','minor_grid'}
+    name=f{1};if(!is_true(gxtxt_ini_get(d,[sec '.' prefix '.' name '.present'],'0'))),continue;endif
+    value=gxtxt_ini_get(d,[sec '.' prefix '.' name '.value'],'');encoding=gxtxt_ini_get(d,[sec '.' prefix '.' name '.encoding'],'');
+    if(!isempty(encoding))
+      if(!strcmp(name,'tick_labels')||!strcmp(encoding,'utf8-base64')||numel(value)>1398104),error('plot.dataset: unsupported PlotSpec caption encoding');endif
+      try
+        bytes=matlab.net.base64decode(value);
+        if(!strcmp(char(matlab.net.base64encode(bytes)),value)),error('noncanonical base64');endif
+        value=native2unicode(bytes,'UTF-8');
+        if(!isequal(uint8(unicode2native(value,'UTF-8'))(:),uint8(bytes)(:))),error('invalid UTF-8');endif
+      catch err,error('plot.dataset: invalid encoded tick captions: %s',err.message);end_try_catch
+    endif
+    out.(name)=value;
+  endfor
 endfunction
 function out=read_error(d,sec,prefix)
   out=empty_error();present=false;for f={'mode','variable_id','lower_variable_id','upper_variable_id'},name=f{1};if(is_true(gxtxt_ini_get(d,[sec '.' prefix '.' name '.present'],'0'))),out.(name)=gxtxt_ini_get(d,[sec '.' prefix '.' name '.value'],'');present=true;endif;endfor;if(!present),out.mode='none';endif

@@ -35,6 +35,10 @@ def resolve(module,paths=None):
                 if spec.submodule_search_locations is None:return dict(status='MISSING',origin=str(spec.origin or ''),reason='Parent is not a package')
                 paths=list(spec.submodule_search_locations)
         return dict(status='AVAILABLE',origin=str(spec.origin or 'namespace package'),locations=list(spec.submodule_search_locations or []),reason='Static module spec; module initialization and binary loading are not tested')
+    except KeyError:
+        # PathFinder's nested namespace path consults sys.modules[parent]. A
+        # nonexecuting audit intentionally never initializes that parent.
+        return dict(status='UNKNOWN',origin='',reason='Nested namespace package needs an initialized parent; no package was loaded for this static audit')
     except (OSError,ValueError,ImportError,AttributeError) as exc:return dict(status='UNKNOWN',origin='',reason=f'{type(exc).__name__}: {exc}')
 def distribution_map():
     try:return importlib.metadata.packages_distributions()
@@ -84,6 +88,81 @@ def analyze(source,paths=None):
     Visitor().visit(tree)
     missing=[x for x in imports if x['status']=='MISSING'];status='MISSING' if missing else 'WARNING' if any(x['status'] in {'UNKNOWN','OPTIONAL'} for x in imports) else 'AVAILABLE'
     return dict(identity=identity(),source_sha256=digest,status=status,imports=imports,issues=missing,qualification='Static inference only. Imported attributes and runtime side effects are not evaluated')
+def audit_imports(admission):
+    """Extend the SAME analyze/resolve owner over host-admitted exact sources."""
+    if not isinstance(admission,dict) or admission.get('schema')!='gxtxt.python_import_audit_request.v1' or admission.get('scope') not in {'script','project','framework'}:
+        raise ValueError('Invalid admitted Python audit scope')
+    sources=admission.get('sources')
+    if not isinstance(sources,list) or not sources or len(sources)>1000:
+        raise ValueError('Audit requires 1..1000 admitted Python source files')
+    mapping=distribution_map();versions={};imports=[];files=[];total=0;seen=set();errors=[]
+    framework=Path(__file__).resolve().parents[2]
+    client=framework/'core'/'python'
+    for item in sources:
+        if not isinstance(item,dict) or not {'path','root','sha256','logical_id'}<=item.keys():
+            raise ValueError('An admitted source requires exact path/root/SHA/logical identity')
+        original=Path(item['path']);root=Path(item['root']).resolve(strict=True);path=original.resolve(strict=True)
+        if not path.is_relative_to(root) or path.suffix!='.py' or path in seen:
+            raise ValueError('Audit source is outside its admitted root or duplicated')
+        probe=root
+        for part in original.absolute().relative_to(root).parts:
+            probe/=part
+            if probe.is_symlink():raise ValueError('Audit sources cannot contain symlinks')
+        if not path.is_file() or path.stat().st_size>4194304:
+            raise ValueError('Admitted Python source exceeds its 4 MiB bound')
+        raw=path.read_bytes();total+=len(raw)
+        if total>33554432:raise ValueError('Audit source scope exceeds the 32 MiB bound')
+        sha=hashlib.sha256(raw).hexdigest()
+        if sha!=item['sha256']:raise ValueError('Admitted Python source changed before audit')
+        encoding,_=tokenize.detect_encoding(io.BytesIO(raw).readline)
+        source=raw.decode('utf-8' if encoding=='utf-8-sig' else encoding)
+        # Execution admits the project root, not whichever helper tab happens
+        # to be active. The framework client is an actual existing runtime path.
+        local_paths=[str(root),str(path.parent)] if admission['scope']=='framework' else [str(root)]
+        paths=list(dict.fromkeys(local_paths+[str(client)]+[p for p in sys.path if p and Path(p).resolve()!=path.parent]))
+        report=analyze(source,paths)
+        relative=path.relative_to(root).as_posix()
+        files.append(dict(logical_id=item['logical_id'],path=str(path),root=str(root),relative_file=relative,sha256=sha,size_bytes=len(raw),status=report['status'],effective_search_paths=paths))
+        seen.add(path)
+        if report['status']=='ERROR':
+            for issue in report['issues']:
+                row=dict(issue,source_file=str(path),logical_id=item['logical_id'],classification='unknown',distributions={},intent='invalid_source',static_status='ERROR')
+                imports.append(row);errors.append(row)
+        for found in report['imports']:
+            row=dict(found,source_file=str(path),logical_id=item['logical_id'],relative_file=relative)
+            module=row['module'];resolved_module=module
+            if module.startswith('.'):
+                level=len(module)-len(module.lstrip('.'));package=path.relative_to(root).parts[:-1]
+                if package and (path.parent/'__init__.py').is_file() and level<=len(package):
+                    resolved_module='.'.join((*package[:len(package)-level+1],module.lstrip('.'))).strip('.')
+                    resolution=resolve(resolved_module,paths)
+                    row.update(resolution,static_status=resolution['status'],resolved_module=resolved_module)
+                    if resolution['status']=='AVAILABLE':row['reason']='Relative project package resolved statically; no code executed'
+            top=resolved_module.split('.')[0]
+            origin=row.get('origin','')
+            is_local=False
+            if origin and origin not in {'built-in','frozen','namespace package'}:
+                try:is_local=Path(origin).resolve().is_relative_to(root) or Path(origin).resolve().is_relative_to(client)
+                except (OSError,ValueError):pass
+            installed_origin=False
+            if origin and origin not in {'built-in','frozen','namespace package'}:
+                installed_origin=any(Path(origin).resolve().is_relative_to(Path(p).resolve()) for p in sys.path if p and Path(p).name in {'site-packages','dist-packages'})
+            row['classification']='local' if is_local else 'builtin' if top in sys.builtin_module_names else 'stdlib' if top in getattr(sys,'stdlib_module_names',()) else 'third_party' if mapping.get(top) or installed_origin else 'unknown'
+            owners={}
+            for distribution in mapping.get(top,[]):
+                if distribution not in versions:
+                    try:versions[distribution]=importlib.metadata.version(distribution)
+                    except importlib.metadata.PackageNotFoundError:versions[distribution]='metadata unavailable'
+                owners[distribution]=versions[distribution]
+            row['distributions']=owners
+            if row.get('intent')=='optional':row['status']='OPTIONAL'
+            elif row.get('intent') in {'conditional','dynamic'}:row['status']='UNKNOWN'
+            if found.get('from_import'):row['reason']=row.get('reason','')+'; imported members may be attributes, not separate distributions'
+            imports.append(row)
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=sha:raise ValueError('Admitted Python source changed during audit')
+        if len(imports)>20000:raise ValueError('Python import audit exceeds its 20000-result bound; choose a smaller scope')
+    summary={status:sum(row['status']==status for row in imports) for status in ('AVAILABLE','MISSING','OPTIONAL','UNKNOWN','ERROR')}
+    return dict(schema='gxtxt.python_import_audit.v1',identity=identity(),scope=admission['scope'],scope_identity=admission.get('scope_identity',''),file_count=len(files),source_bytes=total,sources=files,imports=imports,issues=[row for row in imports if row['status'] in {'MISSING','ERROR'}],summary=summary,status='ERROR' if errors else 'MISSING' if summary['MISSING'] else 'WARNING' if summary['OPTIONAL']+summary['UNKNOWN'] else 'AVAILABLE',complete=not admission.get('truncated',False) and not errors,truncated=bool(admission.get('truncated',False)),qualification='Static availability only; source and dependencies are not executed, and no packages are installed')
 def organize(source,statements):
     marker='\ufeff' if source.startswith('\ufeff') else ''
     body=source.removeprefix('\ufeff')
@@ -130,9 +209,13 @@ def organize(source,statements):
     result=marker+''.join(lines);ast.parse(result.removeprefix('\ufeff'))
     return dict(source=result,before_sha256=before,after_sha256=hashlib.sha256(result.encode()).hexdigest(),statements=statements,duplicates=duplicates,changed=result!=source)
 def main():
-    a=argparse.ArgumentParser();a.add_argument('operation',choices=['inventory','preflight','organize']);a.add_argument('--source');a.add_argument('--statement',action='append',default=[]);a.add_argument('--offset',type=int,default=0);a.add_argument('--limit',type=int,default=1500);a.add_argument('--report');args=a.parse_args()
+    a=argparse.ArgumentParser();a.add_argument('operation',choices=['inventory','preflight','organize','audit']);a.add_argument('--source');a.add_argument('--statement',action='append',default=[]);a.add_argument('--offset',type=int,default=0);a.add_argument('--limit',type=int,default=1500);a.add_argument('--report');args=a.parse_args()
     try:
         if args.operation=='inventory':result=inventory(max(1,min(args.limit,2000)),max(0,args.offset))
+        elif args.operation=='audit':
+            request=sys.stdin.buffer.read(2097153)
+            if len(request)>2097152:raise ValueError('Audit admission request exceeds 2 MiB')
+            result=audit_imports(json.loads(request))
         else:
             raw=Path(args.source).read_bytes() if args.source else sys.stdin.buffer.read(4194305)
             if len(raw)>4194304:raise ValueError('Python source limit is 4 MiB')

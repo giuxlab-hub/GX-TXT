@@ -291,6 +291,8 @@ proc ::GX::Native3D::panel {} {
     set w .gxNative3D
     if {[winfo exists $w]} { wm deiconify $w; raise $w; return }
     toplevel $w
+    _workspaceMenuAttach $w
+    wm protocol $w WM_DELETE_WINDOW ::GX::Native3D::_workspaceDispose
     wm title $w "GX-TXT Native 3D Viewer"
     wm geometry $w 1100x760
     wm minsize $w 700 400
@@ -851,9 +853,9 @@ proc ::GX::Native3D::patternReady {id} {
     set ::GX::Native3D::patternPending [dict create]
     if {$::GX::currentSession ne [dict get $pending session] ||
         $::GX::Native3D::documentId ne [dict get $pending document_id]} return
-    set state [dict get [::GX::interactiveDocumentRead [dict get $pending document_id]] payload]
+    set state [dict get [::GX::Native3D::_workspaceRead [dict get $pending document_id]] payload]
     dict set state pattern_regions $id [dict get $pending details]
-    ::GX::interactiveDocumentUpdate [dict get $pending document_id] $state
+    ::GX::Native3D::_workspaceUpdate [dict get $pending document_id] $state
     ::GX::sessionPersistenceCommit
     refreshScientificLayers
 }
@@ -899,10 +901,10 @@ proc ::GX::Native3D::repeatReady {line} {
     if {![dict size $pending] ||
         $::GX::currentSession ne [dict get $pending session] ||
         $::GX::Native3D::documentId ne [dict get $pending document_id]} return
-    set state [dict get [::GX::interactiveDocumentRead [dict get $pending document_id]] payload]
+    set state [dict get [::GX::Native3D::_workspaceRead [dict get $pending document_id]] payload]
     dict set state repeat_component [dict create source_cell [dict get $pending source_cell] \
         instances [eventNumber $line instances] prototype_triangles [eventNumber $line prototype_triangles]]
-    ::GX::interactiveDocumentUpdate [dict get $pending document_id] $state
+    ::GX::Native3D::_workspaceUpdate [dict get $pending document_id] $state
     ::GX::sessionPersistenceCommit
 }
 
@@ -926,7 +928,7 @@ proc ::GX::Native3D::refreshScientificLayers {} {
     if {![winfo exists $w]} return
     $w delete 0 end
     if {$::GX::Native3D::documentId eq ""} return
-    if {[catch {set saved [dict get [::GX::interactiveDocumentRead \
+    if {[catch {set saved [dict get [::GX::Native3D::_workspaceRead \
         $::GX::Native3D::documentId] payload]}]} return
     foreach id [scientificLayerIds $saved] {
         set section [scientificLayerSection $saved $id]
@@ -942,7 +944,7 @@ proc ::GX::Native3D::scientificLayerSelected {} {
     set w .gxNative3D.body.scientific.layers
     set selection [$w curselection]
     if {![llength $selection]} { set ::GX::Native3D::selectedScientificLayer ""; return }
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     set ids [scientificLayerIds $saved]
     set id [lindex $ids [lindex $selection 0]]
     set ::GX::Native3D::selectedScientificLayer $id
@@ -954,10 +956,10 @@ proc ::GX::Native3D::scientificLayerSelected {} {
 proc ::GX::Native3D::setScientificVisibility {} {
     set id $::GX::Native3D::selectedScientificLayer
     if {$id eq ""} return
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     set section [scientificLayerSection $saved $id]
     dict set saved $section $id visible $::GX::Native3D::selectedScientificVisible
-    ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $saved
+    ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $saved
     ::GX::sessionPersistenceCommit
     send "LAYER_VISIBLE $id $::GX::Native3D::selectedScientificVisible"
 }
@@ -970,7 +972,7 @@ proc ::GX::Native3D::setScientificOpacity {} {
         [catch {expr {double($opacity) >= 0 && double($opacity) <= 1 && abs(double($opacity)) < Inf}} valid] || !$valid} {
         error "Scientific layer opacity must be between 0 and 1."
     }
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     set section [scientificLayerSection $saved $id]
     dict set saved $section $id opacity $opacity
     if {$section ne "pattern_regions"} {
@@ -978,7 +980,7 @@ proc ::GX::Native3D::setScientificOpacity {} {
         dict set layer opacity $opacity
         ::GX::viewerLayerSet viewer.native_3d native_3d $id $layer
     }
-    ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $saved
+    ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $saved
     ::GX::sessionPersistenceCommit
     send "LAYER_OPACITY $id [format %.3f $opacity]"
 }
@@ -986,10 +988,10 @@ proc ::GX::Native3D::setScientificOpacity {} {
 proc ::GX::Native3D::removeScientificLayer {} {
     set id $::GX::Native3D::selectedScientificLayer
     if {$id eq ""} return
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     set section [scientificLayerSection $saved $id]
     dict unset saved $section $id
-    ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $saved
+    ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $saved
     ::GX::viewerLayerRemove viewer.native_3d native_3d $id
     ::GX::sessionPersistenceCommit
     send "LAYER_REMOVE $id"
@@ -1003,7 +1005,7 @@ proc ::GX::Native3D::assemblyObjectSelected {} {
     if {![llength $selection]} {set ::GX::Native3D::selectedAssemblyObject ""; return}
     set index [lindex $::GX::Native3D::assemblyObjectIds [lindex $selection 0]]
     set ::GX::Native3D::selectedAssemblyObject $index
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     set ::GX::Native3D::selectedAssemblyVisible [expr {
         ![dict exists $saved object_visibility $index] || [dict get $saved object_visibility $index]
     }]
@@ -1013,9 +1015,9 @@ proc ::GX::Native3D::setAssemblyVisibility {} {
     set index $::GX::Native3D::selectedAssemblyObject
     if {$index eq ""} return
     if {$index ni $::GX::Native3D::assemblyObjectIds} {error "Selected assembly part is unavailable."}
-    set saved [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
     dict set saved object_visibility $index $::GX::Native3D::selectedAssemblyVisible
-    ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $saved
+    ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $saved
     ::GX::sessionPersistenceCommit
     send "OBJECT_VISIBLE $index $::GX::Native3D::selectedAssemblyVisible"
 }
@@ -1089,7 +1091,7 @@ proc ::GX::Native3D::addVtuArtifact {path {scalarArray ""} {vectorArray ""}} {
     set layerId [format "vtu_%x" [clock microseconds]]
     set details [dict create resource_path $relative sha256 [dict get $artifact sha256] \
         scalar_array $scalarArray vector_array $vectorArray visible 1 opacity 1.0]
-    set oldState [dict get [::GX::interactiveDocumentRead $documentId] payload]
+    set oldState [dict get [::GX::Native3D::_workspaceRead $documentId] payload]
     set state $oldState
     dict set state vtu_layers $layerId $details
     try {
@@ -1102,12 +1104,12 @@ proc ::GX::Native3D::addVtuArtifact {path {scalarArray ""} {vectorArray ""}} {
                 kind $kind resource_path $relative sha256 [dict get $artifact sha256] \
                 format vtu format_version 1]
         }
-        ::GX::interactiveDocumentUpdate $documentId $state
+        ::GX::Native3D::_workspaceUpdate $documentId $state
         ::GX::sessionPersistenceCommit
         sendVtuLayer $layerId $details
     } on error {problem options} {
         ::GX::viewerLayerRemove viewer.native_3d native_3d $layerId
-        catch {::GX::interactiveDocumentUpdate $documentId $oldState}
+        catch {::GX::Native3D::_workspaceUpdate $documentId $oldState}
         catch {::GX::sessionPersistenceCommit}
         return -options $options $problem
     }
@@ -1171,7 +1173,7 @@ proc ::GX::Native3D::addDatasetPoints {dataset x y z {scalar ""} {vectors {"" ""
     set layerId [format "dataset_%x" [clock microseconds]]
     set details [dict create dataset_id $dataset sha256 [dict get $payload sha256] \
         coordinates [list $x $y $z] scalar_variable $scalar vector_variables $vectors visible 1 opacity 1.0]
-    set oldState [dict get [::GX::interactiveDocumentRead $documentId] payload]
+    set oldState [dict get [::GX::Native3D::_workspaceRead $documentId] payload]
     set state $oldState
     dict set state dataset_layers $layerId $details
     try {
@@ -1186,12 +1188,12 @@ proc ::GX::Native3D::addDatasetPoints {dataset x y z {scalar ""} {vectors {"" ""
             ::GX::viewerAttributeSet viewer.native_3d native_3d $layerId vector \
                 [dict create kind vector variable_ids [join $vectors {;}]]
         }
-        ::GX::interactiveDocumentUpdate $documentId $state
+        ::GX::Native3D::_workspaceUpdate $documentId $state
         ::GX::sessionPersistenceCommit
         sendDatasetLayer $layerId $details
     } on error {problem options} {
         ::GX::viewerLayerRemove viewer.native_3d native_3d $layerId
-        catch {::GX::interactiveDocumentUpdate $documentId $oldState}
+        catch {::GX::Native3D::_workspaceUpdate $documentId $oldState}
         catch {::GX::sessionPersistenceCommit}
         return -options $options $problem
     }
@@ -1208,7 +1210,7 @@ proc ::GX::Native3D::chooseRelink {savedId expected mode} {
 proc ::GX::Native3D::relinkSource {savedId path expected mode} {
     variable documentId
     if {$mode ni {external_reference session_artifact}} { error "Unknown native 3D source mode." }
-    set saved [dict get [::GX::interactiveDocumentRead $savedId] payload]
+    set saved [dict get [::GX::Native3D::_workspaceRead $savedId] payload]
     if {[dict get $saved source_sha256] ne $expected || [dict get $saved source_mode] ne $mode} {
         error "Native 3D relink request does not match the saved viewer document."
     }
@@ -1432,8 +1434,7 @@ proc ::GX::Native3D::recordSource {} {
         clipping_enabled 0 clipping_axis z clipping_fraction 0.5 \
         notes "" imported_at [clock format [clock seconds] -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}]]
     dict set state vtu_layers [dict create]
-    set item [::GX::interactiveDocumentCreate viewer.native_3d native_3d \
-        gxtxt.native3d.viewer_state 1.0 $state]
+    set item [_workspaceCreate $state]
     set documentId [dict get $item id]
     set layerId "mesh_[string range $sourceSha 0 15]"
     if {$mode eq "dataset"} {
@@ -1543,7 +1544,7 @@ proc ::GX::Native3D::updateRelink {} {
     variable documentId
     variable selectedDatasetId
     if {$documentId eq "" || $::GX::currentSession ne $session} { error "Native 3D relink has no active Session document." }
-    set state [dict get [::GX::interactiveDocumentRead $documentId] payload]
+    set state [dict get [::GX::Native3D::_workspaceRead $documentId] payload]
     if {[dict get $state source_sha256] ne $sourceSha} { error "Relocated source failed the saved SHA-256 check." }
     if {[dict get $state source_mode] eq "dataset"} {
         set selectedDatasetId [dict get $state source_dataset_id]
@@ -1553,7 +1554,7 @@ proc ::GX::Native3D::updateRelink {} {
             error "Dataset '$selectedDatasetId' changed or is missing."
         }
         dict set state cache_key $cacheKey
-        ::GX::interactiveDocumentUpdate $documentId $state
+        ::GX::Native3D::_workspaceUpdate $documentId $state
         ::GX::viewerLayerSet viewer.native_3d native_3d "mesh_[string range $sourceSha 0 15]" \
             [dict create kind triangle_mesh source_mode dataset dataset_id $selectedDatasetId \
                 format [dict get $payload format]]
@@ -1581,7 +1582,7 @@ proc ::GX::Native3D::updateRelink {} {
     dict set state source_resource $relative
     dict set state source_size [file size $source]
     dict set state cache_key $cacheKey
-    ::GX::interactiveDocumentUpdate $documentId $state
+    ::GX::Native3D::_workspaceUpdate $documentId $state
     set layerId "mesh_[string range $sourceSha 0 15]"
     ::GX::viewerLayerSet viewer.native_3d native_3d $layerId [dict create \
         kind triangle_mesh source_mode artifact resource_path $relative \
@@ -1636,7 +1637,7 @@ proc ::GX::Native3D::openHost {} {
     set lod [expr {$requestedLod eq "auto" ? [recommendedLod $cache] : $requestedLod}]
     startHost [list [binary gx3d-host] $cache $lod]
     if {$documentId ne ""} {
-        set saved [dict get [::GX::interactiveDocumentRead $documentId] payload]
+        set saved [dict get [::GX::Native3D::_workspaceRead $documentId] payload]
         if {[dict exists $saved visible]} { set ::GX::Native3D::visible [dict get $saved visible] }
         if {[dict exists $saved opacity]} { set ::GX::Native3D::opacity [dict get $saved opacity] }
         if {[dict exists $saved lighting]} { set ::GX::Native3D::lighting [dict get $saved lighting] }
@@ -1912,11 +1913,11 @@ proc ::GX::Native3D::saveCamera {line} {
         set $field $value
     }
     if {$documentId ne ""} {
-        set state [dict get [::GX::interactiveDocumentRead $documentId] payload]
+        set state [dict get [::GX::Native3D::_workspaceRead $documentId] payload]
         foreach field {camera_position camera_target camera_up projection parallel_scale view_angle_deg} {
             dict set state $field [set $field]
         }
-        ::GX::interactiveDocumentUpdate $documentId $state
+        ::GX::Native3D::_workspaceUpdate $documentId $state
     }
     ::GX::viewerSceneSet viewer.native_3d native_3d [dict merge \
         [::GX::viewerSceneGet viewer.native_3d native_3d] [dict create \
@@ -1961,11 +1962,11 @@ proc ::GX::Native3D::send {command} {
             LIGHTING { set field lighting; set ::GX::Native3D::lighting [lindex $words 1] }
         }
         if {$field ne "" && [llength $words] == 2} {
-            set state [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+            set state [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
             dict set state $field [lindex $words 1]
-            ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $state
+            ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $state
         } elseif {[lindex $words 0] eq "CLIP" && [llength $words] in {2 3}} {
-            set state [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+            set state [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
             if {[lindex $words 1] eq "OFF"} {
                 dict set state clipping_enabled 0
             } else {
@@ -1973,12 +1974,12 @@ proc ::GX::Native3D::send {command} {
                 dict set state clipping_axis [lindex $words 1]
                 dict set state clipping_fraction [lindex $words 2]
             }
-            ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $state
+            ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $state
         } elseif {[lindex $words 0] eq "BACKGROUND" && [llength $words] == 4} {
             set ::GX::Native3D::backgroundRgb [join [lrange $words 1 3] {;}]
-            set state [dict get [::GX::interactiveDocumentRead $::GX::Native3D::documentId] payload]
+            set state [dict get [::GX::Native3D::_workspaceRead $::GX::Native3D::documentId] payload]
             dict set state background_rgb $::GX::Native3D::backgroundRgb
-            ::GX::interactiveDocumentUpdate $::GX::Native3D::documentId $state
+            ::GX::Native3D::_workspaceUpdate $::GX::Native3D::documentId $state
         }
     }
 }
@@ -2163,20 +2164,26 @@ proc ::GX::Native3D::backend {action scene} {
     if {$action eq "open" && [dict exists $scene open_context dataset_id]} {
         return [openDataset [dict get $scene open_context dataset_id]]
     }
-    if {[dict get $scene view scene_mode] eq "scientific" ||
-        ([dict exists $scene open_context scene_only] && [dict get $scene open_context scene_only])} {
+    if {![dict exists $scene open_context workspace_id] && ([dict get $scene view scene_mode] eq "scientific" ||
+        ([dict exists $scene open_context scene_only] && [dict get $scene open_context scene_only]))} {
         return [openScene $scene]
     }
-    if {[dict size [dict get $scene layers]] && ![llength [::GX::interactiveDocumentList viewer.native_3d native_3d]]} {
+    if {[dict size [dict get $scene layers]] && ![llength [::GX::nativeWorkspaceQuery native_3d viewer.native_3d]]} {
         return [openScene $scene]
     }
     if {$action eq "open" && [dict exists $scene open_context source_path]} {
         return [openSource [dict get $scene open_context source_path] 0]
     }
-    set docs [::GX::interactiveDocumentList viewer.native_3d native_3d]
+    set docs [::GX::nativeWorkspaceQuery native_3d viewer.native_3d]
+    if {[dict exists $scene open_context workspace_id]} {
+        set requested [dict get $scene open_context workspace_id]
+        set metadata [::GX::nativeWorkspaceMetadata $requested]
+        if {[dict get $metadata provider_id] ne {native_3d} || [dict get $metadata module_id] ne {viewer.native_3d}} {error {Foreign Native3D Workspace identity}}
+        set docs [list $metadata]
+    }
     if {[llength $docs]} {
         set recent [lindex $docs end]
-        set saved [dict get [::GX::interactiveDocumentRead [dict get $recent id]] payload]
+        set saved [dict get [::GX::Native3D::_workspaceRead [dict get $recent id]] payload]
         if {[dict get $saved source_mode] eq "dataset"} {
             set datasetId [dict get $saved source_dataset_id]
             set payload [::GX::sessionInspectionDatasetPayload $datasetId]
@@ -2218,7 +2225,7 @@ proc ::GX::Native3D::_plotRepresentations {} {
     return [concat [::GX::PlotDatasetAPIv3::interactiveRepresentations] [::GX::PlotDatasetAPIv4::interactiveRepresentations]]
 }
 proc ::GX::Native3D::_representationApiOwner {id} {
-    set record [::GX::interactiveDocumentRead $id]
+    set record [::GX::interactiveDocumentMetadata $id]
     switch -- [dict get $record format] {
         gxtxt.plot_dataset.native_v4_scene {::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4;return ::GX::PlotDatasetAPIv4}
         gxtxt.plot_dataset.interactive_scene {return ::GX::PlotDatasetAPIv3}

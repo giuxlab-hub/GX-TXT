@@ -3,7 +3,7 @@
 - Delegate both existing vector normalization choices to the public Numeric
   provider, preserving scientific identities, units and zero-norm rejection.
 
-## 1.0.20
+## 1.0.2 — 2026-09-30
 
 - Open standalone runtime Session and inspect Dataset provenance through supported public APIs.
 

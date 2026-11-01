@@ -1,9 +1,24 @@
-# Project Portable API v1 — dev085
+# Project Portable API v1
 
-`::GX::projectPortableExport projectId archive` exports the complete **saved** Project
+`::GX::projectPortableExport projectId archive ?excludedUnassociatedSessions?` exports the complete **saved** Project
 through existing Project membership and Session Portable APIs. Returns `archive`,
 `sha256`, `experiment_count`, `dependency_count`, `file_count`. Export never overwrites
 an existing file and must be outside the Project and every source Session.
+
+The optional list excludes explicitly selected unassociated Sessions from raw
+Project resources. Each path must be a complete Format 2 Session directly below
+this Project's `Sessions/` directory and unregistered in every Project. Registered
+members, arbitrary resource directories, duplicate paths and pending Project
+transactions refuse. Membership is refreshed through the existing Project owner.
+The default empty list preserves ordinary complete Project resource export.
+Exclusions are recorded in `excluded_unassociated_sessions` and matching
+`portable_exclusion.N` transfer metadata; validation rejects excluded payloads
+appearing under `resources/`. This is a host transport option, not a deletion or
+scientific persistence operation. Framework Maintenance uses it for discovered
+nested orphans in both policies: Include serializes each once through Session
+Portable; Exclude omits its standalone package and raw Project resource copy.
+Required dependencies of included registered Sessions still follow the existing
+Session Portable contract, regardless of their physical source location.
 
 `::GX::projectPortableValidate archive` validates the complete Project container and
 all nested Session packages, hashes, source identifiers and reference consistency.

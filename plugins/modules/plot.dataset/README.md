@@ -1,4 +1,4 @@
-# Scientific Dataset Plot (plot.dataset) 3.18.0
+# Scientific Dataset Plot (plot.dataset) 4.3.0
 
 ## Dataset coordinate presentation
 
@@ -196,7 +196,7 @@ public dataset-aware path.
 
 For overlapping 2-D axis properties, CORE is authoritative once plot-specific axis state has been saved. `Restore automatic` disables stale provider bounds/display-unit overrides; PlotSpec remains the fallback only where CORE axis state has not been declared. Axis authority is normalized deterministically at render time.
 
-## Supported plotting capabilities
+## Preserved behavior
 
 The plot model supports Graph-configuration-owned shared-X panels:
 
@@ -252,3 +252,6 @@ for each prepared series and **does not own a second selection registry**.
 This is separate from source-range pre-reading: heterogeneous X
 bindings deliberately disable pre-read X-window optimization so that a display
 axis limit cannot be mistaken for one shared scientific source coordinate.
+
+Use the matching DEV111-P031 CORE for 4.3.0. The illustrated numeric X caption
+workflow is in MANUAL.md; source data stay numeric and unchanged.

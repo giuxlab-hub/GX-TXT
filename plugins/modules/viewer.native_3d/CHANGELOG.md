@@ -5,51 +5,51 @@ the existing QUIT protocol and the native timer services command-pipe EOF.
 The preserved molecular GUI failure had a surviving orphan host after root
 exit; corrected real-GUI closure verification is tracked separately.
 
-## 0.9.8
+## 0.9.8 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 
 # Native 3D Viewer changes
 
-## 0.9.6
+## 0.9.6 — 2026-10-16
 
 - Debian package host now resolves the bundled library through `$ORIGIN/../lib`, removing an absolute development-build RPATH. Public IDs, cache data and scientific algorithms are unchanged.
 
-## 0.9.4
+## 0.9.4 — 2026-10-01
 
 - Retry a renderer that fails during OpenGL or GLX initialization once with Mesa llvmpipe on non-Windows systems. Preserve hardware rendering as the first attempt and show the active software mode in Viewer status.
 - Capture renderer startup diagnostics and report unrelated startup failures or crashes after interactive startup without a software retry.
 - Disable inherited indirect GLX only for the software renderer child. The explicit `GXTXT_NATIVE3D_SOFTWARE=1` override remains available.
 
-## 0.9.3
+## 0.9.3 — 2026-10-01
 
 - Added draggable VTK implicit working plane, U/V/N axes, and real surface mouse-pick events through the public Native 3D interaction API.
 
-## 0.9.2
+## 0.9.2 — 2026-10-01
 
 - Show scalar-array and isovalue controls only for VTI scalar grids. Explain the
   meaning of an isovalue and show recorded field range where available.
 - Keep mesh and normal geometry selection free of VTI-specific input.
 
-## 0.9.1
+## 0.9.1 — 2026-09-30
 
 - Cached stable STEP representation links during OCCT 7.8.1 assembly transfer on Linux. This removes repeated scans of the same shared-part links for large assemblies while retaining XDE names, hierarchy, transforms, geometry and cache format.
 - Kept STEP meshing inside the serial native worker. Existing geometry cache keys remain valid because the output chunks are byte-identical on the small, medium and 20,000-occurrence fixtures.
 - Added separate STEP read, transfer, traversal, meshing, triangle extraction and VTK conversion timings to worker events.
 
-## 0.9.0
+## 0.9.0 — 2026-09-30
 
 - Added Plot Dataset graph/Variant source selection, independent representation listing, status and explicit Sync to the control panel.
 - Added named public renderer operations for camera, LOD, display, lighting, background, screenshot, layer presentation, source verification and external-file compatibility; raw host commands remain adapter-private.
 - Replayed Viewer background, lighting, projection and absolute clipping plane state in scientific scenes. The native host now accepts a validated absolute clipping plane.
 
-## 0.8.0
+## 0.8.0 — 2026-09-29
 
 - Added Session Dataset selection as the normal startup workflow. Opening the viewer no longer opens a file chooser; external file opening remains an explicit compatibility command.
 - Added scene-only startup and generic VTK XML scientific layers (VTU, VTP and VTI), point glyph radii, line tubes, scalar coloring and multi-value isosurfaces using the existing VTK backend.
 - Persisted Dataset source identity and scientific scene presentation through Session reopen. The native worker still handles imported STL, OBJ and STEP geometry.
 
-## 0.7.3
+## 0.7.3 — 2026-09-27
 
 - Aligned native library, worker cache key and cache manifest identifiers with the module version; existing display caches rebuild on demand.
 

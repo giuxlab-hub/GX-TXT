@@ -40,6 +40,7 @@ def _project_from_config(cfg: dict) -> Project:
             "height": source.get("height", 0),
         },
         "axes": cfg.get("axes", {}),
+        "axis_model_version": cfg.get("axis_model_version"),
         "calibration": cfg.get("calibration", {}),
         "series": cfg.get("curves", []),
         "notes": cfg.get("notes", ""),
@@ -142,7 +143,7 @@ def command_append(args: argparse.Namespace) -> int:
             pixel_x=px,
             pixel_y=py,
         )
-        project.update_point_calibration(point)
+        project.update_point_calibration(point, curve.y_axis_id)
         if point.calibrated_x is None or point.calibrated_y is None:
             raise ValueError("Unable to transform a proposed pixel point through the current calibration.")
         curve.points.append(point)
@@ -153,7 +154,7 @@ def command_append(args: argparse.Namespace) -> int:
     # byte-semantically equivalent JSON data.
     for index, series in enumerate(project.series):
         if series.id == args.curve_id:
-            cfg["curves"][index] = series.to_dict()
+            cfg["curves"][index] = series.to_dict(include_axis_id=project.y2_axis is not None)
             break
 
     output_path.write_text(

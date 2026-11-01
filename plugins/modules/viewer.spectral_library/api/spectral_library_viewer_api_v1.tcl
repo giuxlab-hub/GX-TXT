@@ -15,6 +15,8 @@ namespace eval ::GX::SpectralLibraryViewer {
     variable viewport {}
     variable fullRange {}
     variable documentId ""
+    variable documentReceipt {}
+    variable savedPayload {}
     variable sessionToken ""
     variable dragX ""
     variable shownX {}
@@ -30,18 +32,26 @@ proc ::GX::SpectralLibraryViewer::_hasSession {} {
 proc ::GX::SpectralLibraryViewer::_dictDefault {value key default} {
     return [expr {[dict exists $value $key] ? [dict get $value $key] : $default}]
 }
-proc ::GX::SpectralLibraryViewer::_restoreState {} {
+proc ::GX::SpectralLibraryViewer::_restoreState {{requested {}}} {
     variable documentId; variable sessionToken; variable libraryId; variable entityId
     variable mode; variable reversed; variable selectedIds
     variable sessionDataset; variable rankingDataset; variable viewport
+    variable documentReceipt;variable savedPayload
     set documentId ""; set sessionToken ""
+    set documentReceipt {};set savedPayload {}
     if {![_hasSession]} { return }
     set sessionToken [::GX::interactiveDocumentSessionToken]
-    set docs [::GX::interactiveDocumentList viewer.spectral_library spectral_library]
+    if {$requested eq {new}} return
+    set docs [::GX::nativeWorkspaceQuery spectral_library]
+    if {$requested ne {}} {
+        if {![::GX::_nativeWorkspaceExists $requested]} {error {Obsolete Spectral Workspace cannot be restored; create a new native Workspace}}
+        set docs [list [::GX::nativeWorkspaceMetadata $requested]]
+    }
     if {![llength $docs]} { return }
     set documentId [dict get [lindex $docs 0] id]
-    set payload [dict get [::GX::interactiveDocumentRead $documentId] payload]
-    if {[catch {dict size $payload}]} { return }
+    set documentReceipt [::GX::sessionWorkspaceGet $documentId]
+    if {[dict get $documentReceipt provider_id] ne {spectral_library}} {error {Workspace belongs to another provider}}
+    set payload [dict get $documentReceipt payload];set savedPayload $payload
     foreach key {libraryId entityId mode reversed selectedIds sessionDataset rankingDataset viewport} {
         if {[dict exists $payload $key]} { set $key [dict get $payload $key] }
     }
@@ -50,6 +60,7 @@ proc ::GX::SpectralLibraryViewer::_saveState {} {
     variable documentId; variable sessionToken; variable libraryId; variable entityId
     variable mode; variable reversed; variable selectedIds
     variable sessionDataset; variable rankingDataset; variable viewport
+    variable documentReceipt;variable savedPayload
     if {![_hasSession]} { return }
     if {$sessionToken eq "" || $sessionToken ne [::GX::interactiveDocumentSessionToken]} {
         error "Spectral Viewer Session changed; stale state cannot be saved"
@@ -58,12 +69,14 @@ proc ::GX::SpectralLibraryViewer::_saveState {} {
         selectedIds $selectedIds sessionDataset $sessionDataset \
         rankingDataset $rankingDataset viewport $viewport]
     if {$documentId eq ""} {
-        set result [::GX::interactiveDocumentCreate viewer.spectral_library spectral_library \
-            gxtxt.spectral_library.viewer.state 1.0 $payload]
+        set result [::GX::sessionWorkspaceCreate spectral_library [::GX::sessionWorkspaceAvailableName {Spectral Library}] $payload 1]
         set documentId [dict get $result id]
     } else {
-        ::GX::interactiveDocumentUpdate $documentId $payload
+        if {$documentReceipt eq {}} {error {Spectral Workspace receipt is missing; reopen it}}
+        set result [::GX::sessionWorkspaceUpdate $documentId $payload $documentReceipt 1]
     }
+    set documentReceipt $result;set savedPayload $payload
+    return $result
 }
 proc ::GX::SpectralLibraryViewer::_libraries {} {
     set managed [::GX::ScientificLibraryManagerAPIv1::queryCompatibleLibraries spectroscopy.ir.reference]
@@ -597,6 +610,11 @@ proc ::GX::SpectralLibraryViewer::_open {{context {}}} {
     variable reversed; variable sessionDataset; variable rankingDataset
     variable selectedIds; variable spectra; variable viewport; variable statusText
     package require Tk
+    set requested [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
+    if {[winfo exists $window] && $requested ne {} && ($requested eq {new} || $requested ne $::GX::SpectralLibraryViewer::documentId)} {
+        if {[dict exists $::GX::SessionWorkspace::adapters $window] && ![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $window] opening]} {return [dict create status cancelled window $window]}
+        _workspaceDispose
+    }
     if {[winfo exists $window]} {
         raise $window
         focus -force $window
@@ -606,8 +624,9 @@ proc ::GX::SpectralLibraryViewer::_open {{context {}}} {
     set libraryId ""; set entityId ""; set searchText ""; set mode overlay; set reversed 1
     set sessionDataset ""; set rankingDataset ""; set selectedIds {}; set spectra {}; set viewport {}
     set statusText "Ready"
-    _restoreState
+    _restoreState $requested
     set libraries [_libraries]
+    if {$libraryId ne {} && $libraryId ni $libraries && $::GX::SpectralLibraryViewer::documentId ne {}} {error {The captured spectral library is unavailable; saved Workspace preserved}}
     if {$libraryId ni $libraries} { set libraryId [lindex $libraries 0] }
     if {![llength $libraries]} {
         set statusText "No IR reference library is installed. Select Install library to add one."
@@ -717,7 +736,37 @@ proc ::GX::SpectralLibraryViewer::_open {{context {}}} {
     _draw
     _saveState
     _openContext $context
+    wm protocol $window WM_DELETE_WINDOW ::GX::SpectralLibraryViewer::_workspaceClose
+    if {[_hasSession]} {
+        ttk::menubutton $window.toolbar.workspace -text Workspace -menu $window.toolbar.workspace.menu
+        menu $window.toolbar.workspace.menu -tearoff 0
+        pack $window.toolbar.workspace -side left -padx 4
+        ::GX::sessionWorkspaceViewerMenu $window.toolbar.workspace.menu spectral_library [_workspaceCallbacks] $window
+        ::GX::sessionWorkspaceViewerTitle $window {Scientific Spectral Library} [list set ::GX::SpectralLibraryViewer::documentId]
+    }
     return [dict create status opened window $window]
+}
+proc ::GX::SpectralLibraryViewer::_workspaceCapture {} {
+    set payload {};foreach field {libraryId entityId mode reversed selectedIds sessionDataset rankingDataset viewport} {dict set payload $field [set ::GX::SpectralLibraryViewer::$field]};return $payload
+}
+proc ::GX::SpectralLibraryViewer::_workspaceDirty {} {variable savedPayload;return [expr {[_workspaceCapture] ne $savedPayload}]}
+proc ::GX::SpectralLibraryViewer::_workspaceSave {} {variable documentId;_saveState;if {$documentId ne {}} {::GX::nativeWorkspaceFlush $documentId}}
+proc ::GX::SpectralLibraryViewer::_workspaceDispose {} {variable window;destroy $window}
+proc ::GX::SpectralLibraryViewer::_workspaceClose {} {
+    variable window
+    if {[dict exists $::GX::SessionWorkspace::adapters $window] && ![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $window] closing]} return
+    variable documentId;if {$documentId ne {} && [_hasSession]} {::GX::nativeWorkspaceFlush $documentId}
+    _workspaceDispose
+}
+proc ::GX::SpectralLibraryViewer::_workspacePrepare {action} {variable sessionToken;if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen Spectral Library}}}
+proc ::GX::SpectralLibraryViewer::_workspaceMetadataAdvanced {before after} {
+    variable documentReceipt
+    if {$documentReceipt eq {}} return
+    foreach field {id generation revision} {if {[dict get $documentReceipt $field] ne [dict get $before $field]} return}
+    set documentReceipt $after
+}
+proc ::GX::SpectralLibraryViewer::_workspaceCallbacks {} {
+    return [dict create current [list set ::GX::SpectralLibraryViewer::documentId] save ::GX::SpectralLibraryViewer::_workspaceSave close ::GX::SpectralLibraryViewer::_workspaceClose discard ::GX::SpectralLibraryViewer::_workspaceDispose open ::GX::SpectralLibraryViewer::_open dirty ::GX::SpectralLibraryViewer::_workspaceDirty prepare ::GX::SpectralLibraryViewer::_workspacePrepare metadata_advanced ::GX::SpectralLibraryViewer::_workspaceMetadataAdvanced]
 }
 proc ::GX::SpectralLibraryViewer::viewerDispatch {action scene} {
     switch -- $action {

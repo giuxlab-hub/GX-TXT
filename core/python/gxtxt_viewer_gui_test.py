@@ -14,7 +14,7 @@ import uuid
 
 
 def gui_test(project, payload):
-    from gxtxt_viewer_development import DevelopmentError, dictionary, read_project, digest
+    from gxtxt_viewer_development import DevelopmentError, dictionary, read_project, digest, project_sources
     from gxtxt_job_supervisor import tcl_result
     read_project(project)
     shapes = {
@@ -124,7 +124,14 @@ def gui_test(project, payload):
         raise DevelopmentError('No valid GUI attachment', 'GUI_TEST_NOT_ATTACHED')
     attached = dictionary(connection.read_text())
     snapshot = {key: digest((project / name).read_bytes()) for name, key in [('handlers.cpp', 'source_sha256'), ('design.gxtxt-viewer', 'design_sha256'), ('project.json', 'project_sha256')]}
-    if dictionary(attached.get('snapshot', '')) != snapshot:
+    files=project_sources(project)
+    attached_snapshot=dictionary(attached.get('snapshot',''))
+    if len(files)>1:
+        expected={name:digest(content) for name,content in files.items()}
+        if dictionary(attached_snapshot.pop('source_file_sha256',''))!=expected:
+            raise DevelopmentError('Project source tree changed; reattach GUI testing','SOURCE_CHANGED')
+        snapshot['source_file_sha256']=tcl_result(expected)
+    if attached_snapshot != {key:value for key,value in snapshot.items() if key!='source_file_sha256'}:
         raise DevelopmentError('Source changed; reattach GUI testing in Workspace', 'SOURCE_CHANGED')
     request_id = uuid.uuid4().hex
     request = dict(payload, request_id=request_id, connection=attached['connection'], snapshot=snapshot)

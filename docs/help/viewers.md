@@ -1,6 +1,8 @@
 # Viewers
 
-The [Curve Viewer manual](../../plugins/modules/viewer.curve_viewer/MANUAL.md) describes family selection and publication. The [Dataset Curve Fit manual](../../plugins/modules/viewer.dataset_curve_fit/MANUAL.md) covers fitting and plot layout; the [Curve Workbench manual](../../plugins/modules/viewer.curve_workbench/MANUAL.md) covers retained geometry and workspace operations.
+The [dev094 stabilization guide](../guides/STABILIZATION_dev094.md) describes
+Curve Viewer families/filters/exact publication, the Dataset Curve Fit controls
+and plot layout, named Workspaces, Clear History and central module settings.
 
 Viewer Providers present Session Datasets and artifacts without changing scientific source data. A Session can preserve interactive Viewer state, including selections and scene configuration where the provider supports it.
 
@@ -16,4 +18,4 @@ The existing output-domain/sample-count controls also support circular arc, quad
 
 Curve Viewer opens additive read-only Dataset curves. Curve Workbench edits local source/native geometry, retained primitives, gaps, constraints, measurements and CAD groups/series. 3D Workbench prepares complete solids/meshes through the existing Native3D engine; the generic3D Viewer remains a distinct consumer. Source Preview uses the real Dataset ID; local samples/accepted curves/bodies do not enter the Registry until explicitly published. Enter your requested public Dataset ID, choose complete Cartesian/polar/both and table/long/wide representation as applicable, then Publish. Collisions are explicit.
 
-Point-table and canvas selection remain synchronized, including Ctrl/Shift and one-point numeric X/Y. Red rings locate real Dataset source rows. The scrollable sidebar and shared forms follow keyboard focus at narrow widths/larger fonts. Exporters, recipes, extension actions, units, recovery and saved views use shared public CORE authorities. See the component manuals for scientific policies, supported workflows and limitations.
+Point-table and canvas selection remain synchronized, including Ctrl/Shift and one-point numeric X/Y. Red rings locate real Dataset source rows. The scrollable sidebar and shared forms follow keyboard focus at narrow widths/larger fonts. Exporters, recipes, extension actions, units, recovery and saved views use shared public CORE authorities. See the component manuals and `docs/reports/TASK9_dev052.md` for scientific policies and acceptance evidence.

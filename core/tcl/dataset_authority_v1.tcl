@@ -10,10 +10,59 @@ namespace eval ::GX {
     variable datasetAuthorityNotification {}
     variable datasetAuthorityFailure {}
     variable datasetAuthorityReadSnapshot {}
+    variable datasetAuthorityObserveQueue {}
+    variable datasetAuthorityObserveRequest {}
+    variable datasetAuthorityObserveAfter {}
+    variable datasetAuthorityObserveError {}
+}
+proc ::GX::_datasetAuthorityObserveResource {session} {
+    if {![llength [info commands ::GX::resourceManagementObserve]]} return
+    set options [dict create category protected_authoritative session $session recovery_required 1 lifetime recovery owner_pid [pid]]
+    if {![llength [info commands winfo]] || ![llength [info commands ::GX::resourceManagementAsync]]} {
+        catch {resourceManagementObserve [file join $session metadata .dataset_transactions] dataset_publication $options}
+        return
+    }
+    # Accounting is advisory. Keep recovery/locking synchronous and authoritative;
+    # coalesce only the existing protected-resource observation off the Tk path.
+    variable datasetAuthorityObserveQueue;variable datasetAuthorityObserveAfter
+    if {[dict size $datasetAuthorityObserveQueue]>=128 && ![dict exists $datasetAuthorityObserveQueue $session]} {
+        catch {resourceManagementObserve [file join $session metadata .dataset_transactions] dataset_publication $options}
+        return
+    }
+    dict set datasetAuthorityObserveQueue $session $options
+    if {$datasetAuthorityObserveAfter eq {}} {set datasetAuthorityObserveAfter [after 0 ::GX::_datasetAuthorityObserveNext]}
+}
+proc ::GX::_datasetAuthorityObserveNext {} {
+    variable datasetAuthorityObserveQueue;variable datasetAuthorityObserveRequest
+    variable datasetAuthorityObserveAfter;variable datasetAuthorityObserveError
+    set datasetAuthorityObserveAfter {}
+    if {$datasetAuthorityObserveRequest ne {} || $datasetAuthorityObserveQueue eq {}} return
+    set session [lindex [dict keys $datasetAuthorityObserveQueue] 0]
+    set options [dict get $datasetAuthorityObserveQueue $session];dict unset datasetAuthorityObserveQueue $session
+    set arguments [list path [file join $session metadata .dataset_transactions] subsystem dataset_publication {*}$options]
+    if {[catch {set datasetAuthorityObserveRequest [resourceManagementAsync observe $arguments ::GX::_datasetAuthorityObserveFinished]} reason]} {
+        set datasetAuthorityObserveError [string range $reason 0 2047]
+        set datasetAuthorityObserveRequest {}
+        if {$datasetAuthorityObserveQueue ne {}} {set datasetAuthorityObserveAfter [after 0 ::GX::_datasetAuthorityObserveNext]}
+    }
+}
+proc ::GX::_datasetAuthorityObserveFinished {code output} {
+    variable datasetAuthorityObserveRequest;variable datasetAuthorityObserveQueue
+    variable datasetAuthorityObserveAfter;variable datasetAuthorityObserveError
+    set datasetAuthorityObserveRequest {}
+    set datasetAuthorityObserveError [expr {$code?[string range $output 0 2047]:{}}]
+    if {$datasetAuthorityObserveQueue ne {} && $datasetAuthorityObserveAfter eq {}} {set datasetAuthorityObserveAfter [after 0 ::GX::_datasetAuthorityObserveNext]}
 }
 proc ::GX::datasetAuthorityActive {{session {}}} {
     variable datasetAuthorityChannel;variable datasetAuthoritySession
     expr {$datasetAuthorityChannel ne {} && ($session eq {} || [file normalize $session] eq $datasetAuthoritySession)}
+}
+proc ::GX::_datasetAuthorityCommitWorkers {} {
+    # Actual 141 MB Rigol comparisons found no reliable end-to-end gain from
+    # concurrent fsync on the shared storage. Keep measured serial publication
+    # as the normal path. The private authority protocol retains bounded worker
+    # counts for isolated qualification; no public worker setting opts into it.
+    return 1
 }
 proc ::GX::datasetAuthorityRequest {command {argument {}}} {
     variable datasetAuthorityChannel
@@ -82,6 +131,9 @@ proc ::GX::datasetAuthorityTransaction {session command args} {
     set session [file normalize $session]
     if {[datasetAuthorityActive $session]} {return [uplevel 1 [list $command {*}$args]]}
     if {[datasetAuthorityActive]} {error {A Dataset transaction cannot switch Sessions}}
+    if {[llength [info commands ::GX::acquisitionHandlerAuthorityBusy]] && [acquisitionHandlerAuthorityBusy $session]} {
+        return -code error -errorcode {GXTXT ACQUISITION BUSY} {Acquisition is preparing or committing this Session; wait or cancel before accessing mutable Dataset state}
+    }
     set pending [datasetAuthorityRecord];set baseline $datasetAuthorityBaseline
     set hasBaseline [expr {$datasetAuthorityLoadedSession eq $session}]
     set python [runtimeToolRequired python]
@@ -89,9 +141,7 @@ proc ::GX::datasetAuthorityTransaction {session command args} {
     fconfigure $channel -encoding utf-8 -translation lf -buffering line
     if {[gets $channel ready]<0 || $ready ne "OK"} {catch {close $channel};error {Cannot acquire/recover the Dataset authority}}
     set datasetAuthorityChannel $channel;set datasetAuthoritySession $session
-    if {[info commands ::GX::resourceManagementObserve] ne {}} {
-        catch {resourceManagementObserve [file join $session metadata .dataset_transactions] dataset_publication [dict create category protected_authoritative session $session recovery_required 1 lifetime recovery owner_pid [pid]]}
-    }
+    _datasetAuthorityObserveResource $session
     set datasetAuthorityNotification {};set datasetAuthorityFailure {};set committed 0
     try {
         loadDatasetRegistry_before_catalog $session
@@ -123,7 +173,7 @@ proc ::GX::datasetAuthorityTransaction {session command args} {
             array unset datasetRegistry *
             array set datasetRegistry $pendingAfter
         }
-        datasetAuthorityRequest COMMIT
+        datasetAuthorityRequest COMMIT [_datasetAuthorityCommitWorkers]
         set committed 1
         return $result
     } on error {message options} {
@@ -162,6 +212,12 @@ proc ::GX::datasetRevisionToken {datasetId {session {}}} {
     # Persisted namespace/schema-only changes still invalidate a binding even
     # when payload SHA-256 stays unchanged.
     return [list dataset-revision-v1 [file normalize $session] $datasetId $record $hash]
+}
+proc ::GX::datasetRevisionPortableToken {datasetId {session {}}} {
+    # The authority alone interprets its opaque token. A persistent read pin
+    # excludes the carrier path while retaining the complete canonical record.
+    set token [datasetRevisionToken $datasetId $session]
+    return [list dataset-portable-revision-v1 {*}[lrange $token 2 end]]
 }
 proc ::GX::_datasetRevisionPortableEqual {current saved} {
     # Persistent results travel with their canonical Dataset and Document. The

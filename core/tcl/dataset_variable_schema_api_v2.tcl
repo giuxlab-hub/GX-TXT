@@ -73,6 +73,14 @@ proc ::GX::datasetSchemaRegisterRegenerator {sourceModule commandPrefix} {
 }
 
 proc ::GX::datasetSchemaGenericCsvRebuild {datasetId input output delimiter headerRows mappings} {
+    set raw [datasetField $datasetId source_raw {}]
+    if {$raw ne {}} {
+        set raw [expr {[file pathtype $raw] eq {absolute}?$raw:[file join $::GX::currentSession $raw]}]
+        if {[file normalize $raw] eq [file normalize $input]} {
+            if {[datasetField $datasetId importer_row_config_json {}] ne {}} {return [_acquisitionCsvRecipeRegenerate $datasetId $input $output $mappings]}
+            if {[datasetField $datasetId importer_definition {}] ne {}} {error {Legacy recipe lacks a reviewed reconstruction configuration; use its canonical source snapshot}}
+        }
+    }
     variable scriptDir
     set helper [file join $scriptDir plugins modules acq.generic_csv runtime canonicalize_csv.py]
     set cmd [list [runtimeToolRequired python] $helper --input $input --output $output --delimiter $delimiter --header-rows $headerRows]
@@ -92,14 +100,24 @@ proc ::GX::datasetSchemaEnsure {session id} {
     if {![string is integer -strict $n] || $n < 0} { set n [llength $names] }
     if {$n == 0 && [llength $names]} { set n [llength $names] }
     set datasetRegistry($id,var_count) $n
+    set canonical [expr {$session eq "" ? "" : [datasetResolvePath $session $id]}]
+    set storageProvider [string tolower [datasetField $id storage_provider ""]]
+    set datasetFormat [string tolower [datasetField $id format ""]]
+    set isTextTable [expr {$storageProvider in {"" csv} && $datasetFormat ni {hdf5 h5}}]
     set raw [datasetField $id source_raw ""]
     set headers {}
-    if {$session ne "" && $raw ne ""} {
+    set sourceToken [datasetField $id source_delimiter ""]
+    set declaredHeaderRows [datasetField $id source_header_rows ""]
+    # Binary canonical storage does not identify its RAW syntax. Inspect RAW
+    # headers only for an existing text-table lane or explicit tabular source
+    # metadata; never manufacture CSV provenance from arbitrary binary bytes.
+    set sourceTable [expr {$isTextTable || $sourceToken ne {} || ([string is integer -strict $declaredHeaderRows] && $declaredHeaderRows>0)}]
+    if {[datasetField $id source_kind {}] eq {binary}} {set sourceTable 0}
+    if {$sourceTable && $session ne "" && $raw ne ""} {
         set rawpath [expr {[file pathtype $raw] eq "absolute" ? $raw : [file join $session $raw]}]
         if {[file isfile $rawpath]} {
             set hr [datasetField $id source_header_rows 1]
             if {![string is integer -strict $hr] || $hr < 1} { set hr 1 }
-            set sourceToken [datasetField $id source_delimiter ""]
             if {$sourceToken eq ""} {
                 set sep [datasetSchemaDetectDelimiter $rawpath]
                 set sourceToken [expr {$sep eq "\t" ? "tab" : ($sep eq ";" ? "semicolon" : "comma")}]
@@ -109,10 +127,6 @@ proc ::GX::datasetSchemaEnsure {session id} {
             catch {set headers [datasetSchemaRawHeaders $rawpath $hr $sep]}
         }
     }
-    set canonical [expr {$session eq "" ? "" : [datasetResolvePath $session $id]}]
-    set storageProvider [string tolower [datasetField $id storage_provider ""]]
-    set datasetFormat [string tolower [datasetField $id format ""]]
-    set isTextTable [expr {$storageProvider in {"" csv} && $datasetFormat ni {hdf5 h5}}]
     if {$isTextTable && $canonical ne "" && [file isfile $canonical] && [datasetField $id canonical_delimiter ""] eq ""} {
         set sep [datasetSchemaDetectDelimiter $canonical]
         set datasetRegistry($id,canonical_delimiter) [expr {$sep eq "\t" ? "tab" : ($sep eq ";" ? "semicolon" : "comma")}]
@@ -412,6 +426,10 @@ proc ::GX::datasetVariableSchemaUpdate {id changes} {
                 set rawpath [expr {[file pathtype $raw] eq "absolute" ? $raw : [file join $currentSession $raw]}]
                 set provider [datasetField $id source_module ""]
                 if {[file isfile $rawpath] && [info exists ::GX::datasetSchemaRegenerator($provider)]} { set useRaw 1 }
+                # Old recipe outputs contain no immutable transform/codec
+                # configuration. Preserve their existing canonical values via
+                # the same snapshot lane instead of guessing RAW semantics.
+                if {$provider eq {acq.generic_csv} && [datasetField $id importer_definition {}] ne {} && [datasetField $id importer_row_config_json {}] eq {}} {set useRaw 0}
             }
             if {$useRaw} {
                 set expected [datasetField $id source_sha256 ""]

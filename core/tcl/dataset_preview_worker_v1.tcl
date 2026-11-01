@@ -27,8 +27,11 @@ set status [catch {
     if {[encoding convertto utf-8 $request] ne $raw} {error {Preview worker request is not canonical UTF-8}}
     if {[catch {dict size $request}]} {error {Preview worker request must be a dictionary}}
     foreach key {schema session dataset_id options expected_key} {if {![dict exists $request $key]} {error "Preview worker request needs $key"}}
-    foreach key [dict keys $request] {if {$key ni {schema session dataset_id options expected_key}} {error "Unknown Preview worker request field '$key'"}}
-    if {[dict get $request schema] ne "gxtxt.preview_worker.v1"} {error {Unsupported Preview worker request version}}
+    set pageMode [expr {[dict get $request schema] eq {gxtxt.preview_page_worker.v1}}]
+    foreach key [dict keys $request] {if {$key ni {schema session dataset_id options expected_key preview_activation page_options}} {error "Unknown Preview worker request field '$key'"}}
+    if {!$pageMode && [dict get $request schema] ne "gxtxt.preview_worker.v1"} {error {Unsupported Preview worker request version}}
+    if {$pageMode && ![dict exists $request page_options]} {error {Preview page worker requires page_options}}
+    if {!$pageMode && [dict exists $request page_options]} {error {Full Preview request cannot contain page_options}}
     set session [dict get $request session]
     if {[file pathtype $session] ne "absolute" || ![file isdirectory $session] || ![file isfile [file join $session metadata manifest.ini]]} {error {Preview worker needs an existing canonical Session}}
     if {![regexp {^[a-f0-9]{64}$} [dict get $request expected_key]]} {error {Preview worker needs an exact cache key}}
@@ -36,14 +39,31 @@ set status [catch {
     set ::env(GXTXT_PREVIEW_WORKER) 1
     set argv0 __gxtxt_preview_worker__
     source [file join $framework gxtxt_pipeline.tcl]
+    if {![llength [info commands ::GX::datasetPreviewNativeEnsure]]} {
+        source [file join $framework core tcl dataset_preview_provider_v1.tcl]
+        source [file join $framework core tcl dataset_preview_native_v1.tcl]
+    }
     ::GX::defaults;::GX::loadModuleCatalog
     set ::GX::currentSession [file normalize $session]
     ::GX::loadManifest [file join $session metadata manifest.ini]
     set ::GX::currentSession [file normalize $session]
     ::GX::loadDatasetRegistry $session
+    if {[dict exists $request preview_activation]} {::GX::_datasetPreviewActivationApply [dict get $request preview_activation]}
+    # TASK210's existing native adapter belongs to the fixed worker bootstrap,
+    # independently of whether discovery happened to query a Preview component.
+    # This loads the bridge only; providers still require normal Module/package
+    # admission. Keep the existing CORE route if the optional bridge cannot load.
+    if {[catch {::GX::datasetPreviewNativeEnsure} nativeError]} {
+        puts stderr "Native Preview adapter unavailable; using CORE fallback: $nativeError"
+    }
     set id [::GX::datasetPublicationV2ValidateId dataset [dict get $request dataset_id]]
-    set prepared [::GX::datasetPreviewCacheGenerate $id [dict get $request options] [dict get $request expected_key]]
-    set result [dict create key [dict get $prepared key] dataset_id $id status ready kind [dict get $prepared kind]]
+    if {$pageMode} {
+        set prepared [::GX::datasetPreviewCachedPageGenerate $id [dict get $request page_options] [dict get $request expected_key] [dict get $request options]]
+        set result [dict create key [dict get $prepared key] dataset_id $id status ready page 1]
+    } else {
+        set prepared [::GX::datasetPreviewCacheGenerate $id [dict get $request options] [dict get $request expected_key]]
+        set result [dict create key [dict get $prepared key] dataset_id $id status ready kind [dict get $prepared kind]]
+    }
 } message options]
 if {$status} {
     if {[string length $message]>4096} {set message "[string range $message 0 4095]…"}

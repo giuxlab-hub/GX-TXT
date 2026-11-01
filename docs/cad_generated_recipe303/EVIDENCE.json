@@ -1,0 +1,248 @@
+{
+  "status": "FOUR_SCOPED_ORIGINAL_CAD_GUI_REQUIREMENTS_PASS_QA_ONLY",
+  "base": "f7cfac37",
+  "worktree": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303",
+  "branch": "qa/cad-generated-recipe303",
+  "requirements": {
+    "13-22": "PASS",
+    "13-29": "PASS",
+    "13-30": "PASS",
+    "13-31": "PASS"
+  },
+  "results": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/RESULTS28.json",
+    "sha256": "89ea5dd08f042a8f99840fcd85adc3d32ede44d50f33b2e359107dd74d373e31",
+    "bytes": 7192
+  },
+  "source": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/SOURCE28.json",
+    "sha256": "67cd3f66771cd5a2c5f38899f2134c9287c7abe6a4b6feb28a1c3dcb47c2cdab",
+    "bytes": 11959
+  },
+  "session": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/SESSION28.json",
+    "sha256": "14e637502c4e3340b5ee03a4fe10ec10c60b9d3bf5503b330c1d2c543385e717",
+    "bytes": 28267
+  },
+  "process": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/PROCESS28.json",
+    "sha256": "d9f7171929b1f12882718b740fc68747a5e037dbd4b3d238ff84a848aa9feb87",
+    "bytes": 14263525
+  },
+  "lifecycle": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/LIFECYCLE29.json",
+    "sha256": "7c77213315491350e3bbc293766da71e6dbf213c5f4bf64672a5548f7ee03d85",
+    "bytes": 2111
+  },
+  "evidence": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/EVIDENCE28.json",
+    "sha256": "57b87c6c95e022999a2b38bec572e8ad950c8bd64802659de9263d1a2881d62a",
+    "bytes": 135169
+  },
+  "seal28": {
+    "path": "/srv/gxtxt/checkpoints/dev109/cad_generated_recipe303/SEAL28.json",
+    "sha256": "55781ca8f6dde64cf412c9ee1aced4f8b17eb93ccf003896666f656b5a80398a",
+    "bytes": 3433
+  },
+  "generated_script": {
+    "path": "/srv/gxtxt/agents/tests/cad_generated_recipe303/generated_recipe.py",
+    "sha256": "fe0e3233b24f9c3d9d2b3e625c2f2214e4d57099175009d34030fbe39838e174",
+    "bytes": 50186
+  },
+  "private_W_package": {
+    "path": "/srv/gxtxt/agents/tests/cad_generated_recipe303/packages/qa.recipe303_1.0.0.zip",
+    "sha256": "d62dd6955905e4bc73554faea347727d2a0c4a20570f7b2ddfb4882bce633460",
+    "bytes": 12162
+  },
+  "own_helpers": [
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/CATALOG.md",
+      "sha256": "dfeadd7d5c344c8933a1ebf185658adb3e66c3a8adb1a2cb3b8526910e376440",
+      "bytes": 12615
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/builder09.tcl",
+      "sha256": "39ad08169bdfd2d1d8413b1ac605ba5d8ce517a4bac8d770dfbb6a7a83dcf8d4",
+      "bytes": 253
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/close27.tcl",
+      "sha256": "63730c182e95956b95947d3744f8740e21ad3c19ab75a1bbf466074350a69386",
+      "bytes": 1223
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/common.tcl",
+      "sha256": "cb669c7a167ec52e59669734053350db2899140a345362a5c8d348ceec4a3613",
+      "bytes": 5010
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/desktop.tcl",
+      "sha256": "527f7a9fed327c5d2b9d3002c9434d5396bba232af9ad4e448b9fb1bd0f9e6c7",
+      "bytes": 2122
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/enable12.tcl",
+      "sha256": "119de82a304e1e3eaf54f0539ac3239522adf2e7f925d3e3c325055fa8a5f013",
+      "bytes": 1598
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/export08.tcl",
+      "sha256": "0cfe7f973ce613fb2b76be1dc41d9effa40cdb007a10f8cdd4e3347e4f586b4d",
+      "bytes": 671
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/exportrole26.tcl",
+      "sha256": "f756992ed49525819211f1910a25312bce30b0d1248b0afcca0d455061da610a",
+      "bytes": 1640
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/fixture01.tcl",
+      "sha256": "1fa309a1002251c6c135bcb2d5ce723effb937e274845950084a334d3f85e41c",
+      "bytes": 1645
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/gui.py",
+      "sha256": "1c5b532c260c01ec0856404d992662b65082e3892406f945b964006f5420f4d4",
+      "bytes": 3167
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/handoff29.py",
+      "sha256": "b80eb592cd0b9095b1f906e74a9a68d64421eb123478d213fa78a3b44ab47d90",
+      "bytes": 3317
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/image17.tcl",
+      "sha256": "1bfb77cbfff47b17128214a3868576c4d20f5c4ddd64e9b64cd31b622c40a367",
+      "bytes": 588
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/image18.tcl",
+      "sha256": "dcd68db245604070f3be65e79d507780cc7e4f8711c549119b3e1835fbc67a11",
+      "bytes": 1035
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/inspect03.tcl",
+      "sha256": "dc1d0c463abe1416afffc89d22195d8253cbe4601eca22f16760ff18ff2b4ce5",
+      "bytes": 377
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/install10.tcl",
+      "sha256": "3aa794fe2e088356ce21192a25fe24f655566f55d529274966410191744c6778",
+      "bytes": 711
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/install11.tcl",
+      "sha256": "40eda57880802dc0a2143e2c8c1ec0b856acec4a068862ad2636258d3c8f834c",
+      "bytes": 766
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/invoke13.tcl",
+      "sha256": "b4428740fd17b04fb03b5f75433f73899f206e50f6b6c2c9e10cd99bbc6f6c98",
+      "bytes": 3358
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/invoke14.tcl",
+      "sha256": "5c5a4314f7985795437a4695d2ef286a591dc0c592da2d3ddcab8a49de837078",
+      "bytes": 2884
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/meshclip05.tcl",
+      "sha256": "d4fa34b05668068b9175ec515f05114f4bc696a9ec0e8e864fe38b972d8b3f6f",
+      "bytes": 2052
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/meshclip06.tcl",
+      "sha256": "02a0d671b21df8398b7eb03cddc6f02cd71fc766ca278fab4ef0f28ac6736e6a",
+      "bytes": 2130
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/minimal04.tcl",
+      "sha256": "d07e1f5d30c0389dcc307058318e74d943d288507570eb69b2bc87a8b4483bea",
+      "bytes": 793
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/observe02.tcl",
+      "sha256": "2bd37124566e1df6367a384e682028a8584c777ba08aca34e1ad3ceac984fc6e",
+      "bytes": 40
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/persist16.tcl",
+      "sha256": "aa1ced7c1757689990b65ce3ad60ab20d5ae7433107ead5d29581cdf38f891ee",
+      "bytes": 1127
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/pick19.tcl",
+      "sha256": "6fa9e158f93defdfde14792d366483e299aed9567e8dbafd7c734f2570f35d66",
+      "bytes": 269
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/presentation24.tcl",
+      "sha256": "8bab41c6774e179c7fe158d52a45552ca94727f97a81f0e56365775f3a185c1a",
+      "bytes": 3700
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/presentation25.tcl",
+      "sha256": "e9f4d978149ca0ff50ce2cdde64d44abf41a4e759d428f2ac10e3a03f5b447d2",
+      "bytes": 3285
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/publish23.tcl",
+      "sha256": "d8e799624f28d422fe114074c787f31bf3879e48981bee0b9c262035a0da8568",
+      "bytes": 2541
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/qualify15.tcl",
+      "sha256": "183f7dd09f85e42f738bde3fcfd74d6f9048281c4130fdb1538490b34e3a5dac",
+      "bytes": 2023
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/replay07.tcl",
+      "sha256": "7f23dfd43e2ee53469d81ca81f6c617e38bcd21e5fb99fc27fb1b8c9200903be",
+      "bytes": 2490
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/roles22.tcl",
+      "sha256": "38b3952651340d5ff85ec6852a19846ea99ea8623473717b75a71f62180bedc9",
+      "bytes": 3016
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/science.tcl",
+      "sha256": "098b8e6bbc0b4dbad321cbbe56fb5d5348342b2670beebd28468f132333aa5ac",
+      "bytes": 3353
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/seal28.py",
+      "sha256": "988c8bd83b9d3404b66d20824e5526acc879056f135d78403df48725b8bd83b7",
+      "bytes": 12190
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/spool.py",
+      "sha256": "e5798a59306ecbabea9b9706357c378a682101d302569e5a284f651999398bdf",
+      "bytes": 581
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/texture20.tcl",
+      "sha256": "846a77913ab2cf1b9155b31b231263238c733a6fb5f8f7dd62ef8392b161643a",
+      "bytes": 2398
+    },
+    {
+      "path": "/srv/gxtxt/agents/worktrees/cad_generated_recipe303/validation/cad_generated_recipe303/texture21.tcl",
+      "sha256": "bda1f6239e2bb9d3ad7da236ad0e9dc8f6fe9215ed2cdd1f16545e88eeda3aa0",
+      "bytes": 2263
+    }
+  ],
+  "left_preserved_uncommitted": [
+    "plugins/.registry/installed.ini",
+    "plugins/modules/qa.recipe303/"
+  ],
+  "integration_scope": [
+    "validation/cad_generated_recipe303/",
+    "docs/cad_generated_recipe303/"
+  ],
+  "source_and_module_implementation_changes": false,
+  "normal_private_install_only": true,
+  "whole13_accepted": false,
+  "official_deployment": false,
+  "MAIN1_acceptance_required": true,
+  "next": "Bounded303 scope complete; MAIN1 review four exact IDs and integrate QA helper/docs commit only. Display123 free. Do not integrate disposable QA module/registry delta."
+}

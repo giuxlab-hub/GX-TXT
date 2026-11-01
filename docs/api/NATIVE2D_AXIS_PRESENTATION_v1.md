@@ -90,3 +90,9 @@ Native Canvas Preview/export receives the same descriptor. Where annotations/axi
 text are requested, PNG/PDF retain the mapped text anchors and title rotation.
 Snapshot exporters receive the exact public text positions. Data transformation,
 physical unit reassignment and image processing remain separate explicit services.
+
+P035 also refines an automatic one-interval target when rounding it to a nice
+step leaves no interior graduations. This reuses the same bounded numerical
+planner and exact data limits; it does not synthesize samples, change explicit
+tick requests or modify the Native2D renderer/binary. Compact Top/Bottom panels
+therefore retain a meaningful numeric Y scale.

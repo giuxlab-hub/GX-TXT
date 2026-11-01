@@ -2,8 +2,8 @@
 
 This is the Debian dev097 source/build and native dependency audit. All twelve
 candidate ELF files resolve their dependencies: 126 system libraries from 58
-Debian packages. Exact hashes, versions and notices are documented in the adjacent binary
-SBOM, alongside the corresponding upstream attribution.
+Debian packages. Exact hashes, versions and notices are in the adjacent binary
+SBOM. Final frozen-package and installed-binary checks remain release gates.
 
 | Component | Exact version | License and source | Build/inclusion |
 |---|---|---|---|

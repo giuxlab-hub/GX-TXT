@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Read-only consultation of canonical identities; no publication/write callback.
-namespace eval ::GX::DatasetViewer {variable serial 0;variable state;variable previewImage {};variable previewJob {}}
+namespace eval ::GX::DatasetViewer {variable serial 0;variable state;variable previewImage {};variable previewJob {};variable retiring {};variable retireSerial 0}
 proc ::GX::datasetViewerApiInfo {} {
-    return [dict create api_id DATASET_VIEWER_API_v1 api_version 1 host_only 1 operations {datasetViewerDescribe datasetViewerOpen datasetViewerOpenMolecule datasetMediaViewerOpenResource datasetMediaViewerInspect} host_arguments [dict create datasetViewerDescribe {datasetId} datasetViewerOpen {datasetId} datasetViewerOpenMolecule {datasetId} datasetMediaViewerOpenResource {reference {title {Managed Document PDF}}} datasetMediaViewerInspect {owner}] result_contract [dict create datasetViewerDescribe {Canonical Dataset contract, format, target, read_only and revision metadata; no publication.} datasetViewerOpen {Existing registered canonical Dataset viewer owner; geometry.sketch retains its editing viewer.} datasetViewerOpenMolecule {Existing enabled Molecule Viewer opened with the exact canonical molecular.structure Dataset ID; no source conversion or implicit publication. Its ordinary Open 3D structure action provides chemical representations and conformers.} datasetMediaViewerOpenResource {Opaque shared managed-PDF reader owner; validates current Document, generation, Session and PDF resource bytes. No Dataset is created.} datasetMediaViewerInspect {Read-only public PDF receipt; managed source identifies Document/resource without Dataset ID, child process IDs or native control coordinates.}] profiles [dict create molecular_structure [dict create contract molecular.structure module_id viewer.molecule_3d viewer_id molecule_3d implicit_publication 0] managed_document_pdf [dict create source_kind managed_resource format pdf title_default {Managed Document PDF} runtime_owner existing_dataset_media_reader implicit_publication 0]]]
+    return [dict create api_id DATASET_VIEWER_API_v1 api_version 1 host_only 1 operations {datasetViewerDescribe datasetViewerReference datasetViewerOpenReference datasetViewerOpen datasetViewerOpenMolecule datasetMediaViewerOpenResource datasetMediaViewerOpenArtifact datasetMediaViewerInspect datasetViewerClose} host_arguments [dict create datasetViewerDescribe {datasetId} datasetViewerReference {datasetId} datasetViewerOpenReference {reference} datasetViewerOpen {datasetId} datasetViewerOpenMolecule {datasetId} datasetMediaViewerOpenResource {reference {title {Managed Document PDF}}} datasetMediaViewerOpenArtifact {source container {title {Library PDF}}} datasetMediaViewerInspect {owner} datasetViewerClose {owner {onClosed {}}}] result_contract [dict create datasetViewerReference {Exact canonical Dataset reference pinned to the current public Session path, Dataset ID, payload SHA revision and contract. No new Session identity or publication.} datasetViewerOpenReference {Validate exact current Session and pinned Dataset revision/optional SHA/contract, then delegate to the existing Dataset Viewer owner. Missing or stale targets refuse without opening or switching a Session.} datasetViewerDescribe {Canonical Dataset contract, format, target, read_only and revision metadata; no publication.} datasetViewerOpen {Existing registered canonical Dataset viewer owner; geometry.sketch retains its editing viewer.} datasetViewerOpenMolecule {Existing enabled Molecule Viewer opened with the exact canonical molecular.structure Dataset ID; no source conversion or implicit publication. Its ordinary Open 3D structure action provides chemical representations and conformers.} datasetMediaViewerOpenResource {Opaque shared managed-PDF reader owner; validates current Document, generation, Session and PDF resource bytes. No Dataset is created.} datasetMediaViewerOpenArtifact {Embedded read-only existing PDF reader for a live host-owned temporary Resource artifact; no Session, Dataset or Workspace creation.} datasetMediaViewerInspect {Read-only public PDF receipt; managed source identifies Document/resource without Dataset ID, child process IDs or native control coordinates.} datasetViewerClose {Close existing viewer; optional trusted command prefix runs after any owned media process drains and is reaped.}] profiles [dict create managed_artifact_pdf [dict create source_kind managed_artifact format pdf embedded 1 session_required 0 implicit_publication 0] molecular_structure [dict create contract molecular.structure module_id viewer.molecule_3d viewer_id molecule_3d implicit_publication 0] managed_document_pdf [dict create source_kind managed_resource format pdf title_default {Managed Document PDF} runtime_owner existing_dataset_media_reader implicit_publication 0]]]
 }
 proc ::GX::datasetViewerDescribe {datasetId} {
     set payload [sessionInspectionDatasetPayload $datasetId]
@@ -21,8 +21,41 @@ proc ::GX::datasetViewerDescribe {datasetId} {
     } elseif {$contract in {table.generic timeseries.table curve_family.table curve3d.table}||[string match spectrum.* $contract]||$format in {csv hdf5 h5}} {set kind scientific}
     return [dict create api_id DATASET_VIEWER_API_v1 dataset_id $datasetId contract $contract format $format media_type $media target $kind read_only [expr {$kind ne "sketch"}] implicit_publication 0 revision [dict get $payload sha256]]
 }
+proc ::GX::datasetViewerReference {datasetId} {
+    set session [sessionInspectionCurrentSession]
+    set info [datasetViewerDescribe $datasetId]
+    set revision [dict get $info revision]
+    return [dict create kind canonical_dataset session_id $session dataset_id $datasetId revision $revision sha256 $revision contract [dict get $info contract]]
+}
+proc ::GX::_datasetViewerReferenceValidate {reference} {
+    if {[string length [encoding convertto utf-8 $reference]]>16384 || [catch {dict size $reference}]} {error {Malformed canonical Dataset reference}}
+    foreach key {kind session_id dataset_id revision} {
+        if {![dict exists $reference $key] || [dict get $reference $key] eq {}} {error "Canonical Dataset reference is missing '$key'; pin the target through datasetViewerReference"}
+    }
+    if {[dict get $reference kind] ne {canonical_dataset}} {error {Expected a canonical Dataset reference}}
+    set session [sessionInspectionCurrentSession]
+    # Compare the existing public identity literally before consulting any
+    # Dataset. Never resolve, inspect or open an untrusted other Session path.
+    if {[dict get $reference session_id] ne $session} {error {Canonical Dataset target belongs to another or unavailable Session. Open its matching Session normally; this link does not switch Sessions.}}
+    set id [dict get $reference dataset_id]
+    if {[string length $id]>512 || [regexp {[\x00\r\n]} $id] || $id ni [sessionInspectionDatasetIds]} {error {Canonical Dataset target is not registered in the current Session}}
+    set revision [dict get $reference revision]
+    if {![regexp {^[a-f0-9]{64}$} $revision]} {error {Canonical Dataset link has no exact payload SHA revision; pin its target through datasetViewerReference}}
+    set current [datasetViewerReference $id]
+    foreach key {revision sha256 contract} {
+        if {[dict exists $reference $key] && [dict get $reference $key] ne [dict get $current $key]} {error "Canonical Dataset target '$key' differs from the pinned reference; the original link was preserved"}
+    }
+    return $current
+}
+proc ::GX::datasetViewerOpenReference {reference} {
+    set current [_datasetViewerReferenceValidate $reference]
+    return [datasetViewerOpen [dict get $current dataset_id]]
+}
 proc ::GX::datasetViewerOpen {datasetId} {
     set info [datasetViewerDescribe $datasetId]
+    set resolution [contractVisualizerResolve [dict get $info contract] open $datasetId]
+    if {[dict get $resolution status] eq {selected}} {return [contractVisualizerOpen $datasetId $resolution]}
+    if {[dict get $resolution status] in {missing_provider conflict}} {return [datasetConsultationOpen $datasetId $info]}
     if {[datasetDocumentKind $datasetId] ne {}} {return [datasetDocumentOpen $datasetId]}
     switch [dict get $info target] {
         scientific {return [scientificDatasetViewerOpen $datasetId]}
@@ -116,6 +149,12 @@ proc ::GX::datasetViewerStamp {id path} {
 proc ::GX::datasetViewerCheck {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,identity)]} {error {Viewer is closed.}}
+    if {[info exists state($w,managedArtifact)]} {
+        if {![winfo exists $state($w,artifactContainer)]} {error {PDF artifact container closed}}
+        set current [_datasetMediaArtifactIdentity $state($w,managedArtifact)]
+        if {$current ne $state($w,artifactIdentity)} {error {PDF artifact changed; reopen its Library resource}}
+        return
+    }
     if {$state($w,session) ne [interactiveDocumentSessionToken]} {error {Session changed; reopen this Dataset.}}
     if {[info exists state($w,managedResource)]} {
         # Retained Resource bytes can outlive deletion of their Document.
@@ -155,8 +194,15 @@ proc ::GX::datasetViewerWatch {w} {
     if {![info exists state($w,id)]} return
     set state($w,watch) [after 1000 [list ::GX::datasetViewerWatch $w]]
 }
-proc ::GX::datasetViewerClose {w} {
+proc ::GX::datasetViewerClose {w {onClosed {}}} {
     variable ::GX::DatasetViewer::state
+    if {$onClosed ne {} && ([catch {llength $onClosed} count] || $count<1)} {error {Viewer close callback must be a command prefix}}
+    dict for {token record} $::GX::DatasetViewer::retiring {
+        if {[dict get $record owner] eq $w} {
+            if {$onClosed ne {} && $onClosed ni [dict get $record callbacks]} {set callbacks [dict get $record callbacks];lappend callbacks $onClosed;dict set ::GX::DatasetViewer::retiring $token callbacks $callbacks}
+            return
+        }
+    }
     if {[info exists state($w,summaryTrace)]} {
         foreach element {legend status} {trace remove variable state($w,$element) write $state($w,summaryTrace)}
     }
@@ -172,7 +218,11 @@ proc ::GX::datasetViewerClose {w} {
     if {[info exists state($w,xyzStream)]} {catch {tableStreamClose $state($w,xyzStream)}}
     if {[info exists state($w,compactCanvas)]} {native3DPreviewClosed $w}
     if {[info exists state($w,worker)]} {catch {puts $state($w,worker) close;flush $state($w,worker)};foreach pid [pid $state($w,worker)] {catch {exec kill -TERM -- $pid}};catch {close $state($w,worker)}}
-    if {[info exists state($w,externalPipe)]} {fileevent $state($w,externalPipe) readable {};catch {close $state($w,externalPipe)}}
+    if {[info exists state($w,externalPipe)]} {
+        _datasetMediaViewerRetire $w $state($w,externalPipe) [datasetPublicationV2DictDefault [array get state $w,*] $w,externalGroup 0] $onClosed
+        set onClosed {}
+        unset -nocomplain state($w,externalPids)
+    }
     if {[info exists state($w,externalPids)]} {foreach pid $state($w,externalPids) {catch {exec kill -TERM -- $pid}}}
     if {[info exists state($w,decoder)]} {foreach pid [pid $state($w,decoder)] {catch {exec kill -TERM -- $pid}};catch {close $state($w,decoder)}}
     if {[info exists state($w,image)]&&$state($w,image) ne {}} {catch {image delete $state($w,image)}}
@@ -186,6 +236,7 @@ proc ::GX::datasetViewerClose {w} {
     # Destroy widgets first, then remove every per-window value.
     catch {destroy $w}
     array unset state $w,*
+    if {$onClosed ne {}} {after idle [list {*}$onClosed]}
 }
 proc ::GX::datasetViewerWindow {id title} {
     variable ::GX::DatasetViewer::state;variable ::GX::DatasetViewer::serial
@@ -1026,6 +1077,62 @@ proc ::GX::datasetMediaViewerOpen {id kind} {
     _datasetMediaViewerLaunch $w $script $args
     return $w
 }
+proc ::GX::_datasetMediaViewerRetire {owner channel group onClosed} {
+    # Existing CORE pipe retirement pattern: retain the channel until EOF,
+    # then reap an exited child. Never synchronously wait on rendering.
+    fileevent $channel readable {}
+    set token media-retiring:[incr ::GX::DatasetViewer::retireSerial]
+    set pids [pid $channel]
+    dict set ::GX::DatasetViewer::retiring $token [dict create owner $owner channel $channel pids $pids group $group escalated 0 eof 0 callbacks [expr {$onClosed eq {}?{}:[list $onClosed]}] timer [after 1000 [list ::GX::_datasetMediaViewerRetireKill $token]]]
+    foreach process $pids {
+        if {$group} {catch {exec kill -TERM -- -$process}}
+        catch {exec kill -TERM -- $process}
+    }
+    fileevent $channel readable [list ::GX::_datasetMediaViewerRetireReadable $token]
+}
+proc ::GX::_datasetMediaViewerRetireKill {token} {
+    if {![dict exists $::GX::DatasetViewer::retiring $token]} return
+    dict set ::GX::DatasetViewer::retiring $token escalated 1
+    set record [dict get $::GX::DatasetViewer::retiring $token]
+    foreach process [dict get $record pids] {
+        if {[dict get $record group]} {catch {exec kill -KILL -- -$process}}
+        catch {exec kill -KILL -- $process}
+    }
+    if {[dict get $record eof]} {_datasetMediaViewerRetireFinish $token}
+}
+proc ::GX::_datasetMediaViewerGroupDrained {groups} {
+    # Only PID/group/state columns are observed; the unreaped leader reserves
+    # the owned group identity until all render descendants stop.
+    if {[catch {exec ps -eo pid=,pgid=,stat=} rows]} {return 0}
+    foreach row [split $rows \n] {
+        if {[regexp {^\s*([0-9]+)\s+([0-9]+)\s+(\S+)\s*$} $row ignored process group state] && $group in $groups && [string index $state 0] ni {Z X}} {return 0}
+    }
+    return 1
+}
+proc ::GX::_datasetMediaViewerRetireReadable {token} {
+    if {![dict exists $::GX::DatasetViewer::retiring $token]} return
+    set record [dict get $::GX::DatasetViewer::retiring $token];set channel [dict get $record channel]
+    catch {read $channel 65536}
+    if {![eof $channel]} return
+    fileevent $channel readable {}
+    dict set ::GX::DatasetViewer::retiring $token eof 1
+    _datasetMediaViewerRetireFinish $token
+}
+proc ::GX::_datasetMediaViewerRetireFinish {token} {
+    if {![dict exists $::GX::DatasetViewer::retiring $token]} return
+    set record [dict get $::GX::DatasetViewer::retiring $token]
+    if {![dict get $record eof]} return
+    if {[dict get $record group] && ![dict get $record escalated]} return
+    if {[dict get $record group] && ![_datasetMediaViewerGroupDrained [dict get $record pids]]} {
+        after 20 [list ::GX::_datasetMediaViewerRetireFinish $token]
+        return
+    }
+    after cancel [dict get $record timer]
+    set channel [dict get $record channel]
+    fconfigure $channel -blocking 1;catch {close $channel}
+    dict unset ::GX::DatasetViewer::retiring $token
+    foreach callback [dict get $record callbacks] {after idle [list {*}$callback]}
+}
 proc ::GX::_datasetMediaViewerLaunch {w script arguments} {
     variable ::GX::DatasetViewer::state
     # Both Dataset and managed Document PDF sources use this identical reader,
@@ -1035,7 +1142,13 @@ proc ::GX::_datasetMediaViewerLaunch {w script arguments} {
         fconfigure $state($w,externalPipe) -blocking 0 -buffering none
         set state($w,externalPids) [pid $state($w,externalPipe)]
         fileevent $state($w,externalPipe) readable [list ::GX::datasetMediaViewerWatch $w]
-    } on error {message options} {datasetViewerClose $w;return -options $options $message}
+    } on error {message options} {
+        if {[info exists state($w,managedArtifact)]} {
+            set state($w,mediaReceipt) [dict create state unavailable source_kind managed_artifact source_sha256 $state($w,mediaSourceSha) status "PDF reader launch unavailable: $message"]
+            return $w
+        }
+        datasetViewerClose $w;return -options $options $message
+    }
 }
 proc ::GX::datasetMediaViewerOpenResource {reference {title {Managed Document PDF}}} {
     variable ::GX::DatasetViewer::state;variable ::GX::DatasetViewer::serial
@@ -1060,6 +1173,63 @@ proc ::GX::datasetMediaViewerOpenResource {reference {title {Managed Document PD
     _datasetMediaViewerLaunch $w pdf_dataset_viewer.py [list $state($w,path) $document --owner-receipts --managed-resource --title $title]
     return $w
 }
+proc ::GX::_datasetMediaArtifactIdentity {source {verifySha 1}} {
+    if {$::GX::DatasetPrivate::activeContext ne {}} {error {Managed PDF artifacts require the trusted user/admin host}}
+    if {[catch {dict size $source}] || [lsort [dict keys $source]] ne {allocation_id path sha256 source_identity}} {error {Invalid managed PDF artifact fields}}
+    set allocation [resourceManagementInspect [dict get $source allocation_id]]
+    if {![dict get $allocation managed] || [dict get $allocation kind] ne {directory} || [dict get $allocation owner_pid]!=[pid] || ![dict get $allocation owner_alive] || [dict get $allocation released] || [dict get $allocation removed]} {error {PDF artifact requires this live host's directory allocation}}
+    set root [file normalize [dict get $allocation path]]
+    file lstat $root dirStat
+    if {$dirStat(type) ne {directory} || [list $dirStat(dev) $dirStat(ino)] ne [dict get $allocation identity]} {error {PDF artifact allocation identity changed}}
+    set raw [dict get $source path];set path [file normalize $raw]
+    if {[file pathtype $raw] ne {absolute} || $raw ne $path || [string first "$root/" $path]!=0} {error {PDF artifact must be a canonical file inside its allocation}}
+    set probe $path
+    while {1} {
+        file lstat $probe entryStat
+        if {$entryStat(type) eq {link}} {error {PDF artifact paths cannot contain symlinks}}
+        set parent [file dirname $probe];if {$parent eq $probe} break
+        set probe $parent
+    }
+    file lstat $path entryStat
+    if {$entryStat(type) ne {file} || $entryStat(nlink)!=1 || $entryStat(size)<5 || $entryStat(size)>33554432} {error {PDF artifact requires one regular file within32 MiB}}
+    set sha [string tolower [dict get $source sha256]]
+    if {![regexp {^[0-9a-f]{64}$} $sha] || ($verifySha && [sha256File $path] ne $sha)} {error {PDF artifact SHA-256 changed}}
+    if {$verifySha} {
+        set stream [open $path rb];try {set magic [read $stream 5]} finally {close $stream}
+        if {$magic ne {%PDF-}} {error {Managed PDF artifact has no PDF header}}
+    }
+    set attribution [dict get $source source_identity]
+    if {[catch {dict size $attribution}] || [dict size $attribution]>4} {error {Invalid PDF source attribution}}
+    foreach field {api_id reference sha256} {if {![dict exists $attribution $field]} {error "PDF source attribution requires '$field'"}}
+    dict for {key value} $attribution {
+        if {$key ni {api_id reference sha256 revision} || [string length $value]>512 || [regexp {[\x00\r\n]} $value]} {error {Invalid PDF source attribution field}}
+    }
+    if {![regexp {^[A-Z][A-Z0-9_]*_v[0-9]+$} [dict get $attribution api_id]] || [dict get $attribution reference] eq {} || ![regexp {^[0-9a-fA-F]{64}$} [dict get $attribution sha256]]} {error {Invalid PDF source API/reference/SHA}}
+    return [dict create allocation_id [dict get $allocation id] root_identity [dict get $allocation identity] path $path sha256 $sha file_identity [list $entryStat(dev) $entryStat(ino) $entryStat(size) $entryStat(mtime) $entryStat(ctime)] source_identity $attribution]
+}
+proc ::GX::datasetMediaViewerOpenArtifact {source container {title {Library PDF}}} {
+    variable ::GX::DatasetViewer::state;variable ::GX::DatasetViewer::serial
+    if {[auto_execok ps] eq {}} {error {Owned PDF process-group observation is unavailable}}
+    if {![winfo exists $container] || [catch {$container cget -container} native] || !$native} {error {Managed PDF requires an existing native Tk container}}
+    if {[string length $title]>512 || [regexp {[\x00\r\n]} $title]} {error {Invalid PDF title}}
+    set identity [_datasetMediaArtifactIdentity $source]
+    set w .datasetViewer[incr serial]
+    set state($w,id) pdf-artifact-[incr serial]
+    set state($w,identity) [dict create source_kind managed_artifact source_sha256 [dict get $source sha256]]
+    set state($w,managedArtifact) $source;set state($w,artifactIdentity) $identity;set state($w,artifactContainer) $container
+    set state($w,externalGroup) 1
+    set state($w,session) {};set state($w,path) [dict get $identity path];set state($w,mediaKind) pdf
+    set state($w,mediaSourceSha) [dict get $identity sha256];set state($w,externalBuffer) {}
+    set state($w,mediaReceipt) [dict create state starting source_kind managed_artifact source_sha256 [dict get $identity sha256]]
+    toplevel $w;wm withdraw $w
+    bind $container <Destroy> +[list ::GX::_datasetMediaArtifactContainerDestroyed $w $container %W]
+    datasetViewerWatch $w
+    _datasetMediaViewerLaunch $w pdf_dataset_viewer.py [list $state($w,path) $state($w,id) --owner-receipts --managed-artifact --embed-window [winfo id $container] --title $title]
+    return $w
+}
+proc ::GX::_datasetMediaArtifactContainerDestroyed {owner expected actual} {
+    if {$actual eq $expected} {datasetViewerClose $owner}
+}
 proc ::GX::datasetMediaViewerWatch {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,externalPipe)]} return
@@ -1076,7 +1246,7 @@ proc ::GX::datasetMediaViewerWatch {w} {
             }
         }
     }
-    if {[eof $channel]} {fileevent $channel readable {};catch {close $channel};unset state($w,externalPipe) state($w,externalPids);datasetViewerClose $w}
+    if {[eof $channel]} {fileevent $channel readable {};datasetViewerClose $w}
 }
 proc ::GX::_datasetMediaViewerAcceptReceipt {w line} {
     variable ::GX::DatasetViewer::state
@@ -1086,7 +1256,7 @@ proc ::GX::_datasetMediaViewerAcceptReceipt {w line} {
         if {![dict exists $receipt $field]} {error "PDF reader frame lacks $field"}
     }
     if {[dict get $receipt schema] ne {gxtxt.pdf_reader_receipt.v1} || [dict get $receipt pid] ni $state($w,externalPids) || [dict get $receipt dataset_id] ne $state($w,id) || [dict get $receipt source_sha256] ne $state($w,mediaSourceSha) || [dict get $receipt state] ni {starting rendering ready unavailable closed}} {error {PDF reader frame does not match its launched source owner}}
-    set kind [expr {[info exists state($w,managedResource)] ? {managed_resource} : {dataset}}]
+    set kind [expr {[info exists state($w,managedArtifact)] ? {managed_artifact} : ([info exists state($w,managedResource)] ? {managed_resource} : {dataset})}]
     if {[datasetPublicationV2DictDefault $receipt source_kind dataset] ne $kind} {error {PDF reader source kind differs from its owner}}
     foreach field {window_id frame_id} {if {![regexp {^(0x[0-9a-fA-F]+|[0-9]+)$} [dict get $receipt $field]]} {error {Invalid owned native window identity}}}
     foreach field {page pages} {if {![string is integer -strict [dict get $receipt $field]] || [dict get $receipt $field]<0} {error {Invalid PDF page receipt}}}
@@ -1115,6 +1285,13 @@ proc ::GX::datasetMediaViewerInspect {w} {
         dict set public source_kind managed_resource
         dict set public document_id $state($w,id)
         dict set public resource $state($w,managedResource)
+    }
+    if {[info exists state($w,managedArtifact)]} {
+        set public [dict remove $public dataset_id]
+        dict set public source_kind managed_artifact
+        dict set public source_identity [dict get $state($w,managedArtifact) source_identity]
+        dict set public allocation_id [dict get $state($w,managedArtifact) allocation_id]
+        dict set public embedded 1
     }
     dict set public read_only 1
     return $public

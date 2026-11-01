@@ -1,0 +1,231 @@
+{
+  "api_requirements": {
+    "PREVIEW_COMPONENT_GUI_API_v1": 1,
+    "UI_FIELD_API_v1": 1,
+    "VIEWER_GUI_HOST_API_v1": 1
+  },
+  "component_owners": {
+    "apply_rows": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#apply_rows",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "row_range",
+      "type": "action"
+    },
+    "apply_time": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#apply_time",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "time_range",
+      "type": "action"
+    },
+    "channels": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#channels",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "list"
+    },
+    "channels_title": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#channels_title",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "label"
+    },
+    "fit": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#fit",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "navigation",
+      "type": "action"
+    },
+    "full": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#full",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "identity": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#identity",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "inspector",
+      "type": "status"
+    },
+    "metadata": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#metadata",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "list"
+    },
+    "navigation": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#navigation",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "panel"
+    },
+    "notice": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#notice",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "footer",
+      "type": "status"
+    },
+    "refresh": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#refresh",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "row_count": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#row_count",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "row_range",
+      "type": "field"
+    },
+    "row_range": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#row_range",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "section"
+    },
+    "row_start": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#row_start",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "row_range",
+      "type": "field"
+    },
+    "time_max": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#time_max",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "time_range",
+      "type": "field"
+    },
+    "time_min": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#time_min",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "time_range",
+      "type": "field"
+    },
+    "time_range": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#time_range",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "section"
+    },
+    "zoom_in": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#zoom_in",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "navigation",
+      "type": "action"
+    },
+    "zoom_out": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#zoom_out",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "navigation",
+      "type": "action"
+    }
+  },
+  "handlers": {
+    "apply_rows": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "apply_time": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "fit": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "full": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "initialize": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "select_channel": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "zoom_in": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    },
+    "zoom_out": {
+      "arguments": [
+        "host",
+        "event"
+      ],
+      "available": "1",
+      "effect": "presentation"
+    }
+  },
+  "module_id": "preview.oscilloscope_waveform",
+  "provider_id": "oscilloscope_waveform",
+  "schema": "gxtxt.viewer_handler_contracts.v1",
+  "target": "preview"
+}

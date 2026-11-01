@@ -8,8 +8,8 @@ It is designed for scanned datasheets, plots, legacy figures, and other raster s
 
 - Plugin ID: `viewer.curve_digitizer`
 - Display name: `Curve Digitalizer`
-- Version: `2.0.3`
-- GX-TXT source release: `0.9.8.10-dev-098`
+- Version: `2.0.25`
+- GX-TXT worktree: `0.9.8.10-dev-111-p031`
 - Workspace: `Viewers`
 - License: GPL-3.0-or-later
 
@@ -387,3 +387,50 @@ The selected Curve now has an optional, collapsed-by-default Stroke width panel 
 
 ### Version 2.0.9
 A focused forward-only fix of version 2.0.8. Selecting a different curve refreshes the optional stroke-width editor immediately. Public API `CURVE_DIGITIZER_STROKE_WIDTH_API_v1` and original Imaging & Documents category/PNG icon are retained. Scientific propagation and uncertainty models are unchanged.
+
+
+## Calibration verification (2.0.23)
+
+The Calibration tab shows projective corner controls above a compact
+Verification section. Select **Verify calibration...** to expand a full-width
+inline X/Y1/Y2 readout without opening another window. Click a known point
+on the original image and enter expected **physical** values (e.g. 1000,
+1e3 or 10^3 for a 1000 Hz log-X reference). The panel reports physical
+differences and relative percent or logarithmic-decades comparisons.
+The section collapses via Close verification, Escape, or changing tabs.
+No Session, Dataset, point or four-corner calibration is changed by the check.
+See **MANUAL.md → Calibration verification** for complete instructions.
+
+
+## 2.0.24: Y1/Y2 public metadata and optional Dataset Group
+
+CURVE_DIGITIZER_DATASET_SCHEMA_API_v1 supports normalized axis descriptions,
+curve-to-axis associations, Dataset Group relationships and legacy schemas
+0/1. Consumers should call the stable public API instead of decoding the
+producer's versioned JSON or guessing physical left/right axis placement.
+
+Publish offers Group published Datasets, OFF by default. When two or more
+canonical outputs are accepted, the authorized producer-scoped CORE Group
+Review/Create sequence can bind them as one Dataset Group. Single outputs
+remain standalone. A grouping error never silently deletes already published
+Dataset members. The user sees the separate Group result.
+
+Preview 0.1.6 uses the existing native Plot Dataset API v4 for Y1/Y2.
+Shared scientific covariance remains pending F5.
+
+
+## 2.0.25 — Shared uncertainty for Y1/Y2
+
+The optional Uncertainty editor requires explicitly reviewed physical
+standard uncertainties, including 14 shared calibration inputs for dual-Y
+graphs (8 common raster corners, 2 X endpoint values, 2 Y1 endpoints and 2
+Y2 endpoints). Historical Y1-only projects retain 12 inputs. A physical
+override requires three standard uncertainties (X/Y1/Y2) in dual-axis mode.
+
+F5 produces per-row physical sigma_x, sigma_y and XY covariance, along with
+low-rank shared calibration factors validated against the existing
+NUMERIC_API_v1 Octave implementation. Shared geometry correlates Y1/Y2;
+no declaration implies independent observations or measured accuracy.
+Multiple accepted calibrations with reviewed uncertainty must use Separate
+layout. Canonical Dataset Publication v2, Group settings and native
+Preview remain as in F4. No CORE source change is required.

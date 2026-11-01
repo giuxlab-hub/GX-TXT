@@ -4,12 +4,33 @@ proc ::GX::_projectPortableHost {action args} {
     return [_sessionPortableParseOutput [exec [runtimeToolRequired python] -B [file join $::GX::scriptDir core python project_portable_v1.py] $action {*}$args 2>@1]]
 }
 proc ::GX::projectPortableValidate {archive} {return [_projectPortableHost validate [file normalize $archive]]}
-proc ::GX::projectPortableExport {projectId archive} {
+proc ::GX::projectPortableExport {projectId archive {excludedUnassociatedSessions {}}} {
+    if {[llength $excludedUnassociatedSessions]>10000} {error {Too many unassociated Session exclusions}}
+    if {[llength $excludedUnassociatedSessions]} {
+        # Optional aggregate transport policy must be checked against current
+        # membership, never a stale cached view of a now-registered Session.
+        if {$::GX::projectTransactionDepth} {error {Finish the current Project transaction before reviewing Session exclusions}}
+        projectOrganizationCatalog;projectLoadRegistry;projectOrganizationCatalog
+    }
     if {![projectExists $projectId]} {error {Select an existing Project to export.}}
     set archive [file normalize $archive]
     if {[file exists $archive]} {error {Export destination already exists; choose a new package filename.}}
     set root [projectStoragePath $projectId]
     if {[_datasetDeletePathWithin $archive $root]} {error {Export package must be outside the source Project.}}
+    set excluded {};set registered {}
+    if {[llength $excludedUnassociatedSessions]} {
+        foreach id [projectIds] {
+            foreach member [projectListExperiments $id] {dict set registered [file normalize [dict get $member session_path]] 1}
+        }
+        foreach path $excludedUnassociatedSessions {
+            set path [resourceLifecycleSessionGuard $path]
+            if {[file dirname $path] ne [file normalize [file join $root Sessions]] || [dict exists $registered $path]} {
+                error {Only unassociated Sessions directly under this Project's Sessions directory may be excluded from resources}
+            }
+            if {$path in $excluded} {error {Duplicate unassociated Session exclusion}}
+            lappend excluded $path
+        }
+    }
     set stage [file join [file dirname [projectRegistryPath]] .gxtxt-project-export-[pid]-[clock clicks]]
     file mkdir [file join $stage source];file mkdir [file join $stage sessions]
     try {
@@ -17,6 +38,8 @@ proc ::GX::projectPortableExport {projectId archive} {
         set ns [projectField $projectId namespace_id {}]
         if {$ns ne {} && [dict exists [projectNamespaceList] $ns]} {dict set data project.namespace_name [dict get [projectNamespaceList] $ns]}
         dict set data project.carrier_installation [installationIdentityCurrent]
+        set ordinal 0
+        foreach path [lsort $excluded] {dict set data portable_exclusion.[incr ordinal].relative_path "Sessions/[file tail $path]"}
         set i 0
         foreach record [projectListExperiments $projectId] {
             incr i;set path [projectExperimentResolve [dict get $record experiment_id]]

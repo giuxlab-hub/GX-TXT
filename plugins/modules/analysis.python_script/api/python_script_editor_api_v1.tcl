@@ -28,16 +28,19 @@ proc ::GX::PythonScriptEditor::workspaceRead {reference} {
     if {[encoding convertto utf-8 $code] ne $bytes} {
         error "Registered Python source is not valid UTF-8."
     }
+    set expected [expr {[dict get $script kind] eq {project} ? [dict get $script entrypoint_sha256] : [dict get $script sha256]}]
+    if {[::GX::scriptRegistryHashBytes $bytes] ne $expected} {error {Source changed while opening the editor; reopen it}}
     dict set script reference $reference
     dict set script code $code
     return $script
 }
 
-proc ::GX::PythonScriptEditor::workspaceSave {reference expectedSha scope scriptId name version description requiredApis parameters code} {
+proc ::GX::PythonScriptEditor::workspaceSave {reference expectedSha scope scriptId name version description requiredApis parameters code {expectedRevision {}}} {
     if {$scope ni {user session}} {error "Choose User or Session scope."}
     ::GX::scriptRegistryId $scriptId
     set metadata [dict create language Python version $version description $description \
         required_apis $requiredApis parameters $parameters]
+    if {$expectedRevision ne {}} {dict set metadata expected_revision $expectedRevision}
     if {$reference eq ""} {
         set result [::GX::scriptRegistrySave $scope $scriptId $name $code $metadata]
     } else {
@@ -81,6 +84,7 @@ print(gxtxt_api_list())
 
 proc ::GX::PythonScriptEditor::_ensureUi {} {
     variable moduleRoot
+    if {![llength [info commands ::GX::scriptRegistryProjectSave]] || ![llength [info commands ::GX::scriptSourceTabsCreate]]} {error {This Workspace requires the matching CORE Script Projects and Source Tabs update.}}
     if {[llength [info commands ::GX::PythonScriptEditorUI::open]]} return
     set adapter [file join $moduleRoot ui python_script_editor_ui.tcl]
     if {![file isfile $adapter]} {error "Python Script Workspace UI adapter is missing: $adapter"}

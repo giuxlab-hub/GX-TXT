@@ -36,7 +36,11 @@ creator retroactively. Unknown imported origin stays unknown with a receiving ev
 Foreign origin is reported lineage, not certified authentication. Integrity hashes
 verify content only. Invalid declared Session origin returns an explicit error.
 
-Scientific object provenance uses the existing installation authority and the corresponding persistence owners. Project/Session identity remains independent from Dataset, Document and managed resource identities.
+Scientific Dataset/document/resource/geometry origins are not issued here. Astra
+should reuse the installation authority and this representation, extending the actual
+owning scientific persistence points rather than replacing Project/Session authorities.
+I01–I03/I05–I07 were demonstrated in dev082; the Project/Session portions of I04/I08
+are demonstrated in dev083. Scientific portions and R outcomes remain Astra's scope.
 
 Persisted origin wins over configuration-only state on Save. Loading another Manifest
 for configuration does not adopt its Project/Experiment IDs or creator. Original Format1
@@ -67,5 +71,18 @@ its established Session import event identifies the receiving installation witho
 rewriting each child's original creator. Session origin supplies the receiving context.
 Legacy scientific objects are not retroactively attributed. Existing installation
 persistence, confirmed rotation/history/recovery and CORE-only mutation are unchanged.
-Verification of this contract covers two distinct isolated installations,
+`validation/astra_dev088/origin.tcl` verifies two distinct isolated installations,
 scientific publication, portable transfer and unknown-source preservation.
+
+## P035 persistent scientific references and receiving audit
+
+A saved Comparison source retains its original Session origin snapshot. The
+existing Origin owner distinguishes that stable namespace identity from its
+ordered local import audit: all non-event fields remain exact, old events must
+remain an exact prefix, and only complete version1 `import` records may append.
+No stored pin, Manifest, child scientific origin or provenance is refreshed.
+Changed creator, time, kind, parent, other fields, reordered/removed prior events
+or malformed/new non-import events still refuse. Dataset identity/revision,
+namespace, schema, content SHA and scientific semantic hashes remain exact.
+Origin remains declared lineage, not certified authentication; this adds no
+setter or new Script/native authority.

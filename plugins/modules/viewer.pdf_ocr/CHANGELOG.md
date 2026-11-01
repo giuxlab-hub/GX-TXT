@@ -1,4 +1,4 @@
-## 1.0.4
+## 1.0.4 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 
@@ -6,13 +6,13 @@ Declare distinct native-resolution scientific catalog artwork, short title and s
 
 Share PDF canvas and Poppler rendering with CORE integrated consultation; preserve OCR workflows.
 
-## 1.0.2
+## 1.0.2 — 2026-09-30
 
 - Resolve Session context and PDF payload through public Session Inspection.
 
 # Changelog
 
-## 1.0.1
+## 1.0.1 — 2026-09-24
 
 - Added direct whole-page publication as an `image.raster` Dataset.
 - Added real Tesseract OCR of the whole rendered page with direct publication as a `document.text` Dataset.
@@ -20,7 +20,7 @@ Share PDF canvas and Poppler rendering with CORE integrated consultation; preser
 - Added persistent output Dataset IDs for whole-page image, whole-page text and whole-document text outputs.
 - Preserved the existing ROI image/text and OCRmyPDF-derived `document.pdf` workflows.
 
-## 1.0.0
+## 1.0.0 — 2026-09-24
 
 - Added native GX-TXT `document.pdf` Viewer workflow.
 - Added Session Dataset selection instead of external PDF file picking.

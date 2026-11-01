@@ -226,7 +226,7 @@ proc ::GX::InteractiveCurveBuilder::_uiMiddleMenus {w} {
     pack $w.actions.options -side left -padx 4
     ttk::menubutton $w.actions.workspace -text Workspace -menu $w.actions.workspace.menu
     menu $w.actions.workspace.menu -tearoff 0
-    ::GX::sessionWorkspaceViewerMenu $w.actions.workspace.menu curve_builder [dict create current [list ::GX::InteractiveCurveBuilder::_uiWorkspaceCurrent $w] save [list ::GX::InteractiveCurveBuilder::_uiWorkspaceSave $w] close [list ::GX::InteractiveCurveBuilder::_uiClose $w] open ::GX::InteractiveCurveBuilder::open] $w
+    ::GX::sessionWorkspaceViewerMenu $w.actions.workspace.menu curve_builder [_uiWorkspaceCallbacks $w] $w
     pack $w.actions.workspace -side left -padx 4
     ::GX::uiMenuRowAttach $w.actions [pack slaves $w.actions] 2
 }

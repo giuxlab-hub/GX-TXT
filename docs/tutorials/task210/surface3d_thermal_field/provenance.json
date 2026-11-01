@@ -1,0 +1,230 @@
+{
+  "record_type": "author_owned_provenance_with_scoped_actual_gui",
+  "content_id": "tutorial.surface3d_thermal_field",
+  "content_version": "0.1.0",
+  "status": "DRAFT_PARTIAL_ACTUAL_GUI_EVIDENCE",
+  "draft": true,
+  "content_quality_owner": "GX210-TUTORIAL1",
+  "html_authoring_child": "GX210-TUTORIAL1-SUB3",
+  "child_thread_id": "01a163fa-44b3-7020-a510-0e789b287fed",
+  "scientific_prose_basis": {
+    "path": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/docs/development/task210/tutorial1/dev111/THERMAL_WORKFLOW_DRAFT.md",
+    "sha256": "c9d78b5d3f31b6416274127872adb46ad805b67122b7defa20f51f6594a201ae",
+    "parent_reported_commit": "4cc9f5fc",
+    "treatment": "Scientific prose preserved as HTML paragraphs/tables/equation; local reading aids and explicit draft/evidence notices added"
+  },
+  "phase_authority": {
+    "main_notice": "1b1ddae6-8c3d-4504-a9fe-c17c702dc88f",
+    "interpretation": "Formal dev111 authoring permitted after real dev110 deposit; no installed/active/STABLE_FOR_DEV111/full-foundation implication"
+  },
+  "declared_source_baseline": {
+    "framework_version": "0.9.8.10-dev-110",
+    "framework_source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "provenance_class": "synthetic prescribed two-Gaussian-hotspot field with linear background",
+    "library_id": "org.giuxlab.gxtxt.accepted_generators",
+    "library_source_version": "1.0.0",
+    "generator_id": "surface3d_thermal_field",
+    "generator_source_version": "1.0.1",
+    "module_id": "demo.visualization.surface3d",
+    "module_source_version": "1.0.3",
+    "plot_module_id": "plot.dataset",
+    "plot_module_source_version": "4.2.4"
+  },
+  "discovery": {
+    "staged": false,
+    "reserved_future_framework_relative_root": "docs/tutorials/task210/surface3d_thermal_field/",
+    "stage_contents_at_exact_two_level_root": true,
+    "no_extra_version_directory": true,
+    "host_manifest_contract": "DOCUMENTATION_BROWSER_API_v1 documentation_package v1",
+    "public_content_id": "content:tutorial.surface3d_thermal_field",
+    "native_generator_action": "Open Generate Session…",
+    "native_selection_owner": "::GX::sessionGeneratorOpenSelection libraryId generatorId",
+    "page_uri_callback_or_generator_bridge": false,
+    "page_auto_generation": false,
+    "authored_at_owned_product_source_root": true,
+    "common_host_admitted": false
+  },
+  "license_proposal": {
+    "spdx": "GPL-3.0-or-later",
+    "scope": "Project-authored prose/layout/local reading-aid JavaScript; no third-party image/music assets supplied",
+    "status": "Principal source reviewed",
+    "license_text_source": "/srv/gxtxt/agents/worktrees/GX210-TUTORIAL1/LICENSE",
+    "license_text_source_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  "actuals": {
+    "build": "0.9.8.10-dev-110 staged110",
+    "display": ":211 (closed)",
+    "session_identity": "task210-thermal-001 private allocated Session; path in full operator receipt",
+    "dataset_ids": [
+      "thermal.surface.source"
+    ],
+    "variable_ids": [
+      "v0001",
+      "v0002",
+      "v0003"
+    ],
+    "graph_ids_read_back": [
+      "demo.visualization.surface3d.surface",
+      "plot.dataset.xyz"
+    ],
+    "job_ids": [],
+    "gui_executed": true,
+    "renderer_executed_by_normal_product_run": true,
+    "screenshots": [
+      {
+        "path": "assets/steps/preview-xyz.png",
+        "source_capture": "038_preview_maximized.png",
+        "sha256": "1c1da5ba34fa19f57465b31f22be15a0867c05ba7cbd83e8f13955d5bb7baf27",
+        "caption": "Native Dataset Preview XYZ scatter of thermal.surface.source. Selectors map v0001=x_mm and v0002=y_mm in mm, and v0003=temperature_K in K. Uniform blue markers do not encode temperature color. The UI reports 1,681 points; camera state affects presentation.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/demo-surface.png",
+        "source_capture": "050_plots_inventory_start.png",
+        "sha256": "f37096cf4f81efd9a13a799914706c0346790ca2cf02ea1ccbd0a4eac1a977cf",
+        "caption": "Demo surface raster in Plots, associated 01_surface.png. X/Y are mm; height and color represent temperature in K. This is distinct from Dataset Preview and native 3D consultation.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/demo-mesh.png",
+        "source_capture": "058_mesh.png",
+        "sha256": "cd722aa5e1362d1db8a2c4c6ef7740647a8f8a5a63ba25450e16bfcfafd25850",
+        "caption": "Demo mesh raster in Plots, associated 02_mesh.png. The wire grid exposes the sampled field; X/Y are mm and temperature is K. It supplies no new measurements between samples.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/demo-contour-native.png",
+        "source_capture": "061_contour_3d_ready.png",
+        "sha256": "c5a702c27cd85b4f89e589f91671f6228a01787e645404cd642695ea39fa60b7",
+        "caption": "Native 3D consultation of the selected demo contour graph. X/Y are mm and temperature is K. This view differs from its PNG; displayed contour-colorbar ticks are not the source minimum/maximum.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/run-report.png",
+        "source_capture": "049_actual_report.png",
+        "sha256": "a5d85082713a47081dded86c284d54d6561f1098881427a33d18cfbe000506cd",
+        "caption": "Actual GUI Results report from the normal demo Run, bound to thermal.surface.source and v0001/v0002/v0003. Rounded temperature statistics and sampled maximum location describe the synthetic grid.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/metadata-retained.png",
+        "source_capture": "102_reopened_metadata.png",
+        "sha256": "4152c4bcafc656df6250338f4c58e6fad7ec126b63694acdf53cf76acf108b61",
+        "caption": "Displayed synthetic/grid/model metadata after the recorded Save configuration and in-process Open Session sequence. The frame alone does not establish persistence; the action receipt records that sequence.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/manual-xyz-surface.png",
+        "source_capture": "084_manual_xyz_surface.png",
+        "sha256": "cbbe38abed4e202ac90349462f4bc10f8c71c3ad2a939542fcb8f290986f8993",
+        "caption": "Separate Scientific Dataset Plot XYZ surface, graph plot.dataset.xyz, on the same source with mm/mm/K bindings. The raster is not native geometry. Its footer legend settings do not establish an exercised legend.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/contour-setting-retained.png",
+        "source_capture": "105_reopened_contour_setting.png",
+        "sha256": "d035b110b88d16d7c9ff0eaa0bb483a478f40704c37caa092dd0e91784ddbb0e",
+        "caption": "The contour-level field reads 18 after the recorded Save configuration and in-process Open Session sequence. The earlier normal rerender completed; this does not establish cache reuse or cold-start persistence.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/cold-contour-setting.png",
+        "source_capture": "020_cold_contour18.png",
+        "source_packet": "002b",
+        "sha256": "14a7df97c374aa05377eae16bfc77af89bff47c6a4301074a6e401eb26c0e12d",
+        "caption": "The contour-level field still reads 18 after the original Session copy was opened in a fresh application. This frame belongs to the recorded cold-open sequence; a frame alone does not establish persistence.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/saved-variant-bindings.png",
+        "source_capture": "023_new_variant.png",
+        "source_packet": "002b",
+        "sha256": "dd5adb2272f3e92d98239cbe1b65bb56cc791c2ed854af2b7f70c76dc64a82d9",
+        "caption": "Intermediate New from base editor for p0001, still titled Plot p0001 before renaming and saving. The source is thermal.surface.source, with X v0001=x_mm, Y v0002=y_mm and Z v0003=temperature_K. Units mm/mm/K were read from the Dataset and native axes, not these selectors. The background raster is the original base.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/saved-variant-native.png",
+        "source_capture": "031_native_variant_surface.png",
+        "source_packet": "002b",
+        "sha256": "5d488c9512fb9abf00249b00f7c1beddcebf4b8931bea796b09008656563c85c",
+        "caption": "Native consultation of the saved surface Variant p0001, named Thermal source surface in Plots. Height is v0003 temperature in K; X/Y are v0001/v0002 in mm. The native canvas literally displays auto and clips the lower v0002 label. Tick bounds include padding, not new source extrema. No separately labelled colorbar supports an exact temperature reading from color.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/saved-variant-rotation.png",
+        "source_capture": "033_native_rotated.png",
+        "source_packet": "002b",
+        "sha256": "1bd38fc70fe6dc38970e27eb71856c3c8969dcd1c506f9fd1af55ff02bdc1183",
+        "caption": "Ordinary mouse dragging changes the saved Variant native camera. Technical-ID mappings remain mm/mm/K. Rotated tick overlap and lower-label clipping are retained; this is no parity or performance acceptance.",
+        "edited": false
+      },
+      {
+        "path": "assets/steps/saved-variant-retained.png",
+        "source_capture": "045_reopened_variant_identity.png",
+        "source_packet": "002b",
+        "sha256": "54d8392ba0638d228fef3ef9d2cda14fabfef7a89e49e1a538adf23934ea9b77",
+        "caption": "Graph Info after normal Save and in-process Open identifies plot.dataset.xyz / p0001 and its retained raster artifact. File size does not establish numerical equality. The separate 3D action remains available; this background is a raster. The contour-list alias defect persists. Cold restart of this new Variant remains untested.",
+        "edited": false
+      }
+    ],
+    "functional_receipt": "evidence/observations.json",
+    "tests_executed_outside_allocated_gui": false,
+    "continuation_002": {
+      "result": "evidence/observations.json:continuation_002",
+      "source_copy_cold_open": true,
+      "new_saved_variant": "plot.dataset.xyz/p0001",
+      "native_geometry_rotation_fit_return_observed": true,
+      "new_variant_inprocess_retention": true,
+      "new_variant_cold_restart": false,
+      "normal_close_utc": "2026-10-22T21:25:06.001Z",
+      "raw_capture_count": 49,
+      "list_alias_defect": "Unresolved; existingowner diagnosis/control483, no correctedruntime inthisslot",
+      "label_findings": [
+        "Literalauto title",
+        "Loweraxisclip",
+        "Rotatedtickoverlap"
+      ]
+    }
+  },
+  "review": {
+    "scientific": "Principal actual report/units/source-reference consistency reviewed; no independent calculation",
+    "visual": "Principal viewed all 106 packet001 captures and all 49 packet002b captures. SUB3 statically inspected the five new packaged frames020/023/031/033/045; its intermediate-editor, unit-source, title/clipping, padded-tick, unlabelled-colorbar and raster/native qualifications are incorporated. Its earlier nine-frame review covered six older packaged frames038/050/058/061/084/102, not packaged049/105. Static frame inspection does not establish HTML rendering, full GUI parity or performance.",
+    "organizational": "Source structure reviewed; actual host pending",
+    "main_acceptance": {
+      "path": "/srv/gxtxt/agents/scratch/GX210-MAIN1/thermal_gui01/MAIN_SCOPED_ACCEPTANCE.json",
+      "status": "SCOPED_PASS_ACTUAL_GUI_WITH_REMAINING_COVERAGE",
+      "qualification": "T01–T11 scoped PASS; T12 full cold reopen NOT_TESTED, in-process save/reopen and normal close separately accepted. No full matrix/host/performance/final111 acceptance."
+    },
+    "principal_source_review_utc": "2026-10-22T20:10:22.482702+00:00",
+    "source_filename_mapping": {
+      "source-provenance.json": "provenance.json",
+      "evidence/plots-coverage.NOT_TESTED.json": "coverage/plots.json",
+      "evidence/gui-receipt.NOT_TESTED.json": "evidence/observations.json"
+    },
+    "product_source_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/THERMAL_PRODUCT_DRAFT_SOURCE_REVIEW.md",
+      "disposition": "Five source corrections incorporated; no browser/host/GUI execution"
+    },
+    "continuation_002_static_visual_review": {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1-SUB3/audit/THERMAL002_CAPTURE_VISUAL_REVIEW.md",
+      "sha256": "ca8be6058f7b5f19fa979c5501bc5cc5b94159f172424d2f365d3645b9bbb7fa",
+      "scope": "Five unchanged original frames; no host rendering or live GUI execution by child",
+      "disposition": "Incorporated scoped caption qualifications"
+    },
+    "main_acceptance_002": {
+      "path": "/srv/gxtxt/agents/scratch/GX210-MAIN1/thermal_gui02/MAIN_SCOPED_ACCEPTANCE.json",
+      "status": "ACCEPTED_SCOPED_REAL_GUI_CONTINUATION_WITH_RETAINED_DEFECTS",
+      "qualification": "Cold opening original copy; saved Variant and native camera/Fit/return; normal Save/in-process Open; normal close. Alias and graphic findings retained. New Variant cold restart, full matrix, performance, Guides/HTML and final ZIP remain unaccepted."
+    }
+  },
+  "limitations": [
+    "Draft package source, not a finalized ZIP or admitted host package.",
+    "Full independent actual Plots inventory and matrix remain incomplete.",
+    "Original source copy cold Open observed in packet002; new Variant cold restart, host HTML/CSS/JS/native generator action and comparative performance remain NOT_TESTED.",
+    "Declared library version was not read back; mesh/contour exact Graph IDs were not separately read back.",
+    "Actual captures are unchanged; no fabricated images/results. The source reference shares the prescribed producer model, without an independent recalculation here.",
+    "A false automatic-graph alias hides the original contour list entry after new p0001; no correction was validated in this runtime.",
+    "Native literal auto title, lower-axis clipping and rotated-tick overlap remain; no final graphic-quality acceptance."
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "value_get",
+        "diagnostics_command",
+        "text_runs",
+        "table_set"
+      ]
+    },
+    {
+      "api_id": "STDERR_DIAGNOSTICS_API_v1",
+      "version": 1,
+      "operations": [
+        "info",
+        "status",
+        "meta",
+        "read",
+        "request",
+        "cancel",
+        "subscribe",
+        "unsubscribe",
+        "export"
+      ]
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "viewer.stderr_diagnostics",
+  "profile": "document_view_v1",
+  "provenance": {
+    "author": "P020 ordinary Viewer author",
+    "source_license": "GPL-3.0-or-later",
+    "interface_owner": "Public Viewer Interface Builder",
+    "native_author": "Public Viewer Development C++17",
+    "core_ownership": "Shared CAD and diagnostics services remain CORE-owned"
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0.0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  },
+  "version": "1.0.0"
+}

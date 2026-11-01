@@ -1,5 +1,42 @@
 # Dataset Preview API v1
 
+## P031 framework activation and readiness
+
+Preview ON/OFF belongs solely to the framework User Configuration field
+`preview.module_enabled`; Session manifests never set or reset it. Explicit
+Configuration Save persists toggles and unsaved choices survive Session changes.
+See CONFIGURATION_API_v1.md and MODULE_API_v1.md for legacy compatibility.
+
+Provider info separately exposes `dependency_ready`. An ON component whose
+dependency is unavailable in the current Session remains globally ON but is not
+available for selection/admission. This readiness participates in cache/source
+identity. Descriptor, installed/runtime version, pending-generation, asset SHA
+and actual native admission checks remain separate and mandatory.
+
+The existing private worker activation snapshot is an ephemeral projection of
+these framework choices. It retains exact Session, descriptor/version and
+dependency identity checks; it is not a Session activation store or a public
+script grant. Core fallback and Dataset applicability remain independent from
+the saved ON/OFF choice.
+
+The private durable Preview service marks the existing process-local Preview
+worker guard before loading its Session/catalogue. Bootstrap notifications cannot
+recursively enqueue more Preview Jobs. The matching service/reference pair and
+normal Job admission remain required; the host's saved Preview preference and
+ordinary Script preparation keep their existing behavior.
+
+Stock numeric Preview routes a single unfiltered, unordered signal without a
+declared continuity column through the existing individual Curve Source bounded
+extrema display. Full source rows stay canonical; only presentation is reduced.
+Actual grouping, predicates, ordering and declared continuity keep the existing
+batch semantics and its retention guard. The renderer fingerprint includes the
+preparation source, so routing changes invalidate old cached representations.
+Within its supervised worker, Preview uses the existing synchronous bounded
+Curve Source display pass (65536-row chunks, full verification at admission and
+completion). The GUI remains outside that worker and its normal Job owner
+handles cancellation. Interactive Curve Source consumers retain the asynchronous
+4096-row event-loop adapter. No content-integrity guard is disabled.
+
 The shared table measures headings with the active Tk heading font and includes
 unit suffixes in its minimum column widths (bounded to 480 pixels). Horizontal
 navigation handles wide tables. Page refresh retains user column sizing; schema
@@ -301,3 +338,167 @@ The cache-owner fingerprint includes this source file: updated source can make
 previous prepared representations stale, following the existing normal source
 identity policy. This diagnostic change does not fix a failed Render or establish
 its cause, geometry support, native3D behavior or performance.
+
+## Installed Preview components (DEV111-P002)
+
+Configuration → Modules contains a dedicated Preview Components tab, separate
+from Acquisition and Viewers. It reuses normal Module activation and Plugin
+Manager installation. Acquisition also has its own Configuration tab; Export
+retains its previous position and implementation.
+
+Compatible Preview components contribute named, data-dependent panes alongside
+the standard Plot/source/Quality workspace. Matching uses the registered Dataset
+contract, structured metadata/provenance and actual availability. Providers are
+ordinary installed modules, discovered from the existing catalog; no separate
+Preview registry or canonical Dataset rewrite is required. The presentation
+callback and descriptor fields are documented in PREVIEW_DESCRIPTOR_API_v1.md.
+
+The Preview cache identity includes the compatible component code/asset identity
+and activation, in addition to the existing canonical source/metadata/settings
+identity. Changed or pending components cannot silently reuse an incompatible
+prepared result. Native processing and tab presentation remain separate: a
+presentation-only component is not reported as native-admitted.
+
+## Metadata-aware component choice (DEV111-P004)
+
+The shared Preview first retains an applicable specialized CORE owner. Curve
+Digitizer compatibility uses the existing `datasetPreviewCurveManifest` / Dataset
+Schema API, including semantic variable mappings and mode/contract validation.
+Existing media, geometry and remote Preview routes also retain their owners.
+Generic numerical plots and bounded table inspection remain available.
+
+Ordinary Preview modules may add these optional `[preview_provider]` declarations:
+
+- `view_role=primary|complementary`: presentation defaults to complementary;
+  the existing native processing profile defaults to primary.
+- `match_producer_modules`, `match_source_modules`, `match_producer_versions`:
+  semicolon-separated exact canonical identities or versions.
+- `match_provenance`: exact canonical publication provenance text.
+- `match_metadata`: a Tcl dictionary of exact structured metadata key/value pairs.
+  Scientific matching requires current, verified module contributor attribution;
+  user-only or unclassified opaque metadata does not acquire scientific priority.
+- `match_semantic_roles`: semicolon-separated roles present in enabled, validated
+  canonical Variable Schema records.
+- `match_source_contracts`: semicolon-separated contracts represented by current,
+  registered canonical `source_dataset_ids`. Missing lineage IDs reject the match.
+
+All specified constraints must match, in addition to `dataset_contracts`.
+Canonical producer/source module identity, attributed metadata, semantic roles,
+non-generic exact Dataset contracts or non-generic linked source contracts establish
+specialization. Version, provenance or generic linked-contract constraints alone
+only narrow compatibility. No installation order or arbitrary priority number
+sets scientific precedence. Equally suitable alternatives require an explicit
+choice; the standard CORE renderer remains the fallback until that choice.
+
+The existing Preview context additionally exposes `producer_module`, `source_module`,
+`producer_version`, `provenance`, `source_dataset_ids`, `core_specialized` and
+`core_id`. Prepared source-image and Quality availability follow the existing
+verified source receipt and successfully parsed published Quality report. A host
+verification receipt is not a published Quality report. Empty Digitizer records
+are not attached to generic numerical representations.
+
+`datasetPreviewProviderTabs` retains `tabs` and `diagnostics`, adding a derived
+`selection` dictionary: `core_specialized`, `core_id`, `primary_components`,
+`specialized_components`, `default_component`, `conflict`, `generic_available`
+and `reason`. Each normalized tab has `role=primary|complementary`. Existing P002
+`{tabs ...}` responses remain complementary. A callback may mark an additional
+view complementary, but cannot promote itself beyond its descriptor's match or
+replace a specialized CORE view. Failed/empty contributions do not become defaults.
+
+The existing render option `primary_component` is additive: absent means automatic,
+`generic` explicitly retains standard CORE rendering, and an eligible component ID
+requests that native alternative. It is part of the existing cache option identity,
+not Dataset scientific metadata or a separate preference registry. Native candidates
+use the same matching/conflict policy and existing byte/ABI admission; invalid
+assets never create an equal-suitability conflict. Missing, disabled or failing
+components leave standard Preview available.
+
+Preview preparation captures current ON and OFF states through the existing Module
+owner when a request starts. The derived private snapshot binds the Session,
+complete Preview catalog, descriptor bytes/versions and declared dependency closure.
+Both the fixed managed worker and durable CORE Preview Job apply it only in their
+child-local Module state after loading the Session. Unsaved Configuration changes
+therefore affect the next Preview without saving the Session Manifest. An OFF
+component cannot be resurrected from an older saved Manifest. Catalog/Session drift
+is refused before applying the snapshot; unrelated module IDs are not accepted.
+
+The durable runtime transport is restricted to the installed CORE Preview service
+and its existing verified Script Execution origin/snapshot classifier. It is separate
+from public render options; ordinary registered scripts receive no activation grant.
+Optional fields remain absent-compatible for previous worker/runtime envelopes.
+A native processing candidate, automatic or explicit, uses the existing fixed
+managed worker so its original package/ABI/native admission boundary remains intact.
+Ordinary presentation/generic requests retain the durable route where applicable.
+
+The existing managed request owner has optional `separate_stderr=1` for non-duplex
+requests (default0 preserves merged behavior). Preview uses it to retain strict
+stdout control dictionaries while native diagnostics remain a bounded tail. Both
+pipes share `max_bytes`, timeout, cancellation, process-group escalation and cleanup;
+completion waits for both EOFs. No unbounded diagnostic file or second manager is
+introduced. A cached representation whose source changed cannot invoke new component
+callbacks; the user can render the current Dataset again. Source-less P002 minimal
+contexts remain supported.
+
+## Optional embedded GUI (DEV111-P006)
+
+Installed Preview modules may opt into host-owned controls, shared stock/project
+icons, callbacks and shared panels over the current Plot surface. Existing
+descriptor tabs, metadata selection, CORE precedence and native workers retain
+their contracts. See [Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md)
+for exact operations, lifecycle and the native-provider/Tk host boundary.
+
+`datasetPreviewImageMemory(bytes, callback)` is a host-only asynchronous image
+consultation companion. It returns the existing managed-request token; cancel
+with `scriptJobRequestCancel`. The callback receives `{ok result}` or a generic
+`{ok 0 error}` envelope. A result contains bounded PNG `data_base64`, media type,
+display width/height, original dimensions, and separate `original_sha256` and
+`preview_sha256`. It uses the configured ImageMagick runtime and existing image
+preview enable/byte/width/height settings. JPEG, PNG and first-frame GIF use fixed
+raster coders through binary stdin/stdout. Both metadata probe and conversion
+have disk/map cache disabled, 128MiB memory and six-second tool limits, eight-second
+worker deadlines and an eighteen-second managed cancellation bound. Sources
+above forty million pixels are refused. No source response, URL or derivative
+is written to a temporary file/cache/log. Errors omit source bytes and tool text.
+The derived PNG is display-only; it never replaces the scientific source bytes
+or source identity. This operation needs no Session and publishes no Dataset.
+Local or already persistent image resources continue to use the existing
+`datasetPreviewImageArtifact` owner and normal managed Resource allocations.
+
+## P031 metadata matching and presentation retention
+
+Provider metadata admission verifies each declared required key's exact value
+and SHA-256 against its protected canonical origin, requiring module actors for
+both original and latest contribution (legacy owner fallback is supported).
+The publisher and Preview provider may differ. Missing, malformed or changed
+required origins refuse admission. Unrelated metadata is not independently
+digested for each provider watch; all public scientific metadata and exact
+protected origin records still participate in source/cache identity.
+
+A preference-only watch change retains mounted panes when authoritative source
+and the complete scientific cache key are unchanged. Session, source, provider
+assets/admission/enablement, render policy and genuine scientific selection
+changes retain existing invalidation and managed lifecycle controls. This does
+not add a component-cache API. A full multi-calibration representation must
+cover all requested rows/groups; a single-calibration cache cannot be claimed
+as complete. Existing cooperative paginated preparation remains available.
+
+## P035 Cache Bridge 022 integration
+
+The existing persistent scientific cache now owns canonical page subresources
+and asynchronous retained scientific-model preparation. The bounded host API,
+coalescing, cancellation and exact source/Session/revision/option guards are
+documented in [Preview Component GUI API](PREVIEW_COMPONENT_GUI_API_v1.md).
+Canonical pages retain exact typed cells and original source rows; persisted
+models/pages are disposable representations, never canonical Dataset storage.
+Changing source content, schema, scientific metadata, preparation settings or
+code identity invalidates reuse. Cache clearing and regeneration do not rewrite
+scientific payloads, Sessions or RAW. Cold reuse still verifies its full identity
+and each stored artifact checksum. Errors, cancellation and retired hosts cannot
+replace the last valid view or deliver a stale scientific result.
+
+External Preview components remain ordinary Plugin Manager modules. Their
+Catalog visibility does not add private cache writers or native capabilities.
+For a module requiring Bridge022, apply CORE first and verify its exact current
+postimages before normal Manager installation/update. Standard CORE Preview
+remains an alternative and fallback under the existing generic replacement-role
+policy. Synchronous native widget creation remains a documented limitation.

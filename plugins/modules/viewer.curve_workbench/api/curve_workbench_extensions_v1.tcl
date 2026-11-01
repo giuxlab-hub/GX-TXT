@@ -3,7 +3,7 @@ namespace eval ::GX::CurveWorkbench {variable extensionTransactions {};variable 
 proc ::GX::CurveWorkbench::_extensionContext {w} {
     variable st
     _cancelGesture $w;_pointSyncApply $w
-    if {$st($w,document) eq {}} {_save $w}
+    _flushWorkspace $w
     set owner [::GX::interactiveDocumentRead $st($w,document)];set units {};set active $st($w,active)
     if {$active ne {}} {dict set units x [lindex [_coordinateUnits [_record $w $active]] 0];dict set units y [lindex [_coordinateUnits [_record $w $active]] 1]}
     return [dict create workbench_id viewer.curve_workbench workbench_version $::GX::CurveWorkbench::version document_id $st($w,document) revision [dict get $owner revision] selection [dict create kind curve ids [_cadSelected $w] point_indices [_selected $w]] active_object $active active_group $st($w,cadGroup) working_plane {} units $units parameters {}]
@@ -16,7 +16,7 @@ proc ::GX::CurveWorkbench::_extensionBegin {context} {
     if {$st($w,publishBusy)||[info exists st($w,extensionBusy)]&&$st($w,extensionBusy)} {error "Finish the current Workbench operation first"}
     _cancelGesture $w;_pointSyncApply $w
     set id "extension-[pid]-[incr extensionSerial]-[clock clicks]"
-    dict set extensionTransactions $id [dict create window $w context $context before [_snapshotIds $w [dict keys $st($w,curves)]] undo $st($w,undo) redo $st($w,redo) created {} modified {} deleted {}]
+    dict set extensionTransactions $id [dict create window $w context $context before [_snapshotIds $w [dict keys $st($w,curves)]] history_revision [dict get [::GX::scientificHistoryViewerStatus $w] revision] created {} modified {} deleted {}]
     set st($w,extensionBusy) 1
     return $id
 }
@@ -25,7 +25,8 @@ proc ::GX::CurveWorkbench::_extensionRequire {transaction} {
     if {![dict exists $extensionTransactions $transaction]} {error "Unknown or closed Workbench extension transaction"}
     set receipt [dict get $extensionTransactions $transaction];set w [dict get $receipt window];set context [dict get $receipt context]
     if {![winfo exists $w]||$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {error "Workbench Session lifetime changed during extension execution"}
-    set owner [::GX::interactiveDocumentRead [dict get $context document_id]]
+    set owner [::GX::interactiveDocumentMetadata [dict get $context document_id]]
+    if {[dict get [::GX::scientificHistoryViewerStatus $w] revision] != [dict get $receipt history_revision]} {error {Workspace History changed during extension execution}}
     if {[dict get $owner revision]!=[dict get $context revision]||[dict get $owner generation] ne $st($w,ownerGeneration)} {error "Workbench document changed during extension execution"}
     return $receipt
 }
@@ -110,11 +111,11 @@ proc ::GX::CurveWorkbench::_extensionCommit {transaction applied} {
     }
     set warnings {}
     if {[catch {_selectionScene $w;_history $w $before $ids} message options]} {
-        set owner [::GX::interactiveDocumentRead $st($w,document)]
-        if {[dict get $owner revision]==[dict get $receipt context revision]} {return -options $options $message}
+        if {[dict get [::GX::scientificHistoryViewerStatus $w] revision]==[dict get $receipt history_revision]} {return -options $options $message}
         lappend warnings "Extension committed; subsequent presentation/recovery step failed: $message"
     }
-    set revision [dict get [::GX::interactiveDocumentRead $st($w,document)] revision]
+    if {[catch {::GX::scientificHistoryViewerFlush $w} message]} {lappend warnings "Extension accepted in RAM; explicit projection failed: $message"}
+    set revision [dict get [::GX::interactiveDocumentMetadata $st($w,document)] revision]
     set st($w,extensionBusy) 0;dict unset extensionTransactions $transaction
     set st($w,status) "Extension committed as one Undo action[expr {$warnings eq {} ? {.} : ": [join $warnings {; }]"}]"
     return [dict create revision $revision warnings $warnings]
@@ -126,7 +127,7 @@ proc ::GX::CurveWorkbench::_extensionRollback {transaction} {
     try {
         if {[winfo exists $w]&&$st($w,token) eq [::GX::interactiveDocumentSessionToken]} {
             set before [dict get $receipt before];foreach id [dict get $receipt created] {dict set before $id {}}
-            _restoreSnapshot $w $before;set st($w,undo) [dict get $receipt undo];set st($w,redo) [dict get $receipt redo];_curveList $w;_pointList $w;_draw $w
+            _restoreSnapshot $w $before;_curveList $w;_pointList $w;_draw $w
         }
     } finally {if {[info exists st($w,extensionBusy)]} {set st($w,extensionBusy) 0};dict unset extensionTransactions $transaction}
 }

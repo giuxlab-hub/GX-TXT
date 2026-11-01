@@ -19,6 +19,7 @@ proc ::GX::datasetCatalogObserve {session {kind changed} {renames {}}} {
     set sessionPath [expr {$session eq "" ? "" : [file normalize $session]}]
     set token "catalog-session#[pid]-[clock clicks]"
     set namespace [datasetNamespaceCurrentGet $session]
+    set groups [expr {[llength [info commands ::GX::_datasetGroupStoreRead]] ? [dict get [_datasetGroupStoreRead $session] groups] : {}}]
     set entries [dict create]
     foreach id [datasetRegistryIds] {
         set fields [dict create]
@@ -33,7 +34,7 @@ proc ::GX::datasetCatalogObserve {session {kind changed} {renames {}}} {
         set previous [dict get $datasetCatalogState entries]
         if {$sessionPath eq [dict get $datasetCatalogState session_path]} {
             set token [dict get $datasetCatalogState session_token]
-            if {$kind ne "namespace"&&$entries eq $previous&&[dict exists $datasetCatalogState current_namespace]&&$namespace eq [dict get $datasetCatalogState current_namespace]} {return}
+            if {$kind ni {namespace groups}&&$entries eq $previous&&[dict exists $datasetCatalogState current_namespace]&&$namespace eq [dict get $datasetCatalogState current_namespace]&&[dict exists $datasetCatalogState groups]&&$groups eq [dict get $datasetCatalogState groups]} {return}
         } else {set kind session}
     } else {set kind session}
     set added {}; set deleted {}; set changed {}
@@ -46,7 +47,7 @@ proc ::GX::datasetCatalogObserve {session {kind changed} {renames {}}} {
     set history {}
     if {[dict exists $datasetCatalogState history]} {set history [dict get $datasetCatalogState history]}
     lappend history $receipt
-    set datasetCatalogState [dict create current_namespace $namespace session_path $sessionPath session_token $token revision $datasetCatalogCounter entries $entries history [lrange $history end-127 end]]
+    set datasetCatalogState [dict create current_namespace $namespace session_path $sessionPath session_token $token revision $datasetCatalogCounter entries $entries groups $groups history [lrange $history end-127 end]]
     set datasetCatalogNotifying 1
     try {
         dict for {subscription spec} $datasetCatalogSubscribers {
@@ -83,7 +84,7 @@ proc ::GX::datasetCatalogSnapshot {{session ""}} {
         dict set item namespace [_datasetNamespaceFromMetadata [dict get $datasetCatalogState session_path] [_datasetMetadataReadRegistered [dict get $datasetCatalogState session_path] $id]]
         lappend datasets $item
     }
-    return [dict create current_namespace [dict get $datasetCatalogState current_namespace] session_token [dict get $datasetCatalogState session_token] revision [dict get $datasetCatalogState revision] dataset_ids [dict keys [dict get $datasetCatalogState entries]] datasets $datasets]
+    return [dict create current_namespace [dict get $datasetCatalogState current_namespace] session_token [dict get $datasetCatalogState session_token] revision [dict get $datasetCatalogState revision] dataset_ids [dict keys [dict get $datasetCatalogState entries]] datasets $datasets dataset_groups [dict values [dict get $datasetCatalogState groups]]]
 }
 proc ::GX::datasetCatalogChangedSince {revision {session ""}} {
     variable datasetCatalogState

@@ -67,7 +67,7 @@ assert [dict get $::GX::mockVariables curve_id semantic_role] curve_series_ident
 assert [dict get $::GX::mockVariables curve_id value_kind] text text_kind
 assert [dict get $::GX::mockVariables curve_label semantic_role] curve_series_label display_semantic_role
 assert [dict get $::GX::mockVariables point_index semantic_role] curve_point_index order_semantic_role
-assert [dict get $::GX::mockDefinition producer_version] 2.0.2 producer_version
+assert [dict get $::GX::mockDefinition producer_version] 2.0.25 producer_version
 assert [dict get $::GX::mockAppend curve_id] {first second} independent_groups
 assert [dict get $::GX::mockAppend pixel_x] {20.1 21.5} original_raster_x
 assert [dict get $::GX::mockAppend pixel_y] {40.2 42.0} original_raster_y

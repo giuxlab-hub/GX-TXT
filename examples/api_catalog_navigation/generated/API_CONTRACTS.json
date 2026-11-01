@@ -1,0 +1,94 @@
+{
+  "api_requirements": {
+    "API_CATALOG_SERVICE_API_v1": 1,
+    "DOCUMENTATION_BROWSER_API_v1": 1,
+    "UI_FIELD_API_v1": 1,
+    "VIEWER_GUI_HOST_API_v1": 1
+  },
+  "component_owners": {
+    "cpp_catalog": {
+      "api_id": "API_CATALOG_SERVICE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#cpp_catalog",
+      "owner": "core/tcl/api_catalog_service_v1.tcl",
+      "parent": "cpp_tab",
+      "type": "api_catalog"
+    },
+    "cpp_tab": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#cpp_tab",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "languages",
+      "type": "tab"
+    },
+    "help_controls": {
+      "api_id": "DOCUMENTATION_BROWSER_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#help_controls",
+      "owner": "app/gui/documentation_module_window.tcl",
+      "parent": "footer",
+      "type": "help"
+    },
+    "languages": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#languages",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "canvas",
+      "type": "tabs"
+    },
+    "octave_catalog": {
+      "api_id": "API_CATALOG_SERVICE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#octave_catalog",
+      "owner": "core/tcl/api_catalog_service_v1.tcl",
+      "parent": "octave_tab",
+      "type": "api_catalog"
+    },
+    "octave_tab": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#octave_tab",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "languages",
+      "type": "tab"
+    },
+    "public_catalog": {
+      "api_id": "API_CATALOG_SERVICE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#public_catalog",
+      "owner": "core/tcl/api_catalog_service_v1.tcl",
+      "parent": "public_tab",
+      "type": "api_catalog"
+    },
+    "public_tab": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#public_tab",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "languages",
+      "type": "tab"
+    },
+    "python_catalog": {
+      "api_id": "API_CATALOG_SERVICE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#python_catalog",
+      "owner": "core/tcl/api_catalog_service_v1.tcl",
+      "parent": "python_tab",
+      "type": "api_catalog"
+    },
+    "python_tab": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#python_tab",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "languages",
+      "type": "tab"
+    }
+  },
+  "handlers": {},
+  "module_id": "viewer.api_catalog_navigation",
+  "provider_id": "api_catalog_navigation",
+  "schema": "gxtxt.viewer_handler_contracts.v1"
+}

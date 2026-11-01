@@ -1,9 +1,30 @@
 # Viewer Interface Builder
 
-The Designer edits a versioned Viewer design. The separate Preview window uses
+The Designer edits a versioned Viewer or Preview Module design. Choose Project target to select the package kind. The separate Preview window uses
 the real public CORE constructors. Choose a component, select a region or
 container and Add. Select it in the hierarchy or layout map to edit properties
 and grid constraints. Undo, Redo and Duplicate affect the design model.
+The Workspace mode and Project target label/selector pairs wrap through the
+shared control-row layout when their actual font widths exceed the window.
+Palette, hierarchy and test rows use the shared inspection font and row padding.
+Palette and component hierarchy share the left pane's available height, with
+their existing scrollbars and wrapped headings reachable at larger fonts.
+Narrow page headings use the public notebook selector so every page name remains
+available. The Automated tests page scrolls through the existing contained-tab
+owner when its fixed controls and editable areas exceed the available height;
+wheel and keyboard focus reveal its recording and scenario controls. Nested
+trees and editors retain their own scrolling.
+
+Typed field edits validate the complete bounds and declared nonempty default
+through the shared UI Field owner before changing the model. A rejected edit
+preserves the same mounted Preview, its values, revision and Undo/Redo stacks.
+If an unchanged default would retain a live value outside a proposed new range,
+the edit is refused before replacing that Preview. Change the live value or
+supply a valid new default before applying those bounds. A later composition
+failure restores the prior model and rebuilds its Preview from its own snapshot.
+Provider-populated choice options survive edits while the authored choice list
+is unchanged. Editing that list uses the new declaration and drops the earlier
+runtime options; an incompatible retained selection refuses before mutation.
 
 Save/Open preserves component IDs, properties, hierarchy and action contracts.
 Unconnected actions report `not_connected`; an empty graphics slot contains no
@@ -17,7 +38,7 @@ dimensions with a 16 px snap. Properties provides precise grid, span, alignment,
 padding and size constraints. Copy/Cut/Paste retains component subtrees; native
 text fields keep their standard clipboard keys. Palette and map support scrolling.
 
-File → Generate installable Viewer builds an ordinary Viewer module through the
+File → Generate installable module builds an ordinary Viewer module through the
 existing Script Module Builder. Choose a separate source project and new package
 folder. Generated assets can change; existing `handlers.tcl` bytes are preserved.
 The generation report lists changed assets. Plugin Manager installs the resulting
@@ -49,7 +70,10 @@ Automated Tests lets you select families, inspect the finite case list, run it,
 rerun selected cases and export a new JSON receipt. Each case reports its actual
 assertion and scope. Mount/readiness tests do not prove scientific correctness or
 all navigation behavior. Record captures command/result transitions; Stop places
-the inert scenario in the editable text area. Save/Open retains scenarios. Replay
+the inert scenario in the editable text area. Save/Open retains scenarios. Open
+validates the selected inert file completely before replacing the editor; an
+invalid file leaves the current text intact. Successful loading identifies the
+file and action count in status. Replay
 uses queued Tk pointer events on actual mapped controls and bounded state waits;
 unexpected results and dialog timeouts are FAIL. Independent official acceptance
 uses real Debian X11 input. Completed in-memory runs are bounded; export evidence
@@ -60,9 +84,14 @@ matches this design. Design → Connect installed test handlers asks for a marke
 private test root containing `.gxtxt-gui-test-fixture` and the current private
 Session. Only this explicit operation connects the installed handler factory;
 each action still requires user invocation. Runtime replay is restricted to that
-fixture. Disconnect returns to safe design mode. Import/Open/New disconnect custom
-handlers automatically. These developer tests must use synthetic or copied private
+fixture. The Workspace selector reports the actual handler connection after
+fixture review; canceling or refusing that review retains the previous effective
+mode. Selecting Design or Demo disconnects runtime handlers. Closing and reopening
+Builder starts in Design, and Import/Open/New disconnect custom handlers
+automatically. These developer tests must use synthetic or copied private
 sources, never an authoritative user Session.
+A transition that recomposes Preview validates its retained typed values first;
+if refused, the selector returns to the previous effective handler mode.
 
 Workspace and History controls use the existing owners. A stale Session or a
 Workspace changed in another editor cannot be saved over silently. Graphics are
@@ -140,7 +169,7 @@ camera services. A short click picks geometry and reports its real native layer/
 point/cell receipt without publishing an edit. Two windows retain independent
 camera/scene/worker lifetimes; close one and continue navigating the other.
 
-Save the design, reopen it and use File → Generate installable Viewer with a
+Save the design, reopen it and use File → Generate installable module with a
 separate source project/output directory. Review the generated declaration and
 API requirement NATIVE_3D_GUI_HOST_API_v2@2; handwritten handlers.tcl is preserved.
 Install the ZIP with Plugin Manager and open the installed provider. The explicit
@@ -155,7 +184,7 @@ The installed examples/ folder contains toolbar_inspector.gxtxt-viewer,
 table_selection.gxtxt-viewer, native2d_interaction.gxtxt-viewer and
 native3d_embedded.gxtxt-viewer, plus a public-API synthetic launcher and README.
 Open each in Builder; run_demo.tcl shows its full transient sample composition.
-Dev108 adds the typed project Icon Library described below. Supported native
+The typed project Icon Library is described below. Supported native
 controls share the same persisted icon binding in Preview and installed output;
 menu/command-toolbar support requires its separately documented capability gate.
 
@@ -172,7 +201,7 @@ and demo state remain separate authorities.
 
 ![Installed ordinary Native3D example through the public v2 host.](images/native3d-installed.png)
 
-## Project Icon Library (dev108)
+## Project Icon Library
 
 Open **Design → Icon Library / Manager** or its toolbar action. The library is
 part of the existing `gxtxt.viewer_design.v1` model, not an independent global
@@ -241,15 +270,13 @@ disabled action. Keyboard navigation/shortcuts keep their existing command IDs.
 ![Normally installed generated Viewer with a posted native menu at narrow width.](images/icon-native-menu.png)
 ![Actual context menu follows true disabled command state and disabled image.](images/icon-context-disabled.png)
 
-Final release integration/keyboard/theme/HiDPI conformance remains subject to
-its named acceptance checks; scoped independent native evidence is not a release.
 Simulated Tk scaling is not physical HiDPI hardware evidence. The snapshots above
 demonstrate the actual reviewed native controls. The doubled-scaling capture uses
 logical Tk scaling on Debian; it does not certify physical HiDPI hardware.
 
 ![Actual native state previews at doubled logical scaling.](images/icon-doubled-scaling.png)
 
-## Declared visibility, canonical source inspection and waveform editing (dev108)
+## Declared visibility, canonical source inspection and waveform editing
 
 These controls compose existing public Builder, GUI Host, Configuration, Plot,
 History and Workspace owners. A declared presentation handler is dispatched by
@@ -332,8 +359,7 @@ The corresponding public host calls are
 `viewerGuiDesignComponentVisible window component boolean` and
 `viewerGuiDesignComponentVisibleGet window component`. The latter reports
 explicit presentation visibility even for an unselected notebook page. Normal
-Module generation marks these declarations as requiring dev108, including a
-design without icons.
+Module generation declares the capabilities needed by these controls, including a design without icons.
 
 ![Actual cold-opened generic Builder-generated visibility fixture with checked native View rows. This validates shared presentation controls, not restricted Circuit author adoption.](images/declared-visibility.png)
 
@@ -431,8 +457,8 @@ Source-point probes continue to return exact canonical row/values/units; they do
 not infer rows by reading screen pixels. These edits do not calculate vectors,
 submit Jobs, retrieve remote results or admit arbitrary author scripts.
 
-![Earlier actual primary generic series fixture with retained voltage traces and right-axis i_v1 (A). Subsequent independent qa_plot_series04 verifies the corrected native renderer and cold restore; this illustration retains its original capture provenance.](images/canonical-series-axes.png)
-![Same earlier primary generic fixture at820x600: two canonical panels and a shared bottom time axis. Independent qa_plot_series04 later passes the empty-panel shared-X correction and exact saved restore; author1.9 adoption is separately evidenced below, not certified by this older image.](images/canonical-series-panels.png)
+![Generic series fixture with retained voltage traces and right-axis i_v1 (A).](images/canonical-series-axes.png)
+![Generic fixture at820x600: two canonical panels and a shared bottom time axis. This image illustrates presentation and does not certify installed restricted-author adoption.](images/canonical-series-panels.png)
 
 ### Canonical schematic-to-waveform selection
 
@@ -505,12 +531,12 @@ only Escape is admitted for a mapped, unobscured, bound declared Plot, with no
 active pan. Other Plot keys/foreign/hidden/stale targets remain denied. A warm
 GUI owner receipt does not certify fresh external CLI projection of every field.
 
-![Actual primary fresh normal installed1.8 author Workspace restore: saved canonical crosshair and truthful no-row-reselected readout. No computation or simulation on reopen.](images/canonical-source-cursor.png)
+![Workspace restore with saved canonical crosshair and truthful no-row-reselected readout. No computation or simulation on reopen.](images/canonical-source-cursor.png)
 
 ### Discover shared original icons through the approved tools
 
 In **Icon Library → Add shared icon…**, choose a category and search by English
-label, semantic ID or intended action. The dev111 source catalog declares 100
+label, semantic ID or intended action. The shared source catalog declares 100
 stock entries in five families: Selection & Navigation; Geometry & Editing;
 Data, Plots & Analysis; Scientific Tools & Simulation; Documents & Workflow.
 Each family has 20 declared entries. Counts from source are distinct from the
@@ -560,9 +586,9 @@ is no crash-atomicity claim or manual history-deletion recovery step. Restricted
 Builder response limits are16MiB at CORE/64MiB through the GUI request transport;
 ordinary source/C++ limits and runtime SDK permissions remain unchanged.
 
-![Historical dev108 native shared-file chooser; this image predates the categorized dev111 picker.](images/shared-icon-sources.png)
+Use the categorized shared-icon picker to select an admitted source, inspect its license and explicitly add it to the project.
 ![Actual imported Voltage resource retains its declared title, Electrical category, license, source SHA and four native state previews.](images/shared-icon-metadata.png)
-![Independent fresh generic Builder Preview: all18 added glyphs at16/24 pixels, normal and actual native disabled states. These are real controls after the inherited-paint correction, not installed Circuit Viewer certification.](images/shared-icon-native-sizes.png)
+![Generic Builder Preview:18 stock glyphs at16/24 pixels with normal and actual native disabled states. This illustrates real controls and does not certify installed Circuit Viewer behavior.](images/shared-icon-native-sizes.png)
 
 Safe SVG group paint is normalized before the existing bounded decoder, including
 inherited fill/stroke and paint opacity; group opacity and transforms retain
@@ -621,24 +647,145 @@ write guards and the existing admitted relative PNG rules remain unchanged.
 Oversize, invalid encoding/NUL, links or arbitrary targets reject while retaining
 the earlier saved guide. Normal export preserves exact guide bytes in installed
 `MANUAL.md` and `source/MANUAL.md`; the inert guide does not grant runtime I/O or
-execute source. The SDK contract adds `manual_limit_bytes=262144`, so its policy
-bytes change even though runtime header/calls/grants are unchanged. The actual
-formerly denied73976-byte author guide passed identical retry; final1.9 guide
-74071 bytes and seven admitted assets were exported through the normal owner.
+execute source. The SDK contract declares `manual_limit_bytes=262144`. An exported guide retains its exact bytes and admitted relative image assets.
 
-The illustrations above retain their genuine Debian capture/source provenance.
-Independent `qa_plot_series04/INDEPENDENT_MULTITRACE_CORRECTION_QA` now passes the
-empty-panel shared-X correction with native binary `17ce56ba`, exact source and
-four Dataset identities, two sizes, occupied-panel denial, and fresh normal
-factory restore of all50 History states with no science/converter/protocol calls.
-The original failure report and earlier images remain historical evidence. That
-is a scoped generic public-host PASS, not proof of an arbitrary authored Viewer.
+## Preview Module target
 
-Separately, the restricted Circuit author1.9 has adopted the declared panes,
-netlist and series profile and used approved public Save/close/reopen on canonical
-Workspace `idoc_0006`: three traces/two panels, cursor, C++ state,105/105 History,
-netlist and original campaign/Jobs were retained. This actual author workflow is
-distinct from the generic fixture correction. Independent current installed GUI,
-remaining focus/layout cases and final release gates retain their own acceptance
-scope. No screenshot or successful Save certifies all scientific, security or
-release requirements.
+Choose **Project target → Preview Module** in this same Builder. The model changes
+package identity to `preview.<provider_id>` atomically and keeps Undo/Redo. Existing
+Viewer projects keep the Viewer target when the target field is absent. Switching
+an incompatible design reports its unsupported component and preserves the old
+model. Gray palette entries have no public Preview admission.
+
+![Preview Module selected in the same screen-fitted Builder.](images/preview-module-target.png)
+
+Project properties include `preview.dataset_contracts` (default `table.generic`),
+producer match IDs and metadata constraints. These are compatibility declarations,
+not permission grants. Use the actual canonical contracts and source metadata.
+The generated service module is complementary: it adds a pane inside Dataset
+Preview alongside the standard display and other compatible modules.
+
+UI Field containers, typed values, actions, lists, tables, icons and toolbars built
+from panels use the same validated design, hierarchy and layout. Native Viewer
+surfaces, Workspace/History and menu hosts report CORE gaps. A panel's
+`preview_anchor` places it over the existing Plot viewport using a public semantic
+anchor such as top-right. Sources without that viewport report an explicit error.
+An action's `preview_operation` binds fit, zoom_in or zoom_out to that existing
+controller. Label/status `preview_context` displays dataset_id, session_token or
+component_id from the real host. No new renderer or scientific store is created.
+
+The Builder's separate Preview window simulates layout. It does not establish real
+Dataset, Session, viewport or install acceptance. Generate the package, install and
+enable it through ordinary Plugin Manager, then open a compatible real Dataset in
+Dataset Preview. Source/Session changes, disable/update and pane closure retire
+callbacks and dispose owned widgets/panels. A stale host refuses operations.
+
+Generated `api/preview.tcl` declares PREVIEW_COMPONENT_GUI_API_v1 and public
+preview/guiMount/guiDispose callbacks. Handwritten `handlers.tcl` is preserved
+byte for byte. A Preview handler receives `(host, event)`; event includes control_id,
+type, event and value. Read current identity with datasetPreviewGuiContext and
+values with datasetPreviewGuiControlGet; update through the corresponding public
+Set/Configure/State calls. Unconnected actions report an explicit error. Optional
+Handlers::dispose(context, reason) releases author-owned resources; its old host is
+already expired. Scientific work belongs in deliberate authorized user callbacks,
+never mount/disposal. Reopen the packaged `gui/design.tcldict` in Builder to edit
+and regenerate a distinct package version.
+
+The public `library_browser` palette component embeds the existing Library
+services into any compatible Viewer. Add its Records, Sources and Manual pages
+using the same group; Add selects the next missing page automatically. Layout
+Preview is inert and permits an incomplete group while editing. Actual Viewer
+build/runtime requires exactly one of each page per group, with at most4 groups.
+The optional `scope` dictionary is edited through ordinary Properties and is
+shared across every page of the group in one Undo/Redo revision. Its optional
+`library_types`, `record_types`, `library_ids`, `provider_ids`, `source_ids` keys
+each contain up to64 unique stable IDs discovered through the existing Manager.
+Provider IDs are Domain Schema identities; source IDs are exact provenance or
+connector identities. No Viewer-name/category/domain allowlist applies. Absent
+or empty scope preserves all normal unfiltered Library workflows. Invalid or
+mismatched declarations refuse; unavailable IDs give honest unavailable/empty
+content. This is presentation/query selection and grants no new permissions,
+source persistence rights or implicit Dataset creation. See the public
+VIEWER_GUI_HOST_API_v1 contract for exact bounds and normalization.
+
+
+## Markdown Documents and Preview authoring — DEV111-P030
+
+The existing Document palette component supports **Markdown** and editable or
+read-only panes. Use the existing shared Source/Rendered/Outline/Properties/
+Resources editor; no second renderer or document store is needed. Declare finite
+native document commands in the design and implement them through the restricted
+C++ SDK Host.document_command operation. Read-only panes refuse mutations.
+
+Choose the Viewer or Preview Module project target. Documents uses ordinary
+canonical Markdown Datasets; a Preview declares its read-only panes and applicable
+contracts. The installed Documents and Markdown Preview packages were authored
+through this same Builder/C++ route. Their normal Workspace Save As preserves
+drafts, notes, named History and managed images without changing the Dataset.
+
+Runtime Test requires the exact installed compiled design and a marked private
+fixture containing the current Session. Connect its installed handlers through
+the existing mode control. The same Preview window then runs the genuine native
+client; Design/Demo disconnect it. Unsaved drafts and image resources survive
+compatible design refreshes and connection changes. Normal Workspace close and
+History recovery choices remain active; Cancel retains the editor.
+
+Visualizer authoring extends the existing Contract Registry. Declare Open and
+Preview roles separately, permitted document kinds/media/formats, and optional
+source-editor-first opening. Configure independent choices in the existing
+Configuration Contracts page, with automatic resolution and explicit missing or
+conflicting-provider diagnostics. Enable/disable or install packages through the
+normal Modules/Plugin Manager pages. General commands remain in primary menus.
+
+![The genuine Builder/C++ Documents client uses the shared Markdown editor and primary menus at font18.](images/p030-markdown-documents.png)
+
+The genuine Builder/C++ Documents client uses the shared Markdown editor and primary menus at font18.
+
+## UML Documents and Preview authoring — DEV111-P031
+
+Use the existing Document component with `kind=uml`. An editable Viewer delegates
+to the shared Source/Diagram/Properties/Metadata editor; a read-only Preview uses
+the Diagram, Source and Metadata panes. CORE owns the parser, semantic edits,
+layout, Native2D rendering and canonical publication. The delivered syntax profile
+is `gxtxt.plantuml.v1` for class and sequence diagrams. Consult **References →
+UML_DOCUMENT_API_v1** for exact supported syntax and bounds; other UML families,
+full PlantUML, Mermaid and XMI are outside this profile.
+
+Declare finite actions in the primary menu and implement their handlers through
+the existing restricted C++ Document SDK. The component's kind grants no access:
+request the documented Read/Parse/Layout capabilities, plus Edit, Write or Export
+only when needed. Read-only components refuse mutations. File export uses the
+CORE chooser and managed-resource lifecycle; a C++ worker receives no arbitrary
+destination path. Source edits remain drafts until explicit Save Existing or
+Publish New succeeds with the current Session, revision and source SHA.
+
+A compatible same-project design refresh retains UML drafts and presentation
+through the existing Workspace owner. Different projects, document kinds or
+component identities do not inherit that draft. Incomplete or invalid drafts
+retain their source and located diagnostics rather than publishing a diagram
+image as canonical UML. Verify the generated module through normal build,
+Plugin Manager, actual Dataset binding, Workspace/History and cold reopening;
+an inert layout Preview alone does not establish runtime acceptance.
+
+Requires the matching DEV111-P031 CORE. The package's DEV111 framework range
+does not express a patch number and is not an older-P029/P030 compatibility claim.
+
+## Numeric Preview layouts (DEV111-P032)
+
+File → New Numeric Preview opens the shared CORE numeric template. Its palette
+admits read-only Plot/table surfaces and presentation controls. Add a table through
+Design → Add component, then use the existing Properties/grid constraints and
+Undo/Redo; Save/Open preserves the complete design. Incompatible component types
+remain gray and Core admission refuses them.
+
+For this target, primary menus and shortcuts provide the commands while the
+redundant toolbar is hidden. The existing palette, map and Properties panes get
+balanced initial space and retain manual splitter adjustments through edits.
+Returning to an ordinary Viewer or document Preview restores its previous
+presentation. The numeric template stacks X and Y choices so both remain usable
+at larger interface fonts.
+
+Design/Demo mode uses a labeled synthetic RAM example. Compile/export through
+the normal C++ authoring route and test the installed Preview on an actual
+canonical Dataset to verify runtime behavior. The installed numeric host keeps
+the current Dataset fixed and uses the existing public Plot/table services.

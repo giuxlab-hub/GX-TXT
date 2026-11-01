@@ -562,8 +562,9 @@ proc ::GX::CurveViewer::_save {w {description {Save Viewer state}}} {
     if {[info exists st($w,incomplete)] && $st($w,incomplete)} return
     if {$st($w,document) eq {}} {_writePayload $w [_payload $w]}
     if {[dict exists $::GX::ScientificHistory::viewers $w]} {
+        if {$st($w,document) ne {}} {::GX::scientificHistoryViewerBindDocument $w $st($w,document)}
         if {![::GX::scientificHistoryViewerEditable $w]} return
-        return [::GX::scientificHistoryViewerChanged $w $description]
+        return [::GX::scientificHistoryViewerRecordOperation $w $description]
     }
     set payload [_payload $w]
     _writePayload $w $payload
@@ -579,7 +580,7 @@ proc ::GX::CurveViewer::_writePayload {w payload} {
         set current [::GX::interactiveDocumentRead $st($w,document)]
         if {[dict get $current module_id] ne "viewer.curve_viewer" || [dict get $current generation] ne $st($w,documentGeneration) || ([dict get $current revision] ne $st($w,documentRevision) && [dict remove [dict get $current payload] workspace_metadata] ne $st($w,savedPayload))} {error {Workspace changed in another editor; reopen before saving}}
         ::GX::sessionWorkspacePromote $st($w,document)
-        ::GX::sessionWorkspaceUpdate $st($w,document) $payload
+        ::GX::sessionWorkspaceUpdate $st($w,document) $payload $current
     }
     set doc [::GX::interactiveDocumentRead $st($w,document)]
     set st($w,documentRevision) [dict get $doc revision];set st($w,documentGeneration) [dict get $doc generation]
@@ -590,7 +591,7 @@ proc ::GX::CurveViewer::_close {w {saveChanges 1}} {
     variable st
     _sourceCancel $w
     if {[info exists st($w,configurationSubscription)]} {::GX::configurationUnsubscribe $st($w,configurationSubscription)}
-    if {$saveChanges && ![catch {set token [::GX::interactiveDocumentSessionToken]}]&&$token eq $st($w,session_token)} {_save $w}
+    if {$saveChanges && ![catch {set token [::GX::interactiveDocumentSessionToken]}]&&$token eq $st($w,session_token)} {_save $w;if {[dict exists $::GX::ScientificHistory::viewers $w]} {::GX::scientificHistoryViewerFlush $w}}
     ::GX::datasetCatalogUnsubscribe $st($w,subscription)
     dict for {id r} $st($w,records) {if {[dict get $r token] ne ""} {::GX::curveSourceClose [dict get $r token]}}
     ::GX::Native2D::core destroy $st($w,scene)

@@ -1,3 +1,7 @@
+## 1.2.1 — 2026-10-28
+
+Declare the PNG/JPEG/BMP/TIFF MIME types already recognized by the unchanged image detector for generic Library acquisition dispatch.
+
 # Changelog
 
 ## [1.2.0]

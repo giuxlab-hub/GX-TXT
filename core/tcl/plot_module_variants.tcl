@@ -788,7 +788,7 @@ proc ::GX::plotVariantCommand {moduleId graphId variantId operation} {
 proc ::GX::buildStandardAnalysisQueue {} {
     set q [::GX::buildStandardAnalysisQueue_before_plot_variant]
     foreach mid $::GX::moduleOrder {
-        if {![moduleIsEnabled $mid] || ![moduleRunIsSelected $mid]} continue
+        if {![moduleRunIsAdmitted $mid]} continue
         if {[moduleField $mid runner ""] ne "standard_octave"} continue
         foreach gid [moduleGraphIds $mid] {
             foreach vid [plotVariantIds $mid $gid] {

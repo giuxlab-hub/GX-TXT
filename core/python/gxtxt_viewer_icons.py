@@ -175,11 +175,32 @@ def package_resources(raw):
         catalog[identifier]={key:value for key,value in record.items() if key not in {'png','source_data'}}
     if catalog:result['resources/icons/catalog.json']=(json.dumps({'schema':'gxtxt.viewer_icon_resources.v1','icons':catalog},indent=2)+'\n').encode()
     return result
+def stock_batch(identifiers, sizes, tool):
+    """One bounded admission of existing CORE resources, with identical pixels."""
+    if not 1 <= len(identifiers) <= 64 or len(set(identifiers)) != len(identifiers):
+        raise ValueError('Stock icon batch requires 1..64 distinct IDs')
+    if not 1 <= len(sizes) <= 4 or len(set(sizes)) != len(sizes) or any(not 8 <= size <= 192 for size in sizes):
+        raise ValueError('Stock icon batch requires 1..4 distinct supported sizes')
+    catalog=shared_catalog()['icons'];result={}
+    for identifier in identifiers:
+        if identifier not in catalog:raise ValueError('Unknown CORE icon ID')
+    for identifier in identifiers:
+        entry=catalog[identifier]
+        asset=admit(entry['path'],entry['title'],entry['category'],entry['license'],tool)
+        validate(asset)
+        photos={str(size):base64.b64encode(raster(base64.b64decode(asset['png']),'png',size,tool)).decode() for size in sizes}
+        result[identifier]={'asset':asset,'photos':photos}
+    return result
+
 if __name__=='__main__':
     try:
         if sys.argv[1]=='catalog':
             if len(sys.argv)!=2:raise ValueError('Shared icon discovery accepts no path or arguments')
             result=shared_catalog()
+        elif sys.argv[1]=='stock_batch':
+            if len(sys.argv)!=5:raise ValueError('Stock batch requires IDs, sizes and managed raster tool')
+            t=tkinter.Tcl()
+            result=stock_batch(list(t.splitlist(sys.argv[2])),[int(size) for size in t.splitlist(sys.argv[3])],sys.argv[4])
         elif sys.argv[1]=='import':result=admit(*sys.argv[2:])
         elif sys.argv[1]=='import_svg':
             if len(sys.argv)!=6:raise ValueError('Inline SVG requires title, category, license and managed raster tool')

@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.1.0
+## 1.1.0 — 2026-09-25
 
 - Replaced all private scientific result rendering with persistent `plot.dataset` / `PLOT_DATASET_API_v2` graphs.
 - Published the full time-domain analytic envelope as a reusable canonical `timeseries.table` in addition to the existing `spectrum.table`.

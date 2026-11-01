@@ -1,5 +1,14 @@
 # Source Surface API v1
 
+Both Script Workspaces use the common `scriptSourceTabsCreate parent editorNamespace
+language` controller over this Source Surface. Each admitted file retains its own
+widget, native Undo, source identity, dirty baseline, search and caret.
+`scriptSourceTabsIdentity parent` returns `{reference sha256 revision relative_file
+source_widget source_widget_id session_token scope}` for exact async assist guards.
+`scriptSourceTabsOpenSnapshot parent inspected ?relative_file?` admits only verified
+matching-language historical source and creates read-only tabs. This controller
+never changes the separate accepted C++ Project/Source Surface ownership.
+
 Discover `::GX::sourceSurfaceApiInfo`. CORE creates one shared Tk Text adapter:
 `sourceSurfaceCreate parent {mode editable language python}` returns the text
 widget. Use read_only for Dataset source consultation. Set/Get/Configure/Replace,
@@ -34,7 +43,7 @@ managed CORE request; a generation check rejects stale replies. Tk applies at
 most 250 token ranges per idle turn. Limit/error status is visible. The native
 scanner is a conservative lexical service, not a language compiler: advanced
 f-string expressions, full fixed-form Fortran and dialect-specific constructs
-may receive approximate colors. No source is imported, evaluated or compiled.
+may receive approximate colors. Source is never imported or executed. Python structural inspection compiles inert code objects only to inspect their line tables; it creates no executable artifact.
 The full bounded model is scanned in a worker; an incremental parser cache is
 future optimization, not an implemented claim.
 
@@ -192,3 +201,20 @@ gains the same shared Replace controls; returning to read-only disables them and
 the public replacement API refuses mutation. The dev109 native Ctrl+H failure
 is preserved; the independent corrective CORE-fixture native verification passed
 this scoped behavior, while installed LaTeX integration remains separately open.
+
+## Optional compact search controls
+
+A Surface with `find_bar 1` may opt into `find_bar_visible 0` at creation. The
+default remains visible for existing consumers. `sourceSurfaceFindShow widget
+?find|replace|hidden?` shows the existing Find controls, shows editable Replace
+controls, or hides search. Ctrl+F/Ctrl+H use the same owner. Escape and the compact Surface's Close search button dismiss the controls and return focus to source. Queries, replacement
+text, source bytes, cursor and Undo remain on the same widgets. This is host
+presentation only; it grants no Script Bridge/native/file or execution rights.
+
+The Script Library opts into compact search so small screens and font18 retain
+a useful Source/Parameters editor. Its existing primary Edit commands reveal
+search. CORE applies the existing authored pane weights once at initial mapping;
+subsequent native user sash positions remain under user control. No module
+repackaging, second editor or toolbar row is introduced.
+
+Source status occupies one bounded display line, with an accessible tooltip and click/Enter/Space action. Host-only `sourceSurfaceStatusInspect widget` opens a readonly, selectable and copyable snapshot of the complete status through the existing UI Field dialog owner. Full error text remains in the SourceSurface state; a long diagnostic cannot consume the editable Source area. The Python structural helper ignores absent line-table entries from nested comprehensions while retaining all positive executable source lines.

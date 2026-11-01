@@ -81,6 +81,66 @@ def ini(fd, name, diagnostics, limit=LIMIT):
         diagnostics.append(f'{name}: unavailable or corrupt ({exc})')
         return {}
 
+def project_snapshot(fd, path, project, expected_sha, language, origin):
+    """Read only one of the two existing Job-owned snapshot layouts."""
+    from script_project import verify as verify_project
+    if not re.fullmatch(r'[a-f0-9]{64}', expected_sha):
+        raise ValueError('Invalid execution project SHA')
+    recorded_run = path
+    if origin.get('output_dir'):
+        # Portable Session import retains frozen runtime provenance. Validate
+        # its old logical run identity without resolving or reading that path;
+        # only the corresponding layout under the current opened run is read.
+        session_text = origin.get('session', '')
+        session = Path(session_text)
+        if (not session.is_absolute() or str(session) != session_text or
+                '..' in session.parts or origin.get('run_id') != path.name or
+                origin['output_dir'] != str(session / 'analysis' / 'scripts' / path.name)):
+            raise ValueError('Invalid recorded portable execution origin')
+        recorded_run = session / 'analysis' / 'scripts' / path.name
+    legacy = recorded_run / 'project'
+    revision = recorded_run / 'project-revisions' / expected_sha
+    recorded = project.get('project_manifest', '')
+    if recorded == str(legacy / 'manifest.json'):
+        parts = ('project',)
+    elif recorded == str(revision / 'manifest.json'):
+        parts = ('project-revisions', expected_sha)
+    else:
+        raise ValueError('Project snapshot is outside the exact execution layout')
+    root = path.joinpath(*parts)
+    if (project.get('project_root') != str(recorded_run.joinpath(*parts) / 'files') or
+            project.get('project_sha256') != expected_sha):
+        raise ValueError('Execution project location or SHA differs')
+    # Admit directories relative to the already opened exact run, never a
+    # recorded arbitrary path or a linked project-revisions parent.
+    with contextlib.ExitStack() as stack:
+        current, location = fd, path
+        identities = [(fd, path)]
+        for part in parts:
+            current = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=current)
+            stack.callback(os.close, current)
+            if os.fstat(current).st_uid != os.getuid():
+                raise ValueError('Execution project belongs to another account')
+            location = location / part
+            identities.append((current, location))
+        def check_locations():
+            for opened, location in identities:
+                held, named = os.fstat(opened), os.stat(location, follow_symlinks=False)
+                if not stat.S_ISDIR(named.st_mode) or (held.st_dev, held.st_ino) != (named.st_dev, named.st_ino):
+                    raise ValueError('Execution project directory changed during inspection')
+        check_locations()
+        with run_file(current, 'manifest.json'):
+            pass
+        manifest, _, _ = verify_project(root)
+        check_locations()
+        entry = next(item for item in manifest['files'] if item['path'] == manifest['entrypoint'])
+        if (manifest['language'] != language or
+                manifest['sha256'] != expected_sha or
+                manifest['entrypoint'] != project.get('entrypoint') or
+                entry['sha256'] != project.get('entrypoint_sha256')):
+            raise ValueError('Execution project identity differs')
+    return root, manifest
+
 def inspect_run(session, run_id, record=None, verify=True):
     r = dict(record or {})
     r.update(id=run_id, session=str(Path(session).resolve()), archived=record is None)
@@ -114,6 +174,18 @@ def inspect_run(session, run_id, record=None, verify=True):
         r.setdefault('session_name', '')
         r.setdefault('session_id', '')
         r.setdefault('parameters', report.get('parameters') or {k[len('script_parameter.'):]: v.get('value', '') for k, v in runtime.items() if k.startswith('script_parameter.')})
+        if not r.get('parameter_schema'):
+            import tkinter
+            literal=tkinter.Tcl()
+            schema={}
+            for key,value in runtime.items():
+                if not key.startswith('script_parameter.'):continue
+                parts=literal.splitlist(value.get('declaration',''))
+                spec=dict(zip(parts[::2],parts[1::2])) if len(parts)%2==0 else {}
+                spec.setdefault('type',value.get('type','string'));spec.setdefault('origin',value.get('origin','registry'))
+                spec.setdefault('default','');spec.setdefault('description','');spec.setdefault('required','0')
+                schema[key[len('script_parameter.'):]]=spec
+            r['parameter_schema']=schema
         r.setdefault('inputs', {k[len('job_input.'):]: v for k, v in runtime.items() if k.startswith('job_input.')})
         r.setdefault('output', runtime.get('job_output', {}))
         r['analysis_sources'] = {k: v for k, v in runtime.items() if k.startswith('analysis_source.') or k == 'bindings'}
@@ -125,7 +197,22 @@ def inspect_run(session, run_id, record=None, verify=True):
         r['log_streams'] = 'Separate program stdout, program stderr and lifecycle diagnostics' if (path/'streams.json').is_file() else 'Legacy combined execution stream (stdout and stderr merged)'
         r['log_path'] = str(path / ('python.log' if language == 'Python' else 'octave.log')) if language in ('Python', 'Octave') else ''
         r['snapshot_validation'] = 'not verified'
-        if verify and language in ('Python', 'Octave'):
+        if verify and language in ('Python', 'Octave') and 'script_project' in runtime:
+            try:
+                if r.get('project_sha256') and r['project_sha256'] != r['source_sha256']:
+                    raise ValueError('Job project SHA differs from its execution source')
+                if r.get('project_manifest') and r['project_manifest'] != runtime['script_project'].get('project_manifest'):
+                    raise ValueError('Job project manifest differs from its execution snapshot')
+                root,manifest=project_snapshot(fd,path,runtime['script_project'],r['source_sha256'],language,runtime.get('runtime',{}))
+                actual=manifest['sha256']
+                r['snapshot_actual_sha256']=actual
+                r['snapshot_validation']='verified' if actual==r['source_sha256'] else 'SHA mismatch'
+                r['snapshot']=str(root/'files'/manifest['entrypoint'])
+                r['project_files']=manifest['files']
+                r['project_manifest']=str(root/'manifest.json')
+            except (OSError,ValueError) as exc:
+                r['snapshot_validation']=f'unavailable ({exc})'
+        elif verify and language in ('Python', 'Octave'):
             snapshot = 'registered_script.py' if language == 'Python' else 'registered_script.m'
             r['snapshot'] = str(path / snapshot)
             try:

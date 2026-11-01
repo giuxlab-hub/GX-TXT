@@ -1,7 +1,255 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Declarative bindings to existing read-only Dataset document/paging owners.
 # No file reader, decoder, cache, source editor or publication authority here.
+namespace eval ::GX::MarkdownHost {variable serial 0;variable result}
+proc ::GX::_viewerGuiMarkdownMount {window component widget {datasetId {}}} {
+    set definition [viewerGuiDesignComponent $window $component]
+    set properties [dict get $definition properties]
+    set kind [dict get $properties kind]
+    if {$datasetId ne {} && ![viewerGuiDocumentCompatible $datasetId $kind]} {error {Document component requires its matching canonical Dataset}}
+    foreach child [winfo children $widget] {destroy $child}
+    set module [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] actor_module [dict get $::GX::ViewerGui::instances $window module]]
+    set capability [dict get [_datasetPrivateModuleContext $module] capability]
+    set options [dict create mode [datasetPublicationV2DictDefault $properties mode read_only] \
+        pane [datasetPublicationV2DictDefault $properties pane rendered] dataset_id $datasetId \
+        capability $capability toolbar 0 on_change [list ::GX::_viewerGuiMarkdownChanged $window $component] on_command [list ::GX::_viewerGuiMarkdownHostCommand $window $component]]
+    if {$kind eq {uml}} {
+        dict set options kind uml
+        dict set options pane [datasetPublicationV2DictDefault $properties pane diagram]
+        set operations [dict get $::GX::ViewerGui::instances $window uml_operations]
+        if {[dict get $::GX::ViewerGui::instances $window mode] eq {demo}} {set operations {umlDocumentRead umlDocumentParse umlDocumentLayout umlDocumentEdit}}
+        dict set options uml_operations $operations
+    }
+    set handle [documentEditorMount $widget.document $options]
+    pack $widget.document -fill both -expand 1
+    dict set ::GX::ViewerGui::instances $window document_editors $component $handle
+    if {$kind eq {uml}} {dict set ::GX::ViewerGui::instances $window uml_history_document_stamp $component [_viewerGuiUmlHistoryStamp [documentEditorCommand $handle inspect]]}
+    if {[dict get $options mode] eq {editable}} {
+        ttk::label $widget.identity -anchor w -justify left -padding {6 3} -wraplength 650
+        pack $widget.identity -side top -fill x -before $widget.document
+        bind $widget.identity <Configure> [list $widget.identity configure -wraplength %w]
+        dict set ::GX::ViewerGui::instances $window document_identity_widgets $component $widget.identity
+        _viewerGuiMarkdownFeedback $window $component [documentEditorCommand $handle inspect]
+    }
+    return $handle
+}
+proc ::GX::_viewerGuiMarkdownFeedback {window component receipt} {
+    if {![dict exists $::GX::ViewerGui::instances $window document_identity_widgets $component]} return
+    set label [dict get $::GX::ViewerGui::instances $window document_identity_widgets $component]
+    if {![winfo exists $label]} return
+    set id [dict get $receipt dataset_id]
+    set source [expr {$id eq {} ? {New document (no canonical Dataset)} : $id}]
+    set state [expr {[dict get $receipt dirty] ? {Modified draft} : ($id eq {} ? {New draft} : {Document saved})}]
+    set permission [expr {[dict get $receipt can_replace] ? {Save Existing available} : {Publish New available}}]
+    if {$::GX::currentSession eq {}} {set permission {Open a Session to publish}}
+    if {[dict get $receipt status] eq {session_changed}} {set state {Session changed — draft retained};set permission {Reopen before saving}}
+    $label configure -text "Document: $source\n$state · $permission"
+}
+proc ::GX::_viewerGuiMarkdownChanged {window component handle receipt} {
+    if {![dict exists $::GX::ViewerGui::instances $window document_editors $component] || [dict get $::GX::ViewerGui::instances $window document_editors $component] ne $handle} return
+    if {[datasetPublicationV2DictDefault $receipt kind markdown] eq {uml}} {
+        set stamp [_viewerGuiUmlHistoryStamp $receipt]
+        set previous [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] uml_history_document_stamp {}] $component $stamp]
+        if {$previous ne $stamp && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {
+            scientificHistoryViewerRecordOperation $window "Edit UML $component"
+        }
+        dict set ::GX::ViewerGui::instances $window uml_history_document_stamp $component $stamp
+    }
+    viewerGuiTraceEmit $window $component source_changed $receipt
+    _viewerGuiMarkdownFeedback $window $component $receipt
+    viewerGuiActionsRefresh $window
+}
+proc ::GX::_viewerGuiUmlHistoryStamp {receipt} {
+    set stamp {};foreach key {source_sha256 dataset_id sha256 revision} {lappend stamp [datasetPublicationV2DictDefault $receipt $key {}]}
+    return $stamp
+}
+proc ::GX::_viewerGuiUmlHistoryBeforeSave {window} {
+    if {![dict exists $::GX::ScientificHistory::viewers $window]} return
+    dict for {component handle} [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] document_editors {}] {
+        set record [_documentEditorRecord $handle]
+        if {[datasetPublicationV2DictDefault [dict get $record options] kind markdown] eq {uml} && [dict get $record options mode] eq {editable}} {
+            # Save must commit the same current cursor/panels/viewport intent
+            # that its existing History will later restore. No canonical write.
+            scientificHistoryViewerRecordOperation $window {Save UML draft presentation}
+            break
+        }
+    }
+}
+proc ::GX::_viewerGuiMarkdownZoomHandler {instance action} {
+    if {$action ni {fit zoom_in zoom_out} || [dict get $instance mode] ne {runtime}
+        || ![dict exists $instance handlers $action] || ![dict exists $instance design handlers $action]
+        || [dict get $instance design handlers $action effect] ne {presentation}
+        || ![dict size [datasetPublicationV2DictDefault $instance document_editors {}]]} {return 0}
+    if {$action eq {fit}} {
+        set editors [dict get $instance document_editors]
+        if {[dict size $editors]!=1} {return 0}
+        set record [_documentEditorRecord [lindex [dict values $editors] 0]]
+        if {[datasetPublicationV2DictDefault [dict get $record options] kind markdown] ne {uml}} {return 0}
+    }
+    # Preserve existing reserved Plot/Native viewport navigation. A document-only
+    # client can own its explicitly declared native presentation commands.
+    foreach item [dict get $instance design components] {
+        if {[dict get $item type] in {plot native2d native3d}} {return 0}
+    }
+    return 1
+}
+proc ::GX::viewerGuiDesignResourceLeaseAcquire {window} {
+    if {![viewerGuiDesignGuard $window]} {error {Viewer resource handoff requires its current Session}}
+    set owners {}
+    try {
+        dict for {component handle} [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] document_editors {}] {
+            set record [_documentEditorRecord $handle]
+            set previous {}
+            foreach assets [list [dict get $record assets] [datasetPublicationV2DictDefault [dict get $record baseline] assets {}]] {
+                if {![dict size $assets] || $assets eq $previous} continue
+                set previous $assets
+                _documentAssetsValidate $assets
+                # Existing Document deletion closes its readers. Hold draft
+                # AND baseline references in ordinary CORE asset carriers
+                # BEFORE destroying the old editor; no body or byte copy.
+                set owner [_datasetDocumentAssetOwnerCreate core.document_source viewer_handoff [dict create operation viewer_handoff component $component]]
+                lappend owners $owner
+                set id [dict get $owner document_id]
+                set payload [dict get [interactiveDocumentRead $id] payload]
+                dict set payload retained_assets $assets
+                interactiveDocumentUpdate $id $payload
+            }
+        }
+        return $owners
+    } on error {message options} {
+        viewerGuiDesignResourceLeaseRelease $owners
+        return -options $options $message
+    }
+}
+proc ::GX::viewerGuiDesignResourceLeaseRelease {owners} {
+    # The replacement must adopt these references before release. On a failed
+    # replacement the host restores its prior draft while the carrier is live.
+    foreach owner $owners {_datasetDocumentAssetOwnerClose core.document_source $owner}
+}
+proc ::GX::_viewerGuiMarkdownHostCommand {window component handle operation} {
+    if {![dict exists $::GX::ViewerGui::instances $window document_editors $component] || [dict get $::GX::ViewerGui::instances $window document_editors $component] ne $handle} {error {Document command belongs to another or closed host}}
+    set admitted {save_existing publish_new zoom_in zoom_out zoom_reset}
+    set record [_documentEditorRecord $handle]
+    if {[datasetPublicationV2DictDefault [dict get $record options] kind markdown] eq {uml} && [dict get $record options mode] eq {editable}} {lappend admitted new open}
+    if {$operation ni $admitted} {error {Document focused command is outside its finite host contract}}
+    if {![dict exists $::GX::ViewerGui::instances $window design handlers $operation]} {error {Document save command is not declared in the parent Viewer}}
+    return [viewerGuiDesignAction $window $operation]
+}
+proc ::GX::_viewerGuiMarkdownCapture {window} {
+    if {![dict exists $::GX::ViewerGui::instances $window document_editors]} return
+    set drafts {};set umlDrafts {}
+    dict for {component handle} [dict get $::GX::ViewerGui::instances $window document_editors] {
+        set definition [viewerGuiDesignComponent $window $component]
+        if {[datasetPublicationV2DictDefault [dict get $definition properties] mode read_only] eq {editable}} {
+            if {[dict get $definition properties kind] eq {uml}} {dict set umlDrafts $component [documentEditorCommand $handle capture]} else {dict set drafts $component [documentEditorCommand $handle capture]}
+        }
+    }
+    dict set ::GX::ViewerGui::instances $window domain_state markdown_drafts $drafts
+    if {[dict size $umlDrafts]} {dict set ::GX::ViewerGui::instances $window domain_state uml_drafts $umlDrafts
+    } elseif {[dict exists $::GX::ViewerGui::instances $window domain_state uml_drafts]} {dict unset ::GX::ViewerGui::instances $window domain_state uml_drafts}
+}
+proc ::GX::_viewerGuiMarkdownRestore {window state} {
+    dict for {component draft} [datasetPublicationV2DictDefault $state uml_drafts {}] {
+        set definition [viewerGuiDesignComponent $window $component]
+        if {[dict get $definition type] ne {document} || [dict get $definition properties kind] ne {uml} || [datasetPublicationV2DictDefault [dict get $definition properties] mode read_only] ne {editable}} {error {Saved UML draft requires its declared editable document}}
+        documentEditorCommand [dict get $::GX::ViewerGui::instances $window document_editors $component] restore $draft
+    }
+
+    dict for {component draft} [datasetPublicationV2DictDefault $state markdown_drafts {}] {
+        set definition [viewerGuiDesignComponent $window $component]
+        if {[dict get $definition type] ne {document} || [dict get $definition properties kind] ne {markdown} || [datasetPublicationV2DictDefault [dict get $definition properties] mode read_only] ne {editable}} {error {Saved Markdown draft requires its declared editable document}}
+        set handle [dict get $::GX::ViewerGui::instances $window document_editors $component]
+        documentEditorCommand $handle restore $draft
+    }
+}
+proc ::GX::_viewerGuiMarkdownChoose {window title prompt values} {
+    variable ::GX::MarkdownHost::serial
+    variable ::GX::MarkdownHost::result
+    set dialog $window.markdown_choose[incr serial]
+    set result($dialog) {}
+    toplevel $dialog;wm title $dialog $title;wm transient $dialog $window
+    ttk::label $dialog.prompt -text $prompt -wraplength 480
+    if {$values eq {}} {ttk::entry $dialog.value -width 48} else {ttk::combobox $dialog.value -values $values -state readonly -width 48;$dialog.value set [lindex $values 0]}
+    ttk::frame $dialog.buttons
+    ttk::button $dialog.buttons.ok -text OK -command [list ::GX::_viewerGuiMarkdownChooseAccept $dialog]
+    ttk::button $dialog.buttons.cancel -text Cancel -command [list destroy $dialog]
+    pack $dialog.prompt $dialog.value -fill x -padx 12 -pady 8
+    pack $dialog.buttons.ok $dialog.buttons.cancel -side left -padx 4
+    pack $dialog.buttons -anchor e -padx 8 -pady 8
+    bind $dialog <Return> [list ::GX::_viewerGuiMarkdownChooseAccept $dialog]
+    bind $dialog <Escape> [list destroy $dialog]
+    wm protocol $dialog WM_DELETE_WINDOW [list destroy $dialog]
+    focus $dialog.value;grab $dialog;tkwait window $dialog
+    set value $result($dialog);unset result($dialog)
+    return $value
+}
+proc ::GX::_viewerGuiMarkdownChooseAccept {dialog} {
+    set ::GX::MarkdownHost::result($dialog) [$dialog.value get]
+    destroy $dialog
+}
+proc ::GX::viewerGuiDesignDocumentCommand {window component operation} {
+    if {![viewerGuiDesignGuard $window]} {error {Session changed; reopen the Viewer}}
+    set definition [viewerGuiDesignComponent $window $component]
+    if {[dict get $definition type] ne {document} || [dict get $definition properties kind] ni {markdown uml}} {error {Document commands require a declared Markdown or UML document}}
+    set handle [dict get $::GX::ViewerGui::instances $window document_editors $component]
+    set receipt [documentEditorCommand $handle inspect]
+    set kind [dict get $definition properties kind];set title [expr {$kind eq {uml}?{UML}:{Markdown}}]
+    set request {}
+    if {$kind eq {uml} && $operation in {export_source export_png export_svg}} {
+        set format [string range $operation 7 end]
+        set extension [expr {$format eq {source}?{puml}:$format}]
+        set expected [dict get $receipt source_sha256]
+        set destination [tk_getSaveFile -parent $window -title "Export UML $format" -defaultextension .$extension -filetypes [list [list "UML $format" .$extension]]]
+        if {$destination eq {}} {return $receipt}
+        if {![viewerGuiDesignGuard $window] || ![dict exists $::GX::ViewerGui::instances $window document_editors $component] || [dict get $::GX::ViewerGui::instances $window document_editors $component] ne $handle || [dict get [documentEditorCommand $handle inspect] source_sha256] ne $expected} {error {UML source or Session changed while choosing the export destination}}
+        set artifact [documentEditorCommand $handle export [dict create format $format]]
+        try {
+            set publication [filePublicationCopy [dict get $artifact path] $destination [dict get $artifact sha256] replace]
+            return [dict merge [dict remove $artifact allocation path] [dict create status exported publication $publication]]
+        } finally {umlDocumentExportRelease $artifact}
+    }
+    if {$operation in {new new_sequence open} && [dict get $receipt dirty]} {
+        set answer [tk_messageBox -parent $window -icon question -type yesnocancel -message {Save the document draft before continuing?}]
+        if {$answer eq {cancel}} {return $receipt}
+        if {$answer eq {yes}} {
+            set save [expr {[dict get $receipt can_replace]?{save_existing}:{publish_new}}]
+            viewerGuiDesignDocumentCommand $window $component $save
+            if {[dict get [documentEditorCommand $handle inspect] dirty]} {return $receipt}
+        }
+        dict set request discard_confirmed 1
+    }
+    if {$operation eq {open}} {
+        set choices [uiFieldDatasetChoices $kind]
+        if {![llength $choices]} {error "No canonical $title Dataset is available in this Session"}
+        set id [_viewerGuiMarkdownChoose $window "Open $title Document" "Choose a canonical $title Dataset." $choices]
+        if {$id eq {}} {return $receipt}
+        dict set request dataset_id $id
+    } elseif {$operation eq {publish_new}} {
+        set snapshot [documentEditorCommand $handle capture]
+        set baseline [dict get $snapshot baseline]
+        if {$baseline eq {}} {set summary {No canonical Dataset is selected.}
+        } else {set summary "Source Dataset: [dict get $baseline dataset_id]\nProducer: [dict get $baseline producer]\nImmutable: [dict get $baseline immutable]"}
+        append summary "\n\nPublish New creates a separate canonical Dataset and keeps the source.\nReview the new destination Dataset ID:"
+        set id [_viewerGuiMarkdownChoose $window "Publish $title Document" $summary {}]
+        if {$id eq {}} {return $receipt}
+        dict set request dataset_id $id
+    }
+    if {![viewerGuiDesignGuard $window]} {error {Session changed while choosing a document}}
+    if {[catch {set result [documentEditorCommand $handle $operation $request]} reason options]} {
+        if {$operation ne {save_existing}} {return -options $options $reason}
+        set answer [tk_messageBox -parent $window -icon warning -type yesno -default no -title {Save Existing was refused} -message "$reason\n\nThe draft is retained. Publish it as a new Dataset instead?"]
+        if {$answer ne {yes}} {return [documentEditorCommand $handle inspect]}
+        return [viewerGuiDesignDocumentCommand $window $component publish_new]
+    }
+    _viewerGuiMarkdownCapture $window
+    return $result
+}
 proc ::GX::viewerGuiDocumentRelease {window component} {
+    if {[dict exists $::GX::ViewerGui::instances $window document_editors $component]} {
+        set handle [dict get $::GX::ViewerGui::instances $window document_editors $component]
+        dict unset ::GX::ViewerGui::instances $window document_editors $component
+        catch {documentEditorCommand $handle dispose}
+    }
     if {[dict exists $::GX::ViewerGui::instances $window document_html_controls $component]} {
         dict unset ::GX::ViewerGui::instances $window document_html_controls $component
     }
@@ -28,6 +276,8 @@ proc ::GX::viewerGuiDocumentCompatible {id kind} {
     if {$::GX::currentSession eq {}} {return 0}
     set contract [datasetField $id contract [datasetField $id kind {}]]
     switch $kind {
+        markdown {return [expr {[datasetDocumentKind $id] eq {markdown}}]}
+        uml {return [expr {[datasetDocumentKind $id] eq {uml}}]}
         html {return [expr {[datasetDocumentKind $id] eq {html}}]}
         pdf {return [expr {$contract eq {document.pdf} && [dict get [datasetViewerDescribe $id] target] eq {pdf}}]}
         code {return [expr {$contract eq {code.source} || ($contract eq {document.text} && [datasetDocumentKind $id] in {{} code xml})}]}
@@ -38,7 +288,7 @@ proc ::GX::viewerGuiDocumentCompatible {id kind} {
             foreach variable $variables {if {[dict get $variable rank] != 1} {return 0}}
             return 1
         }
-        default {error {Document kind must be html, pdf, code or table}}
+        default {error {Document kind must be Markdown, HTML, PDF, code or table}}
     }
 }
 proc ::GX::viewerGuiDesignDocumentBind {window component selector} {
@@ -102,7 +352,9 @@ proc ::GX::_viewerGuiDocumentBindDataset {window component id} {
         return -options $options $reason
     }
     set stamp [datasetViewerStamp $id [dict get $payload path]]
-    if {$kind eq {html}} {
+    if {$kind in {markdown uml}} {
+        _viewerGuiMarkdownMount $window $component $widget $id
+    } elseif {$kind eq {html}} {
         set documentWindowId [winfo id $window];set documentWidgetId [winfo id $widget]
         set handle {}
         if {[catch {
@@ -170,8 +422,13 @@ proc ::GX::_viewerGuiDocumentBindDataset {window component id} {
         pack $widget.opened -fill x -padx 12 -pady 12
     }
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind document content_kind $kind dataset_id $id session [interactiveDocumentSessionToken] path [dict get $payload path] stamp $stamp source_sha256 [dict get $payload sha256]]
+    if {$kind in {markdown uml} && [datasetPublicationV2DictDefault [dict get $definition properties] mode read_only] eq {editable}} {
+        # The shared editor retains its own immutable source snapshot and draft.
+        # External edits make Save stale; they must never destroy this draft.
+        dict unset ::GX::ViewerGui::instances $window bindings $component
+    }
     if {![dict exists $::GX::ViewerGui::instances $window document_watch]} {dict set ::GX::ViewerGui::instances $window document_watch [after 1000 [list ::GX::_viewerGuiDocumentWatch $window]]}
-    set receipt [dict create status bound dataset_id $id content_kind $kind source_sha256 [dict get $payload sha256] read_only 1 owner [dict get {html html_viewer_api_v1.tcl pdf dataset_viewer_api_v1.tcl code source_surface_api_v1.tcl table dataset_preview_paging_v1.tcl} $kind]]
+    set receipt [dict create status bound dataset_id $id content_kind $kind source_sha256 [dict get $payload sha256] read_only [expr {$kind ni {markdown uml} || [datasetPublicationV2DictDefault [dict get $definition properties] mode read_only] ne {editable}}] owner [dict get {uml uml_document_api_v1.tcl markdown document_source_api_v1.tcl html html_viewer_api_v1.tcl pdf dataset_viewer_api_v1.tcl code source_surface_api_v1.tcl table dataset_preview_paging_v1.tcl} $kind]]
     viewerGuiTraceEmit $window $component source_changed $receipt
     return $receipt
 }

@@ -1,0 +1,115 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "gx_selection_box": {
+      "title": "Selection Box",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "362e8334356170f3eeddd28564fc180b39522e3416eaa02ff14c5586a9bf3f04",
+      "png_sha256": "e54eb5ace18f5ce8724d83d3945791243509b8b02fd98e0b46770477e820b552",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_zoom_area": {
+      "title": "Zoom Area",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "d7f6aeb56f58bc900db0426cca782fb0e15232f84b77306c94488fd96623bb93",
+      "png_sha256": "35b69d4d9f712a993b834f5744e5489f7e4d8b81c52a28cf8614b86b98c301c2",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_pan": {
+      "title": "Pan",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "d0d025897b182b7617a09fcb3b2c651b4fed9f4c20c370f6a4c80bd010d6a427",
+      "png_sha256": "d1f6a89f2c851346a02076cd0f5c8ee4893da1a5517fd6ca4a9315794f35893e",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_draw_line": {
+      "title": "Draw Line",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "30cc7023722815f9bca1a3599b168e8c39ce1f2d904e54df5b93b966aa7c4fc4",
+      "png_sha256": "5d4e7f0348a282eff111cef33856632f088fe1e55501c9ed008d5216edf76de5",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_draw_polyline": {
+      "title": "Draw Polyline",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "22852ecebe36e785b617082f0794d668d8721668825f11d09d04265a28fb626d",
+      "png_sha256": "1086556795b6c63b8500195312ce80608b807d4ba70ff11a0af32d551c89ddda",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_draw_circle": {
+      "title": "Draw Circle",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "0a9b0c1720fc3640dd5fc3ac8a0af9c4340fe997cf50047d4f16b59ec9e02272",
+      "png_sha256": "f21ee3dabcbd27b54bf817b972d1b396ae5a816a9798a2aa6d1e04d2b291011b",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_validate": {
+      "title": "Validate",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "2aaa132ea1acb92e303118e2a039ee24bc90adfaab6878347605db5a846dcf8b",
+      "png_sha256": "319ddc620f9f71e3cfa2ab5752cc99d3246c744d0fb85757b41af4300ed749de",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_undo": {
+      "title": "Undo",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "ffc26fee1275c078af2f5e729818b7a82b3b7d5923a39b449be11b7b28ced2b6",
+      "png_sha256": "92e776fa3adad7d05a059548e6bcfd1c0be27ac6e62cdf625745616c1456f5a6",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_redo": {
+      "title": "Redo",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "d7c94c2d2e8a6965f12ebea8a2d608301f532601856d20a7542d79e3a123bca8",
+      "png_sha256": "a733370cfacdb916ddac136532d41eb552082fa721737b893e0107392fd2d0e0",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "gx_save": {
+      "title": "Save",
+      "category": "Commands",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "bf314c2b7983b489ede43dc29096a516321ba968a75d65238387343eac755614",
+      "png_sha256": "10e8f37f165368c661eaee65fb66c3b83b8bc9d6355c69a3c4685eaa0b474659",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

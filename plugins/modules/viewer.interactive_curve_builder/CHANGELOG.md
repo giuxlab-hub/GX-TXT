@@ -1,4 +1,12 @@
-## 1.2.1
+## DEV111-P024 Workspace integration
+
+- Persist the original working context through native typed Workspace schemas
+  and checked revision receipts; retain exact row lineage and draft text.
+- Use shared dirty review for Close/Open and preserve a cancelled draft.
+- Numerical fitting, ordering, source access and the independent interface stay
+  with their existing owners.
+
+## 1.2.1 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 

@@ -1,6 +1,12 @@
 # Declarative UI Field API v1
 
-Dev108 native label/status components that stretch horizontally (weighted grid
+The existing control-row layout also lives in the standalone trusted Tcl source
+`core/tcl/ui_field_controls_layout_v1.tcl`. UI Field loads the same procedures;
+isolated Tk media readers may source this presentation owner without loading a
+framework, Session or Dataset publication service. Public command names and
+arguments are unchanged.
+
+Native label/status components that stretch horizontally (weighted grid
 columns with east/west sticky, or pack fill x/both) wrap to the smaller of their
 declared positive `wraplength` (default400) and current allocated text width.
 The text width excludes horizontal padding and an adjacent image. Their constant
@@ -16,6 +22,9 @@ component identity or bound value; ordinary focus scrolling reveals later rows.
 Non-color compact typed-field captions span the whole field, including its
 Reset/Inherit area. When the entry and those buttons cannot fit side by side at
 their actual font sizes, the existing buttons move below the full-width entry.
+For a field inside a scrolling canvas, the visible viewport and its indentation
+bound that decision even when its content retains a wider natural allocation.
+The field retires its viewport notification on destruction.
 Widening restores their original inline layout. This does not replace widgets,
 change values, validation, disabled/readonly state, callbacks or focus order.
 
@@ -72,6 +81,15 @@ never edit cells or change scientific data; they are distinct from Worksheet.
 `values` (ordered list), color `alpha`, and `allow_inherit`. Empty values mean
 inherit only where declared. Errors are explicit; numeric values must be finite.
 Paths/commands are single-line values and normalization never executes them.
+
+`uiFieldComponentDescriptor type properties` returns the exact mounted descriptor
+for `field`, `toggle` or `choice`, without Tk or value mutation. It maps the
+component datatype, label, optional default, bounds, alpha and choice list through
+the same owner used by `uiFieldComponentCreate`. This trusted host helper grants
+no Script, SDK or worker operation. Design admission uses `uiFieldNormalize`
+with this descriptor to check finite ordered numeric bounds and declared nonempty
+defaults before model edits. Existing optional empty or absent defaults remain
+admitted; no numeric default is invented.
 
 Declarative `field` components with `datatype color` may expose the same
 descriptor option as `alpha 1`. Canonical `{rgb #RRGGBB alpha VALUE}` values
@@ -151,6 +169,11 @@ Call `uiFieldInspectionColumnsSchedule tree` after asynchronous row population;
 it coalesces repeated requests into one idle fit and tolerates widget destruction.
 Fitting only the initial empty table cannot account for later stack, variable,
 API-catalog or diagnostic text. Existing script tables retain this same owner.
+An empty tree can intentionally attach just the shared font/row style before
+declaring columns or adding records. The API Browser, Builder and Dataset
+navigators use this form to preserve their declared column policies; it does
+not promise later content autosizing or change Dataset activation/namespace
+semantics.
 
 
 ## Inspector scrolling
@@ -167,6 +190,15 @@ split. Native sash movement, vertical scrolling and page/field identity remain
 owned by the same native widgets. There is no module-specific inspector size or
 change to drawing/scientific coordinates.
 
+A live font change also updates the default split while the shell still owns it.
+Once a native user drag or restored Workspace chooses a different split, later
+font changes preserve that choice. This policy retires with its window and does
+not change Viewer identity, declared components or source data.
+Declarative read-only table components also remeasure their existing headings
+when mapped or when fonts/themes change, including an empty table with no data
+rows. Existing inspection-column and row-font owners perform that layout; table
+data, selection/copy contracts and scientific storage remain unchanged.
+
 The pane stays bounded by that same policy when a native action caption needs
 more room. The inspector content keeps its natural width and the requested width
 of mapped native actions, including actions inside nested scrolling pages. A
@@ -181,16 +213,6 @@ the horizontal scrollbar provides access to its remaining caption. Closing the
 inspector cancels its pending layout. The existing InspectorFocus/Wheel procedures
 and `uiFieldScrollSee` vertical behavior are unchanged. Labels, command bindings,
 enablement, values and scientific/Workspace data keep their original owners.
-
-The focused dev109 caption356 evidence is **component-only**: the same no-Session
-Tk fixture gives baseline29PASS/1FAIL and candidate30PASS, with six additional
-focus/scroll-command/close controls passing. Five complete font10 observation
-dictionaries match the baseline; wide and normal font restoration also pass.
-Inert counter actions and the captured pane allocation are constructed component
-inputs. They do not establish installed human-input or scientific acceptance.
-At this documentation cut, originalQA335's cold missing-caption/access-to-existing-
-commands retest remains pending after MAIN integration. See the
-focused delivery and qualifications.
 
 ## Window placement
 
@@ -312,10 +334,10 @@ These are host-only operations; domain validation remains with the consumer.
 
 Shared dialogs without explicit dimensions size to their negotiated content request after mapping, then clamp placement to the screen. The global work-area mapper does not leave them frozen at Tk's provisional size. Explicit caller dimensions remain supported. Focus/grab acquisition checks both owner and target visibility; unmapping releases only that dialog's owned grab.
 
-## Dynamic typed choices (dev108)
+## Dynamic typed choices
 
 `uiFieldChoicesSet field_widget choices` updates both the existing typed choice descriptor and its native selector, bounded to4096 choices/1MiB without NULs. Current value is preserved and marked invalid when absent; ordinary selection, commit and Reset use the updated descriptor. `viewerGuiDesignChoicesSet` delegates to this owner for choice and choice-field controls, retaining plain combobox support.
-## Project icon state images and relative spacing (dev108)
+## Project icon state images and relative spacing
 
 Compatible `action/label/status/checkbutton/toggle` properties now include
 `icon_disabled`, `icon_hover`, `icon_selected`, each an optional existing project
@@ -382,3 +404,85 @@ this transition. Tab selection and disabled controls stay native; focus reveals
 the actual control, nested editors/plots retain their wheel behavior, and a
 scrolling tab owns its wheel rather than also scrolling the outer inspector.
 No Viewer-specific dimensions, scientific state or font reduction are involved.
+
+`uiFieldTabOverflowAttach frame` attaches this same adaptive grid owner to an
+existing native Frame/Labelframe. It returns that frame. Empty frames are valid,
+including the existing public `tab` constructor before its children are added;
+populated children must be grid-managed. Non-frame controls and existing pack/
+place layouts are refused before attachment. Repeated calls preserve live
+viewport/policies and do not duplicate callbacks. Attachment schedules a coalesced
+idle layout even when the frame is already mapped; later Map/Configure events
+use the same existing owner.
+
+Only overflowing mixed fixed/weighted-row grids acquire the existing native
+vertical viewport. Fitting grids retain their original layout, and enlarging or
+restoring fonts returns to it. Original child parents/paths, values, bindings,
+grid policies and native handles remain intact. Native wheel input and actual
+keyboard focus reveal controls through the shared owner; nested trees, editors
+and scrolling tabs retain their own wheel rules. Destruction uses the existing
+tab overflow cleanup. This is a trusted `HOST_UI_ONLY` operation: it grants no
+Script, SDK, worker Tk, renderer, scientific source or persistent-state authority.
+
+Builder-generated Dataset Preview panes attach their existing root grid through
+this operation, so large captions/fonts and small windows retain reachable
+controls without creating another Viewer or Preview host.
+
+When a focused control physically fits but its remaining vertical clearance is
+smaller than the normal24px scroll increment, this same managed viewport retains
+1px alignment so the complete control can be shown. Restoring24px immediately
+would quantize it out of view again. The existing native wheel handler retains
+its normal72px movement per event; scrollbar unit arrows follow the finer1px
+precision in this tight case. Focus clearance is capped by the actual available
+space, already visible controls do not scroll, and oversized controls retain
+bounded leading-edge behavior. Fitting enlargement removes the viewport through
+the normal grid-restoration path. Other Canvas/form owners retain their existing
+scroll increments and rules; no new binding or state store is added.
+
+## Optional Preview host adapter
+
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md) lets opted-in
+Preview modules use these same components/layout/values and `uiFieldIconApply`
+in host-owned panes and viewport panels. It adds no widget/icon system.
+
+## Opt-in original-cell inspection
+
+The trusted host may call `uiFieldTableOriginalAttach(widget, guardPrefix)` for
+an existing readonly table. It keeps standard Ctrl+C TSV copy unchanged. Double
+click inspects the pointed column; Enter inspects the selected row's Value
+column; the cell context menu offers **Inspect original value**. The inspector
+uses `uiFieldComponentTableRead` without replacing tabs or line endings, displays
+a readonly plain Tk Text snapshot with both scrollbars, and offers **Copy original
+value**. Its literal clipboard value preserves Unicode, tabs, LF and CRLF.
+
+Each cell is bounded to 65,536 UTF-8 bytes. The existing UI Field dialog/workarea
+and `uiTextEditingAttach` owners provide geometry, focus, selection and ordinary
+text copy. At most 64 inspectors may remain open. Repeated attachment adds no
+duplicate binding; destroying the actual table disposes its child inspector.
+
+`guardPrefix` is a trusted host callback, never an authored property, portable
+token or new capability. The owner rechecks it before opening and before the
+literal-copy action. The snapshot grants no source edit, Registry, Dataset or
+filesystem authority and is not captured into Workspace state. P033 opts in only
+the managed scientific Metadata and Source tables, using their existing actual
+Preview/Session/package/source guard. Values tables retain their existing behavior.
+
+## P035 fixed-field page overflow
+
+The maintained tab overflow owner also handles a tall page containing only
+fixed-height controls. When its natural content exceeds its allocated height,
+it uses the same contained viewport, scrollbar, wheel and focus reveal as mixed
+fixed/weighted pages. Existing widget paths, field variables, callbacks and grid
+policies remain authoritative. All-weighted Plot/editor pages retain normal
+shrink behavior; fitting pages do not acquire unnecessary scrollbars.
+
+Visibility changes schedule the same coalesced layout after native geometry has
+settled. Showing/hiding controls, changing font/theme or resizing can therefore
+restore the fitting layout without lost keyboard reach or stale bindings.
+Disposal removes the exact shared event bindings and pending callbacks cannot
+resurrect a destroyed tab. This adds no rendering, scientific or persistence API.
+
+The existing scientific Viewer Description/History Details inspector uses the
+same shared dialog creation, presentation and physical-screen placement owner.
+Its complete text remains read-only, scrollable and copyable; Escape and normal
+window close retain parent ownership. This changes only popup placement, with no
+History, scientific, source, persistence or public capability change.

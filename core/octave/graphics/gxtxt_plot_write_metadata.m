@@ -1,6 +1,8 @@
 % SPDX-License-Identifier: GPL-3.0-or-later
 % Plot Region Selection API v1 geometry sidecar writer.
-function path = gxtxt_plot_write_metadata(fig,target,raster)
+function path = gxtxt_plot_write_metadata(fig,target,raster,raster_device)
+  if(nargin<4),raster_device='png';endif
+  if(!any(strcmp(raster_device,{'png','pngcairo'}))),error('GXTXT:PlotMetadata','Unsupported raster device');endif
   path='';if(nargin<2||isempty(fig)||isempty(target)),return;endif
   [d,n,~]=fileparts(target);if(isempty(d)),d=pwd();endif
   md=fullfile(d,'.gxtxt_plotmeta');if(exist(md,'dir')!=7),mkdir(md);endif
@@ -22,7 +24,7 @@ function path = gxtxt_plot_write_metadata(fig,target,raster)
   topology_supported=(numel(data)==1 && !primary_axis_is_3d);
   rect=[];image_size=[];calibration_valid=false;
   if(topology_supported && nargin>=3 && !isempty(raster))
-    [rect,image_size]=raster_data_rect(raster);
+    [rect,image_size]=raster_data_rect(raster,raster_device);
     calibration_valid=!isempty(rect);
   endif
   selection_supported=(topology_supported && calibration_valid);
@@ -104,7 +106,7 @@ function tf=is_helper_axes(ax)
   end_try_catch
 endfunction
 
-function [rect,sz]=raster_data_rect(path)
+function [rect,sz]=raster_data_rect(path,raster_device)
   % Infer the actual solid data frame from the exported PNG. GNUplot can
   % change that frame without updating the in-memory axes.Position property.
   %
@@ -119,7 +121,12 @@ function [rect,sz]=raster_data_rect(path)
   if(size(rgb,3)<3),return;endif
   h=size(rgb,1);w=size(rgb,2);sz=[w h];
   if(w<100||h<100),return;endif
-  dark=all(double(rgb(:,:,1:3))<120,3);
+  contrast=120;
+  % Cairo's antialiased one-pixel border is grey rather than GD's solid dark
+  % sample. Keep the same measured matching-frame algorithm; only its known
+  % device contrast differs. Existing/default callers retain the old cutoff.
+  if(strcmp(raster_device,'pngcairo')),contrast=180;endif
+  dark=all(double(rgb(:,:,1:3))<contrast,3);
   % Invisible RGB samples are not raster frame lines. pngcairo retains black
   % RGB under alpha-zero pixels; treating them as visible creates a false
   % whole-image frame and breaks graph point/area selection.

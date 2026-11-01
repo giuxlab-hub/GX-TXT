@@ -4,7 +4,7 @@ This note describes the independently authored disposable generic Viewer 1.1.0,
 not the user's Scientific Image Inspector. It is grounded in the actual official
 Builder receipts in `v2_authoring01/configure68` and `continue70`, admitted source
 in `project_v2`, Validate71, and the single Build/Test8/Export72. Separate installed human-input GUI evidence now covers this generic fixture;
-see the exact acceptance scope.
+see [the exact acceptance scope](../reports/DEV109_RASTER_ACCEPTANCE210.md).
 The original frozen authoring note and every earlier failed receipt are retained.
 
 The frozen authoring framework is

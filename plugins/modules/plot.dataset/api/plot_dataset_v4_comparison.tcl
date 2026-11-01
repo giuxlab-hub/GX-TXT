@@ -2,6 +2,7 @@
 # Derived numerical comparison display. The existing comparison owner retains
 # geometry, sampling, Numeric/Statistics facts and publication authority.
 proc ::GX::PlotDatasetAPIv4::_comparisonValidate {model} {
+    if {[dict exists $model generic_comparison]} {::GX::comparisonPlotValidate [dict get $model generic_comparison]}
     if {![dict exists $model derived_comparison]} {return}
     set source [dict get $model derived_comparison]
     ::GX::modulePublicApiActivate viewer.curve_workbench CURVE_WORKBENCH_API_v1

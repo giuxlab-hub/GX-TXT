@@ -82,6 +82,8 @@ function [result,paths] = gxtxt_script_bridge_internal(action, varargin)
         entry=GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays(constant_ids{k});
         if(strcmp(entry.owner,handle.gxtxt_callback_id)),remove(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,constant_ids{k});endif
       endfor
+    case 'unpack'
+      result=unpack_value(varargin{1},0);
     case 'pack'
       [result,paths]=pack_value(varargin{1},0);
     otherwise
