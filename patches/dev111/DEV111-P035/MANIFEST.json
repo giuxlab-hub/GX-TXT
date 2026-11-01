@@ -1,0 +1,246 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/4",
+  "patch": "DEV111-P035",
+  "framework": "0.9.8.10-dev-111",
+  "tag": "v0.9.8.10-dev-111-p035",
+  "requires": "DEV111-P034",
+  "archive": "DEV111-P035.zip",
+  "archiveSha256": "8848e8e3f7ada48d7d2b8b34780a398dc83a8829424f64e2dc63c60487b2447d",
+  "archiveBytes": 4484521,
+  "sourceCommit": "ce34988db2c7500b60f7235b237b2fdb67e5d434",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "analysis.spectroscopy.ir_1.2.0_dev111_p035.zip",
+      "archiveSha256": "03350045212f36de075d0141084728ee679e1770920d03e68771bfa31b316a80",
+      "sha256": "03350045212f36de075d0141084728ee679e1770920d03e68771bfa31b316a80",
+      "archiveBytes": 17280,
+      "archivePath": "patches/dev111/DEV111-P035/analysis.spectroscopy.ir_1.2.0_dev111_p035.zip",
+      "originalDepositPath": "modules/analysis.spectroscopy.ir_1.2.0_dev111_p035.zip"
+    },
+    {
+      "category": "Module",
+      "name": "library.spectroscopy.ir.reference_1.2.0_dev111_p035.zip",
+      "archiveSha256": "3e1701cf9cfd10bfd512ffbe0288cde591281219127633c38084f6d5913ad904",
+      "sha256": "3e1701cf9cfd10bfd512ffbe0288cde591281219127633c38084f6d5913ad904",
+      "archiveBytes": 9335,
+      "archivePath": "patches/dev111/DEV111-P035/library.spectroscopy.ir.reference_1.2.0_dev111_p035.zip",
+      "originalDepositPath": "modules/library.spectroscopy.ir.reference_1.2.0_dev111_p035.zip"
+    },
+    {
+      "category": "Module",
+      "name": "plot.dataset_4.4.1_dev111_p035.zip",
+      "archiveSha256": "ef4434b3d4b367b74f50549691c366ecce117197ff05a9031459afc71050c529",
+      "sha256": "ef4434b3d4b367b74f50549691c366ecce117197ff05a9031459afc71050c529",
+      "archiveBytes": 348165,
+      "archivePath": "patches/dev111/DEV111-P035/plot.dataset_4.4.1_dev111_p035.zip",
+      "originalDepositPath": "modules/plot.dataset_4.4.1_dev111_p035.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "archiveSha256": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2",
+      "sha256": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2",
+      "archiveBytes": 59607,
+      "archivePath": "patches/dev111/DEV111-P035/preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.interface_builder_1.2.13_dev111_p035.zip",
+      "archiveSha256": "ccbf65948ccc543c10a6ea57662525a5dc1e9963ee979cb7d3308624aacab181",
+      "sha256": "ccbf65948ccc543c10a6ea57662525a5dc1e9963ee979cb7d3308624aacab181",
+      "archiveBytes": 1054263,
+      "archivePath": "patches/dev111/DEV111-P035/viewer.interface_builder_1.2.13_dev111_p035.zip",
+      "originalDepositPath": "modules/viewer.interface_builder_1.2.13_dev111_p035.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.ir_spectroscopy_1.0.1.zip",
+      "archiveSha256": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+      "sha256": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+      "archiveBytes": 111276,
+      "archivePath": "patches/dev111/DEV111-P035/viewer.ir_spectroscopy_1.0.1.zip",
+      "originalDepositPath": "modules/viewer.ir_spectroscopy_1.0.1.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_ir_library_explorer_lab_1.0.0.zip",
+      "archiveSha256": "67db684511b8064789bf334748134bc3b0a1e7959f3de77910b36ecb1b4ee778",
+      "sha256": "67db684511b8064789bf334748134bc3b0a1e7959f3de77910b36ecb1b4ee778",
+      "archiveBytes": 28303,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_library_explorer_lab_1.0.0.zip",
+      "originalDepositPath": "generators/gxtxt_ir_library_explorer_lab_1.0.0.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_ir_spectral_contracts_lab_1.0.0.zip",
+      "archiveSha256": "2d7e57fb2b21a353554e774e33a2aba7ab20b8dfce49d4aacf2767a27f9499f5",
+      "sha256": "2d7e57fb2b21a353554e774e33a2aba7ab20b8dfce49d4aacf2767a27f9499f5",
+      "archiveBytes": 36127,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_spectral_contracts_lab_1.0.0.zip",
+      "originalDepositPath": "generators/gxtxt_ir_spectral_contracts_lab_1.0.0.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_ir_teaching_labs_1.0.0.zip",
+      "archiveSha256": "71338764583a5b644ce19101d7a923f9042bf0eeefb7e2c9adc8e4aceb08ed41",
+      "sha256": "71338764583a5b644ce19101d7a923f9042bf0eeefb7e2c9adc8e4aceb08ed41",
+      "archiveBytes": 1595264,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_teaching_labs_1.0.0.zip",
+      "originalDepositPath": "generators/gxtxt_ir_teaching_labs_1.0.0.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_ir_viewer_integrated_study_lab_1.0.0.zip",
+      "archiveSha256": "b88eefffdd7dc4a345747cd9f4beb254b690018005a240541f9aabe001e5c9a3",
+      "sha256": "b88eefffdd7dc4a345747cd9f4beb254b690018005a240541f9aabe001e5c9a3",
+      "archiveBytes": 34336,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_viewer_integrated_study_lab_1.0.0.zip",
+      "originalDepositPath": "generators/gxtxt_ir_viewer_integrated_study_lab_1.0.0.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_nist_pnnl_ir_faculty_1.1.0.zip",
+      "archiveSha256": "ef1b72fd89e3224c4a0f802a48f46346cb11bd909aef5a344005f65f48287146",
+      "sha256": "ef1b72fd89e3224c4a0f802a48f46346cb11bd909aef5a344005f65f48287146",
+      "archiveBytes": 1455259,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_nist_pnnl_ir_faculty_1.1.0.zip",
+      "originalDepositPath": "generators/gxtxt_nist_pnnl_ir_faculty_1.1.0.zip"
+    },
+    {
+      "category": "Generator",
+      "name": "gxtxt_refimp_full_training_ir_1.1.0.zip",
+      "archiveSha256": "7e5ff019daa71919a034bb49bb75881401f927ea5bbbe1c58a046c61a7c977a0",
+      "sha256": "7e5ff019daa71919a034bb49bb75881401f927ea5bbbe1c58a046c61a7c977a0",
+      "archiveBytes": 34557,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_refimp_full_training_ir_1.1.0.zip",
+      "originalDepositPath": "generators/gxtxt_refimp_full_training_ir_1.1.0.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "P035_ir_library_explorer_lab_Author-html.zip",
+      "archiveSha256": "c9e40895907c30ef404ddb409a5dedd00219c93ec07d205f7d6783962b86f71a",
+      "sha256": "c9e40895907c30ef404ddb409a5dedd00219c93ec07d205f7d6783962b86f71a",
+      "archiveBytes": 1259033,
+      "archivePath": "patches/dev111/DEV111-P035/P035_ir_library_explorer_lab_Author-html.zip",
+      "originalDepositPath": "teaching/ir_library_explorer_lab/P035_ir_library_explorer_lab_Author-html.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "gxtxt_ir_library_explorer_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "archiveSha256": "bcc66725efee3848cf9145c120721e8067a2e68d88dbad9f868f2777fdfdec20",
+      "sha256": "bcc66725efee3848cf9145c120721e8067a2e68d88dbad9f868f2777fdfdec20",
+      "archiveBytes": 888032,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_library_explorer_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "originalDepositPath": "teaching/ir_library_explorer_lab/gxtxt_ir_library_explorer_lab_1.0.0_DEMO.gxtxt-session.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "P035_ir_spectral_contracts_lab_Author-html.zip",
+      "archiveSha256": "2783d6463fe3253413e1404fdd5b1ae21e6f85e080a6def3073330a086766395",
+      "sha256": "2783d6463fe3253413e1404fdd5b1ae21e6f85e080a6def3073330a086766395",
+      "archiveBytes": 1429165,
+      "archivePath": "patches/dev111/DEV111-P035/P035_ir_spectral_contracts_lab_Author-html.zip",
+      "originalDepositPath": "teaching/ir_spectral_contracts_lab/P035_ir_spectral_contracts_lab_Author-html.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "gxtxt_ir_spectral_contracts_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "archiveSha256": "4311900bb0951994ea414c779d28ec4476a458af5ad55d2515ea19a65d2e9845",
+      "sha256": "4311900bb0951994ea414c779d28ec4476a458af5ad55d2515ea19a65d2e9845",
+      "archiveBytes": 1032945,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_spectral_contracts_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "originalDepositPath": "teaching/ir_spectral_contracts_lab/gxtxt_ir_spectral_contracts_lab_1.0.0_DEMO.gxtxt-session.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "P035_ir_viewer_integrated_study_lab_Author-html.zip",
+      "archiveSha256": "67551db69836472713a31e6cffe587d47f94b1c2865d5695a72c03293203b26b",
+      "sha256": "67551db69836472713a31e6cffe587d47f94b1c2865d5695a72c03293203b26b",
+      "archiveBytes": 1268738,
+      "archivePath": "patches/dev111/DEV111-P035/P035_ir_viewer_integrated_study_lab_Author-html.zip",
+      "originalDepositPath": "teaching/ir_viewer_integrated_study_lab/P035_ir_viewer_integrated_study_lab_Author-html.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "gxtxt_ir_viewer_integrated_study_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "archiveSha256": "eae3a4befdb454da145a7c957be2651a7a75fd0f810f4145adefcb05313952af",
+      "sha256": "eae3a4befdb454da145a7c957be2651a7a75fd0f810f4145adefcb05313952af",
+      "archiveBytes": 899198,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_ir_viewer_integrated_study_lab_1.0.0_DEMO.gxtxt-session.zip",
+      "originalDepositPath": "teaching/ir_viewer_integrated_study_lab/gxtxt_ir_viewer_integrated_study_lab_1.0.0_DEMO.gxtxt-session.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "P035_nist_pnnl_ir_faculty_Author-html.zip",
+      "archiveSha256": "5887e8755320df80caf13e112f767b760cec6fac1d0c39324f1bf02120f1ddf0",
+      "sha256": "5887e8755320df80caf13e112f767b760cec6fac1d0c39324f1bf02120f1ddf0",
+      "archiveBytes": 9924308,
+      "archivePath": "patches/dev111/DEV111-P035/P035_nist_pnnl_ir_faculty_Author-html.zip",
+      "originalDepositPath": "teaching/nist_pnnl_ir_faculty/P035_nist_pnnl_ir_faculty_Author-html.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "gxtxt_nist_pnnl_ir_faculty_1.1.0_DEMO.gxtxt-session.zip",
+      "archiveSha256": "f3d63877dd3fa3bdd154b1d587c2712965a9cef6dcaf514c13c809275708fbe5",
+      "sha256": "f3d63877dd3fa3bdd154b1d587c2712965a9cef6dcaf514c13c809275708fbe5",
+      "archiveBytes": 9078656,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_nist_pnnl_ir_faculty_1.1.0_DEMO.gxtxt-session.zip",
+      "originalDepositPath": "teaching/nist_pnnl_ir_faculty/gxtxt_nist_pnnl_ir_faculty_1.1.0_DEMO.gxtxt-session.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "P035_refimp_full_training_ir_Author-html.zip",
+      "archiveSha256": "352e3cebf7427532ae65b6949528036870e472e9b086b6fdb4de47ff4dffcb24",
+      "sha256": "352e3cebf7427532ae65b6949528036870e472e9b086b6fdb4de47ff4dffcb24",
+      "archiveBytes": 1801251,
+      "archivePath": "patches/dev111/DEV111-P035/P035_refimp_full_training_ir_Author-html.zip",
+      "originalDepositPath": "teaching/refimp_full_training_ir/P035_refimp_full_training_ir_Author-html.zip"
+    },
+    {
+      "category": "Teaching material",
+      "name": "gxtxt_refimp_full_training_ir_1.1.0_DEMO.gxtxt-session.zip",
+      "archiveSha256": "fb2f30a07e4ff44852277ede531bc3e0b39c6f3e2948b346930caab25b74ba66",
+      "sha256": "fb2f30a07e4ff44852277ede531bc3e0b39c6f3e2948b346930caab25b74ba66",
+      "archiveBytes": 1051294,
+      "archivePath": "patches/dev111/DEV111-P035/gxtxt_refimp_full_training_ir_1.1.0_DEMO.gxtxt-session.zip",
+      "originalDepositPath": "teaching/refimp_full_training_ir/gxtxt_refimp_full_training_ir_1.1.0_DEMO.gxtxt-session.zip"
+    }
+  ],
+  "alternativeModulePackages": [
+    {
+      "archive": "analysis.spectroscopy.ir_1.2.0_dev111_p035.zip",
+      "archiveSha256": "03350045212f36de075d0141084728ee679e1770920d03e68771bfa31b316a80",
+      "archiveBytes": 17280
+    },
+    {
+      "archive": "library.spectroscopy.ir.reference_1.2.0_dev111_p035.zip",
+      "archiveSha256": "3e1701cf9cfd10bfd512ffbe0288cde591281219127633c38084f6d5913ad904",
+      "archiveBytes": 9335
+    },
+    {
+      "archive": "plot.dataset_4.4.1_dev111_p035.zip",
+      "archiveSha256": "ef4434b3d4b367b74f50549691c366ecce117197ff05a9031459afc71050c529",
+      "archiveBytes": 348165
+    },
+    {
+      "archive": "preview.curve_digitizer_0.1.12_dev111_p032_REQUIRES_CORE_BRIDGE_022.zip",
+      "archiveSha256": "57a0ae932bef79c64d597299581f7319ed30548bc0c2a7846bcace34c436c5b2",
+      "archiveBytes": 59607
+    },
+    {
+      "archive": "viewer.interface_builder_1.2.13_dev111_p035.zip",
+      "archiveSha256": "ccbf65948ccc543c10a6ea57662525a5dc1e9963ee979cb7d3308624aacab181",
+      "archiveBytes": 1054263
+    },
+    {
+      "archive": "viewer.ir_spectroscopy_1.0.1.zip",
+      "archiveSha256": "a6f3bd729e09c91a9dd2a458f2c5db475f48bedf84a240eb11684cadd45e0e37",
+      "archiveBytes": 111276
+    }
+  ],
+  "license": "GPL-3.0-or-later"
+}
