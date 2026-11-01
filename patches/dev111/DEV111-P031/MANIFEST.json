@@ -1,0 +1,130 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/4",
+  "patch": "DEV111-P031",
+  "framework": "0.9.8.10-dev-111",
+  "tag": "v0.9.8.10-dev-111-p031",
+  "requires": "DEV111-P030",
+  "archive": "DEV111-P031.zip",
+  "archiveSha256": "40886aa9b4ae88dab262e0a7ee8019b33023ed8ac3a36e4dfc14adfb0a3db827",
+  "archiveBytes": 8691230,
+  "sourceCommit": "c998fe69626834550164534e22131e9cb8810448",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "acq.rigol_csv_2.3.1_dev111_p031.zip",
+      "archiveSha256": "b84635242e1d4024dd14647fb57b147427daaac5b770d0c734e3d4d32c4316e2",
+      "sha256": "b84635242e1d4024dd14647fb57b147427daaac5b770d0c734e3d4d32c4316e2",
+      "archiveBytes": 1035032,
+      "archivePath": "patches/dev111/DEV111-P031/acq.rigol_csv_2.3.1_dev111_p031.zip",
+      "originalDepositPath": "modules/acq.rigol_csv_2.3.1_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "acq.text_document_1.2.0_dev111_p031.zip",
+      "archiveSha256": "096031fdeacb80455439e59fbd671c5ccdc88b81ac33474ea353e8175f992641",
+      "sha256": "096031fdeacb80455439e59fbd671c5ccdc88b81ac33474ea353e8175f992641",
+      "archiveBytes": 47130,
+      "archivePath": "patches/dev111/DEV111-P031/acq.text_document_1.2.0_dev111_p031.zip",
+      "originalDepositPath": "modules/acq.text_document_1.2.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "plot.dataset_4.3.0_dev111_p031.zip",
+      "archiveSha256": "641f052e4450ba5c7629b043d17956feab7899bbe37603e88bfe984d5e884ae3",
+      "sha256": "641f052e4450ba5c7629b043d17956feab7899bbe37603e88bfe984d5e884ae3",
+      "archiveBytes": 346009,
+      "archivePath": "patches/dev111/DEV111-P031/plot.dataset_4.3.0_dev111_p031.zip",
+      "originalDepositPath": "modules/plot.dataset_4.3.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.4.zip",
+      "archiveSha256": "c07ae52b27dd81737eb2f95acaf842eb56e6c48f6eccdc6722b41d854335cfac",
+      "sha256": "c07ae52b27dd81737eb2f95acaf842eb56e6c48f6eccdc6722b41d854335cfac",
+      "archiveBytes": 25815,
+      "archivePath": "patches/dev111/DEV111-P031/preview.curve_digitizer_0.1.4.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.4.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.5_dev111_p031.zip",
+      "archiveSha256": "1e57baf0ee7b3cd6c0368c1b77c79290caed22cd641342390a6ee59ba0a4be07",
+      "sha256": "1e57baf0ee7b3cd6c0368c1b77c79290caed22cd641342390a6ee59ba0a4be07",
+      "archiveBytes": 27064,
+      "archivePath": "patches/dev111/DEV111-P031/preview.curve_digitizer_0.1.5_dev111_p031.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.5_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.uml_document_1.0.0_dev111_p031.zip",
+      "archiveSha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "sha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "archiveBytes": 83225,
+      "archivePath": "patches/dev111/DEV111-P031/preview.uml_document_1.0.0_dev111_p031.zip",
+      "originalDepositPath": "modules/preview.uml_document_1.0.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.interface_builder_1.2.10_dev111_p031.zip",
+      "archiveSha256": "6e9e1bc4dffebb58e8f9490a2b64061f3afd4330598a69d6bde6ff979cbae090",
+      "sha256": "6e9e1bc4dffebb58e8f9490a2b64061f3afd4330598a69d6bde6ff979cbae090",
+      "archiveBytes": 1050486,
+      "archivePath": "patches/dev111/DEV111-P031/viewer.interface_builder_1.2.10_dev111_p031.zip",
+      "originalDepositPath": "modules/viewer.interface_builder_1.2.10_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "archiveSha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "sha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "archiveBytes": 87858,
+      "archivePath": "patches/dev111/DEV111-P031/viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "originalDepositPath": "modules/viewer.uml_editor_1.0.0_dev111_p031.zip"
+    }
+  ],
+  "alternativeModulePackages": [
+    {
+      "archive": "acq.rigol_csv_2.3.1_dev111_p031.zip",
+      "archiveSha256": "b84635242e1d4024dd14647fb57b147427daaac5b770d0c734e3d4d32c4316e2",
+      "archiveBytes": 1035032
+    },
+    {
+      "archive": "acq.text_document_1.2.0_dev111_p031.zip",
+      "archiveSha256": "096031fdeacb80455439e59fbd671c5ccdc88b81ac33474ea353e8175f992641",
+      "archiveBytes": 47130
+    },
+    {
+      "archive": "plot.dataset_4.3.0_dev111_p031.zip",
+      "archiveSha256": "641f052e4450ba5c7629b043d17956feab7899bbe37603e88bfe984d5e884ae3",
+      "archiveBytes": 346009
+    },
+    {
+      "archive": "preview.curve_digitizer_0.1.4.zip",
+      "archiveSha256": "c07ae52b27dd81737eb2f95acaf842eb56e6c48f6eccdc6722b41d854335cfac",
+      "archiveBytes": 25815
+    },
+    {
+      "archive": "preview.curve_digitizer_0.1.5_dev111_p031.zip",
+      "archiveSha256": "1e57baf0ee7b3cd6c0368c1b77c79290caed22cd641342390a6ee59ba0a4be07",
+      "archiveBytes": 27064
+    },
+    {
+      "archive": "preview.uml_document_1.0.0_dev111_p031.zip",
+      "archiveSha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "archiveBytes": 83225
+    },
+    {
+      "archive": "viewer.interface_builder_1.2.10_dev111_p031.zip",
+      "archiveSha256": "6e9e1bc4dffebb58e8f9490a2b64061f3afd4330598a69d6bde6ff979cbae090",
+      "archiveBytes": 1050486
+    },
+    {
+      "archive": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "archiveSha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "archiveBytes": 87858
+    }
+  ],
+  "license": "GPL-3.0-or-later"
+}
