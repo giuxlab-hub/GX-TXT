@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0c131d">
-  <title>GX-TXT — Novità delle release | dalla dev-095 alla dev-111</title>
+  <title>GX-TXT — Novità delle release | dalla dev-095 alla dev-112</title>
   <meta name="description" content="Le tappe dello sviluppo pubblico di GX-TXT: Dataset scientifici, statistica, Curve Digitizer, Workspace, Worksheet, simulazioni e curve replicate.">
   <meta name="author" content="Giux-Lab">
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/releases/">
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="../../assets/releases.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GX-TXT / Giux-Lab">
-  <meta property="og:title" content="GX-TXT — Novità delle release | dalla dev-095 alla dev-111">
+  <meta property="og:title" content="GX-TXT — Novità delle release | dalla dev-095 alla dev-112">
   <meta property="og:description" content="Le tappe dello sviluppo pubblico di GX-TXT: Dataset scientifici, statistica, Curve Digitizer, Workspace, Worksheet, simulazioni e curve replicate.">
   <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/it/releases/">
 </head>
@@ -56,9 +56,9 @@
     </div>
     <div class="release-stat" aria-label="VERSIONI DOCUMENTATE">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">16</div>
+      <div class="release-stat-number">17</div>
       <div class="release-stat-label">REVISIONI PUBBLICHE</div>
-      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-111</strong></div>
+      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-112</strong></div>
       <div class="release-stat-row"><span>FONTE PRINCIPALE</span><strong>CHANGELOG delle versioni</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Vai a una release">
         <span>Vai a una release</span>
+<a href="#dev-112" aria-label="GX-TXT 0.9.8.10-dev-112">dev-112</a>
 <a href="#dev-111" aria-label="GX-TXT 0.9.8.10-dev-111">dev-111</a>
 <a href="#dev-110" aria-label="GX-TXT 0.9.8.10-dev-110">dev-110</a>
 <a href="#dev-109" aria-label="GX-TXT 0.9.8.10-dev-109">dev-109</a>
@@ -84,13 +85,34 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-112">
+<div class="release-marker" aria-hidden="true"><span>112</span></div>
+<article class="release-panel release-featured">
+<div class="release-head">
+<div><div class="release-version">0.9.8.10-dev-112-r2</div><h2>GX-TXT 0.9.8.10-dev-112-r2 — distribuzione completa</h2></div>
+<span class="release-current">ULTIMA RELEASE</span>
+</div>
+<p class="release-intro">La DEV112-r2 è una distribuzione completa: non occorre riapplicare la catena delle patch DEV111. Release autonoma per Debian 13 amd64: applicazione, CORE, 149 moduli scientifici, Demo e Generators opzionali, Compute Node e installer grafico.</p>
+<h3 class="release-group-label">Componenti distribuiti</h3>
+<ul class="release-bullets"><li>Pacchetto base gxtxt: applicazione e 149 moduli non-demo, installazione sotto /opt/gx-txt.</li>
+<li>Pacchetti opzionali: 15 Demo, 39 Generators pubblici e Compute Node mTLS con configurazione SSH.</li>
+<li>Alternativa: installer grafico in una nuova cartella e archivio pubblico completo del framework.</li>
+<li>Pacchetti originali Curve Digitizer Viewer 2.0.26 e Preview 0.1.12 conservati integralmente.</li>
+<li>Il materiale PRIVATE_OWNER_ONLY non fa parte della distribuzione GitHub.</li></ul>
+<div class="release-scope"><span>Distribuzione autonoma</span><p>Per Debian 13 amd64. Installare il pacchetto con APT e gestire i componenti opzionali secondo la documentazione. Non sovrascrivere installazioni precedenti o dati personali.</p></div>
+<div class="release-maintenance" aria-label="DEV112-r2">
+<strong>GX-TXT 0.9.8.10-dev-112-r2 — distribuzione completa</strong><p>Il file .deb scaricato da GitHub presenta un punto al posto di ~ nel nome; il contenuto e la versione interna del pacchetto sono invariati.</p>
+<a href="dev112-r2/">Documentazione e download ↗</a>
+</div>
+</article>
+</li>
 <li class="release-entry" id="dev-111">
   <div class="release-marker" aria-hidden="true"><span>111</span></div>
   <article class="release-panel release-featured">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-111</div>
   <h2>DEV111 — aggiornamenti disponibili fino alla P035</h2></div>
-  <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
+
 </div>
     <p><strong>Ultimo aggiornamento: DEV111-P035.</strong> Viewer IR nativo, Cache Bridge 022, moduli di spettroscopia, generatori e laboratori didattici. Nessun modulo della distribuzione è stato omesso. <a href="../hotfixes/dev111-p035-ir-viewer-cache-bridge-teaching/">Dettagli e download della P035</a>.</p>
     <p class="release-intro">GX-TXT dev-111, revisione r3, amplia lo sviluppo dei Viewer scientifici con un inizializzatore numerico corretto, un catalogo di icone più ampio, l’ispezione di sorgenti EAGLE abbinati e nuove integrazioni scientifiche. Le precedenti revisioni dell’archivio rimangono conservate separatamente.</p>
