@@ -1,0 +1,74 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/4",
+  "patch": "DEV111-P032",
+  "framework": "0.9.8.10-dev-111",
+  "tag": "v0.9.8.10-dev-111-p032",
+  "requires": "DEV111-P031",
+  "archive": "DEV111-P032.zip",
+  "archiveSha256": "96ad229a771a519c8e45026dd70770581942ec2a3531915098d31c7f00d5f31b",
+  "archiveBytes": 4539551,
+  "sourceCommit": "fc672ead2755c316025711b9915fdcd6beef4909",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "acq.generic_csv_3_dev111_p032.zip",
+      "archiveSha256": "8920db1477440d4c2dcd80422a57cd009d0845952008bb281233fb1aa695e681",
+      "sha256": "8920db1477440d4c2dcd80422a57cd009d0845952008bb281233fb1aa695e681",
+      "archiveBytes": 17914,
+      "archivePath": "patches/dev111/DEV111-P032/acq.generic_csv_3_dev111_p032.zip",
+      "originalDepositPath": "modules/acq.generic_csv_3_dev111_p032.zip"
+    },
+    {
+      "category": "Module",
+      "name": "tool.script_module_builder_1.4.6_dev111_p032.zip",
+      "archiveSha256": "3fc58409e12179fab3b329714ac3b243a01c01a69c7e4e83f912cd83151fab76",
+      "sha256": "3fc58409e12179fab3b329714ac3b243a01c01a69c7e4e83f912cd83151fab76",
+      "archiveBytes": 43388,
+      "archivePath": "patches/dev111/DEV111-P032/tool.script_module_builder_1.4.6_dev111_p032.zip",
+      "originalDepositPath": "modules/tool.script_module_builder_1.4.6_dev111_p032.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.development_workspace_1.2.6_dev111_p032.zip",
+      "archiveSha256": "700925307e847263b7152e0f09cc4c40ff730d5261e89531ab33bea421690d71",
+      "sha256": "700925307e847263b7152e0f09cc4c40ff730d5261e89531ab33bea421690d71",
+      "archiveBytes": 1857583,
+      "archivePath": "patches/dev111/DEV111-P032/viewer.development_workspace_1.2.6_dev111_p032.zip",
+      "originalDepositPath": "modules/viewer.development_workspace_1.2.6_dev111_p032.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.interface_builder_1.2.11_dev111_p032.zip",
+      "archiveSha256": "42830337d482de31402fb00f493655c1bfbc2663a708a273daa6e76bbbbd8b58",
+      "sha256": "42830337d482de31402fb00f493655c1bfbc2663a708a273daa6e76bbbbd8b58",
+      "archiveBytes": 1051997,
+      "archivePath": "patches/dev111/DEV111-P032/viewer.interface_builder_1.2.11_dev111_p032.zip",
+      "originalDepositPath": "modules/viewer.interface_builder_1.2.11_dev111_p032.zip"
+    }
+  ],
+  "alternativeModulePackages": [
+    {
+      "archive": "acq.generic_csv_3_dev111_p032.zip",
+      "archiveSha256": "8920db1477440d4c2dcd80422a57cd009d0845952008bb281233fb1aa695e681",
+      "archiveBytes": 17914
+    },
+    {
+      "archive": "tool.script_module_builder_1.4.6_dev111_p032.zip",
+      "archiveSha256": "3fc58409e12179fab3b329714ac3b243a01c01a69c7e4e83f912cd83151fab76",
+      "archiveBytes": 43388
+    },
+    {
+      "archive": "viewer.development_workspace_1.2.6_dev111_p032.zip",
+      "archiveSha256": "700925307e847263b7152e0f09cc4c40ff730d5261e89531ab33bea421690d71",
+      "archiveBytes": 1857583
+    },
+    {
+      "archive": "viewer.interface_builder_1.2.11_dev111_p032.zip",
+      "archiveSha256": "42830337d482de31402fb00f493655c1bfbc2663a708a273daa6e76bbbbd8b58",
+      "archiveBytes": 1051997
+    }
+  ],
+  "license": "GPL-3.0-or-later"
+}
