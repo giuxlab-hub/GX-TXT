@@ -14,7 +14,7 @@ GX-TXT DEV112-r2 is a **complete standalone version**, not an incremental DEV111
 
 The public release provides the main `gxtxt` Debian package (Debian 13 / amd64), optional `gxtxt-demos`, `gxtxt-generators` and `gxtxt-compute-node` Debian packages, a self-contained graphical home-folder installer, the complete public framework archive, a reproducible installer/compute build-source Git bundle and the unchanged Curve Digitizer Viewer/Preview package ZIPs.
 
-The base framework includes **149 non-demo modules**, with **15 optional Demo modules**; **39 public Generators** are available in the public generator package. **Five further private teaching Generators and five private Scientific Libraries are not part of this public release**.
+The base framework includes **149 non-demo modules**, with **15 optional Demo modules**; the Generator package supplies **39 Generators**.
 
 ## Installation
 
@@ -30,15 +30,13 @@ The optional Compute Node service is separately installed from `gxtxt-compute-no
 
 For migration, keep the previous installation, Sessions, RAW, Configuration, personal libraries and archives intact. Do not overwrite a live DEV111 installation or open the same writable Session concurrently in both versions.
 
-## Public-only distribution and source history
+## Distribution and source history
 
 The public files have the exact hashes in the release `SHA256SUMS` and `PUBLIC_MANIFEST.json`. The original release includes source provenance:
 
 - Accepted DEV111-P035 source `ce34988db2c7500b60f7235b237b2fdb67e5d434`.
 - DEV112 framework consolidation source `8e637adff46306b5005297679166c09a1e9d36b8`.
 - Installer/Compute source `f2bdfd20df261e3a34f3240c90873661ebcbe52a`.
-
-**The `PRIVATE_OWNER_ONLY` directory and its contents have never been included in this GitHub branch or public release assets.** Do not publish private reference libraries, recovered NMR data, owner workkits, credentials or personal Sessions.
 
 The original release documentation records focused packaging, Debian dependency, GUI installation and optional Compute Node checks, including explicit limitations. Publishing these artifacts does not add new scientific or GPU validation.
 
