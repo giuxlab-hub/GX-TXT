@@ -284,3 +284,24 @@ python3 tools/validate_dev111_p030.py --repository /path/to/maintenance-dev111
 ```
 
 The original delivered P030 patch and seven companion Module packages are listed with their byte identities. Curve Digitizer 2.0.20 is distributed without changes from the author's original package; archive SHA-256: acbc81a77ed1625bde3030e871ec88513a28f08b1317780f8e95b3e2b10ff152. No release-deployment helper, private Session or operator evidence is copied to this branch.
+
+## GX-TXT DEV111 P031–P035 — complete archived distributions
+
+All five official sequential patches and all associated delivered Module/Generator/Teaching ZIPs are preserved.
+The release archives are incremental and require their exact predecessor; publish-only checksum checks do not install GX-TXT.
+P035 delivers CORE and separate managed external Module components as parts of the same GX-TXT release.
+
+- **DEV111-P031**: [UML, Custom Plot Axes, Preview and Markdown Navigation](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p031) — `patch-manifest-dev111-p031.json`.
+- **DEV111-P032**: [Extensible Acquisition Builder and Native Numeric Clients](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p032) — `patch-manifest-dev111-p032.json`.
+- **DEV111-P033**: [Scientific Acquisition, Native Previews and Script Projects](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p033) — `patch-manifest-dev111-p033.json`.
+- **DEV111-P034**: [Reusable Comparison Plot and Plot v4 Integration](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p034) — `patch-manifest-dev111-p034.json`.
+- **DEV111-P035**: [IR Spectroscopy Viewer, Teaching Labs and CORE Cache Bridge 022](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p035) — `patch-manifest-dev111-p035.json`.
+
+Read-only complete distribution check:
+
+```bash
+python3 tools/validate_dev111_p031_p035.py --repository /path/to/maintenance-dev111
+```
+
+This checks archive and file identities; no CORE or third-party module installation, source rewriting, or scientific results are claimed by the publication workflow.
+

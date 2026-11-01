@@ -1,0 +1,2299 @@
+{
+  "schema": "gxtxt.patch-validation-source/4",
+  "framework": "0.9.8.10-dev-111",
+  "patch": "DEV111-P031",
+  "tag": "v0.9.8.10-dev-111-p031",
+  "requiredPredecessor": "DEV111-P030",
+  "archivePath": "patches/dev111/DEV111-P031/DEV111-P031.zip",
+  "archiveSha256": "40886aa9b4ae88dab262e0a7ee8019b33023ed8ac3a36e4dfc14adfb0a3db827",
+  "archiveBytes": 8691230,
+  "originalSourceCommit": "c998fe69626834550164534e22131e9cb8810448",
+  "sourceFilesManifest": "patches/dev111/DEV111-P031/SOURCE_FILES.json",
+  "fileCount": 180,
+  "files": [
+    {
+      "path": "GX-TXT_REMAINING_WORK_TODO.md",
+      "action": "replace",
+      "before": {
+        "sha256": "e2e3fe1e182f24cb2a5a5a0a40230e0c81abbe885fb3829b4ef0c9434148f71a",
+        "size": 40714,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "f395b59cc3abb06d05978fd45b86599adbfdc63e5bf1e7391c654820e3851e7f",
+        "size": 41183,
+        "mode": 436
+      }
+    },
+    {
+      "path": "GX-TXT_REMAINING_WORK_TODO.md.sha256",
+      "action": "replace",
+      "before": {
+        "sha256": "f15f4ec8aeff47fff5eace4bfed1e2421baabf4631f2517e677faa06725535f9",
+        "size": 96,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "e747bcc3a3d24cf9109fc447fcafe8c2d7f184058bf23dabba1a204d2c2d6b08",
+        "size": 96,
+        "mode": 436
+      }
+    },
+    {
+      "path": "PATCH_LEVEL.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "1ee5cd7b0c23c6812abab18fc309651081bc8e3c9de9aa3e75d8be3272fa8517",
+        "size": 4,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "6b078e164f3a4de18288d1fd9b95c349afe08fd0059c4630b0c7fa08708ee14e",
+        "size": 4,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/configuration_manifest.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "905bd77891d573600c058e6868f39c8d885fc7a80cefc37a976d9ea78bcec239",
+        "size": 17806,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "60b2b428c0fa1e3d9a4b3fc75fb8796052faf370aeb8d4aaaabc1380ac10e0ce",
+        "size": 18127,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/graph_browser.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "ea5216d1fc7a4ec20595509363c8a6e87eef8d0d75bcd51b65510bb9433f0571",
+        "size": 42116,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "07f8990b11eac1ac4e614725447d4bf7e3a76d0b230c35f03dc2f969aab0b252",
+        "size": 42808,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/graph_dialogs.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "0e1d6bb0c82011fef09cd509f678f3bc6198dd866687ac28003bb95c2c23c7d3",
+        "size": 37399,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "74937510fc45aeffd5d8a849f7c3494d12dbd6e32eb193fb14c6a23eb2ea0ce7",
+        "size": 38954,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/graph_toolbar_tips.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "ee02aa4d26913ee44f3790041ddfd1c51e6473b62d58fff115e77bdcd8241828",
+        "size": 4475,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "bb090bf8296955eb89a288967a10270ed16cd5d11eed291bce7d58dad06c0589",
+        "size": 7655,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/acquisition_page.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "cabe66c977f607875035c348fcd2e964738d03c90d0ff2cdf5dd3c42b4113843",
+        "size": 14175,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "509083b3fd04132e8678ab5df4f68e23ab8be1b02ddbe29aeef4bbb8cafeaaa6",
+        "size": 18216,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/configuration_modules.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "9f7ffb6016f4a89ed6c622db7b948d209956ebe8018c1e4801682ceefe194fb5",
+        "size": 19351,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "e00add28c2966bf361e9905366c099c171ab81e988bbd474a6ee43b751d44170",
+        "size": 19612,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/configuration_page.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "532d96287dd61374604755831ad2c7445ccfa1c4b5f083112f24bc89f18e9c2d",
+        "size": 33410,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "6533e8b332393dbb9f350adc299ff4ba73f232088204f022f32ecfa20137cd99",
+        "size": 33940,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/configuration_preview_components.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "5a418db39b34f5291e9fd394b09708fd9a587e58b43eb973862063e5396c2f86",
+        "size": 20171,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "ec322216905ff6089b79f01732e6d171a183f3a9fe17432289fc83e6c970c812",
+        "size": 20472,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/dataset_preview_live.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "8ba9059173567580ae6664579c4d64ca90842c00a8f8e30bd32185e03dc5fb77",
+        "size": 51515,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "da9d150f340b4e051bca177344609b1edd010c500ddc6c9f6bdace88d46f4ae8",
+        "size": 52834,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/documentation_browser.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "bf42acfadc0f20ce265b7eceb0d2ca7dba9a1d4d6d5a428d813a5f70c7ad7e13",
+        "size": 10198,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "db6d27019aadcfa8af8313a38fb27523090ddd0d6c537b0d9f06a8a2926071bd",
+        "size": 8790,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/gui/documentation_module_window.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "e0fca69ee0780584758a89b3955d936d7017a70f6084af3ad7d3f76ee781866f",
+        "size": 47437,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "498d9abb532852cbdfd51b0d1184170ad7a13131738b5b1a8553b3df387ac145",
+        "size": 51098,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/module_catalog.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "dcc38d3f48530761d0328afee00c99f7813eeb0479578beed56a4e862d3e5b85",
+        "size": 15508,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a81183f1fd1ec7911b6b422d87363af55ce6f8aa0fc0c1803787f5557202771a",
+        "size": 15539,
+        "mode": 436
+      }
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "6c30d3394f6b9d1c9a89586d270c02e1538cf0af955138e542ca162edfa01cbc",
+        "size": 12118,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a24ebdefb13d8e5204cac4815f15685bd6608c9229aa0e43cd2fbf4fdd5562c7",
+        "size": 12092,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/api_catalog/catalog.sqlite",
+      "action": "replace",
+      "before": {
+        "sha256": "859fb638216eb3089dd9c440887dc655b3a1255328ae2173a8da275547ffd05d",
+        "size": 23175168,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "47dac4507196669e1408da009199ba55d428fd4e0c1793185e29942cdc7e7fad",
+        "size": 23658496,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/api_catalog/source_manifest.json",
+      "action": "replace",
+      "before": {
+        "sha256": "c01170e177e81642ec286a887a2504377e05dda7ad3977806b653ca53b1a7a40",
+        "size": 204087,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "277283115ad6717e77c10726901e363eb1210a39a63b1c2251d38d74aeff9311",
+        "size": 207005,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/development/policy_v1.json",
+      "action": "replace",
+      "before": {
+        "sha256": "a8428ddf9e47abd1d920afc364c783705a85a5d95574a3064d2dc0ddc0bb64ca",
+        "size": 12693,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+        "size": 12975,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/native2d/CMakeLists.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "33e5b923b7fa2d72c05fcae5a95b5c44caf7f121987a9ec37f8b74140ed56b21",
+        "size": 5430,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "4d7d7eecff4f68c745ee335f49c3d3b736ffbdcace302c72dccae7e3f4c3346a",
+        "size": 5447,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/native2d/bin/BUILD_RECEIPT_P031.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "4d81af8624b8b09d23bf5366378208b7771e439e0dcce43d519b1bdc697a86d5",
+        "size": 11488,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/native2d/bin/gx2dtcl.so",
+      "action": "replace",
+      "before": {
+        "sha256": "8710615bf9fee488ddc3c52c73bfbdc8e5f52d49965a88650d10c902bf79d3a7",
+        "size": 1308600,
+        "mode": 509
+      },
+      "after": {
+        "sha256": "a46d9f07a41d0fbd273466adc061c97d515275f63a350f2b543bc032317e51d9",
+        "size": 1350008,
+        "mode": 509
+      }
+    },
+    {
+      "path": "core/native2d/gx2d_plot_caption_layout.inc",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "55b8293826ecc02b89c2cd0995382c68a4d412aa8614f2b1b40496e815e19c5c",
+        "size": 8515,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/native2d/gx2d_plot_v4.cpp",
+      "action": "replace",
+      "before": {
+        "sha256": "ff491d481de4d4b856556af07705ee0bd552c3682cef2f5eedec7ddc4af74d17",
+        "size": 56637,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "3b5d787b677b7a72b73423545e0b42ebb55db6e3f8e2ec0cac644658c34f585f",
+        "size": 57821,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/native2d/gx2d_surface.cpp",
+      "action": "replace",
+      "before": {
+        "sha256": "bd85a1d95f3f1225de7e6e9cabe7b52b6435e588c7d8a28aec96128504e4e009",
+        "size": 46792,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "4ea683f2dd8426a181a65a748d455c07ff06922d9d89e19b77ae4f72254a3673",
+        "size": 55776,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/nativegui/document/gxtxt_html_runtime",
+      "action": "replace",
+      "before": {
+        "sha256": "d703d0f5b5201fa53354c21625c1be40e053b3939872067fd91d75e273efe3f6",
+        "size": 1894304,
+        "mode": 509
+      },
+      "after": {
+        "sha256": "90e3b2d5ddd32444f311ee2a80f739a8b58d1514ebb15e0e35b59f11eda4139d",
+        "size": 1897040,
+        "mode": 509
+      }
+    },
+    {
+      "path": "core/nativegui/document/gxtxt_html_runtime.info",
+      "action": "replace",
+      "before": {
+        "sha256": "a93174a796f3276f2feda7d2ee5a12ac1cf2251c8ee5478b0aab846f12df76fb",
+        "size": 192,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "0f9ee06955b6d719af050a9c96af06bc7c36e0f5b6522e10795933b328f6fe38",
+        "size": 192,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/nativegui/document/html_runtime.cpp",
+      "action": "replace",
+      "before": {
+        "sha256": "198da598ed64a5e689227e1bb8857e8e2f699f40058a54cda6847bcb15fe4b0e",
+        "size": 46566,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "ecbe6470bd1fa67191c0808a30a36c4c52223b2e0b885efd502409926e6344fa",
+        "size": 47465,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/octave/graphics/gxtxt_plot_write_metadata.m",
+      "action": "replace",
+      "before": {
+        "sha256": "86149e10d2127a9a8e9ca99df3749e95928b67bf76561c3f355b9e8d15e58b90",
+        "size": 12578,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "2eb6620e75f186e527b8412d346812b54c4f097d7ae973b73aa76233591c01d8",
+        "size": 13085,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/octave/graphics/gxtxt_png_density.py",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "cf2315c0320f7b4f51ef94e6812a87fef6a1bc4ffe1db5f326adfb31239351fa",
+        "size": 3586,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/octave/graphics/gxtxt_print_png_atomic.m",
+      "action": "replace",
+      "before": {
+        "sha256": "b8ad34c5c6a662cce1b2b0831ea7b1f1c3309ad3996c3dfb559875bf4495d6b4",
+        "size": 5602,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "83d1ae8e9d57b970314b9c8688c45bfc74fbbd31cad6ab468dd3eca680ce6838",
+        "size": 8578,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/python/gxtxt_viewer_development.py",
+      "action": "replace",
+      "before": {
+        "sha256": "470e0e38f7e8fc2102adff9e38ab5afddf15034d136d5e48da4ed9ceaa06ac31",
+        "size": 197097,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "10f748ebb265cb615aee006b9529da75226462efeee0f43acbc1fecdb9930c9f",
+        "size": 199646,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/configuration_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "371e18f7d48856111092308cba5e08b9b54200f4cb47c7c6436bcb86e493f5fc",
+        "size": 30249,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "bbd923b3feeb651b64af02f54821cfc25d1e56a566e5531fe2d96ee73c196fab",
+        "size": 31318,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/configuration_modules_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "3dd57f6467e5755a914ffa578a18caa6592e01b6a06f3be8dd659eb4c8e1c138",
+        "size": 14841,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "ed8c3b11f0b4e94bf55ee6f9629b0b22bd30c3dbcf5c8398e8c78c9c52e54946",
+        "size": 15459,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/dataset_file_publication_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "402ad8ef2bbf3013b22582bd513c9d35dac52b6ab485eb0d6ec952d23bdeb9fd",
+        "size": 18719,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a6deca2a1dd92f1348d7b0f1247e99f237f5db63aa5577754ca59641837654dd",
+        "size": 18732,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/dataset_notes_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "6ed21ac9df5e375615a3a011c8048504d94a57e2a09efda1beb63f1cd548704e",
+        "size": 43563,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "00df9699ca4ed5da7c53667c0a89edef1877b2fbec36477a5cc882bc81b19330",
+        "size": 45151,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/dataset_preview_provider_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "0768340b392e0ae44a473f896999e807f8a4bdd336c85499f8c6e3e1425cd4c2",
+        "size": 43204,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a8e9cf77c88479d419496311f13721bc39e97a62fd32498a2040e5c08662916e",
+        "size": 44941,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/dataset_private_metadata_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "aa42775891cd0670485d30106b6c65017532020d6c0181e3a96def84464481bf",
+        "size": 6494,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "c5d5e649ff5c9f60bcde86bf17883874a75cd8c8f94041372f14473dacc9dd18",
+        "size": 6508,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/document_edit_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "d706b1d13430859b34f0680d8e4dbb5912da954ca6c44616210fe0b504f3bc19",
+        "size": 38802,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5591ab755eb37b0ca25fb92c73b4a7f16dc3659f3861bb00b425e6c9ec6801fa",
+        "size": 44690,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/document_source_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "22f9c497620e130b73a9fb0c7e1862b1c172cc4009e7ecc34bd9bf0b4971a7cc",
+        "size": 16911,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "bb1e6c0289791914f964c423597088dad47e05be1ec609669a4e8962aadefd68",
+        "size": 17076,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/documentation_browser_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "636bed833383f4054c5e85e5d1b724657363a542d30b6f4989d830a668cf4157",
+        "size": 19909,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "99690427c068acf3cf5bcdc02d240afc36d74d668a6e0b3b1a5c72f5fe8ee7d1",
+        "size": 19959,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/graph_renderer_dispatch_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "f7d47d8df4d587d7f874fea3236b7a164004130b639005c76d7ca97cf29dceed",
+        "size": 11193,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "d4cee056de3bb2e9630d3766bf18811d876aec5a5be606e4a4c11134c3909c1c",
+        "size": 11852,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/graph_workflow_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "a4528767033cde9d4cedc27dd0afa44becfacfe05323face050f811a9dcb586f",
+        "size": 48208,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "63b181cc6e368716939e607fc3b12c34d931f78c1111267a10c2821e2840a59a",
+        "size": 48780,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/markdown_navigation_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "546fdc04abc4e0b56f3f751ee384e4d5f035ec6474d632d0d0b7386a303b5505",
+        "size": 23197,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/module_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f",
+        "size": 332472,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "703096c2a1068f7873c2aa2a31905b363b9d71b096953dc6dee805e90d1400d7",
+        "size": 333566,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/native3d_compact_preview_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "88ac161604fb6c2d04d8a6d067094c0b40aaabfbf8f5727c61986eccc3d8283a",
+        "size": 30590,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "5d87b702358d27818c1e260ca237c4c756db6e41f3d86dd818065035a55018f5",
+        "size": 31723,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/plot_layout_controls_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "f33fa60639e9ec838493c97456714484bf26461c7a1321ca8843aa4ff80c5a9d",
+        "size": 9400,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "f952dcb5ba73c55f5805fd5046f91f81bb3861206c4ac17e2d4a46ec6d4047b1",
+        "size": 12603,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/scientific_dataset_filter_configuration_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "d5ca6ac1d1ba7441b715cc69cb86df774d8ec16058b30925bb32c7911d867033",
+        "size": 26088,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "8b08bb4eb1eab00e528cf343ace5b80e058a20aedbb55f0c01166e6a0ff224b7",
+        "size": 26605,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/scientific_dataset_preview_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "e0c3b6957b1eb83faa0910f12ec4b160738e617d49d4f4290393c376f181fce0",
+        "size": 7453,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "7f37ad7658e3280c161b964d6487fd339692426abef7b276ed464106eaaf5df6",
+        "size": 10127,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/scientific_plot_axis_ticks_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "c29b870515441c4c3e3cd713106b4b804c59b8b4d6bcd8f6b4ea49abb392cdb5",
+        "size": 11354,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/scientific_plot_framework_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "463b2d3aa47bb9e520a0d58a9625a0c70f3d1d4d2ad9944fb79eeb536db96571",
+        "size": 55915,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "b8151ea1ed10ae0de7474a73efb9ad79ec94c78ac68b1d5b44b81dab8c9c38d1",
+        "size": 56625,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/session_file_explorer_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "bb4eaa9de65a07042c4dc0e9c9de194c4e3d8b5235ae320348ec8c3e2199652c",
+        "size": 14437,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a4c0e37e0564ee2a5c8a5c4d9aa9e2339798fb562734553780815be181a19716",
+        "size": 14447,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/source_surface_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "bf449569e2180ed3568c62f646c4755747ce7937b2fc3d9e71da377d45a015f1",
+        "size": 45902,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "e0044ffa47a729349bbe45d8704e0ca69f5c1ff7322b8d790f969001aed2257b",
+        "size": 47630,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/ui_field_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "5aa7377c2db64544c73136b7ab7898a18d461de0ee09cb35b6fa59e9219fe724",
+        "size": 49101,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "35f103058d8640cd317b4471da660670cf53eb2d60810e79aeb62e43e2585a07",
+        "size": 50030,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "6c749c0ffc91ad5e1d3f429c1844bbda345650f2cff8325be7a9fbb21af55388",
+        "size": 64793,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "810c313738ffe664bf3e0f6f50e8fe21a4c15e67bf04f41b9019bcdd7c6af1ff",
+        "size": 65843,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/uml_diagram_host_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "650a0f8c9940e0025a78d0986823ea13c1f4bdce869e0fc893a0d5d012bdd5fc",
+        "size": 19720,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/uml_document_api_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "dc8647a8e9591675ca300ad30f24e94aea351152c37a6a5767b33983bbfe323a",
+        "size": 40020,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/uml_editor_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "a79d34c59c7098f823545ace8c86da058d31da816966c3e72e258ffef1b999a4",
+        "size": 52555,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/uml_layout_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5051bc786da3cdbee37ddd011d38381c2a4925442865541613fa4c16884600f9",
+        "size": 29078,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/viewer_development_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "3226ff6894f1d1307ab1d842ae79e2ec7b2081dbc6b84b3c20eb464f928b6cd0",
+        "size": 59866,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "355ed99356528160f15348064e81c02280cf12cf50d3784556ce5bb4378b41c3",
+        "size": 60965,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/viewer_development_preview_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "6893f1a7e6abbcf05f3b72eab3512a6f45516c0b413dff6b3609759cc6e977c8",
+        "size": 6844,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "6ce2f8220ffd1d456a714d5d2727322a33ed2c9be5e087d77253f19d245d2887",
+        "size": 8031,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/viewer_development_project_workspace_v1.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "310b6d9eaa2aee3638ff0b61b436ba8f014f8b7dfc852ffaad86373eddd002a6",
+        "size": 9025,
+        "mode": 420
+      }
+    },
+    {
+      "path": "core/tcl/viewer_gui_catalog_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "e0780de7b6b4a3989cb15871fa5fa9a82b9266e82c103c15e264afc864293a08",
+        "size": 41758,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a7bad7ea6d9158d7b58632b63991920e361f323b076e9f97c0dd4b8bab3809a4",
+        "size": 42252,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/viewer_gui_design_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "b8cce0f1afba5ee9e279573ce6dd2e2aaf7f69a59065d83fc74bb22766c8ce56",
+        "size": 167654,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "fc23e135c3f44cc88b3d24691733a07a67f15b2d790199335cf1cc74f06e22d1",
+        "size": 168981,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/viewer_gui_document_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "be19da59905f6c64786f37d54208b783d5021a754ff5f9ae066a7e37176bd189",
+        "size": 39008,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "ecc51d4bbd02ee00b2ec26c84be48ac6a568c2389412816c67b3c009685a0d9c",
+        "size": 44424,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/viewer_workspace_native_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "be8fe81266ae7fa4e0d2f7f7b4aa5684b824117e801a5d7e9ebbf9b34b0b56f9",
+        "size": 13931,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "106de5006ebede66f69eb3261ac1f3979dc6bbc434320e7d9c8433b0e16f589c",
+        "size": 15223,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/workbench_extension_api_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "0c96d41a2d1ef80478ddcbbab7574946492bdfd0ea50d73d7f6547c1f22599be",
+        "size": 21677,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "c72d0a47e92042c6e520ed62d4647be44b1599f5c37fd91590808c80978dfede",
+        "size": 22196,
+        "mode": 436
+      }
+    },
+    {
+      "path": "core/tcl/workspace_scientific_codecs_v1.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "3061e9edcc916b7f8aa4b3cb6dc98da65a26cb8da94ed7e67cb51a72b9d72f30",
+        "size": 31262,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "8c7c40e9314fdaf5f112c894df47a8674c76aaf6359f745f7d8eff5ef5f35144",
+        "size": 38576,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/CONFIGURATION_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "9cfbc25c0928a7194b2ceae7811c412b7adc3ce4c762e75a8f56cf0be48343e6",
+        "size": 18321,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "c51c37a0a26f1148523714ce59a1f055e49ac9d588e21a4793f0441e5e76029b",
+        "size": 19928,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/CPP_SUPPORT_CATALOG.md",
+      "action": "replace",
+      "before": {
+        "sha256": "e1e249a649b1e6fba9cdb5080e2bd77196e6702716ff04ffac145de75011cfce",
+        "size": 18260,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "d4f1b838fb4ad64f33479cc523e9cd58a65f5448b83f90052a5c0860fb9e29b2",
+        "size": 21217,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "fb0b3ab7dff1e7afb7daa9eb29ba845a3e03d1e3868981d524bd940884ee6129",
+        "size": 32997,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "18002bb46508827b6ba98c605b875ee185deb40e37395e851c468f2665df548e",
+        "size": 35187,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/DOCUMENTATION_BROWSER_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "95bd457e49d57bf37bfbde4f8485553346fd7d4813abc2b4626d7b794fd0652d",
+        "size": 18471,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "af948499cdf9291b9e3a9692d79f18e3244be1f7b0c57126ded87963575d96cd",
+        "size": 19745,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/DOCUMENT_SOURCE_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "57b952ef47ba8c02f93d8d70558a8aeafa62ce6a3eef8b1b8590defde6b41696",
+        "size": 15541,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9ff064466895cad943041feb209a0145bb98989dd6e13f1d8ad1552a277e92ec",
+        "size": 16130,
+        "mode": 420
+      }
+    },
+    {
+      "path": "docs/api/MARKDOWN_NAVIGATION_v1.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "12ecf70c1c8cf765a75ce6f6c6673810009d9dc35af59eb038f27ca29a44ba43",
+        "size": 5509,
+        "mode": 420
+      }
+    },
+    {
+      "path": "docs/api/MODULE_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "e783244e24fd30df19adfb9716d39464091a483763ab4a162fcb88e477a9231c",
+        "size": 24479,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "1932b7ae2542166245d6a5357769408e9ec8ae8a424594c7d1787868102dfa3d",
+        "size": 25472,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/NATIVE2D_TEXT_ENGINE_v1.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "345d9bb8d1efd271b44efb413dd5b0727b72d38441652ecf02353d0a9080d844",
+        "size": 2873,
+        "mode": 420
+      }
+    },
+    {
+      "path": "docs/api/NATIVE_WORKSPACE_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "3017de2d734b21d29cf28c4be1f4b6ed91061896338e336984673f5e00abb57d",
+        "size": 16274,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "80a7845527de62d9f5a16dad38a02226296b8f292ce05710d9e3ca8a6c288a5f",
+        "size": 17596,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/SCIENTIFIC_PLOT_FRAMEWORK_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "8bc67bbed08a8c4e05939298552fcdf0e2db6db424abae3a83e5686ee90aeb71",
+        "size": 7192,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "5fd4f8949e533297ecda4143eb76dee462cf8588a2c0fb66e2c1b3e4b970fd7d",
+        "size": 7587,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/SCRIPT_BRIDGE_COVERAGE_v1.json",
+      "action": "replace",
+      "before": {
+        "sha256": "823cbc8682966dcc00e4a7e821f6e1e8d44d9b0b1c6f7da8f3c2505cc4734f1b",
+        "size": 824893,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "eeae1bb903e502c44353180f1e95a82900484186289a192add5522469a206e7e",
+        "size": 835232,
+        "mode": 436
+      }
+    },
+    {
+      "path": "docs/api/UML_DOCUMENT_API_v1.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "4db2aa7ac671ba95352813603681a56946a3293c405e66f3f33e791bb7e9f73d",
+        "size": 23108,
+        "mode": 420
+      }
+    },
+    {
+      "path": "docs/api/VIEWER_DEVELOPMENT_API_v1.md",
+      "action": "replace",
+      "before": {
+        "sha256": "1d058b63e11f91ceaf08fbb4160cf1b204b96861f542fd6a59fe89fe83144de0",
+        "size": 101066,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "32414025bb366ab8e0ee09dcba3f5094706c869f93f78c4cc4a29db94cc2cdfc",
+        "size": 104066,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/CHANGELOG.md",
+      "action": "replace",
+      "before": {
+        "sha256": "51de307ff5a648d5c9670eae189ff88333b329276a16f36e5e2863bff614e17e",
+        "size": 2586,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f5782692bc12609e6fe45643e7f0e13bc740ead0e7ee086e580d8505166cbca5",
+        "size": 3001,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/MANUAL.html",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "819681efb425d378e5b5bba0bd5ca8b0e7c1e6741d4926adc13d87943f96b2c4",
+        "size": 12359,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/MANUAL.md",
+      "action": "replace",
+      "before": {
+        "sha256": "95249a7f0bb416f1d554217246ae18672ca1b092d641bae841ff7889107e51bb",
+        "size": 7352,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ae3d3d3ed9f260290ec89a2e240a6e8d26afa3368f8c0a4116ec0c864d3845db",
+        "size": 7981,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/SHA256SUMS.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "d81891761d7e5cf97a831fe00ca4b7a0b2e62fd2c421abbadb79402ab858ca67",
+        "size": 935,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "e792e746906ff1778b15e9894284401c9defd59fae261232502dae6d49f633c3",
+        "size": 1962,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/TUTORIAL.html",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "2f8758a07f4ea619e2575544cede6fbb03f164a42150b6817d725548f13e2e5c",
+        "size": 18036,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_canonical_metadata.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e8caa1aaf66e5211faec265e471d2db01645df6ba9b6fbdd74ca7a9e50a62232",
+        "size": 81410,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_canonical_preview_group.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5f4ee167effd5c92988c29cbf93a0c17c8c690af1f3e8cdbf75c92853531e3b2",
+        "size": 156263,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_canonical_provenance.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "8771fed28ee11f4f32493e3864870fe3e5e443fdcc510a315a1d9faeeb36d6c4",
+        "size": 146568,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_managed_progress.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "a12b5476ea01cc8168f064ae189ee44afe0f5a67f846214f8fb74231abe6814f",
+        "size": 184075,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_native_hdf5_options.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "338726e232b97e8dda6ff001acaec4b31b833b8348bcf2d60f159626567f2c74",
+        "size": 167254,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_pending_preview.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5adbbbf23448b925cd62f327bbc5c2d7e50c06f76221ed1c97f21bb87044f14c",
+        "size": 108964,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_pending_variables.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e6b5beefd555d1062757fb181d9291965286fec7a871e6e07c84f1764390b0f4",
+        "size": 42924,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/manual-images/rigol_source_queued.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e3931abaf2a7cdeeb8b179e7538fc550ba0839c5d4411a4e399b85396f1ea958",
+        "size": 176930,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/module.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "c407bcf4263a49579e5be2381b21530e672df36f0457b9424d105ee85f8c6350",
+        "size": 3193,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "df7e172611b326c8d522af9f07c480dd01500b18f4272defaf1691379a4656c9",
+        "size": 3264,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.rigol_csv/plugin-package.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "a87f4ecea21535c42e48da6309cd9ca8a7447836d3660544de86eb0c760ec371",
+        "size": 234,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "94d621d15b06c51ef6b0b4f2bf9d5c8052599ab4a902c2071e630b48c0501876",
+        "size": 242,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/CHANGELOG.md",
+      "action": "replace",
+      "before": {
+        "sha256": "b918e1603a9a7a28d78a1a4b58f6b7b4e05b0c86f3a044bf91ce574a53913857",
+        "size": 1925,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "7e728763579f5fe9330def7f12eac0d0e0dcf91f4e948b28da16e91d9954da60",
+        "size": 2327,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/MANUAL.html",
+      "action": "replace",
+      "before": {
+        "sha256": "8ba26d39c8d1e40db55e495f5d9a2bcff92e82a2ee791a68f36ca85485115b5e",
+        "size": 17035,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "ea48b82614b3ef48566f01153d05d0460606ec277b647167c8595748cb6221f8",
+        "size": 19002,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/README.md",
+      "action": "replace",
+      "before": {
+        "sha256": "6063518663f43c81920675fe81292965fa14468c1c59e2cedecba61d864c63d3",
+        "size": 2655,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "0c83327f3d837913ea637f9c26acf2d0289a13edc39efbcf7b6a03c18c4727e9",
+        "size": 3381,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/SHA256SUMS.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "5d295609cead0f28eace0cfa810760f32001d5aaa9edf6cb69a224f960bf44c9",
+        "size": 1106,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "fc847829f388a493f811c048a79c590aaea621d724e55a6afdd8270194b723a5",
+        "size": 1106,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/module.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "ee704e86cef403a6718dccb18edc7f4a79a3c416ecc940eddf531b512fe98155",
+        "size": 3980,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "a4937e515563f432e426af9c4dc7e11b8ec474fb179d935650ef3eadaabbc256",
+        "size": 4295,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/plugin-package.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "584534d1dd46f0cb5c112d1c19b50084dc0d325722877898a9edf9028c62d85c",
+        "size": 194,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "75e8dd84649e6882b49e9b54eb15ade3833c038612285ce99ab6c09b9dc194f0",
+        "size": 194,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/acq.text_document/runtime/acquisition_handler.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "95b25b4cb48e47243e58aed3b0570e15142d64a6cf1dcbb11559d0044cacd042",
+        "size": 14733,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "fe82c7d8d1e639241d5d5caa368cad523ccba4b7fbba209994551f5332b1fbbd",
+        "size": 17978,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/CHANGELOG.md",
+      "action": "replace",
+      "before": {
+        "sha256": "e86b164c531ed983a16b4ca1fec76f3b466af070dc088f58f6014133f8c1cdca",
+        "size": 50602,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "54c975925c0f18b5280d36f941ad584083fb2fab671998eb9dfeb187b637556e",
+        "size": 51436,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/MANUAL.md",
+      "action": "replace",
+      "before": {
+        "sha256": "5ac10850cf213bf60948e6cb6f2ab3b8ef4587aeb8b855afd5b91a2299dbd375",
+        "size": 521,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "c01671761bc1ce75ec2c4674acf8d544b529f470f05291a8facce2632c7c3e14",
+        "size": 3792,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/PLOT_DATASET_API_v2.md",
+      "action": "replace",
+      "before": {
+        "sha256": "1202f5cfd50a9462822dc5609622ef920598c94cc5573f2edd3dc60162e5be2c",
+        "size": 40079,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "470fac2c09c80f9031be3cf00942cfd5c21307136845891c9ecb4b88915e3394",
+        "size": 45183,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/README.md",
+      "action": "replace",
+      "before": {
+        "sha256": "f408db2c802e4391bdf44b08ebc92b1da82a96847e4676e1aee293a31c180b43",
+        "size": 13790,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "1f8168a607978677adbdaaddf08d5466f1f170cb3c037292c6bad88017df1a11",
+        "size": 13935,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS",
+      "action": "replace",
+      "before": {
+        "sha256": "8434da38bdb4c19a4cebf86dedf8569619c6894b27d200ea9e80f127838075a9",
+        "size": 8622,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "b505980dc7d707e331500c032e6c477682be8bb23f8cea6f7345bc2d13cbe8b7",
+        "size": 8822,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "a72861edef79ecb4a211c12ca28a7956a6ad5a8d37b78fa4d311869261085960",
+        "size": 8526,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "b505980dc7d707e331500c032e6c477682be8bb23f8cea6f7345bc2d13cbe8b7",
+        "size": 8822,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_api_v2.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "02dc0265416438924e26641ac8733c6aaa29345febc7f6e7fdd43beab5e1bbc1",
+        "size": 78238,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "b3e3c6706eba242d5bd9e980c3b4d1dc6237f27fd87911bfc444088587a5e128",
+        "size": 85452,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "bcb1746ba68fd0180b2290aa7ee09676fdc7d2d95162b8c3896945704e8655c6",
+        "size": 60317,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "be35f9b5d72f08e370e417ea496e7cb6b97b43dbcdeaa5993a2f080c1fcb1faa",
+        "size": 60382,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_v4_snapshots.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "2d6b2621a4cd3b594af532bae2775f5f84dfe4412218514236fd340b70fb3e01",
+        "size": 15400,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "1fc2a68d9adf347de15c400da2070b212fab9983c028d31ee86a827c47a53861",
+        "size": 16621,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/script_bridge_binding.py",
+      "action": "replace",
+      "before": {
+        "sha256": "fa05a05587e5d50be89d0fdc923cf609604d3cf3b3b29880563cd9e68c823c63",
+        "size": 14364,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "8faeb1e3d3590d13ecaca23cc922f6c5edf97283c322d6cacecc20cbd080765c",
+        "size": 15866,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/docs/images/p031-x-tick-pairs.png",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "c23fab3ebb15b5cb1ef0facaddba792ae28eaa27d49b43f2edbc4538a1556a28",
+        "size": 26035,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/module.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "0aac7aae1c95dc109e0ded7b347d6b5637af4bcc0aa30d79631255b879f77ff8",
+        "size": 69935,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "24a0e340d86ad1431874347701f2010f236c37f202597babdf16d9f87b53ab3f",
+        "size": 69935,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/plugin-package.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "7bcf18c3b1e5282cd7e5e54a13a9dd6b483191cc3ac0a5854cf23447ddec31cb",
+        "size": 236,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "3f4f36fad4bec9c2bedd19d506cfe376a2d4c5504eed4c38923c685c7c59d4a5",
+        "size": 236,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/runtime/native_v4_snapshot.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "9adc9003df8dbd132282f4d6ab2475673a5d50f3e1ba9b436e51e4ec4de226d2",
+        "size": 1942,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "b5f479601c748e1956fec1e6f9438afd63441fad2c6fb46cdb1edce953c6678a",
+        "size": 3472,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/runtime/pd_plotspec_v2.m",
+      "action": "replace",
+      "before": {
+        "sha256": "c2a0dfb09be9e9bbb7e3f22a523158d10d0c143b1f9dc0d35d22b26ea590611d",
+        "size": 9805,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "75144f372faef28f720b31c19cdb87d141e25947a397b196885600d11d0a0463",
+        "size": 10559,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/runtime/pd_project_x_tick_units.m",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "8123e5804a9dc3f335e17ddd2081b68fd4c4917acdf172d2644b587c58f500ef",
+        "size": 1328,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/runtime/pd_render_2d.m",
+      "action": "replace",
+      "before": {
+        "sha256": "40018786d4a3c6fea61ede4cffeb0a197a7baf7f9d193557437c818976bb9a15",
+        "size": 96423,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "21f82214cbcf973b58e0a8db11dd069b6195f499b66a136022ce4688ffb86482",
+        "size": 96829,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/plot.dataset/ui/plot_dataset_editor_v2.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "dd59d407397d980a2d62ecac4122e06f3ab5ab93d168523e642b07df52b75414",
+        "size": 47838,
+        "mode": 436
+      },
+      "after": {
+        "sha256": "6361bd3bc33f3af754abff0c788a71c23452775d223c3ed2ef1dc1842c6efd70",
+        "size": 52622,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/CHANGELOG.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "2437f32a9fc8543a25791b82e166fefc25c2556c3b57d3468193a2a4816a0bcc",
+        "size": 2815,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/CORE_GAPS.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "be2d4a7f660479815657f47b3a39da5dde64529e8db69c95fcc36a04e638d268",
+        "size": 4204,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/MANUAL.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "69833adff0ca947e2f16da609125cc4107a838bf242abe382c2e726d7ebef5d1",
+        "size": 5162,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/README.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "f2a3c764de1849ca1c2e3717cb92deaab9f3cb56d7cc2770d08128b89ad6fbfd",
+        "size": 2212,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/RELEASE_VALIDATION.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "9a2a7e239283c37aa2bd8981a346f2b9383dcd41b3bb98ccf44f6ef14bde1dc4",
+        "size": 8644,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/SHA256SUMS.txt",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "cacd81ea186615ac6e56688522a5cf986f8de07771f794d96ed248fa08add0b9",
+        "size": 1028,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/api/preview.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "bfbac823f9e9cfd53d1531ac1b02ae7c5b9a27c7a099049d19757652734ff168",
+        "size": 23877,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/gui/design.tcldict",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "f41391bee5e48ec719e63ffa90e13b0d9d9c23b69cbe6ec2b73438071ddf3315",
+        "size": 2337,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/module.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "179b6e2383a5ed5e243b6dacdaa2c417589aa6d2fefa0ab7346186e2191881dd",
+        "size": 1111,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/plugin-package.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "001374abaad8b9938f42d85d96bbec30c456b486cdfb564c12ad4e914e5be5f5",
+        "size": 206,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/tests/test_builder_design_012.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "3f8a515197c23ccda17c8f6d509d266fb01a3dd02d7cf6497a2dcabb468f7133",
+        "size": 1740,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/tests/test_preview_async_012.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5205925d6d20ed4f1a4f04db972c90f63d4bd0294be6abae6aaf19ade0b8d00a",
+        "size": 7884,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.curve_digitizer/tests/test_preview_dispatch_014.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "a29d9a5e7ab969491cf253e52fa06473bfa17a35fcb0ead70c0649a77a5a24f0",
+        "size": 8393,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/LICENSE",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "size": 35149,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/MANUAL.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "1a4e4a42028ffc436558cd1a106753f36b2f118b5113ca4ed4949b5b6b2f608f",
+        "size": 4419,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/RESTRICTED_VIEWER_PROVENANCE.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e5941a71c3e2fc796a0a3bbcef7b49e673824d116861d586525a9db9d7bb4b1c",
+        "size": 1175,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/SHA256SUMS.txt",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "65f4d5f59d5fb00077244908b14ba2c5b4054cd00de6750264e9dce04feab943",
+        "size": 1639,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/api/viewer.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "f09b8109e95abf42f53a41f7d741216e2a56420e7bd984c88598b10db4f1a639",
+        "size": 730,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/gui/design.tcldict",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5e0bc57bd86ea90e6c5f12862fd9741645708cbad29075c1bb0a7a56da8885f0",
+        "size": 1030,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/handlers.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+        "size": 75,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/module.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "7aef70509f9c4e165e9dc94d5b3fde265b0c1626b197f1001c1e64df05941467",
+        "size": 1154,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/native/SDK_CONTRACT.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+        "size": 12975,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/native/gxtxt_viewer_sdk_v1.hpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+        "size": 6043,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/native/trusted_adapter_v1.cpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "37dadd00d75ed67f72de30b6c5f84a71db55059805c65b0e7d4fe9a93264c125",
+        "size": 16796,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/native/viewer.so",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "c760771dbe6f616467b7b4d3526f96abe8d799e4855f2c2f038eb1d3ddec4e21",
+        "size": 90528,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/plugin-package.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "6cb0b638ea5cba944891cf279bfd5302d2023244005a246af884fb67d570c33c",
+        "size": 138,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/review/build.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "3128ad9ba0062c16d26cf85bf375e8f865fe85f8282b7f55cae098a2b155ab18",
+        "size": 37498,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/review/validation.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5ab2024cd0ce3bc74fecc26e3e74684977133736bf8ff8764b8b40716ae6acc4",
+        "size": 4075,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/source/MANUAL.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "1a4e4a42028ffc436558cd1a106753f36b2f118b5113ca4ed4949b5b6b2f608f",
+        "size": 4419,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/source/SOURCE_MANIFEST.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "9e807c498678cf5835a4d2b3554ccab27f75673fa15fe8e4f64ad664ba3d1dfe",
+        "size": 296,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/source/design.gxtxt-viewer",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5e0bc57bd86ea90e6c5f12862fd9741645708cbad29075c1bb0a7a56da8885f0",
+        "size": 1030,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/source/handlers.cpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "eea9d03552e103714026378c44c2d96436d52cfa3326a9485627014f2a1aa6a0",
+        "size": 770,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/preview.uml_document/source/project.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e787a00328ae946710a200798f2dd12be39fa4c9eb3da9570e3d8024071a7c52",
+        "size": 869,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/CHANGELOG.md",
+      "action": "replace",
+      "before": {
+        "sha256": "a7c5118783cb76c379f5233e5ec76650a50c10fcc640d8b3845c46f1fb11e0db",
+        "size": 4345,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f88de5204727d033a8d1c54ef33397519b7b650f9a50af1f4d2633daea8b1c4b",
+        "size": 4675,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/MANUAL.md",
+      "action": "replace",
+      "before": {
+        "sha256": "151bea1e4ea9934ccabc495d49817dcab327423c59ce970307bd2fa06fd7f840",
+        "size": 49167,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "3154d5359b817acd1c26e76378d2149a13c9bece2a35ba09cc583f649ffc480e",
+        "size": 51009,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/SHA256SUMS.txt",
+      "action": "replace",
+      "before": {
+        "sha256": "33f29187920f42a303c29d83c3d5660393d9a2cdb10ca8f282cbfe62166f473e",
+        "size": 3514,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "43e6f76fcec657129321f231171194981eebb826416105cda83d0f8621602a7a",
+        "size": 3514,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/api/builder.tcl",
+      "action": "replace",
+      "before": {
+        "sha256": "330658a07b6a875cf739b24df20bd170e9143384e8d59366748f2f682593da52",
+        "size": 77527,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "f00ecb7d1d6ff1caaad3aa6c4dbced448b1f4a4b7804d8923798778ee6395abd",
+        "size": 78306,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/module.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "cb0f9d8e46c81f42e0415e643e0a451791fb1acc51b49606f14f3b45a8bde248",
+        "size": 3258,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "a27a0af54dd6e70ebe17ec31dc5a12122e419cabb5475ac57ec32dd8a6fcdc37",
+        "size": 3302,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/plugin-package.ini",
+      "action": "replace",
+      "before": {
+        "sha256": "9401bce1a638dc74a2205caedf09c2f13ffacae2347ea3e2884ef0ea39b13032",
+        "size": 198,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "bcbdad204106067b23480270fc9a4fd3f0558e5aea4cfaf00dcfb7486ad024e5",
+        "size": 199,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/LICENSE",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+        "size": 35149,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/MANUAL.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+        "size": 5300,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/RESTRICTED_VIEWER_PROVENANCE.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "16da8d742df587903515751d59cbce0b9d439a6713a4538a12eed36a5dd8c803",
+        "size": 1173,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/SHA256SUMS.txt",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "74084310177393ed08922e1530ac3242893ba9203a777bce6f8bfa0295675cee",
+        "size": 1639,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/api/viewer.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "d9cd2a5f9860a9a1ed5ef348ad3a026d0399c62f2d763623f5592f1240af5cc4",
+        "size": 1263,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/gui/design.tcldict",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+        "size": 5536,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/handlers.tcl",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+        "size": 75,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/module.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+        "size": 4850,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/native/SDK_CONTRACT.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+        "size": 12975,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/native/gxtxt_viewer_sdk_v1.hpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+        "size": 6043,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/native/trusted_adapter_v1.cpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "37dadd00d75ed67f72de30b6c5f84a71db55059805c65b0e7d4fe9a93264c125",
+        "size": 16796,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/native/viewer.so",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "5b7319741b70619cc0fc789e0d0e97016647b447fbb57cfc786ef1ea64d27841",
+        "size": 94624,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/plugin-package.ini",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "579c22351cdc3f4013c9878af2110fe1d7f0c95702bcc9c4523d7345f3ac642e",
+        "size": 134,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/review/build.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "b6e14e1065000a7de222e7640797e33870c39781ec59bde5c9c3f60221049675",
+        "size": 37987,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/review/validation.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "8c0b74faf6681c1ed6c50908274f6c40c341b634253595b47787d9dc2dfbd450",
+        "size": 4148,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/source/MANUAL.md",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+        "size": 5300,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/source/SOURCE_MANIFEST.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "d716fc7f1710caf99350f6bfebc0bce493bcaba1bc1104a49f55e6a602405b3c",
+        "size": 297,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/source/design.gxtxt-viewer",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+        "size": 5536,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/source/handlers.cpp",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "7140255a9bbf101c8dda818154e422eea2c2748d37536afcf5349a5b58540004",
+        "size": 2253,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/source/project.json",
+      "action": "add",
+      "before": null,
+      "after": {
+        "sha256": "967b78e537054a3928f93b5e1b04574864b15b3a4eab399eb0de3fc4c1ad7cae",
+        "size": 1275,
+        "mode": 420
+      }
+    }
+  ],
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "acq.rigol_csv_2.3.1_dev111_p031.zip",
+      "archiveSha256": "b84635242e1d4024dd14647fb57b147427daaac5b770d0c734e3d4d32c4316e2",
+      "sha256": "b84635242e1d4024dd14647fb57b147427daaac5b770d0c734e3d4d32c4316e2",
+      "archiveBytes": 1035032,
+      "archivePath": "patches/dev111/DEV111-P031/acq.rigol_csv_2.3.1_dev111_p031.zip",
+      "originalDepositPath": "modules/acq.rigol_csv_2.3.1_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "acq.text_document_1.2.0_dev111_p031.zip",
+      "archiveSha256": "096031fdeacb80455439e59fbd671c5ccdc88b81ac33474ea353e8175f992641",
+      "sha256": "096031fdeacb80455439e59fbd671c5ccdc88b81ac33474ea353e8175f992641",
+      "archiveBytes": 47130,
+      "archivePath": "patches/dev111/DEV111-P031/acq.text_document_1.2.0_dev111_p031.zip",
+      "originalDepositPath": "modules/acq.text_document_1.2.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "plot.dataset_4.3.0_dev111_p031.zip",
+      "archiveSha256": "641f052e4450ba5c7629b043d17956feab7899bbe37603e88bfe984d5e884ae3",
+      "sha256": "641f052e4450ba5c7629b043d17956feab7899bbe37603e88bfe984d5e884ae3",
+      "archiveBytes": 346009,
+      "archivePath": "patches/dev111/DEV111-P031/plot.dataset_4.3.0_dev111_p031.zip",
+      "originalDepositPath": "modules/plot.dataset_4.3.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.4.zip",
+      "archiveSha256": "c07ae52b27dd81737eb2f95acaf842eb56e6c48f6eccdc6722b41d854335cfac",
+      "sha256": "c07ae52b27dd81737eb2f95acaf842eb56e6c48f6eccdc6722b41d854335cfac",
+      "archiveBytes": 25815,
+      "archivePath": "patches/dev111/DEV111-P031/preview.curve_digitizer_0.1.4.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.4.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.5_dev111_p031.zip",
+      "archiveSha256": "1e57baf0ee7b3cd6c0368c1b77c79290caed22cd641342390a6ee59ba0a4be07",
+      "sha256": "1e57baf0ee7b3cd6c0368c1b77c79290caed22cd641342390a6ee59ba0a4be07",
+      "archiveBytes": 27064,
+      "archivePath": "patches/dev111/DEV111-P031/preview.curve_digitizer_0.1.5_dev111_p031.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.5_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.uml_document_1.0.0_dev111_p031.zip",
+      "archiveSha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "sha256": "537999bc4a0c269d0a215b0e5db4568dc440f79fbe5063da27c5971db00d5557",
+      "archiveBytes": 83225,
+      "archivePath": "patches/dev111/DEV111-P031/preview.uml_document_1.0.0_dev111_p031.zip",
+      "originalDepositPath": "modules/preview.uml_document_1.0.0_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.interface_builder_1.2.10_dev111_p031.zip",
+      "archiveSha256": "6e9e1bc4dffebb58e8f9490a2b64061f3afd4330598a69d6bde6ff979cbae090",
+      "sha256": "6e9e1bc4dffebb58e8f9490a2b64061f3afd4330598a69d6bde6ff979cbae090",
+      "archiveBytes": 1050486,
+      "archivePath": "patches/dev111/DEV111-P031/viewer.interface_builder_1.2.10_dev111_p031.zip",
+      "originalDepositPath": "modules/viewer.interface_builder_1.2.10_dev111_p031.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "archiveSha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "sha256": "3a3e8bc7988dea6c4cb0d3efaa6abb153d7d54f6a75e9f859eea4e2ce2bd6061",
+      "archiveBytes": 87858,
+      "archivePath": "patches/dev111/DEV111-P031/viewer.uml_editor_1.0.0_dev111_p031.zip",
+      "originalDepositPath": "modules/viewer.uml_editor_1.0.0_dev111_p031.zip"
+    }
+  ],
+  "scope": "ORIGINAL_ARCHIVE_AND_DISTRIBUTION_BYTE_IDENTITIES",
+  "scientificQualification": "Not a new scientific/GUI execution campaign"
+}
