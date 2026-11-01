@@ -1,0 +1,158 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/4",
+  "patch": "DEV111-P033",
+  "framework": "0.9.8.10-dev-111",
+  "tag": "v0.9.8.10-dev-111-p033",
+  "requires": "DEV111-P032",
+  "archive": "DEV111-P033.zip",
+  "archiveSha256": "b39eff6747900e4b0777d3a06ed5805e8142fda3c1d20edebeb9df2baf812776",
+  "archiveBytes": 7095846,
+  "sourceCommit": "c46767878984f04c4b2fc00fc223f1852a0aad53",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "acq.scientific_measurement_1.0.2_dev111_p033.zip",
+      "archiveSha256": "438fb8c474bfba8eccf88399d716e3906979a5e51a6bf0f7441ed011cc788cb3",
+      "sha256": "438fb8c474bfba8eccf88399d716e3906979a5e51a6bf0f7441ed011cc788cb3",
+      "archiveBytes": 229202,
+      "archivePath": "patches/dev111/DEV111-P033/acq.scientific_measurement_1.0.2_dev111_p033.zip",
+      "originalDepositPath": "modules/acq.scientific_measurement_1.0.2_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "analysis.octave_script_1.8.3_dev111_p033.zip",
+      "archiveSha256": "f4d1f98fbd248ec90d4121c7cb5160ff2c38dea3ea0b937ed15e720c347846a7",
+      "sha256": "f4d1f98fbd248ec90d4121c7cb5160ff2c38dea3ea0b937ed15e720c347846a7",
+      "archiveBytes": 698387,
+      "archivePath": "patches/dev111/DEV111-P033/analysis.octave_script_1.8.3_dev111_p033.zip",
+      "originalDepositPath": "modules/analysis.octave_script_1.8.3_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "analysis.python_script_1.6.3_dev111_p033.zip",
+      "archiveSha256": "06d5c5c87bcf4a4dd4b1fa832f0c534b9fb4fda5b1049dff2cf9727bd1ff352d",
+      "sha256": "06d5c5c87bcf4a4dd4b1fa832f0c534b9fb4fda5b1049dff2cf9727bd1ff352d",
+      "archiveBytes": 690451,
+      "archivePath": "patches/dev111/DEV111-P033/analysis.python_script_1.6.3_dev111_p033.zip",
+      "originalDepositPath": "modules/analysis.python_script_1.6.3_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "archiveSha256": "b6076ea9e6c5fd2e066bf35dca6965d640353b10d5c56a88f4ea47e1d5d2a084",
+      "sha256": "b6076ea9e6c5fd2e066bf35dca6965d640353b10d5c56a88f4ea47e1d5d2a084",
+      "archiveBytes": 2708,
+      "archivePath": "patches/dev111/DEV111-P033/contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "originalDepositPath": "modules/contract.scientific_measurement_1.0.0_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "archiveSha256": "aae6c6670b89e4c6b5c85fc8e816fa556421cf9e3bcaca48e574d02ca6f152e0",
+      "sha256": "aae6c6670b89e4c6b5c85fc8e816fa556421cf9e3bcaca48e574d02ca6f152e0",
+      "archiveBytes": 11475,
+      "archivePath": "patches/dev111/DEV111-P033/domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "originalDepositPath": "modules/domain.scientific_spectra_1.1.0_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "archiveSha256": "70c6521ca9f342987845aa2b0d07ece8d9d1c1371a1b1ae7ff60a6406edd26f3",
+      "sha256": "70c6521ca9f342987845aa2b0d07ece8d9d1c1371a1b1ae7ff60a6406edd26f3",
+      "archiveBytes": 98794,
+      "archivePath": "patches/dev111/DEV111-P033/preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "originalDepositPath": "modules/preview.scientific_frame_1.0.1_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "archiveSha256": "8e95ebf19645563e120c51cc1af9108f8eba870eba523cbfc176a6a5c4c56b35",
+      "sha256": "8e95ebf19645563e120c51cc1af9108f8eba870eba523cbfc176a6a5c4c56b35",
+      "archiveBytes": 99086,
+      "archivePath": "patches/dev111/DEV111-P033/preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "originalDepositPath": "modules/preview.scientific_spectrum_1.0.1_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "archiveSha256": "e7d781ff40c74399fdad28a3a9fb86211b62271b216e97213c2c5a9833ffd781",
+      "sha256": "e7d781ff40c74399fdad28a3a9fb86211b62271b216e97213c2c5a9833ffd781",
+      "archiveBytes": 98719,
+      "archivePath": "patches/dev111/DEV111-P033/preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "originalDepositPath": "modules/preview.scientific_trace_1.0.1_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "tool.script_module_builder_1.4.7_dev111_p033.zip",
+      "archiveSha256": "604fe26df647ceffb7384313d36184d43904ef5b61e85b61f18496c2c4f4a4c6",
+      "sha256": "604fe26df647ceffb7384313d36184d43904ef5b61e85b61f18496c2c4f4a4c6",
+      "archiveBytes": 57065,
+      "archivePath": "patches/dev111/DEV111-P033/tool.script_module_builder_1.4.7_dev111_p033.zip",
+      "originalDepositPath": "modules/tool.script_module_builder_1.4.7_dev111_p033.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.script_library_1.0.4_dev111_p033.zip",
+      "archiveSha256": "4320405e468bfb5ab93018c22f7e910d03a485da1983fd27b98141090a277320",
+      "sha256": "4320405e468bfb5ab93018c22f7e910d03a485da1983fd27b98141090a277320",
+      "archiveBytes": 101484,
+      "archivePath": "patches/dev111/DEV111-P033/viewer.script_library_1.0.4_dev111_p033.zip",
+      "originalDepositPath": "modules/viewer.script_library_1.0.4_dev111_p033.zip"
+    }
+  ],
+  "alternativeModulePackages": [
+    {
+      "archive": "acq.scientific_measurement_1.0.2_dev111_p033.zip",
+      "archiveSha256": "438fb8c474bfba8eccf88399d716e3906979a5e51a6bf0f7441ed011cc788cb3",
+      "archiveBytes": 229202
+    },
+    {
+      "archive": "analysis.octave_script_1.8.3_dev111_p033.zip",
+      "archiveSha256": "f4d1f98fbd248ec90d4121c7cb5160ff2c38dea3ea0b937ed15e720c347846a7",
+      "archiveBytes": 698387
+    },
+    {
+      "archive": "analysis.python_script_1.6.3_dev111_p033.zip",
+      "archiveSha256": "06d5c5c87bcf4a4dd4b1fa832f0c534b9fb4fda5b1049dff2cf9727bd1ff352d",
+      "archiveBytes": 690451
+    },
+    {
+      "archive": "contract.scientific_measurement_1.0.0_dev111_p033.zip",
+      "archiveSha256": "b6076ea9e6c5fd2e066bf35dca6965d640353b10d5c56a88f4ea47e1d5d2a084",
+      "archiveBytes": 2708
+    },
+    {
+      "archive": "domain.scientific_spectra_1.1.0_dev111_p033.zip",
+      "archiveSha256": "aae6c6670b89e4c6b5c85fc8e816fa556421cf9e3bcaca48e574d02ca6f152e0",
+      "archiveBytes": 11475
+    },
+    {
+      "archive": "preview.scientific_frame_1.0.1_dev111_p033.zip",
+      "archiveSha256": "70c6521ca9f342987845aa2b0d07ece8d9d1c1371a1b1ae7ff60a6406edd26f3",
+      "archiveBytes": 98794
+    },
+    {
+      "archive": "preview.scientific_spectrum_1.0.1_dev111_p033.zip",
+      "archiveSha256": "8e95ebf19645563e120c51cc1af9108f8eba870eba523cbfc176a6a5c4c56b35",
+      "archiveBytes": 99086
+    },
+    {
+      "archive": "preview.scientific_trace_1.0.1_dev111_p033.zip",
+      "archiveSha256": "e7d781ff40c74399fdad28a3a9fb86211b62271b216e97213c2c5a9833ffd781",
+      "archiveBytes": 98719
+    },
+    {
+      "archive": "tool.script_module_builder_1.4.7_dev111_p033.zip",
+      "archiveSha256": "604fe26df647ceffb7384313d36184d43904ef5b61e85b61f18496c2c4f4a4c6",
+      "archiveBytes": 57065
+    },
+    {
+      "archive": "viewer.script_library_1.0.4_dev111_p033.zip",
+      "archiveSha256": "4320405e468bfb5ab93018c22f7e910d03a485da1983fd27b98141090a277320",
+      "archiveBytes": 101484
+    }
+  ],
+  "license": "GPL-3.0-or-later"
+}
