@@ -1,0 +1,98 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "documents_command",
+        "value_get"
+      ]
+    },
+    {
+      "api_id": "OCR_LAYOUT_API_v1",
+      "version": 1,
+      "operations": [
+        "languages",
+        "pdfInfo",
+        "renderPdfPage",
+        "extractImage",
+        "extractPdfPage",
+        "extractPdfDocument",
+        "toText",
+        "recognizeImageText",
+        "recognizePdfText",
+        "createSearchablePdf"
+      ]
+    },
+    {
+      "api_id": "TABLE_EXTRACTOR_API_v1",
+      "version": 1,
+      "operations": [
+        "extractDataset",
+        "extractImage",
+        "extractPdfPage",
+        "inferSchema"
+      ]
+    },
+    {
+      "api_id": "DATASET_FILE_PUBLICATION_API_v1",
+      "version": 1,
+      "operations": [
+        "datasetFilePublicationPublish"
+      ]
+    },
+    {
+      "api_id": "DATASET_PUBLICATION_API_v2",
+      "version": 2,
+      "operations": [
+        "datasetPublicationV2Finalize"
+      ]
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "viewer.unified_document_extraction",
+  "profile": "document_view_v1",
+  "provenance": {
+    "baseline": "Exact DEV112.r2 + accepted P001 + corrected P002 + delivered P003",
+    "scope": "DEV112-P004 compact Unified Documents with collapsible icon palette, tab options, native menus and retained-draft provenance",
+    "authoring": "Actual graphical Interface Builder Properties/Events/Icon Library, Save/Open roundtrip and normal C++ Development Workspace",
+    "services": "Existing public CORE OCR/Table/Dataset/Workspace services; independent C++ module",
+    "language": "English code, comments, documentation and GUI"
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0.0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {
+      "0": 0.0
+    }
+  },
+  "version": "1.1.0"
+}

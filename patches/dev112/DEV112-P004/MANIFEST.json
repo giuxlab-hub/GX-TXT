@@ -1,0 +1,44 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-publication.v1",
+  "patch": "DEV112-P004",
+  "base_release": "v0.9.8.10-dev-112-r2",
+  "required": "Original DEV112-r2 OR exact post-P003",
+  "tag": "v0.9.8.10-dev-112-r2-p004",
+  "archive": "DEV112-P004.zip",
+  "archive_sha256": "d0ec6476778f3e4d2fdc781427bbfcb71dcfc1374cae31b5c609d333adf37b44",
+  "archive_bytes": 4560042,
+  "product_file_count": 137,
+  "file_manifest": "FILES.json",
+  "packages": [
+    {
+      "name": "DEV112-P004.zip",
+      "sha256": "d0ec6476778f3e4d2fdc781427bbfcb71dcfc1374cae31b5c609d333adf37b44",
+      "bytes": 4560042,
+      "original_source_path": "DEV112-P004.zip"
+    },
+    {
+      "name": "viewer.unified_document_extraction_1.1.0.zip",
+      "sha256": "e85fb8b6fffdb38c4ad3f83c6714cd2b75cecc7f7c7aa38e5f1f51f218f366e3",
+      "bytes": 275199,
+      "original_source_path": "viewer.unified_document_extraction_1.1.0.zip"
+    },
+    {
+      "name": "viewer.canvas_demonstrator_1.0.0.zip",
+      "sha256": "68f3f821754703ed01cf06bcbd9544e27f90ef79c92929934b15eb13861f848c",
+      "bytes": 92073,
+      "original_source_path": "companions/viewer.canvas_demonstrator_1.0.0.zip"
+    }
+  ],
+  "additional_files": [
+    {
+      "name": "apply.py",
+      "sha256": "0551e7ee8de0656d0bbc41414fb6a830de52ae1bbc4fa2d5d526015fca5a7976",
+      "bytes": 19566
+    }
+  ],
+  "install_method": "Exact guarded patch installer and supported predecessor",
+  "supported_routes": [
+    "r2",
+    "post-p003"
+  ]
+}
