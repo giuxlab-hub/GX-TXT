@@ -305,3 +305,22 @@ python3 tools/validate_dev111_p031_p035.py --repository /path/to/maintenance-dev
 
 This checks archive and file identities; no CORE or third-party module installation, source rewriting, or scientific results are claimed by the publication workflow.
 
+## GX-TXT DEV112-r2 P001–P004 — archive identities
+
+The four official DEV112-r2 patches and their original installable Viewer ZIPs are archived on the [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112) branch with SHA-256 manifests and patch installation instructions.
+
+| Patch | Release | Applicability |
+| --- | --- | --- |
+| P001 | [Viewer Catalog](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p001) | Original DEV112-r2 |
+| P002 | [Unified Documents](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p002) | Exact P001 |
+| P003 | [Multilayer Canvas](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p003) | Exact corrected P002 |
+| P004 | [Cumulative Unified Documents](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p004) | Clean DEV112-r2 or exact post-P003 |
+
+Read-only integrity validation of all original patch ZIPs, declared product postimages and distributed companion ZIPs:
+
+```sh
+python3 tools/validate_dev112_r2_p001_p004.py --repository /path/to/maintenance-dev112
+```
+
+P004 is cumulative: the supported direct route from clean DEV112-r2 does not require separately applying P001–P003. The original P004 standalone apply script and its route-specific rollback are supplied with the release.
+
