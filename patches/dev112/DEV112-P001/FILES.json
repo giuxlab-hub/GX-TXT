@@ -1,0 +1,2015 @@
+{
+  "schema": "gxtxt.dev112.p001.incremental.v1",
+  "patch": "DEV112-P001",
+  "baseline_archive_sha256": "8fda1fd6e485d9d917adfb08d64991c2403f8faf19ed10f4770565d8afcdbaa0",
+  "host_guards": {
+    "VERSION.txt": "e7cec0e58d6f281b9cf5dc986e49e8aae6de1b04a81a52d8e83f3dd2934715e0",
+    "PATCH_LEVEL.txt": "945e4893567554e68f6f28d5652917269341a5f3d295a16b7c708c9bfd95dc5d",
+    "gxtxt_pipeline.tcl": "4108f101436547cd31ef38ded410201eb40cd72dfe6706a0efe3ef3080ca5b6a",
+    "core/tcl/viewer_provider_catalog.tcl": "86ca97a07e64f7d7f4a8bf513967593f995a05ca861990679878b9d854e63ac1",
+    "core/tcl/viewer_provider_api_v1.tcl": "1acf1e4409fcdf352fd9bd4268f225f0a762e2b7186486743544d200d92dd057",
+    "app/gui/viewer_catalog.tcl": "0f214fdee05090bacebd5c30da1659a6d881391ede6873ff9cc0eb43b3219621"
+  },
+  "files": [
+    {
+      "path": "plugins/modules/viewer.crystal_structure/SHA256SUMS",
+      "before": {
+        "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+        "size": 3186,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "39fd6f011a91d708b4e73b5a54720012fc71342f6e9d5a0640f76b9c24d143dd",
+        "size": 3186,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.crystal_structure/SHA256SUMS.txt",
+      "before": {
+        "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+        "size": 3186,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "39fd6f011a91d708b4e73b5a54720012fc71342f6e9d5a0640f76b9c24d143dd",
+        "size": 3186,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.crystal_structure/module.ini",
+      "before": {
+        "sha256": "eb2deabd4bfb83e069d3e8002d9a98454b8952dc2e65dd9435d5fa220ba6eac8",
+        "size": 1250,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "692677d6b322d54f148898a3756cc86fe63200c7646fbd819020e85194a05ded",
+        "size": 1260,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/SHA256SUMS.txt",
+      "before": {
+        "sha256": "cd3836e2f74c024b0a1f5a1d055c23f91ebc26d2970d00621ca31f2b9c0eaf80",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "198c7c929b7a1efbd387ae07060023fadf94ee1d8a484f0df3dcdd1add7044e1",
+        "size": 1767,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/module.ini",
+      "before": {
+        "sha256": "cad1d29401a98f17409aaa0d0c096b65ad67c4379cdb22a495e985e5cf8770af",
+        "size": 6977,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "52c14892a0637c3fed1df25f749929b2778106234752c07604f58a74d4dc436d",
+        "size": 7025,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/resources/icons/catalog_ic_chromatograms.png",
+      "before": null,
+      "after": {
+        "sha256": "7607cd55e6940699a33ffdd545ccd14470e041467f906f18cc607a390f7a85e7",
+        "size": 11145,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/resources/icons/catalog_ic_chromatograms.svg",
+      "before": null,
+      "after": {
+        "sha256": "96bd3f2d1d59a0996d05f60eb08881ebc23457205d2c3e3ef3f406170394c238",
+        "size": 966,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/SHA256SUMS.txt",
+      "before": {
+        "sha256": "2208449aa608676b865a67dd5f7eddc9f9add7db71490ba4e556eca3e1440746",
+        "size": 2129,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "64efab23e92c4e749ea382db4b54edba3366d60d6f963b29d43b3ca6c48f309c",
+        "size": 2349,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/module.ini",
+      "before": {
+        "sha256": "e93c1410c459aa673e2df4f82f2138fb0e0b46cea1188c1be989ed71aabf0929",
+        "size": 5207,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "47e43b94757b834f5d924afe6809b8616937e160ec110eb11f671604dd50a67a",
+        "size": 5228,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/resources/icons/catalog_ir_spectroscopy.png",
+      "before": null,
+      "after": {
+        "sha256": "73f0f2c7c56d337540024f55db2e2cb33103c43023a57f4a0dbf214c759d2318",
+        "size": 9188,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/resources/icons/catalog_ir_spectroscopy.svg",
+      "before": null,
+      "after": {
+        "sha256": "1e45b3ba6586a2a25e81422a2dbe4047369ad1ab6f0e4e71bed9c2e3e65276b7",
+        "size": 967,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/SHA256SUMS.txt",
+      "before": {
+        "sha256": "65df0294117c66745ccefdaac3a8f138a963c16d055c482a83b7005a6b651401",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "083cca4217e9255b48615ee91e7db7afa41447141e45a55f33989a97ae6a5834",
+        "size": 1865,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/module.ini",
+      "before": {
+        "sha256": "77508d8a518daf68c9702c782e33799892ac3f654b12dc8f17fe72bb17ccd7d4",
+        "size": 5050,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5947023c80ce079447c0df5d4e1a1fbbe4353d764579633354f63b1dd48e39c0",
+        "size": 5103,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/resources/icons/catalog_markdown_documents.png",
+      "before": null,
+      "after": {
+        "sha256": "604f351887968027d9abc5d970edb04da4a983d485b3094c518d4edf06728362",
+        "size": 6543,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/resources/icons/catalog_markdown_documents.svg",
+      "before": null,
+      "after": {
+        "sha256": "a81c423072bc9e3f158a526dadc8e684ac19a10574e03b61e6bb9db3e25cd5ef",
+        "size": 1037,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.molecule_3d/SHA256SUMS.txt",
+      "before": {
+        "sha256": "ed29003415eab1ada228153ad4807ab6fbd4411bf7db20ef9fe7a980a3df1f49",
+        "size": 3477,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "806c3d4c316641bd98363a9c94a6389ac8c2b63f11dc7a8f2fd780737d54fd6f",
+        "size": 3477,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.molecule_3d/module.ini",
+      "before": {
+        "sha256": "31246427303b58118c558fd120d07cf1251c7eefafc9508d48e59f596cc9103d",
+        "size": 1156,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "90b2b14eb665791e4549e942043a76737ef3eeaba7148ad9a5284aa42f037dc4",
+        "size": 1166,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/SHA256SUMS.txt",
+      "before": {
+        "sha256": "e7a676bcf607de24b0b42caf5ffb5dc3298c3120f79664e4a299149b1ca3f182",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ef7daff24bfa45a334180b58fab8c4bea1e3192f13ba604df2ca15ceb4ce2728",
+        "size": 1857,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/module.ini",
+      "before": {
+        "sha256": "b5e063e99a38e49cda73c1a837c81f09307e31d74c9fadd3371a92e14c55ac99",
+        "size": 4723,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9fa99852a2672968d1f9e2e3f00a080c847b242e45a33a4de6119e26567aaca4",
+        "size": 4765,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/resources/icons/catalog_script_library.png",
+      "before": null,
+      "after": {
+        "sha256": "0193631f1560e7648f0e367456b47847357bd6270963f83dca5f70d44c759e51",
+        "size": 8960,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/resources/icons/catalog_script_library.svg",
+      "before": null,
+      "after": {
+        "sha256": "b56f08a8636cb49f976734deb258847b9ec3cb5f5d8c05a38bc8a446472f5809",
+        "size": 996,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/SHA256SUMS.txt",
+      "before": {
+        "sha256": "198d3942c775201f4c5cc04b84427faa31f8b11cde07f758bd10f8e03306c763",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "99b8f63b51cc89bad58920ab9c6315152e229038e56fa9ed31bd200a382d6851",
+        "size": 1771,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/module.ini",
+      "before": {
+        "sha256": "780d87efa69cf37debe6c93f92920d2e82a45994317fe4144cff7839dd05dbeb",
+        "size": 6919,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d61bb48826ee0b9b7758581d749e48befb50fffcc7fd74be1597e9dc3f10b97d",
+        "size": 6965,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/resources/icons/catalog_stderr_diagnostics.png",
+      "before": null,
+      "after": {
+        "sha256": "1955f64343c16293640fe27b792df9f900981c23e8552383fbd8f4c67a4ba18f",
+        "size": 7251,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/resources/icons/catalog_stderr_diagnostics.svg",
+      "before": null,
+      "after": {
+        "sha256": "9200801022e1f074b2a64b64ed960ebdc96089d11813b6889e1982998e3a99c4",
+        "size": 1185,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/SHA256SUMS.txt",
+      "before": {
+        "sha256": "74084310177393ed08922e1530ac3242893ba9203a777bce6f8bfa0295675cee",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "10458d6e2354cbac146170784baaab19b45f285040ab0f59a71740d98e46d6d3",
+        "size": 1849,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/module.ini",
+      "before": {
+        "sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+        "size": 4850,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8f8ea734cf5e2ca58ac1fae5d5fc230595f581b4704bb075674238ca986d1677",
+        "size": 4897,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/resources/icons/catalog_uml_editor.png",
+      "before": null,
+      "after": {
+        "sha256": "f15c4e3123a489e5cb5697d9861899d24730754fde1fe22c4fa6ff0964c07a85",
+        "size": 7547,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/resources/icons/catalog_uml_editor.svg",
+      "before": null,
+      "after": {
+        "sha256": "1f85bf2970a0824ce056f0ebf64b89cdfff9d161677672fd96b0a22d59cf7de5",
+        "size": 1296,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/SHA256SUMS.txt",
+      "before": {
+        "sha256": "b606e14491692384aba0d3bfdf219a3b5cb0fe706b3a300f754c59574aaf59be",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ba0aec3e4918097749964852239515afc94bca2175c78401d00f27e5b7f10db8",
+        "size": 1789,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/module.ini",
+      "before": {
+        "sha256": "f755279120659e68617ab6b92b33cc46fa65c7d0f6b6b38dd2bc79ef9c149006",
+        "size": 7838,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4f7505af12a9cd1f37b9b9d3514c882d7f20cb28fcbf630e09774bba733c6f32",
+        "size": 7900,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/resources/icons/catalog_unified_document_extraction.png",
+      "before": null,
+      "after": {
+        "sha256": "5d2c6b8f9bcce86a79b021ab10b0b038e074d9104211a3f6f6faffd85eef23e9",
+        "size": 6895,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/resources/icons/catalog_unified_document_extraction.svg",
+      "before": null,
+      "after": {
+        "sha256": "ab2f86a67c6ccbd24c7e63e9d996738021ff45a3756bb83af5fc94b10bc9c778",
+        "size": 1146,
+        "mode": 436
+      }
+    }
+  ],
+  "baseline_release": "/srv/gxtxt/releases/dev112/0.9.8.10-dev-112-r2",
+  "baseline_version": "0.9.8.10-dev-112",
+  "baseline_patch": "000",
+  "original_delivery_sha256": "b3439978b19914efefdc365aabf8fe81773809c9ec846f22445d5151b6056636",
+  "source_commit": "8e637adff46306b5005297679166c09a1e9d36b8",
+  "changed_files": [
+    {
+      "path": "plugins/modules/viewer.crystal_structure/SHA256SUMS",
+      "before": {
+        "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+        "size": 3186,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "39fd6f011a91d708b4e73b5a54720012fc71342f6e9d5a0640f76b9c24d143dd",
+        "size": 3186,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.crystal_structure/SHA256SUMS.txt",
+      "before": {
+        "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+        "size": 3186,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "39fd6f011a91d708b4e73b5a54720012fc71342f6e9d5a0640f76b9c24d143dd",
+        "size": 3186,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.crystal_structure/module.ini",
+      "before": {
+        "sha256": "eb2deabd4bfb83e069d3e8002d9a98454b8952dc2e65dd9435d5fa220ba6eac8",
+        "size": 1250,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "692677d6b322d54f148898a3756cc86fe63200c7646fbd819020e85194a05ded",
+        "size": 1260,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/SHA256SUMS.txt",
+      "before": {
+        "sha256": "cd3836e2f74c024b0a1f5a1d055c23f91ebc26d2970d00621ca31f2b9c0eaf80",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "198c7c929b7a1efbd387ae07060023fadf94ee1d8a484f0df3dcdd1add7044e1",
+        "size": 1767,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/module.ini",
+      "before": {
+        "sha256": "cad1d29401a98f17409aaa0d0c096b65ad67c4379cdb22a495e985e5cf8770af",
+        "size": 6977,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "52c14892a0637c3fed1df25f749929b2778106234752c07604f58a74d4dc436d",
+        "size": 7025,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/resources/icons/catalog_ic_chromatograms.png",
+      "before": null,
+      "after": {
+        "sha256": "7607cd55e6940699a33ffdd545ccd14470e041467f906f18cc607a390f7a85e7",
+        "size": 11145,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ic_chromatograms/resources/icons/catalog_ic_chromatograms.svg",
+      "before": null,
+      "after": {
+        "sha256": "96bd3f2d1d59a0996d05f60eb08881ebc23457205d2c3e3ef3f406170394c238",
+        "size": 966,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/SHA256SUMS.txt",
+      "before": {
+        "sha256": "2208449aa608676b865a67dd5f7eddc9f9add7db71490ba4e556eca3e1440746",
+        "size": 2129,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "64efab23e92c4e749ea382db4b54edba3366d60d6f963b29d43b3ca6c48f309c",
+        "size": 2349,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/module.ini",
+      "before": {
+        "sha256": "e93c1410c459aa673e2df4f82f2138fb0e0b46cea1188c1be989ed71aabf0929",
+        "size": 5207,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "47e43b94757b834f5d924afe6809b8616937e160ec110eb11f671604dd50a67a",
+        "size": 5228,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/resources/icons/catalog_ir_spectroscopy.png",
+      "before": null,
+      "after": {
+        "sha256": "73f0f2c7c56d337540024f55db2e2cb33103c43023a57f4a0dbf214c759d2318",
+        "size": 9188,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.ir_spectroscopy/resources/icons/catalog_ir_spectroscopy.svg",
+      "before": null,
+      "after": {
+        "sha256": "1e45b3ba6586a2a25e81422a2dbe4047369ad1ab6f0e4e71bed9c2e3e65276b7",
+        "size": 967,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/SHA256SUMS.txt",
+      "before": {
+        "sha256": "65df0294117c66745ccefdaac3a8f138a963c16d055c482a83b7005a6b651401",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "083cca4217e9255b48615ee91e7db7afa41447141e45a55f33989a97ae6a5834",
+        "size": 1865,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/module.ini",
+      "before": {
+        "sha256": "77508d8a518daf68c9702c782e33799892ac3f654b12dc8f17fe72bb17ccd7d4",
+        "size": 5050,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "5947023c80ce079447c0df5d4e1a1fbbe4353d764579633354f63b1dd48e39c0",
+        "size": 5103,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/resources/icons/catalog_markdown_documents.png",
+      "before": null,
+      "after": {
+        "sha256": "604f351887968027d9abc5d970edb04da4a983d485b3094c518d4edf06728362",
+        "size": 6543,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.markdown_documents/resources/icons/catalog_markdown_documents.svg",
+      "before": null,
+      "after": {
+        "sha256": "a81c423072bc9e3f158a526dadc8e684ac19a10574e03b61e6bb9db3e25cd5ef",
+        "size": 1037,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.molecule_3d/SHA256SUMS.txt",
+      "before": {
+        "sha256": "ed29003415eab1ada228153ad4807ab6fbd4411bf7db20ef9fe7a980a3df1f49",
+        "size": 3477,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "806c3d4c316641bd98363a9c94a6389ac8c2b63f11dc7a8f2fd780737d54fd6f",
+        "size": 3477,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.molecule_3d/module.ini",
+      "before": {
+        "sha256": "31246427303b58118c558fd120d07cf1251c7eefafc9508d48e59f596cc9103d",
+        "size": 1156,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "90b2b14eb665791e4549e942043a76737ef3eeaba7148ad9a5284aa42f037dc4",
+        "size": 1166,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/SHA256SUMS.txt",
+      "before": {
+        "sha256": "e7a676bcf607de24b0b42caf5ffb5dc3298c3120f79664e4a299149b1ca3f182",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ef7daff24bfa45a334180b58fab8c4bea1e3192f13ba604df2ca15ceb4ce2728",
+        "size": 1857,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/module.ini",
+      "before": {
+        "sha256": "b5e063e99a38e49cda73c1a837c81f09307e31d74c9fadd3371a92e14c55ac99",
+        "size": 4723,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "9fa99852a2672968d1f9e2e3f00a080c847b242e45a33a4de6119e26567aaca4",
+        "size": 4765,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/resources/icons/catalog_script_library.png",
+      "before": null,
+      "after": {
+        "sha256": "0193631f1560e7648f0e367456b47847357bd6270963f83dca5f70d44c759e51",
+        "size": 8960,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.script_library/resources/icons/catalog_script_library.svg",
+      "before": null,
+      "after": {
+        "sha256": "b56f08a8636cb49f976734deb258847b9ec3cb5f5d8c05a38bc8a446472f5809",
+        "size": 996,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/SHA256SUMS.txt",
+      "before": {
+        "sha256": "198d3942c775201f4c5cc04b84427faa31f8b11cde07f758bd10f8e03306c763",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "99b8f63b51cc89bad58920ab9c6315152e229038e56fa9ed31bd200a382d6851",
+        "size": 1771,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/module.ini",
+      "before": {
+        "sha256": "780d87efa69cf37debe6c93f92920d2e82a45994317fe4144cff7839dd05dbeb",
+        "size": 6919,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "d61bb48826ee0b9b7758581d749e48befb50fffcc7fd74be1597e9dc3f10b97d",
+        "size": 6965,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/resources/icons/catalog_stderr_diagnostics.png",
+      "before": null,
+      "after": {
+        "sha256": "1955f64343c16293640fe27b792df9f900981c23e8552383fbd8f4c67a4ba18f",
+        "size": 7251,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.stderr_diagnostics/resources/icons/catalog_stderr_diagnostics.svg",
+      "before": null,
+      "after": {
+        "sha256": "9200801022e1f074b2a64b64ed960ebdc96089d11813b6889e1982998e3a99c4",
+        "size": 1185,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/SHA256SUMS.txt",
+      "before": {
+        "sha256": "74084310177393ed08922e1530ac3242893ba9203a777bce6f8bfa0295675cee",
+        "size": 1639,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "10458d6e2354cbac146170784baaab19b45f285040ab0f59a71740d98e46d6d3",
+        "size": 1849,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/module.ini",
+      "before": {
+        "sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+        "size": 4850,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "8f8ea734cf5e2ca58ac1fae5d5fc230595f581b4704bb075674238ca986d1677",
+        "size": 4897,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/resources/icons/catalog_uml_editor.png",
+      "before": null,
+      "after": {
+        "sha256": "f15c4e3123a489e5cb5697d9861899d24730754fde1fe22c4fa6ff0964c07a85",
+        "size": 7547,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.uml_editor/resources/icons/catalog_uml_editor.svg",
+      "before": null,
+      "after": {
+        "sha256": "1f85bf2970a0824ce056f0ebf64b89cdfff9d161677672fd96b0a22d59cf7de5",
+        "size": 1296,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/SHA256SUMS.txt",
+      "before": {
+        "sha256": "b606e14491692384aba0d3bfdf219a3b5cb0fe706b3a300f754c59574aaf59be",
+        "size": 1545,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "ba0aec3e4918097749964852239515afc94bca2175c78401d00f27e5b7f10db8",
+        "size": 1789,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/module.ini",
+      "before": {
+        "sha256": "f755279120659e68617ab6b92b33cc46fa65c7d0f6b6b38dd2bc79ef9c149006",
+        "size": 7838,
+        "mode": 420
+      },
+      "after": {
+        "sha256": "4f7505af12a9cd1f37b9b9d3514c882d7f20cb28fcbf630e09774bba733c6f32",
+        "size": 7900,
+        "mode": 420
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/resources/icons/catalog_unified_document_extraction.png",
+      "before": null,
+      "after": {
+        "sha256": "5d2c6b8f9bcce86a79b021ab10b0b038e074d9104211a3f6f6faffd85eef23e9",
+        "size": 6895,
+        "mode": 436
+      }
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/resources/icons/catalog_unified_document_extraction.svg",
+      "before": null,
+      "after": {
+        "sha256": "ab2f86a67c6ccbd24c7e63e9d996738021ff45a3756bb83af5fc94b10bc9c778",
+        "size": 1146,
+        "mode": 436
+      }
+    }
+  ],
+  "factory_module_guards": {
+    "viewer.crystal_structure": {
+      "registry": null,
+      "files": {
+        "CHANGELOG.md": {
+          "sha256": "af0831cdb5f985f2c42c41ad63f1bc1df813c5e7bb8ca68d895f5ea5dea1a458",
+          "size": 311,
+          "mode": 420
+        },
+        "LICENSE": {
+          "sha256": "4837a872aa8bfdeb300bb9132380a644fe166bf49e83dcbea8caf6aabf2e7e25",
+          "size": 697,
+          "mode": 420
+        },
+        "README.md": {
+          "sha256": "63e4759521b8fb4ded3bc32367adb8ab84fd68602031170dfb7c0d95d76f5f71",
+          "size": 4126,
+          "mode": 420
+        },
+        "SHA256SUMS": {
+          "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+          "size": 3186,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "903ed546f043689774f4afe517954ba7b6dbdad519951d10c75bf12492eb5990",
+          "size": 3186,
+          "mode": 420
+        },
+        "icons/crystal_structure.png": {
+          "sha256": "04fe71dbea4ef369724037309fd3c89f4bf331059ac2cd079c574637ff76f5db",
+          "size": 14047,
+          "mode": 420
+        },
+        "icons/crystal_structure.svg": {
+          "sha256": "599bd1febdca1bd191e4bd3b99b2250ddb95012f7e19dd0c9b5e96e3fcc85293",
+          "size": 1340,
+          "mode": 420
+        },
+        "library/cif/1000041.cif": {
+          "sha256": "02d4f4fa315f7b97147256118acc7f9f20190d7246c3ea7209cfb8bd5d6e1fed",
+          "size": 4597,
+          "mode": 420
+        },
+        "library/cif/1000065.cif": {
+          "sha256": "8c4c11398dc3c170383e4ffa32697b835af30ce23050b99083942f65be23d030",
+          "size": 2796,
+          "mode": 420
+        },
+        "library/cif/1010045.cif": {
+          "sha256": "f0c923d6ee473448bbc6f7c9e24613034bf9e489159b65887205d13e068129d2",
+          "size": 5025,
+          "mode": 420
+        },
+        "library/cif/1010942.cif": {
+          "sha256": "39111d3e253daf62fbf04e2e46358aecccd32c1e73592e2779dacfba53f3489d",
+          "size": 2711,
+          "mode": 420
+        },
+        "library/cif/1010944.cif": {
+          "sha256": "2d7c3656d20fdd97dd5efb33cc80d1baba4e6e06ff00f66a350f8a6b02972468",
+          "size": 5300,
+          "mode": 420
+        },
+        "library/cif/1100108.cif": {
+          "sha256": "41085e65debf2bd82a772bcee9e7c0a43ef42b67666d2f233c8f2d822769b8fe",
+          "size": 1540,
+          "mode": 420
+        },
+        "library/cif/1536409.cif": {
+          "sha256": "2c606ef4c99e88a2f82419d3a0433742bcaf9d635bd71bd800c0d5b9f1f865f5",
+          "size": 2032,
+          "mode": 420
+        },
+        "library/cif/2003112.cif": {
+          "sha256": "97c2e09865707b9483da8771ca4fecb3e0e5cf346a0c24fee29223abe63f0533",
+          "size": 2879,
+          "mode": 420
+        },
+        "library/cif/2101499.cif": {
+          "sha256": "d6be73a0b0c170dcc6e8ab629598739b603a24d2cfb668a72383ad723ab972ed",
+          "size": 2395,
+          "mode": 420
+        },
+        "library/cif/9000095.cif": {
+          "sha256": "d8a1cf92866da8814ef104b1626117490d9d4fbad823ef5dbf1cd2954488da52",
+          "size": 2954,
+          "mode": 420
+        },
+        "library/cif/9011495.cif": {
+          "sha256": "52a337dc9d8929f4fedbe8a5c7715ee4de18bd7f8d5b0b627689bfebea0559c6",
+          "size": 2424,
+          "mode": 420
+        },
+        "library/cif/9013014.cif": {
+          "sha256": "c22fa970829256346917792f2f474db6a5483aaa73dd7dc07d0f376c29dc9154",
+          "size": 4758,
+          "mode": 420
+        },
+        "library/cif/9013102.cif": {
+          "sha256": "99fb6c6c297f8407aa779de46bf7eaa663ac079f7f12b582c042313f9c82f77e",
+          "size": 5234,
+          "mode": 420
+        },
+        "library/density/calculation_provenance.json": {
+          "sha256": "b8c040801e6c1d0b82197a475b68085cd7d47ea379110010faf824589d5afa70",
+          "size": 1598,
+          "mode": 420
+        },
+        "library/density/diamond_density.cube": {
+          "sha256": "db8ca3e941fe6c76f7dd8f4b6f0eb82bef51093758b55973f40ff0702274e316",
+          "size": 432500,
+          "mode": 420
+        },
+        "library/density/diamond_pyscf.log": {
+          "sha256": "6108d34ee2d8bfbaebb78723b3950f8a8524f1061f9bc8b55013e745339d80e3",
+          "size": 5599,
+          "mode": 420
+        },
+        "library/density/generate_density.py": {
+          "sha256": "cd06478555abc8a7dca83d3292fa5108c7e0a1a4cbd75db3453fbcc9367150e9",
+          "size": 2319,
+          "mode": 420
+        },
+        "library/density/generate_signed_density.py": {
+          "sha256": "1b00406bdcfafb9a14c445f307eec966b22ef44a6e196ad1b6b0d33072f26462",
+          "size": 3290,
+          "mode": 420
+        },
+        "library/density/signed_calculation_provenance.json": {
+          "sha256": "291c42f47c819fc97545c550fed803c86c3a7f117d4ca3f9202c79120f8ad0d2",
+          "size": 1183,
+          "mode": 420
+        },
+        "library/density/water_density.cube": {
+          "sha256": "e5ca6edfe90ed392fb2254debe6ad0f05b6abbdcc4d2aaa56fe461c51331feb3",
+          "size": 1456554,
+          "mode": 420
+        },
+        "library/density/water_displacement_difference.cube": {
+          "sha256": "6604b1df3690d28d433caa3dad4fd1ea9b1b5a326ca941b92b83eef710c692c0",
+          "size": 1456590,
+          "mode": 420
+        },
+        "library/density/water_perturbed_pyscf.log": {
+          "sha256": "8d95d79c7d8e465e1e4f5dab105289d3622574c2b77ecfd3bf97d278a0be08ba",
+          "size": 6813,
+          "mode": 420
+        },
+        "library/density/water_pyscf.log": {
+          "sha256": "4a9cc64cf9482c4eeb8d061e25500fd2c74e6747843be160173cdc18f1d06b2c",
+          "size": 5781,
+          "mode": 420
+        },
+        "library/index.tsv": {
+          "sha256": "3324d3edd790e8b64e44aaf45354d771a1615cbdc83328e535886772c843db0b",
+          "size": 4162,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "eb2deabd4bfb83e069d3e8002d9a98454b8952dc2e65dd9435d5fa220ba6eac8",
+          "size": 1250,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "df32b1ce0648bc5b353ddcc67d6252738d947bae6af1609373c60d2ee83a4cb4",
+          "size": 100,
+          "mode": 420
+        },
+        "runtime/crystal_chemistry_viewer.tcl": {
+          "sha256": "2f6eb9354c1f17146e1817005f62b959c5d7ee869db1496d484c680ae8efec29",
+          "size": 29462,
+          "mode": 420
+        },
+        "runtime/crystal_data.py": {
+          "sha256": "9a1478aa1e1f160e02a4b19a6d8d4aacda83e8d1592eda031a022477441ba4cf",
+          "size": 368,
+          "mode": 420
+        },
+        "runtime/symmetry_groups.json": {
+          "sha256": "8b5896bddde6b2989511d937cbb1da96d8e9a903a96cf2d154d679f8a4aa1729",
+          "size": 148909,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.ic_chromatograms": {
+      "registry": null,
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "fe6870c31d5caca76912a119516920a55f08631a2fcb6636c3b7a60f18e175a0",
+          "size": 5931,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "300e6b1575d58f259f4596e8f551f82259cc0ab35368c9c94ea357e829001229",
+          "size": 790,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "cd3836e2f74c024b0a1f5a1d055c23f91ebc26d2970d00621ca31f2b9c0eaf80",
+          "size": 1545,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "5328f7f93093115094ae953249ee3d2c75c1ad09997fe75a9b7e8a9f4e2fd215",
+          "size": 1377,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "2364399ccea2c2d42ab5968351b69a89089989a2f9a424803432a1a663a1ac19",
+          "size": 13448,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "cad1d29401a98f17409aaa0d0c096b65ad67c4379cdb22a495e985e5cf8770af",
+          "size": 6977,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "fa3022c808176616238040e057c60ed93ac6211a903fe6615e9e79f24da0c530",
+          "size": 10281,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+          "size": 2609,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+          "size": 4469,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "10f6258b3b270191e90de9bc281c368178c649afc67d5e895d0bd6290a1732e3",
+          "size": 17272,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "23406897f7390189021c44cca131e7ea132466c646a33b1c253f038a490bd780",
+          "size": 173,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "b4bde0e56b2039ad591987c52da6fe2b6130b09d3f5488305d60325fb4ecfaaf",
+          "size": 6762,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "816f731f83c39b11ef042afeb6f3ad23f4ba0e1a97f15434c16f315784d16de0",
+          "size": 4045,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "fe6870c31d5caca76912a119516920a55f08631a2fcb6636c3b7a60f18e175a0",
+          "size": 5931,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "2364399ccea2c2d42ab5968351b69a89089989a2f9a424803432a1a663a1ac19",
+          "size": 13448,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "3ccfdbf6f7fa749d3d10e2817b68d85bbbc2dc16ff4db70521dfba737df5ee4f",
+          "size": 626,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "035e57d704aec2eca5f2292a08d8c9d485b49b6a7ca6d5971627a8765901ab4a",
+          "size": 1045,
+          "mode": 420
+        },
+        "source/requests/GAP-GX210-IC-BASELINE-AUTHOR-R2.json": {
+          "sha256": "276cb8b66445a8ec51814c605d772e9024a5261c10f6a48e8216037597f530e5",
+          "size": 1839,
+          "mode": 420
+        },
+        "source/requests/GAP-GX210-IC-BASELINE-AUTHOR.json": {
+          "sha256": "3eb59a2d9aa11e3a8b06090c0487f056d40627742438f687d02101ef891e7e4c",
+          "size": 1715,
+          "mode": 420
+        },
+        "source/requests/GAP-GX210-IC-STUDY-LIFECYCLE-R2.json": {
+          "sha256": "1d45bdf3d5bef5dfda31be0a69cac7f96491ca767a9e8670cf9b15e780b7515c",
+          "size": 1759,
+          "mode": 420
+        },
+        "source/requests/GAP-GX210-IC-STUDY-LIFECYCLE.json": {
+          "sha256": "7b0535d73c8226d5069c42fba0b8cec972585bc880a0111fa4ffabb8ca24320f",
+          "size": 1635,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.ir_spectroscopy": {
+      "registry": {
+        "id": "viewer.ir_spectroscopy",
+        "type": "module",
+        "version": "1.0.1",
+        "name": "IR Spectroscopy — Reference Evidence",
+        "installed_at": "2026-11-01T07:51:48+0100",
+        "updated_at": "2026-11-01T07:51:48+0100",
+        "package_file": "viewer.ir_spectroscopy_1.0.1.zip",
+        "bundle_id": "",
+        "bundle_version": ""
+      },
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "6694c8e3d6aaa7310e605ce61524d46d7151161e90826631a3f00d79d35d020d",
+          "size": 5714,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "6d389a6ad8d494b988facf3c4a8658d0a50407065d65312bc4d24dc9cc122fee",
+          "size": 1556,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "2208449aa608676b865a67dd5f7eddc9f9add7db71490ba4e556eca3e1440746",
+          "size": 2129,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "37c2eb5eddbb0254ca6e2238f0b610a0fafdfe01e75f8bceba3c6b4ba3e03160",
+          "size": 1358,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+          "size": 20217,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "e93c1410c459aa673e2df4f82f2138fb0e0b46cea1188c1be989ed71aabf0929",
+          "size": 5207,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "9be634bd797e7d8d04f051129d0ff084cc191fc2215a0958806ebeb3929f055a",
+          "size": 16717,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "cadcfcaf2f4e36e5159f782d248478dc4f49101c793564cabeffe30b0b68c816",
+          "size": 7122,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "09fffc74b595b05a4ae0ba88be100e1f4631320f5e5d8f19b96a7ac2ca9e345b",
+          "size": 22076,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "f94cea9fb7064b6dd0c75c4c632f89304f495b06dda79b3be6a12032325179ea",
+          "size": 109856,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "5dcb06f4c3a765fcb47c8c52b1bdb723eb0e9bbbd85ed0a1590dba4d982d8645",
+          "size": 167,
+          "mode": 420
+        },
+        "resources/icons/catalog.json": {
+          "sha256": "4699b8331ac9b9efde60b6583f87fb3a46f698d8e2f356727df4113be327ad79",
+          "size": 463,
+          "mode": 420
+        },
+        "resources/icons/xy_plot.png": {
+          "sha256": "1db549d2c25c30a2fdbcd39ef92d639a4e36c0ccc5d0a4ba00704a5b7bd38c6f",
+          "size": 1810,
+          "mode": 420
+        },
+        "resources/icons/xy_plot.source.svg": {
+          "sha256": "dcecab36863917943110ec70231efd2f03f66f0dccfb010103208da6b1a443a2",
+          "size": 262,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "d06de71052250f43a2babfbb64b1c4d6254b08349e8f156116eee1744c4363d9",
+          "size": 40148,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "0cef242404cdb53f1cb947c5fb911a3de29703e3b78ecec987211ec17c4f1b62",
+          "size": 5446,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "6694c8e3d6aaa7310e605ce61524d46d7151161e90826631a3f00d79d35d020d",
+          "size": 5714,
+          "mode": 420
+        },
+        "source/SOURCE_MANIFEST.json": {
+          "sha256": "0ed0157819ca0695ad52b881356bfb0ddc7a957cca577955d32932ae8bcb3f80",
+          "size": 675,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "2c3bf871a6735fcb1f85e331e97414f7d7487e8d26c9ba09224770b69c405376",
+          "size": 20217,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "49ee8f07b5adfd68f0753173ab32762496eea0f8bfdde65b113921e53e3b58b7",
+          "size": 470,
+          "mode": 420
+        },
+        "source/include/ir_viewer_client.hpp": {
+          "sha256": "a77b6a89f3f21baefe9540928f1d1b451bdad8a4f33dadf1819179fe1f64009b",
+          "size": 266,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "1cbb442cb0ec3b9686f4ecd57b61d42e3bc588444f5fad7ffcefbf0af94e3bf5",
+          "size": 2141,
+          "mode": 420
+        },
+        "source/src/ir_viewer_client.cpp": {
+          "sha256": "cb3f8abd3243ae63e917f4f4d0e756de9f0b81cb0939baf507aacededb787e50",
+          "size": 4553,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.markdown_documents": {
+      "registry": {
+        "id": "viewer.markdown_documents",
+        "type": "module",
+        "version": "1.0.2",
+        "name": "Markdown Documents",
+        "installed_at": "2026-11-01T07:51:54+0100",
+        "updated_at": "2026-11-01T07:51:54+0100",
+        "package_file": "viewer.markdown_documents_1.0.2_dev111_p030.zip",
+        "bundle_id": "",
+        "bundle_version": ""
+      },
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "160582549a7ac606468170ae24fda8f071ac294b6c3c59a47ee4024c74c1482c",
+          "size": 3594,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "84744b1177f4785ef4daa754ff70491b6e36e1d88823fd2dc0a0f2bae524faa7",
+          "size": 1181,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "65df0294117c66745ccefdaac3a8f138a963c16d055c482a83b7005a6b651401",
+          "size": 1639,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "d491cb81f586fe18770600913007a059ecc603c57bb217ef3952cf7263e8219a",
+          "size": 1415,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "d58a1245fa8004b90031734a1d885f60252b58cb6461092e49ea862dd123e9d9",
+          "size": 4867,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "77508d8a518daf68c9702c782e33799892ac3f654b12dc8f17fe72bb17ccd7d4",
+          "size": 5050,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "59add9f6411c592b91a6db980f0576ad34aa33e887af2485670712a71f794b33",
+          "size": 12280,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "649216ceea45fa0c7175979a95b78e99bd7834bdea2d16cdeda453db54ed2dc0",
+          "size": 5592,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "61639f2aaeca8667935d934ffa82871d609015ff8fe2faec2a3a2fc5606c6a0b",
+          "size": 16176,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "cdec2775214f31b9adfdfae1cde82b2c1932eabe67cfbcc119eb71c48d372acc",
+          "size": 93576,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "fdd9c8c52fa54f3d33abbb2bf324f5ebab01b172d9e290495503cf0f5f425cbd",
+          "size": 150,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "3fbd16aece9a51f311135d50f0e898696cf690d2de25e13ff83516a56df7f899",
+          "size": 37735,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "a2be20494c95e3e9546c14db2685674da92963748781c88a95bb9f878b8beb19",
+          "size": 4143,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "160582549a7ac606468170ae24fda8f071ac294b6c3c59a47ee4024c74c1482c",
+          "size": 3594,
+          "mode": 420
+        },
+        "source/SOURCE_MANIFEST.json": {
+          "sha256": "3fbf7f9a0f56f3ee29af9d52dfe8059cdce5858fd05639b3e4716cc66aee60ca",
+          "size": 297,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "d58a1245fa8004b90031734a1d885f60252b58cb6461092e49ea862dd123e9d9",
+          "size": 4867,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "40a5aea48de5a92d93193ce257443ca5e3b9b60424eea307b579ee91360b2e51",
+          "size": 2030,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "eb88c011ee08b3b5d8da80df8bce51e4627567afc437f09bac618a7a058e351f",
+          "size": 1009,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.molecule_3d": {
+      "registry": null,
+      "files": {
+        "CHANGELOG.md": {
+          "sha256": "61daba629d0341e731aa965479ff0ce6b9f632b9fdb6300c225d442fc3c17a3a",
+          "size": 458,
+          "mode": 420
+        },
+        "LICENSE": {
+          "sha256": "6047b61c8607dbd4867a55de0d0f28d2c04bf383e614514e3cb940d8d59d6f89",
+          "size": 309,
+          "mode": 420
+        },
+        "README.md": {
+          "sha256": "375a4590cd54430560635a710891326578379c18db2d7011f528ae59f0ac0264",
+          "size": 3693,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "ed29003415eab1ada228153ad4807ab6fbd4411bf7db20ef9fe7a980a3df1f49",
+          "size": 3477,
+          "mode": 420
+        },
+        "THIRD_PARTY_NOTICES.md": {
+          "sha256": "6b0275d796071e1b6cd70575d73c437377679573353f290b3d95f19c097f6154",
+          "size": 740,
+          "mode": 420
+        },
+        "icons/molecule_3d.png": {
+          "sha256": "28c72060378f2fbf3a94d6a7c1ee7c5831bbce67edb29e7de29b50932381c0bd",
+          "size": 16402,
+          "mode": 420
+        },
+        "icons/molecule_3d.svg": {
+          "sha256": "d9ad4d28798df533ed05a7d5101a09f05dbe51d174d1dbf771c50e7447986ed0",
+          "size": 1251,
+          "mode": 420
+        },
+        "library/ACN_ideal.sdf": {
+          "sha256": "29abb864b367d3411a4bb341e7c4febaa898e1ff18ae4475fb544ba65aa6c152",
+          "size": 739,
+          "mode": 420
+        },
+        "library/ACT_ideal.sdf": {
+          "sha256": "114e84cdf8b127f38ae655e87a9d3ac63e3ad12b2c86d1563e88d5198959a322",
+          "size": 553,
+          "mode": 420
+        },
+        "library/ADE_ideal.sdf": {
+          "sha256": "b53932b47c98659bd1bfff7961f84314ae22edd1d3c5a95724fa39dbf7a1819d",
+          "size": 1117,
+          "mode": 420
+        },
+        "library/ALA_ideal.sdf": {
+          "sha256": "d51acddcbd06d426d66ca3ea25809bdfff0946117050c2862f1e8013dad2aa21",
+          "size": 943,
+          "mode": 420
+        },
+        "library/ARG_ideal.sdf": {
+          "sha256": "226c3561c2ee89080d9906635c21bdcb84d66e4e27542f18535d172e2888b005",
+          "size": 1913,
+          "mode": 420
+        },
+        "library/ASP_ideal.sdf": {
+          "sha256": "a655ce81af15f53b1d01a1d85cd866d9b3d17a6930b5da6b5d09595bc03f5705",
+          "size": 1147,
+          "mode": 420
+        },
+        "library/ATP_ideal.sdf": {
+          "sha256": "49771f22888401cca960f46ba8fede47afa71ead3b9643efe5385d78e94c8d81",
+          "size": 3312,
+          "mode": 420
+        },
+        "library/BEZ_ideal.sdf": {
+          "sha256": "3aa7865484f68b67ae73074b582628ace88219ba544b58febe8cf4cb7fbecc32",
+          "size": 1098,
+          "mode": 420
+        },
+        "library/BNZ_ideal.sdf": {
+          "sha256": "d7f5068484a28f7cabc64fa3dc63bab3d2f5510adf6c181e6c091ec66678a97d",
+          "size": 894,
+          "mode": 420
+        },
+        "library/CFF_ideal.sdf": {
+          "sha256": "7efc60af4a10b6ce723e0dd2a5516e91e3995be879059a1fcc18dab36d17d18c",
+          "size": 1729,
+          "mode": 420
+        },
+        "library/CO2_ideal.sdf": {
+          "sha256": "81374b63f0b85e19342af1cd3dc2500b81def72b710e864c8b08da19b6ef2b14",
+          "size": 263,
+          "mode": 420
+        },
+        "library/CYS_ideal.sdf": {
+          "sha256": "c8fd442bfd787cce6b8f1813e11534d737a83b885a4376ba534d85d3916d921e",
+          "size": 1011,
+          "mode": 420
+        },
+        "library/CYT_ideal.sdf": {
+          "sha256": "a721510ce561e8da9c553b0163e6aaa56c24a479a4dbbc0b3d78649851efef78",
+          "size": 962,
+          "mode": 420
+        },
+        "library/EOH_ideal.sdf": {
+          "sha256": "d09db9e97c0ce2f3b79182a05f5115b7244e1762d82769b5cfedff472bc0abd0",
+          "size": 671,
+          "mode": 420
+        },
+        "library/GLY_ideal.sdf": {
+          "sha256": "c50225a4edcf82681155ee0b501adc35c377ef10e1e0989030e2b21647e26133",
+          "size": 739,
+          "mode": 420
+        },
+        "library/GUA_ideal.sdf": {
+          "sha256": "d54070680b5ee4aab67f1c3f723fe98456de037d610cbcebe9796d6d87260f3d",
+          "size": 1215,
+          "mode": 420
+        },
+        "library/HEM_ideal.sdf": {
+          "sha256": "e30f0722b52b64c0972a6af2ab44664753fce574309a7234835800ad6040f7b5",
+          "size": 5383,
+          "mode": 420
+        },
+        "library/HIS_ideal.sdf": {
+          "sha256": "5fc52fcc3d5cf9bfe13d76e4601fe14b863f9607ac4a8817ad13203a8a854c33",
+          "size": 1524,
+          "mode": 420
+        },
+        "library/HOH_ideal.sdf": {
+          "sha256": "df2920cc0a8f577693c9f48294ed44f0db9b8c3cef135465dcdf527d129bbbe9",
+          "size": 263,
+          "mode": 420
+        },
+        "library/LYS_ideal.sdf": {
+          "sha256": "334ced7f299f1cc9fef53f7c52d7df2041e9821be3c69b1b9c456d523397d500",
+          "size": 1777,
+          "mode": 420
+        },
+        "library/MET_ideal.sdf": {
+          "sha256": "13866f80cbe1b7b6b6e0df7bf4677c702e745ac6f85014cc0e0f49d9203c2b40",
+          "size": 1419,
+          "mode": 420
+        },
+        "library/MOH_ideal.sdf": {
+          "sha256": "1d60bb1a411c0f0897d030799041f86e6f00ff9e1909762eec19c5d201d1c74d",
+          "size": 467,
+          "mode": 420
+        },
+        "library/NAG_ideal.sdf": {
+          "sha256": "3147dbc196cf61c92500e40035f5fdb38a8531bdeb41043e9ddbf30fde9ea518",
+          "size": 2118,
+          "mode": 420
+        },
+        "library/NH3_ideal.sdf": {
+          "sha256": "a22b4b10d44dfb464909f0a022f999f4b6da08df8a024532d5613f37f9cd1022",
+          "size": 331,
+          "mode": 420
+        },
+        "library/PHE_ideal.sdf": {
+          "sha256": "6d4ee8141f317a445ff033b6a9c4c853f8b011ab060ff99a465005362fd036f1",
+          "size": 1642,
+          "mode": 420
+        },
+        "library/PRO_ideal.sdf": {
+          "sha256": "589263f2c7c17600f765d12ef4d545cbff02996f1b950cc584847eadfa2c2bbb",
+          "size": 1234,
+          "mode": 420
+        },
+        "library/SER_ideal.sdf": {
+          "sha256": "d1fb6ebdd7e1b4e41225a5d1484b87c9b3d368e94485611d8e0b3757f1115ca9",
+          "size": 1011,
+          "mode": 420
+        },
+        "library/TRP_ideal.sdf": {
+          "sha256": "f9fadcb6bbcfb4b6f61b88d6d960456f1fc5ecc18f4a37f91a2ced62574d44d0",
+          "size": 1933,
+          "mode": 420
+        },
+        "library/TYR_ideal.sdf": {
+          "sha256": "b9d511ad72f509cb96cc6f483b9dc4b0153266d778ba8e128b596ca3dada07e9",
+          "size": 1710,
+          "mode": 420
+        },
+        "library/URA_ideal.sdf": {
+          "sha256": "90d2112ba4c8ae7930710cf796375200611f1f08d5cade6e42556d96e923bccd",
+          "size": 894,
+          "mode": 420
+        },
+        "library/manifest.tsv": {
+          "sha256": "fc1c0c100e68b94e2fa48639c7105250b45fd87a6806ca347c2597771e9a3962",
+          "size": 7843,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "31246427303b58118c558fd120d07cf1251c7eefafc9508d48e59f596cc9103d",
+          "size": 1156,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "90672a6f594538e4fc6497f2b87b68fe4062c212aea854d87e118b456654a93f",
+          "size": 94,
+          "mode": 420
+        },
+        "runtime/molecule_viewer.tcl": {
+          "sha256": "27dd1f0c50b414242e5b15bf7f4d652fe94309c2878be7280d449e8b965d38a2",
+          "size": 40301,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.script_library": {
+      "registry": {
+        "id": "viewer.script_library",
+        "type": "module",
+        "version": "1.0.4",
+        "name": "Script Library",
+        "installed_at": "2026-11-01T07:52:03+0100",
+        "updated_at": "2026-11-01T07:52:03+0100",
+        "package_file": "viewer.script_library_1.0.4_dev111_p033.zip",
+        "bundle_id": "",
+        "bundle_version": ""
+      },
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "e6cb207c49491e23d0903b1df23106da9048f8c0e93e5fa50e036ddaf0544210",
+          "size": 1803,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "5eb661590dd88d4b69d5d5908da1e84464a05eefde3ce419e87ab14a4198ccf5",
+          "size": 1178,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "e7a676bcf607de24b0b42caf5ffb5dc3298c3120f79664e4a299149b1ca3f182",
+          "size": 1639,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "581fa6aa09da37fc8127aab10df16097ebed028847ac398b87262fa704676579",
+          "size": 1339,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "48eb587ac3a852568d9f69fe43f96b5c3a36b5bdfc8079da1822db82dd81aded",
+          "size": 7888,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "b5e063e99a38e49cda73c1a837c81f09307e31d74c9fadd3371a92e14c55ac99",
+          "size": 4723,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "d5b22667b9ad1ddbbd2eb14c2f42a248f1805057222a159690d2550e28d355ad",
+          "size": 15010,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "b901b6155f3fa733b00438e5a46d09db2b81dc922fd288bb0ad352b2c1a06382",
+          "size": 6701,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "767ef48d85a012a5a76fbdabab8279b19d03d3b0b211a1c2a0dd74798f8235af",
+          "size": 20901,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "b17bb6132504dd228a1bb6a25ba0b365c159449bccc5ce598f19b6095c67feda",
+          "size": 131440,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "c9bddffe70a47198f46d67750f82d9b3f988c654b188995e680f162a61b251bf",
+          "size": 142,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "7aff5c223f8126fb129511e0800a596aada2e5052b624a6910c69b11d0e57cf1",
+          "size": 38481,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "52abcf6cb87fe9535fcdca931e978ef2211cdb6908e230130f99a9bff0ad226a",
+          "size": 4716,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "e6cb207c49491e23d0903b1df23106da9048f8c0e93e5fa50e036ddaf0544210",
+          "size": 1803,
+          "mode": 420
+        },
+        "source/SOURCE_MANIFEST.json": {
+          "sha256": "1ff108656eca03c0a75da63dc6ced87ec9f96c7cdf18c404ddc0b0ef33b1077d",
+          "size": 298,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "48eb587ac3a852568d9f69fe43f96b5c3a36b5bdfc8079da1822db82dd81aded",
+          "size": 7888,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "804fba4400756f3072243aa9f392bf433acd7bb868a772ec730617d40dd286c4",
+          "size": 11343,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "72e51c8806d6dc8ec4d3939d2f2be166a743b5303328519a5832c4c8fa4fd186",
+          "size": 1242,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.stderr_diagnostics": {
+      "registry": null,
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "3d116c49213038f066633505616b6ad9c0dab45e724aeaad6e85b6b4c2f792a0",
+          "size": 3879,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "07e1c0377c855304645ffe4090d9d0edeb513a7c57bf54824a618bde375530e0",
+          "size": 792,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "198d3942c775201f4c5cc04b84427faa31f8b11cde07f758bd10f8e03306c763",
+          "size": 1545,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "713047535f6de36bae32cb05d553b394b33fb0393dca1b2db8b1d9f676764358",
+          "size": 1415,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "7f6b2ccd7fb62e89b697e5eee73592013c51a41cdaaca2ae2284848f3157a176",
+          "size": 6605,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "780d87efa69cf37debe6c93f92920d2e82a45994317fe4144cff7839dd05dbeb",
+          "size": 6919,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "edbdc602453f92afd0ed31a8b2b4ed7e8107569c5bf9c91ff36e80d4b9fd8f9b",
+          "size": 11529,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "c3b458972c81bcda43866f6baf03b77ca730649e03ddc2a3c5b7ef5100e300c0",
+          "size": 3070,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "6bebcaab5709b5abc2e3bedfd9c84faf22c6a2e875768158230fddb8ee28ce98",
+          "size": 6107,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "2ac6ae8ffe8de91eb95e02d63c61cec14607288ef9ad68cc9d43aed20593d571",
+          "size": 181840,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "aded86f7d5b7ce4f71c70656090166239f931eff8bb1afd5d2e01dca50e50327",
+          "size": 157,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "d313e5090971f92420c27c64dfb585e449eb9d1ee93d792be4b4d5be5a4e277a",
+          "size": 28326,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "a8807a81af6240e44711e1ac3fc945a9becf1bcb1b0d856be60aa115120ab6dc",
+          "size": 4902,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "3d116c49213038f066633505616b6ad9c0dab45e724aeaad6e85b6b4c2f792a0",
+          "size": 3879,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "7f6b2ccd7fb62e89b697e5eee73592013c51a41cdaaca2ae2284848f3157a176",
+          "size": 6605,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "abb8ba5e8627231759dfd073a3b7c27056d47a483e8a98c706270f0d0ec60623",
+          "size": 25437,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "7dc25ac06ea17c8892e68df925b124d4cff07c86f3ecbc915352a549da7f2225",
+          "size": 1227,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.uml_editor": {
+      "registry": {
+        "id": "viewer.uml_editor",
+        "type": "module",
+        "version": "1.0.0",
+        "name": "UML Editor",
+        "installed_at": "2026-11-01T07:52:10+0100",
+        "updated_at": "2026-11-01T07:52:10+0100",
+        "package_file": "viewer.uml_editor_1.0.0_dev111_p031.zip",
+        "bundle_id": "",
+        "bundle_version": ""
+      },
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+          "size": 5300,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "16da8d742df587903515751d59cbce0b9d439a6713a4538a12eed36a5dd8c803",
+          "size": 1173,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "74084310177393ed08922e1530ac3242893ba9203a777bce6f8bfa0295675cee",
+          "size": 1639,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "d9cd2a5f9860a9a1ed5ef348ad3a026d0399c62f2d763623f5592f1240af5cc4",
+          "size": 1263,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+          "size": 5536,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "430bdcd7b26987939a516df7dedf7c23f287b376beb1364fa4ff16f8454c10d3",
+          "size": 4850,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "7d4c76df5af7e396efcac869cb41697e787fe1ea96cc5f675aef34f59381e0fe",
+          "size": 12975,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "02d764696cdaf67db10ea46c6f85138723d4a1d8a16f2d450f9357b25c613893",
+          "size": 6043,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "37dadd00d75ed67f72de30b6c5f84a71db55059805c65b0e7d4fe9a93264c125",
+          "size": 16796,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "5b7319741b70619cc0fc789e0d0e97016647b447fbb57cfc786ef1ea64d27841",
+          "size": 94624,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "579c22351cdc3f4013c9878af2110fe1d7f0c95702bcc9c4523d7345f3ac642e",
+          "size": 134,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "b6e14e1065000a7de222e7640797e33870c39781ec59bde5c9c3f60221049675",
+          "size": 37987,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "8c0b74faf6681c1ed6c50908274f6c40c341b634253595b47787d9dc2dfbd450",
+          "size": 4148,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "67f90f24ee01e90c362b404aca6f58d5e0b47f525f81a248e8ecc10790d03f54",
+          "size": 5300,
+          "mode": 420
+        },
+        "source/SOURCE_MANIFEST.json": {
+          "sha256": "d716fc7f1710caf99350f6bfebc0bce493bcaba1bc1104a49f55e6a602405b3c",
+          "size": 297,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "e67e3a0957f5d48b56e4f6ac34b6a758dbc9c9bc73fa897ace916148b52d7e2f",
+          "size": 5536,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "7140255a9bbf101c8dda818154e422eea2c2748d37536afcf5349a5b58540004",
+          "size": 2253,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "967b78e537054a3928f93b5e1b04574864b15b3a4eab399eb0de3fc4c1ad7cae",
+          "size": 1275,
+          "mode": 420
+        }
+      }
+    },
+    "viewer.unified_document_extraction": {
+      "registry": null,
+      "files": {
+        "LICENSE": {
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "size": 35149,
+          "mode": 420
+        },
+        "MANUAL.md": {
+          "sha256": "acd9eb3d7f2b9957ade3321b4f59e8cd844703f638e8f601d8ab7e7411617b5e",
+          "size": 3588,
+          "mode": 420
+        },
+        "RESTRICTED_VIEWER_PROVENANCE.json": {
+          "sha256": "085145317401b92cbbd570a9b73a055eaa02ab578c70c43b69b87cb08d99b8ef",
+          "size": 801,
+          "mode": 420
+        },
+        "SHA256SUMS.txt": {
+          "sha256": "b606e14491692384aba0d3bfdf219a3b5cb0fe706b3a300f754c59574aaf59be",
+          "size": 1545,
+          "mode": 420
+        },
+        "api/viewer.tcl": {
+          "sha256": "5128e1302ee241d2b884686e7290bd88ba65160acfd9c36d3875e1a1040ebffb",
+          "size": 1586,
+          "mode": 420
+        },
+        "gui/design.tcldict": {
+          "sha256": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+          "size": 5847,
+          "mode": 420
+        },
+        "handlers.tcl": {
+          "sha256": "b83e668270e814740f95f48d817e57e3b0edf335c03b367cc4cf5a3bb2ff719a",
+          "size": 75,
+          "mode": 420
+        },
+        "module.ini": {
+          "sha256": "f755279120659e68617ab6b92b33cc46fa65c7d0f6b6b38dd2bc79ef9c149006",
+          "size": 7838,
+          "mode": 420
+        },
+        "native/SDK_CONTRACT.json": {
+          "sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+          "size": 10093,
+          "mode": 420
+        },
+        "native/gxtxt_viewer_sdk_v1.hpp": {
+          "sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+          "size": 2609,
+          "mode": 420
+        },
+        "native/trusted_adapter_v1.cpp": {
+          "sha256": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+          "size": 4469,
+          "mode": 420
+        },
+        "native/viewer.so": {
+          "sha256": "5bf97b191d32bbace7437e282808c26f54f81380cc1b7bc071617b5cbfa6a688",
+          "size": 17272,
+          "mode": 420
+        },
+        "plugin-package.ini": {
+          "sha256": "1121ee2685d8fc029d5686ba1ebc084873f3e2884a8f8350f8b6a0a900dafa23",
+          "size": 180,
+          "mode": 420
+        },
+        "review/build.json": {
+          "sha256": "93b64bf261c506b50b1bd45536f20e04090c680eb3365cbaa34732ac02e7c09b",
+          "size": 6174,
+          "mode": 420
+        },
+        "review/validation.json": {
+          "sha256": "283e18e0554a1fcf0dc0869e3bea92e8a842533a47a1caa1438973885d0b8bac",
+          "size": 3358,
+          "mode": 420
+        },
+        "source/MANUAL.md": {
+          "sha256": "acd9eb3d7f2b9957ade3321b4f59e8cd844703f638e8f601d8ab7e7411617b5e",
+          "size": 3588,
+          "mode": 420
+        },
+        "source/design.gxtxt-viewer": {
+          "sha256": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+          "size": 5847,
+          "mode": 420
+        },
+        "source/handlers.cpp": {
+          "sha256": "d9fa5f7aa40538ceb856e4ad88e0cadbde7095c3f0b3aeba1649b83bd99d84ff",
+          "size": 1573,
+          "mode": 420
+        },
+        "source/project.json": {
+          "sha256": "e87c44bc29084b21097f63edee8927b5940a3bba7600dda05a7ab47a523c4cbc",
+          "size": 2611,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-EXTRACTION-R2.json": {
+          "sha256": "76d19ccefe8012bbabe8cfbad0501ba8618510d48982d0d515f58438a9608c03",
+          "size": 2453,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-EXTRACTION.json": {
+          "sha256": "ca85bfb548acb2717fb86d20c9d9371a357e8d262d4aeff74a04e83919f7a0d1",
+          "size": 2450,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-LEGACY-WORKSPACE-R2.json": {
+          "sha256": "e8246fd4cf7d62432afe4025223d504c070d197cfa23715d87c49c2321e6434c",
+          "size": 2358,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-LEGACY-WORKSPACE.json": {
+          "sha256": "79e77a27fc2709597d820dd834c458d59f68cd2b25022542634d4ad9a6ed283d",
+          "size": 2355,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-RASTER-LIFECYCLE.json": {
+          "sha256": "dea791bd6ef534c57113c0d9e4f91c7fc3da9bafb8de12d0dfd3d4d6e55e9551",
+          "size": 3226,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-REVIEW-PUBLISH-R2.json": {
+          "sha256": "9a925ea1fe3f7173ba2385adf1d701463009a4c0518c3a1832593967908bd2cd",
+          "size": 2308,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-REVIEW-PUBLISH.json": {
+          "sha256": "03a629af6221bc3f60aa11c50629f5baf387332bec2c8727354e6138e32f47eb",
+          "size": 2305,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-SEARCHABLE-PDF-R2.json": {
+          "sha256": "c64b33984b701082058b9434e6a395cc808ef7aee7850d8a0146c6df239534e3",
+          "size": 2207,
+          "mode": 420
+        },
+        "source/requests/GAP-TASK210-DOC-SEARCHABLE-PDF.json": {
+          "sha256": "35c57ce7143f64370ea8a5048d586aa258a7d78d61a1846d4b678cf18b9c07d5",
+          "size": 2204,
+          "mode": 420
+        }
+      }
+    }
+  }
+}
