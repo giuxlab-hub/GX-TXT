@@ -1,0 +1,34 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-publication.v1",
+  "patch": "DEV112-P003",
+  "base_release": "v0.9.8.10-dev-112-r2",
+  "required": "DEV112-r2 + P001 + corrected P002",
+  "tag": "v0.9.8.10-dev-112-r2-p003",
+  "archive": "DEV112-P003.zip",
+  "archive_sha256": "135761937e22f22582763dba927c22e844d81cec0e6f4e90f6382b1adfe8af81",
+  "archive_bytes": 3361473,
+  "product_file_count": 46,
+  "file_manifest": "FILES.json",
+  "packages": [
+    {
+      "name": "DEV112-P003.zip",
+      "sha256": "135761937e22f22582763dba927c22e844d81cec0e6f4e90f6382b1adfe8af81",
+      "bytes": 3361473,
+      "original_source_path": "DEV112-P003.zip"
+    },
+    {
+      "name": "viewer.canvas_demonstrator_1.0.0.zip",
+      "sha256": "68f3f821754703ed01cf06bcbd9544e27f90ef79c92929934b15eb13861f848c",
+      "bytes": 92073,
+      "original_source_path": "viewer.canvas_demonstrator_1.0.0.zip"
+    }
+  ],
+  "additional_files": [
+    {
+      "name": "apply.py",
+      "sha256": "a50f93216af0a9788af133ab3c647ab1b81d3c29172609919eeb9933b65f5a87",
+      "bytes": 15198
+    }
+  ],
+  "install_method": "Exact guarded patch installer and supported predecessor"
+}
