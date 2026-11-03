@@ -1,0 +1,22 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-publication.v1",
+  "patch": "DEV112-P002",
+  "base_release": "v0.9.8.10-dev-112-r2",
+  "required": "DEV112-r2 + P001",
+  "tag": "v0.9.8.10-dev-112-r2-p002",
+  "archive": "DEV112-P002.zip",
+  "archive_sha256": "022d5af77a5660a87a48193293240de9cffb9ecb6d5f421f5fc0dd4fbd54aaa6",
+  "archive_bytes": 7365660,
+  "product_file_count": 39,
+  "file_manifest": "FILES.json",
+  "packages": [
+    {
+      "name": "DEV112-P002.zip",
+      "sha256": "022d5af77a5660a87a48193293240de9cffb9ecb6d5f421f5fc0dd4fbd54aaa6",
+      "bytes": 7365660,
+      "original_source_path": "DEV112-P002.zip"
+    }
+  ],
+  "additional_files": [],
+  "install_method": "Exact guarded patch installer and supported predecessor"
+}
