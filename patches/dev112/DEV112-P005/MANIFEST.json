@@ -1,0 +1,37 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P005",
+  "source_commit": "88efe642e87e27e621f7edca31c14ea4197eff22",
+  "archive": "DEV112-P005.zip",
+  "archive_sha256": "55358070dc710ae4b1d7384edeef03f4a47627e4f790484d102a5a360e2e38b9",
+  "product_changes": 184,
+  "final_inventory_entries": 5520,
+  "installation_baselines": "Original DEV112-r2 or exact post-P004 state",
+  "files": [
+    {
+      "filename": "DEV112-P005.zip",
+      "sha256": "55358070dc710ae4b1d7384edeef03f4a47627e4f790484d102a5a360e2e38b9",
+      "bytes": 15938146,
+      "source": "DEV112-P005.zip"
+    },
+    {
+      "filename": "viewer.unified_document_extraction_1.2.0.zip",
+      "sha256": "4804b532bac60a2796029d97b17efa2c2434f601cf30e36c8b7ae3b97147ab8c",
+      "bytes": 276124,
+      "source": "viewer.unified_document_extraction_1.2.0.zip"
+    },
+    {
+      "filename": "viewer.quantitative_raster_probe_0.2.1.zip",
+      "sha256": "4ef864dd563738a3ec3e6051b1bf67b0593196797f7c8b988dc68a5ab8c8cc51",
+      "bytes": 115137,
+      "source": "viewer.quantitative_raster_probe_0.2.1.zip"
+    },
+    {
+      "filename": "apply.py",
+      "sha256": "4dc6528ae0d0b5916c4cc953a2a1d8317d1f00f7a9306b43c39a24ef78e2e09a",
+      "bytes": 28459,
+      "source": "apply.py"
+    }
+  ],
+  "is_cumulative": true
+}
