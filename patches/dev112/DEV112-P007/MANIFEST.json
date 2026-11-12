@@ -1,0 +1,31 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P007",
+  "source_commit": "a10f5a99fdab93e251efe9c415d5ad76d14c5259",
+  "archive": "DEV112-P007.zip",
+  "archive_sha256": "db4b7457edebc3a01bae244e1bc01db7a785d7348b9d808fb000b7a2d20131b3",
+  "product_changes": 1516,
+  "final_inventory_entries": 6381,
+  "installation_baselines": "Original DEV112-r2, exact post-P005 or post-P006-r5 state",
+  "files": [
+    {
+      "filename": "DEV112-P007.zip",
+      "sha256": "db4b7457edebc3a01bae244e1bc01db7a785d7348b9d808fb000b7a2d20131b3",
+      "bytes": 55483189,
+      "source": "DEV112-P007.zip"
+    },
+    {
+      "filename": "DEV112-P007-delivery.zip",
+      "sha256": "1a74610834b2a830b97d5b88d7afa2568e36045408b1372b99abf87c32d8d854",
+      "bytes": 64114679,
+      "source": "DEV112-P007-delivery.zip"
+    },
+    {
+      "filename": "apply.py",
+      "sha256": "7caf5a50d80f9aa9d5dad2e2f663ef46e5bbe65af2b7ca5ff1c898344c5c3946",
+      "bytes": 31053,
+      "source": "patch/apply.py"
+    }
+  ],
+  "is_cumulative": true
+}
