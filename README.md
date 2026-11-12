@@ -324,3 +324,21 @@ python3 tools/validate_dev112_r2_p001_p004.py --repository /path/to/maintenance-
 
 P004 is cumulative: the supported direct route from clean DEV112-r2 does not require separately applying P001–P003. The original P004 standalone apply script and its route-specific rollback are supplied with the release.
 
+## GX-TXT DEV112-r2 P005–P007 — cumulative patch archives
+
+The following original patch archives and their distributed Viewer packages are available on the [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112) branch:
+
+| Patch | Release | Supported baselines |
+| --- | --- | --- |
+| P005 | [Quantitative Raster / Unified Documents 1.2.0](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p005) | Original DEV112-r2 or exact post-P004 |
+| P006 | [C++ Script Bridge / Scientific Slides](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p006) | Original DEV112-r2 or exact post-P005 |
+| P007 | [Script Library / Dataset Preview](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p007) | Original DEV112-r2, exact post-P005 or delivered P006-r5 |
+
+P006 corresponds to the **r5 package dated 12 November 2026**. P007 is a cumulative patch and can be installed directly on clean DEV112-r2 using the supplied guarded installer, as documented in its installation guide.
+
+The following validator checks the published original patch ZIPs, declared managed file SHA-256 identities and companion package archives, without modifying the framework:
+
+```sh
+python3 tools/validate_dev112_r2_p005_p007.py --repository /path/to/maintenance-dev112
+```
+
