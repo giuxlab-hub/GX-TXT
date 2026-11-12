@@ -1,0 +1,43 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P006",
+  "source_commit": "6498d8d241e3fb8e8c48db1e9d3ce3dd0c2d393e",
+  "archive": "DEV112-P006.zip",
+  "archive_sha256": "d62ff22bd824e1dcdfaece27243ae958a5d20d1ec624d0b33d45be79fc2a7ed6",
+  "product_changes": 1485,
+  "final_inventory_entries": 6362,
+  "installation_baselines": "Original DEV112-r2 or exact post-P005 state",
+  "files": [
+    {
+      "filename": "DEV112-P006.zip",
+      "sha256": "d62ff22bd824e1dcdfaece27243ae958a5d20d1ec624d0b33d45be79fc2a7ed6",
+      "bytes": 51268278,
+      "source": "patch/DEV112-P006.zip"
+    },
+    {
+      "filename": "DEV112-P006-delivery.zip",
+      "sha256": "cb6b380cfeebd22d339a69a87826bf8b5f43fb1906dd3a27245f185039f10b49",
+      "bytes": 53027630,
+      "source": "DEV112-P006-delivery.zip"
+    },
+    {
+      "filename": "viewer.orion_sii_canvas_1.0.11.zip",
+      "sha256": "d89748b776925ab98fe14581d6d2dac61b9f2148ed335121598a2a3fb55f9e55",
+      "bytes": 157688,
+      "source": "packages/viewer.orion_sii_canvas_1.0.11.zip"
+    },
+    {
+      "filename": "viewer.scientific_image_inspector_0.4.37.zip",
+      "sha256": "47efa00fef92bd2e8cd4b78b11d774bd15a1bcfc5980addf5542ae0a061718d8",
+      "bytes": 418767,
+      "source": "packages/viewer.scientific_image_inspector_0.4.37.zip"
+    },
+    {
+      "filename": "apply.py",
+      "sha256": "1843a3aaa79cffc01bb5c0da0ce8938bc08c65deb38d8a4cde35349dcdca277f",
+      "bytes": 29342,
+      "source": "patch/apply.py"
+    }
+  ],
+  "is_cumulative": true
+}
