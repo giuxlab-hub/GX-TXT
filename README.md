@@ -342,3 +342,15 @@ The following validator checks the published original patch ZIPs, declared manag
 python3 tools/validate_dev112_r2_p005_p007.py --repository /path/to/maintenance-dev112
 ```
 
+## GX-TXT DEV112-r2 P008 — cumulative GUI and workflow update
+
+Release: [GX-TXT DEV112-r2 P008](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p008). The original cumulative patch, complete delivery bundle, installer helper, source bundle and checksums are published unchanged on the [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112/DEV112-P008) branch.
+
+The cumulative installer admits the exact original DEV112-r2, post-P005, post-P006-r5 and post-P007 baselines and produces patch level **008**. The delivery includes an acceptance matrix for 52 requirements.
+
+Read-only validation of original product file postimages, archive integrity and package SHA-256:
+
+```sh
+python3 tools/validate_dev112_r2_p008.py --repository /path/to/maintenance-dev112
+```
+
