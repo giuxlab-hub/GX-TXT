@@ -1,0 +1,43 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P008",
+  "source_commit": "f691b0f6e1016cb9af3db30ba3d1c8b5ea91429c",
+  "archive": "DEV112-P008.zip",
+  "archive_sha256": "fc931c33cbc9c390b71c5ea3e68bb67de3ce0b4c1252012711d5245bdf7c35ff",
+  "delivery_sha256": "64bd9e9b0fb55abc8f87114e72f910470f726a13c2c5be1af1011248a8688552",
+  "product_changes": 1575,
+  "final_inventory_entries": 6403,
+  "installation_baselines": [
+    "post-p005",
+    "post-p006-r5",
+    "post-p007",
+    "r2"
+  ],
+  "is_cumulative": true,
+  "files": [
+    {
+      "filename": "DEV112-P008.zip",
+      "source": "DEV112-P008.zip",
+      "sha256": "fc931c33cbc9c390b71c5ea3e68bb67de3ce0b4c1252012711d5245bdf7c35ff",
+      "bytes": 60924346
+    },
+    {
+      "filename": "DEV112-P008-delivery.zip",
+      "source": "DEV112-P008-delivery.zip",
+      "sha256": "64bd9e9b0fb55abc8f87114e72f910470f726a13c2c5be1af1011248a8688552",
+      "bytes": 67205557
+    },
+    {
+      "filename": "DEV112-P008-source.bundle",
+      "source": "DEV112-P008-source.bundle",
+      "sha256": "eb2c4dab652c5794f42b2a2bad2176d8c3b36bfcd6ac7d0fec266a60f8f89c19",
+      "bytes": 106263
+    },
+    {
+      "filename": "apply.py",
+      "source": "patch/apply.py",
+      "sha256": "256870b075a75da09053dfff1339be303ef46bada7185eb2c7c0813b4290e988",
+      "bytes": 32877
+    }
+  ]
+}
