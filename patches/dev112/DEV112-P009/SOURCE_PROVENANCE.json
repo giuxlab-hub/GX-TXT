@@ -1,0 +1,16 @@
+{
+  "status": "PASS_EXACT_SOURCE_ARTIFACTS",
+  "source_commit": "c0f35e2bd6e332a24aa0292d7c3712a3b004dc5c",
+  "source_tree": "43c620de90e6f5dfda9fa502927502e3fcc2c504",
+  "baseline_prerequisite": "f691b0f6e1016cb9af3db30ba3d1c8b5ea91429c",
+  "source_inventory_sha256": "d9d6e2881fc09f0bc75ea1e853084df4c9f01bcc80ec8f36c2bde809fcc27fe9",
+  "files": 6462,
+  "full_source_archive": "DEV112-P009-framework-source.tar.gz",
+  "full_source_sha256": "9736280773048a136e4027987131b219733526370b6a5e849812d96ff6573d37",
+  "delta_git_bundle": "DEV112-P009-source.bundle",
+  "delta_git_bundle_sha256": "f68614dd50c89c0683c128e9c2386848259cc51944677f6a49671c59bd901f7d",
+  "archive_contains_only_tracked_framework_files": true,
+  "exact_bytes_and_delivery_modes": true,
+  "git_bundle_verification": true,
+  "production_activation": false
+}

@@ -1,0 +1,56 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P009",
+  "source_commit": "c0f35e2bd6e332a24aa0292d7c3712a3b004dc5c",
+  "archive": "DEV112-P009.zip",
+  "archive_sha256": "28c0885963a65453d57b4cc4fa0f665e9a5eeaa78734d142adbf03a29a76abaa",
+  "delivery_sha256": "e70ae687bf38a52ec453cb2336604f9bdf91e5efbe5ae59d9a56c33a51ee1405",
+  "product_changes": 1711,
+  "final_inventory_entries": 6462,
+  "installation_baselines": [
+    "post-p005",
+    "post-p006-r5",
+    "post-p007",
+    "post-p008",
+    "r2"
+  ],
+  "is_cumulative": true,
+  "files": [
+    {
+      "filename": "DEV112-P009.zip",
+      "source": "DEV112-P009.zip",
+      "sha256": "28c0885963a65453d57b4cc4fa0f665e9a5eeaa78734d142adbf03a29a76abaa",
+      "bytes": 78919633
+    },
+    {
+      "filename": "DEV112-P009-delivery.zip",
+      "source": "DEV112-P009-delivery.zip",
+      "sha256": "e70ae687bf38a52ec453cb2336604f9bdf91e5efbe5ae59d9a56c33a51ee1405",
+      "bytes": 879140435
+    },
+    {
+      "filename": "gxtxt-mcp-server_0.1.0-1_amd64.deb",
+      "source": "components/gxtxt-mcp-server_0.1.0-1_amd64.deb",
+      "sha256": "ca9c9d33606acb4acb264efd31af43d68c7b4b8ba4b8702c5a15b400b15e726c",
+      "bytes": 6904732
+    },
+    {
+      "filename": "DEV112-P009-source.bundle",
+      "source": "source/DEV112-P009-source.bundle",
+      "sha256": "f68614dd50c89c0683c128e9c2386848259cc51944677f6a49671c59bd901f7d",
+      "bytes": 6263271
+    },
+    {
+      "filename": "DEV112-P009-framework-source.tar.gz",
+      "source": "source/DEV112-P009-framework-source.tar.gz",
+      "sha256": "9736280773048a136e4027987131b219733526370b6a5e849812d96ff6573d37",
+      "bytes": 130350982
+    },
+    {
+      "filename": "apply.py",
+      "source": "patch/apply.py",
+      "sha256": "091b4e2248a4b2baca010bcc9b7b370c85c855394126f59502134ceb554256d7",
+      "bytes": 33282
+    }
+  ]
+}
