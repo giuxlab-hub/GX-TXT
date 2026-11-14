@@ -354,3 +354,16 @@ Read-only validation of original product file postimages, archive integrity and 
 python3 tools/validate_dev112_r2_p008.py --repository /path/to/maintenance-dev112
 ```
 
+
+
+## GX-TXT DEV112-r2 P009 — scientific integrations
+
+The [DEV112-r2 P009 release](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p009) includes the cumulative framework patch, installation instructions, full distribution, public source archive, and optional MCP Server Debian component. Original integrity metadata is preserved on [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112/DEV112-P009).
+
+The cumulative installer accepts exact DEV112-r2, post-P005, post-P006-r5, post-P007 or post-P008 baselines. Its managed inventory and application/rollback semantics are recorded in the original delivery.
+
+Read-only check of the patch archive and declared output identities:
+
+```sh
+python3 tools/validate_dev112_r2_p009.py --repository /path/to/maintenance-dev112
+```
