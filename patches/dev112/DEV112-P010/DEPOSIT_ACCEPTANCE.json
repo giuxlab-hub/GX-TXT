@@ -1,0 +1,42 @@
+{
+  "acceptance_record_sha256": "3d85d2d3dfe653bd0160dd445b30f01830df81b3144997dfb1279491a2fda437",
+  "accepted_delivery_files": 138,
+  "accepted_files_unchanged": true,
+  "archive_expanded_readback": [
+    {
+      "archive": "/srv/gxtxt/releases/GXTXT/framework/archives/patches/DEV112-P010-20261115/DEV112-P010-delivery.tar.gz",
+      "expanded": "/srv/gxtxt/releases/GXTXT/framework/expanded/patches/DEV112-P010-20261115/DEV112-P010-delivery",
+      "files": 138,
+      "full_byte_size_mode_parity": true,
+      "sha256": "2ea56e67dff8376c09c258ff0b638353472c364ab8370f72f9830651152508ad"
+    },
+    {
+      "archive": "/srv/gxtxt/releases/GXTXT/external_plugins/archives/export.sketch_dxf-1.0.0.zip",
+      "crc_verified": true,
+      "expanded": "/srv/gxtxt/releases/GXTXT/external_plugins/expanded/export.sketch_dxf-1.0.0",
+      "files": 8,
+      "full_byte_size_mode_parity": true,
+      "sha256": "5fc42d89112ce5e10202fec3db6978923f20368014d2ba170fd1ced7bf311692"
+    },
+    {
+      "archive": "/srv/gxtxt/releases/GXTXT/session_generators/archives/mathematics_2d21-reference-1.0.0.zip",
+      "crc_verified": true,
+      "expanded": "/srv/gxtxt/releases/GXTXT/session_generators/expanded/mathematics_2d21-reference-1.0.0",
+      "files": 3,
+      "full_byte_size_mode_parity": true,
+      "sha256": "e66753e48c22db52abc132b072f7f096f99c5a712446f8992fee9d7d41beaba7"
+    }
+  ],
+  "delivery_archive": "/srv/gxtxt/releases/dev112/patches/0010-mathematics-plots-dxf/DEV112-P010-delivery.tar.gz",
+  "delivery_archive_sha256": "2ea56e67dff8376c09c258ff0b638353472c364ab8370f72f9830651152508ad",
+  "historical_record_qualification": "Sealed VALIDATION/CONSTRUCTION records retain their predeposit state. This detached receipt supersedes only storage-location/deposit status; all source, package, acceptance and archive bytes remain unchanged.",
+  "owner_directive": "Correct patch storage directory to /srv/gxtxt/releases/dev112/patches",
+  "prior_release_destinations_overwritten": false,
+  "production_activation": false,
+  "release_directory": "/srv/gxtxt/releases/dev112/patches/0010-mathematics-plots-dxf",
+  "schema": "gxtxt.p010.owner_corrected_deposit.v1",
+  "scratch_evidence_preserved": true,
+  "source_commit": "149d26229b0b450091ee0a2a5b59f0ed2e2662a7",
+  "status": "PASS_DEPOSITED_AND_READ_BACK",
+  "time_utc": "2026-11-15T15:33:37.617375+00:00"
+}

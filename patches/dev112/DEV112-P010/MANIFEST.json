@@ -1,0 +1,64 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P010",
+  "source_commit": "149d26229b0b450091ee0a2a5b59f0ed2e2662a7",
+  "source_baseline": "DEV112-P009",
+  "supported_routes": [
+    "post-p009"
+  ],
+  "product_changes": 90,
+  "final_inventory_entries": 6503,
+  "archive": "DEV112-P010-overlay.zip",
+  "archive_sha256": "06c6ed5fbab25d5003f05544a39ec218ed9cb123a2e6140b4fd9dfc292d508f9",
+  "full_delivery_sha256": "2ea56e67dff8376c09c258ff0b638353472c364ab8370f72f9830651152508ad",
+  "files": [
+    {
+      "filename": "DEV112-P010-overlay.zip",
+      "source": "patch/DEV112-P010-overlay.zip",
+      "sha256": "06c6ed5fbab25d5003f05544a39ec218ed9cb123a2e6140b4fd9dfc292d508f9",
+      "bytes": 8544371
+    },
+    {
+      "filename": "DEV112-P010-delivery.tar.gz",
+      "source": "DEV112-P010-delivery.tar.gz",
+      "sha256": "2ea56e67dff8376c09c258ff0b638353472c364ab8370f72f9830651152508ad",
+      "bytes": 145037600
+    },
+    {
+      "filename": "DEV112-P010-framework-source.tar.gz",
+      "source": "source/DEV112-P010-framework-source.tar.gz",
+      "sha256": "14ad0c867ddbd158af27115ab6c07f55ae4cb8b274abddd54f1630cb708f692c",
+      "bytes": 130083491
+    },
+    {
+      "filename": "DEV112-P010-source.bundle",
+      "source": "source/DEV112-P010-source.bundle",
+      "sha256": "cc1005ada6920d92d71b7c171070d0ebad1686cfc81395d6e98a1ddedc99ba6f",
+      "bytes": 569882
+    },
+    {
+      "filename": "export.sketch_dxf-1.0.0.zip",
+      "source": "components/external_plugins/archives/export.sketch_dxf-1.0.0.zip",
+      "sha256": "5fc42d89112ce5e10202fec3db6978923f20368014d2ba170fd1ced7bf311692",
+      "bytes": 21538
+    },
+    {
+      "filename": "mathematics_2d21-reference-1.0.0.zip",
+      "source": "components/session_generators/archives/mathematics_2d21-reference-1.0.0.zip",
+      "sha256": "e66753e48c22db52abc132b072f7f096f99c5a712446f8992fee9d7d41beaba7",
+      "bytes": 16930
+    },
+    {
+      "filename": "DEV112-P010-synthetic-2D21-reference.tar.gz",
+      "source": "reference/DEV112-P010-synthetic-2D21-reference.tar.gz",
+      "sha256": "2f9800ad281f408371f721696e63bc3bd061fbd953ecd7b00fcab9cd1089c4c3",
+      "bytes": 1001912
+    },
+    {
+      "filename": "apply.py",
+      "source": "patch/apply.py",
+      "sha256": "b76b31b8dd6559c69f6b70c4483892e434ee1590da7b81ea2c1197246fb6c80c",
+      "bytes": 28545
+    }
+  ]
+}

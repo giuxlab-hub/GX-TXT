@@ -1,0 +1,23 @@
+{
+  "activation": false,
+  "external_plugins": {
+    "archive": "components/external_plugins/archives/export.sketch_dxf-1.0.0.zip",
+    "expanded": "components/external_plugins/expanded",
+    "members": 8,
+    "sha256": "5fc42d89112ce5e10202fec3db6978923f20368014d2ba170fd1ced7bf311692"
+  },
+  "framework": {
+    "archives": [
+      "patch/DEV112-P010-overlay.zip",
+      "source/DEV112-P010-framework-source.tar.gz"
+    ],
+    "expanded_source": "Full source archive prefix GX-TXT-DEV112-P010; SOURCE_FILES.json is the exact byte/size/full-mode inventory."
+  },
+  "session_generators": {
+    "archive": "components/session_generators/archives/mathematics_2d21-reference-1.0.0.zip",
+    "expanded": "components/session_generators/expanded",
+    "members": 3,
+    "sha256": "e66753e48c22db52abc132b072f7f096f99c5a712446f8992fee9d7d41beaba7"
+  },
+  "synthetic_reference": "reference/DEV112-P010-synthetic-2D21-reference.tar.gz"
+}
