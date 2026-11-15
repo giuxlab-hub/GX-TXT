@@ -367,3 +367,16 @@ Read-only check of the patch archive and declared output identities:
 ```sh
 python3 tools/validate_dev112_r2_p009.py --repository /path/to/maintenance-dev112
 ```
+
+
+## GX-TXT DEV112-r2 P010 — Mathematics, Plot and Sketch DXF
+
+The original [P010 release](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p010) contains the incremental overlay, full framework source archive, graphical/mathematical distribution components, a synthetic reference example and installation instructions. Original package identities are preserved on [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112/DEV112-P010).
+
+Unlike P009, the P010 installer admits **only the exact post-P009 framework state**. The original installation and rollback procedures require matching source identities and an external receipt.
+
+Read-only verification of original patch files, final inventory metadata and component SHA-256:
+
+```sh
+python3 tools/validate_dev112_r2_p010.py --repository /path/to/maintenance-dev112
+```
