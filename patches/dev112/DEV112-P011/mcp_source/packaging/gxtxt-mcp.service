@@ -1,0 +1,15 @@
+[Unit]
+Description=Optional GX-TXT authenticated loopback MCP adapter
+Documentation=man:systemd.service(5)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/gxtxt-mcp serve --transport streamable-http
+KillMode=process
+TimeoutStopSec=20
+Restart=no
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,77 @@
+{
+  "schema": "gxtxt.p011.independent_final_delivery_review.v1",
+  "role": "TECH",
+  "assigned_model": "Sol 6.1 Low",
+  "decision": "ACCEPT_FOR_DELIVERY",
+  "blocking_defects": [],
+  "candidate": "c021-shared-xyz-contract-comparison",
+  "source_commit": "2547eab9cf8a49bba1d1854f15c03be43a166933",
+  "source_archive_sha256": "b8f083d2f9186ddabc8bc0b5561e191dc8233f18d361c22ef61a94c011ce2475",
+  "overlay_sha256": "ea02fa968a5b4c75499c620740981d12012b6e77d4024eb744c21e3f54707cff",
+  "delivery_inventory_sha256": "20a7e803be96616ed2e48884f336f0e99d69910a9d1f08378f1c0807d83d5336",
+  "mcp_backward_and_current_gate": "PASS",
+  "roles": {
+    "GUI": {
+      "assigned_model": "Terra 6.1 Medium",
+      "decision": "ACCEPT_FOR_DELIVERY",
+      "report": "/srv/gxtxt/agents/scratch/DEV112-P011-GUI-VALIDATOR/FINAL_SOURCE_ACCEPTANCE.json",
+      "sha256": "720bc5c467f980835105d6d04783e6109eb9b1a781c998e52eea7f42c5fd8134"
+    },
+    "TECH": {
+      "assigned_model": "Sol 6.1 Low",
+      "decision": "ACCEPT_FOR_DELIVERY",
+      "report": "/srv/gxtxt/agents/scratch/DEV112-P011-TECH-VALIDATOR/FINAL_SOURCE_ACCEPTANCE.json",
+      "sha256": "08e804738dfb7c076fce6a51bb5b374d02a3850ff52ed0bcb2f3a5579a72e189"
+    },
+    "SCI": {
+      "assigned_model": "Sol 6.1 High",
+      "decision": "ACCEPT_FOR_DELIVERY",
+      "report": "/srv/gxtxt/agents/scratch/DEV112-P011-SCI-VALIDATOR/FINAL_SOURCE_ACCEPTANCE.json",
+      "sha256": "6f899ac3fd371f0c3b4aa99c46c67875e1402532c40be241cd6d439c6c5a9b4a"
+    }
+  },
+  "stage": "/srv/gxtxt/agents/scratch/DEV112-P011-MAIN/author/final-delivery-stage02",
+  "reviewed_scope": {
+    "inventory_files": 930,
+    "actual_files": 932,
+    "complete_bytes_modes_sizes": true,
+    "source_tar_members_exact": 6532,
+    "tested_installer_overlay_manifest_exact": true,
+    "english_current_delivery_documents": 6,
+    "exact_locked_wheels": 28,
+    "final_mcp04_source_package_exact": true,
+    "all_role_evidence_mapping_exact": 809,
+    "all_role_acceptances_exact": true
+  },
+  "coverage_review": {
+    "path": "coordination/FINAL_COVERAGE_REVIEW.json",
+    "sha256": "72f5149901cfad9d53ad8327a8485f3d72c29f9fc9c993e73a9250718062c181",
+    "decision": "PASS",
+    "capabilities": 83,
+    "mandatory_unexecuted": [],
+    "qualification": "82capabilities have executed scoped facets, not82fullyexecutedcapabilities; originalrawarrayoverlay/helperpermutations source-reviewed explicitly."
+  },
+  "source_to_ui_union_sha256": "8c0da66c03f42cfc4e9b70a3254b1c72b4969c4f4ce7ee877f11bdcae70bdc19",
+  "scientific_peer_addendum_sha256": "f9a88dfcc0b9b18de5dca18b6c76fcdb265760cd1e8532240e3672bffec9bf8c",
+  "guard_source_sha256": {
+    "prepare_delivery.py": "b918f0019d6e21494c7f9ac31a386a6b6ff3a584f2c89654b45448ca47b8822c",
+    "deposit.py": "044f77bd8356b496dbdcc5bbedf7db0475eb19f2e3d3e9d4d1d26e7155a7c1c9",
+    "finalize_records.py": "69973b45ceffd6baa85fd3d28f553d2b64af013988f5a13ddfd71447a0195e07"
+  },
+  "mcp_scope": "ActualfinalMCP04packagebb212be4 backwardP009/P01017cases each and finalinstalledP01117cases; priorfullscopedsecurity/science campaigns retainoriginalpins. Exact28lockedwheels/source/package independentlychecked.",
+  "technical_artifact_binding": "Stagedinstaller/overlay/manifest exactactuallytestedc021; finalprivateapply/installedRun/Plots/cold/Fitter/currentSDK/noop/refusals/exactP010rollback PASS. Sourcearchive6532members byte/size/modeverified.",
+  "historical_pin_resolution": "Two originalappend-onlycheckpointprefix bytes and historicalseals independentlyhash-resolved; one oldSCIcontinuitycheckpoint exactbytes unavailable, explicitlyhistorical and nofinalgate depends onthatpin. Exactimmutableexecutionoracles/currentroleacceptances verified.",
+  "isolation_disclosure": "EarlyTECHcatalogsnapshot storageomission outsideallocatedscratch was exactowneddeadUUIDpublic-cleaned; correctedfullyprivateexecution/disclosure included. Nozerooutsidewriteclaim.",
+  "limitations": [
+    "Stage02 is independentlyacceptedforMAINdelivery only; noinstallation/activationauthorization.",
+    "Finaldeliveryarchive construction/readback and completeddeposit receipts are subsequentMAINoperations, not claimedalreadyexecuted byTECH.",
+    "Source-reviewedinternalhelpers/propertypermutations, finiteperformancecosts, syntheticfixtures and screen-readerNOTTESTED qualifications remaininroles/coverage.",
+    "Originalstage01content review was construction-only; actualchangedSync/cold/panel/Workbench/missing-source/hit gaps then closed andmetadata pin correction/history preserved."
+  ],
+  "check_only_admission_receipts": [
+    "evidence/FINAL_READ_ONLY_ADMISSION_NORMAL.json",
+    "evidence/FINAL_READ_ONLY_ADMISSION_OPTIMIZED.json"
+  ],
+  "production_activation": false,
+  "time_utc": "2026-11-15T23:22:10.481138+00:00"
+}

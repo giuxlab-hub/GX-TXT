@@ -1,0 +1,20 @@
+{
+  "framework": {
+    "version": "0.9.8.10-dev-112",
+    "patch": "011",
+    "source_files": 6532,
+    "overlay_changes": 121,
+    "preimages": 92
+  },
+  "mcp": {
+    "version": "0.2.0",
+    "sdk": "2.3.0",
+    "reference_protocol": "2025-11-25",
+    "package_sha256": "bb212be4ba000d4a5751800eb07e4304ec3a2bc6d95ab0f48e55d90a2b8b1e7f",
+    "compatibility": "Actual public GX-TXT API/runtime contracts; framework patch labels diagnostic only; MCP protocol negotiated separately."
+  },
+  "source_archives": "source/",
+  "optional_adapter": "components/mcp/",
+  "installer": "patch/apply.py",
+  "installation_or_activation": false
+}

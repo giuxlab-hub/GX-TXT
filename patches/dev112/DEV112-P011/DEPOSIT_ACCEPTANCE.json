@@ -1,0 +1,18 @@
+{
+  "schema": "gxtxt.p011.accepted_deposit.v1",
+  "status": "PASS_DEPOSITED_AND_READ_BACK",
+  "time_utc": "2026-11-15T23:23:00.040537+00:00",
+  "release_directory": "/srv/gxtxt/releases/dev112/patches/0011-run-curve-viewer-curve-fitter-3d",
+  "source_commit": "2547eab9cf8a49bba1d1854f15c03be43a166933",
+  "source_archive_sha256": "b8f083d2f9186ddabc8bc0b5561e191dc8233f18d361c22ef61a94c011ce2475",
+  "overlay_sha256": "ea02fa968a5b4c75499c620740981d12012b6e77d4024eb744c21e3f54707cff",
+  "review_sha256": "24b4cc851d6715e85b044ce29d2b6b62eb231f527ceecca081d0404f82463341",
+  "accepted_delivery_files": 932,
+  "accepted_files_unchanged": true,
+  "full_byte_size_mode_parity": true,
+  "delivery_archive_sha256": "1ac6b22a397745416316f7e13e9e54336788eff018c336ce26612df038a96696",
+  "archive": "/srv/gxtxt/releases/GXTXT/framework/archives/patches/DEV112-P011-20261115/DEV112-P011-delivery.tar.gz",
+  "expanded": "/srv/gxtxt/releases/GXTXT/framework/expanded/patches/DEV112-P011-20261115/DEV112-P011-delivery",
+  "production_activation": false,
+  "prior_release_destinations_overwritten": false
+}

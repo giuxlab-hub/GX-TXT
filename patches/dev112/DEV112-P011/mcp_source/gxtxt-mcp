@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Relocatable source/extracted-Debian entrypoint for the optional adapter."""
+from pathlib import Path
+import sys
+root=Path(__file__).resolve().parent
+installed=root.parent/'lib/gxtxt-mcp-server'
+if (installed/'gxtxt_mcp').is_dir():root=installed
+sys.path.insert(0,str(root))
+vendor=root/'vendor'
+if vendor.is_dir():sys.path.insert(0,str(vendor))
+from gxtxt_mcp.cli import main
+raise SystemExit(main())

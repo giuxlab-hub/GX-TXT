@@ -1,0 +1,47 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-distribution.v1",
+  "patch": "DEV112-P011",
+  "source_commit": "2547eab9cf8a49bba1d1854f15c03be43a166933",
+  "source_baseline": "DEV112-P010",
+  "supported_routes": [
+    "post-p010"
+  ],
+  "product_changes": 121,
+  "final_inventory_entries": 6532,
+  "archive": "DEV112-P011-overlay.zip",
+  "archive_sha256": "ea02fa968a5b4c75499c620740981d12012b6e77d4024eb744c21e3f54707cff",
+  "full_delivery_sha256": "1ac6b22a397745416316f7e13e9e54336788eff018c336ce26612df038a96696",
+  "files": [
+    {
+      "filename": "DEV112-P011-overlay.zip",
+      "source": "patch/DEV112-P011-overlay.zip",
+      "sha256": "ea02fa968a5b4c75499c620740981d12012b6e77d4024eb744c21e3f54707cff",
+      "bytes": 12557425
+    },
+    {
+      "filename": "DEV112-P011-delivery.tar.gz",
+      "source": "DEV112-P011-delivery.tar.gz",
+      "sha256": "1ac6b22a397745416316f7e13e9e54336788eff018c336ce26612df038a96696",
+      "bytes": 177876670
+    },
+    {
+      "filename": "DEV112-P011-framework-source.tar.gz",
+      "source": "source/DEV112-P011-framework-source.tar.gz",
+      "sha256": "b8f083d2f9186ddabc8bc0b5561e191dc8233f18d361c22ef61a94c011ce2475",
+      "bytes": 135629538
+    },
+    {
+      "filename": "gxtxt-mcp-server_0.2.0-1_amd64.deb",
+      "source": "components/mcp/gxtxt-mcp-server_0.2.0-1_amd64.deb",
+      "sha256": "bb212be4ba000d4a5751800eb07e4304ec3a2bc6d95ab0f48e55d90a2b8b1e7f",
+      "bytes": 6907512
+    },
+    {
+      "filename": "apply.py",
+      "source": "patch/apply.py",
+      "sha256": "5c900c145333f9d9b351b66bad8d9ef3242232d8b1f56a9dcae1138031b11e77",
+      "bytes": 28692
+    }
+  ],
+  "mcp_version": "0.2.0"
+}
