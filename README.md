@@ -380,3 +380,16 @@ Read-only verification of original patch files, final inventory metadata and com
 ```sh
 python3 tools/validate_dev112_r2_p010.py --repository /path/to/maintenance-dev112
 ```
+
+
+## GX-TXT DEV112-r2 P011 — Run, Curve Viewer and Curve Fitter
+
+The original [P011 release](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p011) includes its reversible overlay, original complete delivery and framework source, separately installable MCP Server 0.2.0 Debian package, matching source and exact dependency lock information. The original bytes and manifests are published on [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112/DEV112-P011).
+
+P011 requires the exact post-P010 source. It is not cumulative from the original DEV112-r2 base. The original installer supports a receipt-bound rollback to post-P010.
+
+Read-only verification of original patch postimages, full source inventory records and distribution identities:
+
+```sh
+python3 tools/validate_dev112_r2_p011.py --repository /path/to/maintenance-dev112
+```
