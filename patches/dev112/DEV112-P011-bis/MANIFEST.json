@@ -1,0 +1,46 @@
+{
+  "schema": "gxtxt.dev112-r2.patch-publication.v1",
+  "patch": "DEV112-P011-bis",
+  "release_tag": "v0.9.8.10-dev-112-r2-p011-bis",
+  "requires": "exact accepted DEV112-P011",
+  "source_commit": "c7a221ba4703b8869709ebefcc5793c7a9c3a36f",
+  "baseline_source_sha256": "b8f083d2f9186ddabc8bc0b5561e191dc8233f18d361c22ef61a94c011ce2475",
+  "post_source_sha256": "b1896a068582596de37f7242b73c075d109ec901f455de939c71221095cecd97",
+  "changed_file_count": 222,
+  "baseline_files": 6532,
+  "post_files": 6612,
+  "accepted_roles": [
+    "GUI",
+    "TECH",
+    "SCI"
+  ],
+  "final_decision": "ACCEPT_FOR_DELIVERY",
+  "deposit_status": "DEPOSITED_AND_READ_BACK",
+  "activation": false,
+  "original_release_assets": [
+    {
+      "filename": "DEV112-P011-bis-curve-viewer-and-audit-corrections.tar.gz",
+      "original_relative_path": "DEV112-P011-bis-curve-viewer-and-audit-corrections.tar.gz",
+      "sha256": "1c03cdd36905a8795b1088ca4fdc9da4e4a1203c8a62b792f8c3da26e969b8d7",
+      "bytes": 202064088
+    },
+    {
+      "filename": "DEV112-P011-bis-framework-source.tar.gz",
+      "original_relative_path": "source/framework.tar.gz",
+      "sha256": "b1896a068582596de37f7242b73c075d109ec901f455de939c71221095cecd97",
+      "bytes": 137764659
+    },
+    {
+      "filename": "DEV112-P011-bis-source-delta.zip",
+      "original_relative_path": "source/SOURCE_DELTA.zip",
+      "sha256": "7f358374e7d5c97dfc18ece509a4923293a4c53326be21a8eefb48b78927543a",
+      "bytes": 59105423
+    },
+    {
+      "filename": "DEV112-P011-bis-source.diff",
+      "original_relative_path": "source/SOURCE.diff",
+      "sha256": "40670d276c842f423799eac414d32f7d8454b06162e6d789d57fa39855206e12",
+      "bytes": 18854512
+    }
+  ]
+}

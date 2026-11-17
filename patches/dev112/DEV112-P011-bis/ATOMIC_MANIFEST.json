@@ -1,0 +1,15 @@
+{
+  "schema": "gxtxt.p011bis.atomic_package.v1",
+  "release": "DEV112-P011-bis",
+  "package_identity": "c7a221ba4703b8869709ebefcc5793c7a9c3a36f:b1896a068582596de37f7242b73c075d109ec901f455de939c71221095cecd97:10aee6ce942bcc9267d595db9f0611a5c8af1fd4445e03be48cff26334f811c0",
+  "installer_sha256": "10aee6ce942bcc9267d595db9f0611a5c8af1fd4445e03be48cff26334f811c0",
+  "source_commit": "c7a221ba4703b8869709ebefcc5793c7a9c3a36f",
+  "source_archive_sha256": "b1896a068582596de37f7242b73c075d109ec901f455de939c71221095cecd97",
+  "baseline_source_archive_sha256": "b8f083d2f9186ddabc8bc0b5561e191dc8233f18d361c22ef61a94c011ce2475",
+  "baseline_inventory_sha256": "8d39dbf9e98cfe7e9d25a36c527e923efa656147b9d1d7aac35f9b2f01bf1ec9",
+  "source_inventory_sha256": "7be001ff432deb37f4057cf0e64ab5fbc3f2e92d33cd010668293a27a9333bf1",
+  "changed_source_files": 222,
+  "atomic_source_cutover": "Linux renameat2(RENAME_EXCHANGE)",
+  "rollback": "Exact accepted P011 source plus current unmanaged data and original wholly unmanaged directory identities",
+  "activation": false
+}
