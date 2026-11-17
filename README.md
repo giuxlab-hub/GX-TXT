@@ -393,3 +393,16 @@ Read-only verification of original patch postimages, full source inventory recor
 ```sh
 python3 tools/validate_dev112_r2_p011.py --repository /path/to/maintenance-dev112
 ```
+
+
+## GX-TXT DEV112-r2 P011-bis — exact P011 corrective release
+
+The original [P011-bis corrective release](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-112-r2-p011-bis) requires the **exact accepted DEV112-P011 source** and supplies the complete atomic installer, original P011 preimages, corrected source, acceptance evidence, and rollback instructions. Its package manifest and installation guide are available in [maintenance/dev112](https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev112/patches/dev112/DEV112-P011-bis).
+
+Accepted scope: 222 changed source files, 6,612 final source inventory entries, GUI/TECH/SCI acceptance. The complete release TAR.GZ is the installable asset; the detached script copy in Git is only for review and **must not** be used without its matching payload/preimages. An inherited Native3D near-end-on axis-caption presentation limitation remains documented.
+
+Read-only metadata and exact-source installer pin verification:
+
+```sh
+python3 tools/validate_dev112_r2_p011_bis.py --repository /path/to/maintenance-dev112
+```
