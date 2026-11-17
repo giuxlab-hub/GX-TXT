@@ -42,5 +42,6 @@
       "sha256": "40670d276c842f423799eac414d32f7d8454b06162e6d789d57fa39855206e12",
       "bytes": 18854512
     }
-  ]
+  ],
+  "atomic_package_index_sha256": "89298cc914788c9a28288cce2d659f6fa840cdb4eb775cb4fd58c8e53a94d16a"
 }
